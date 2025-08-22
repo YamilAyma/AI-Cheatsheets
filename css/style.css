@@ -65,9 +65,8 @@ footer {
     border-top: 1px solid #ddd;
 }
 
-/* --- Estilos para el Hero Banner sobre el nuevo fondo --- */
+/* --- Estilos para el Hero Banner sobre el fondo --- */
 .hero {
-    /* Eliminamos el posicionamiento y el overflow */
     padding: 3rem 2rem;
     border-radius: 12px; /* Un poco más redondeado */
     margin-bottom: 2rem;

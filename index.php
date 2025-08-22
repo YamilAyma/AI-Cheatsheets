@@ -2,6 +2,17 @@
 // Incluimos la librería Parsedown
 require_once 'Parsedown.php';
 
+// 1. Construir la URL completa y canónica de la página actual
+$protocol = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? "https://" : "http://";
+$full_url = $protocol . $_SERVER['HTTP_HOST'] . $_SERVER['REQUEST_URI'];
+
+// 2. Definir los metadatos por defecto (para la página de inicio)
+$meta_title = 'AI Cheatsheets - Guías Rápidas para Desarrolladores';
+$meta_description = 'Un centro de conocimiento con resúmenes, comandos y buenas prácticas sobre programación, arquitectura y herramientas de desarrollo.';
+$meta_image = $protocol . $_SERVER['HTTP_HOST'] . '/default-og-image.png'; // URL completa de la imagen
+$meta_type = 'website';
+
+
 // Definimos la carpeta raíz de los cheatsheets
 define('CHEAT_ROOT', 'cheatsheets');
 
@@ -21,13 +32,26 @@ if ($user_path === false || strpos($user_path, $real_base) !== 0) {
     die("Acceso no permitido.");
 }
 
-$page_title = 'AI Cheatsheets';
+$page_title = 'IA Cheatsheets';
 $content_html = '';
 $floating_buttons_html = ''; 
 
 // Si la ruta apunta a un archivo markdown (.md)
 if (is_file($user_path) && pathinfo($user_path, PATHINFO_EXTENSION) == 'md') {
     $page_title = basename($user_path, '.md');
+
+    // METADATOS Y SEO
+    $markdown_content = file_get_contents($user_path);
+    
+    // Convertimos el Markdown a HTML para poder extraer el texto plano
+    $html_content = $parsedown->text($markdown_content);
+    $plain_text_content = strip_tags($html_content); // Quitamos todas las etiquetas HTML
+
+    $meta_title = htmlspecialchars($page_title) . ' | AI Cheatsheets';
+    // Generamos una descripción corta (primeros 155 caracteres) del contenido
+    $meta_description = trim(mb_substr($plain_text_content, 0, 155, 'UTF-8')) . '...';
+    $meta_type = 'article'; // El tipo para un cheatsheet es 'article'
+
 
     // Lógica para el botón de "Volver"
     // Obtenemos la ruta del directorio padre a partir de la ruta actual
@@ -127,13 +151,34 @@ if (!empty($path)) {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><?php echo htmlspecialchars($page_title); ?> - Mis Cheatsheets</title>
+    <title><?php echo htmlspecialchars($page_title); ?> - IA Cheatsheets</title>
+
+    <!-- Metadatos Estándar y SEO -->
+    <meta name="description" content="<?php echo htmlspecialchars($meta_description); ?>">
+    <meta name="author" content="IA Cheatsheets"> <!-- Puedes poner tu nombre aquí -->
+
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="<?php echo $meta_type; ?>">
+    <meta property="og:url" content="<?php echo htmlspecialchars($full_url); ?>">
+    <meta property="og:title" content="<?php echo htmlspecialchars($meta_title); ?>">
+    <meta property="og:description" content="<?php echo htmlspecialchars($meta_description); ?>">
+    <meta property="og:image" content="<?php echo htmlspecialchars($meta_image); ?>">
+    <meta property="og:site_name" content="IA Cheatsheets">
+
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:url" content="<?php echo htmlspecialchars($full_url); ?>">
+    <meta name="twitter:title" content="<?php echo htmlspecialchars($meta_title); ?>">
+    <meta name="twitter:description" content="<?php echo htmlspecialchars($meta_description); ?>">
+    <meta name="twitter:image" content="<?php echo htmlspecialchars($meta_image); ?>">
+    <link rel="icon" type="image/x-icon" href="./favicon.ico">
+
     <link rel="stylesheet" href="css/style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
 </head>
 <body>
     <header>
-        <h1>AI Cheatsheets</h1>
+        <h1>IA Cheatsheets</h1>
         <nav class="breadcrumbs">
             <?php echo $breadcrumbs; ?>
         </nav>
