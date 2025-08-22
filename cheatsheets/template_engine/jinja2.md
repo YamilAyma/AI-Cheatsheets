@@ -1,0 +1,329 @@
+
+---
+
+# 📜 Jinja2 Cheatsheet Completo 📜
+
+Jinja2 es un motor de plantillas (template engine) para Python. Su objetivo es generar documentos de texto (como HTML, XML, CSS, o cualquier formato de texto) a partir de un template y un conjunto de datos. Es rápido, seguro (con sandboxing) y fácil de extender.
+
+---
+
+## 1. 🌟 Conceptos Clave
+
+* **Plantilla (Template)**: Un archivo de texto (ej. `.html`, `.txt`) que contiene marcadores de posición para datos dinámicos y lógica de presentación.
+* **Contexto**: Un diccionario o un objeto que contiene los datos que se pasan a la plantilla para ser renderizados.
+* **Renderizado**: El proceso de combinar la plantilla con el contexto de datos para producir el texto de salida final.
+* **Expresiones (`{{ ... }}`)**: Para imprimir valores de variables o el resultado de expresiones.
+* **Sentencias (`{% ... %}`)**: Para lógica de control como bucles, condicionales, macros, etc.
+* **Comentarios (`{# ... #}`)**: Ignorados por el motor de plantillas.
+* **Herencia de Plantillas**: Permite crear una plantilla base (`base.html`) y plantillas hijas que la extienden, sobrescribiendo o añadiendo contenido en bloques específicos.
+* **Filtros**: Transforman los valores de las variables.
+* **Tests**: Comprueban condiciones sobre los valores de las variables.
+
+---
+
+## 2. 🛠️ Configuración Inicial
+
+1. **Instalación:**
+
+   ```bash
+   pip install Jinja2
+   ```
+2. **Uso Básico en Python:**
+
+   ```python
+   from jinja2 import Environment, FileSystemLoader
+
+   # Configurar el entorno de Jinja2
+   # FileSystemLoader busca plantillas en la carpeta especificada
+   env = Environment(loader=FileSystemLoader('templates'))
+
+   # Cargar una plantilla
+   template = env.get_template('index.html')
+
+   # Datos para la plantilla
+   data = {
+       'page_title': 'Mi Página de Inicio',
+       'user_name': 'Alice',
+       'is_logged_in': True,
+       'products': [
+           {'id': 1, 'name': 'Laptop', 'price': 1200},
+           {'id': 2, 'name': 'Mouse', 'price': 25},
+           {'id': 3, 'name': 'Teclado', 'price': 75}
+       ],
+       'messages': ['Bienvenido!', 'Nuevo producto añadido.']
+   }
+
+   # Renderizar la plantilla con los datos
+   output = template.render(data)
+   print(output)
+   ```
+
+   * Crea una carpeta `templates/` en el mismo directorio que tu script Python.
+   * Crea `templates/index.html` (ver ejemplos en las secciones siguientes).
+
+---
+
+## 3. 📝 Sintaxis de Plantillas Jinja2
+
+### 3.1. Expresiones (`{{ ... }}`)
+
+Para imprimir el valor de una variable o el resultado de una expresión.
+
+* **Variables**:
+  ```html
+  <h1>Hola, {{ user_name }}!</h1>
+  <p>El título de la página es: {{ page_title }}</p>
+  ```
+* **Acceso a atributos/índices**:
+  ```html
+  <p>Primer producto: {{ products[0].name }}</p>
+  ```
+* **Operaciones básicas**:
+  ```html
+  <p>Precio total estimado: {{ products[0].price * 1.21 }}</p>
+  ```
+
+### 3.2. Sentencias de Control (`{% ... %}`)
+
+Para la lógica de la plantilla.
+
+* **Comentarios (`{# ... #}`)**: No aparecen en la salida final.
+
+  ```html
+  {# Esto es un comentario de la plantilla #}
+  ```
+* **Condicionales (`if`, `elif`, `else`)**:
+
+  ```html
+  {% if is_logged_in %}
+      <p>Estás logueado como {{ user_name }}.</p>
+  {% elif user_name %}
+      <p>Hola, {{ user_name }}. Por favor, inicia sesión.</p>
+  {% else %}
+      <p>Por favor, regístrate o inicia sesión.</p>
+  {% endif %}
+  ```
+* **Bucles (`for`)**: Iterar sobre listas, tuplas, diccionarios.
+
+  ```html
+  <h2>Nuestros Productos:</h2>
+  <ul>
+  {% for product in products %}
+      <li>{{ loop.index }}. {{ product.name }} - ${{ "%.2f"|format(product.price) }}</li> {# loop.index es 1-based #}
+  {% else %} {# Opcional: si la lista está vacía #}
+      <li>No hay productos disponibles.</li>
+  {% endfor %}
+  </ul>
+  ```
+
+  * **Variables de Bucle (`loop`):**
+    * `loop.index`: Índice de la iteración actual (1-based).
+    * `loop.index0`: Índice de la iteración actual (0-based).
+    * `loop.first`: `True` si es la primera iteración.
+    * `loop.last`: `True` si es la última iteración.
+    * `loop.length`: Número total de ítems en la secuencia.
+    * `loop.revindex`: Número de ítems restantes (1-based).
+    * `loop.revindex0`: Número de ítems restantes (0-based).
+    * `loop.cycle(*args)`: Alterna entre valores (ej. `loop.cycle('even', 'odd')`).
+* **Set (Definir variables dentro de la plantilla)**:
+
+  ```html
+  {% set greeting = "Bienvenido!" %}
+  <p>{{ greeting }}</p>
+  ```
+
+---
+
+## 4. 🔗 Herencia de Plantillas
+
+Permite reutilizar la estructura de las plantillas.
+
+### `templates/base.html` (Plantilla Base)
+
+```html
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>{% block title %}Mi Sitio{% endblock %}</title> {# Define un bloque llamado 'title' #}
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <header>
+        <h1>{% block header_title %}Encabezado General{% endblock %}</h1>
+        <nav>
+            <ul>
+                <li><a href="/">Inicio</a></li>
+                <li><a href="/about">Acerca</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <main>
+        {% block content %} {# Define un bloque llamado 'content' #}
+            {# Contenido por defecto si no se sobrescribe #}
+            <p>Este es el contenido base.</p>
+        {% endblock %}
+    </main>
+
+    <footer>
+        <p>© 2023 Mi Sitio. {% block footer_extra %}{% endblock %}</p>
+    </footer>
+</body>
+</html>
+```
+
+### `templates/page.html` (Plantilla Hija)
+
+```html
+{% extends "base.html" %} {# Extiende la plantilla base #}
+
+{% block title %}Acerca de Nosotros - {{ super() }}{% endblock %} {# Sobrescribe el bloque 'title' y añade al contenido del padre #}
+
+{% block header_title %}Acerca de{% endblock %} {# Sobrescribe completamente 'header_title' #}
+
+{% block content %} {# Sobrescribe el bloque 'content' #}
+    <h2>Acerca de Nuestra Empresa</h2>
+    <p>Somos una empresa dedicada a...</p>
+{% endblock %}
+
+{% block footer_extra %}
+    <p>Información adicional de contacto.</p>
+{% endblock %}
+```
+
+---
+
+## 5. ⚙️ Filtros
+
+Transforman el valor de una expresión. Se usan con el operador pipe `|`.
+
+* **Formato general**: `{{ valor | filtro(argumentos) }}`
+* **Comunes**:
+
+  * `default(value)`: Provee un valor por defecto si la variable es `undefined` o `null`.
+    ```html
+    <p>{{ user_name | default('Invitado') }}</p>
+    ```
+  * `length` / `count`: Devuelve la longitud de una cadena o el número de ítems en una colección.
+    ```html
+    <p>Número de productos: {{ products | length }}</p>
+    ```
+  * `upper` / `lower`: Convierte a mayúsculas/minúsculas.
+    ```html
+    <p>{{ "hola mundo" | upper }}</p> {# HOLA MUNDO #}
+    ```
+  * `capitalize`: Pone en mayúscula la primera letra de la cadena.
+  * `title`: Pone en mayúscula la primera letra de cada palabra.
+  * `trim`: Elimina espacios en blanco al inicio y al final.
+  * `striptags`: Elimina etiquetas HTML.
+  * `safe`: Marca una cadena como "segura", evitando el auto-escape de HTML. **Usar con precaución.**
+    ```html
+    <p>{{ html_content | safe }}</p>
+    ```
+  * `join(separator)`: Une elementos de una lista con un separador.
+    ```html
+    <p>Tags: {{ tags | join(', ') }}</p> {# Si tags = ['a', 'b'], salida: "a, b" #}
+    ```
+  * `sort(reverse=False, attribute=None)`: Ordena una lista.
+    ```html
+    {% for p in products | sort(attribute='price', reverse=true) %}
+    ```
+  * `batch(size, fill_value=None)`: Agrupa ítems en sublistas.
+  * `map(attribute)`: Extrae un atributo de cada objeto en una lista.
+  * `selectattr(attribute, test)`: Filtra elementos de una lista.
+  * `reverse`: Invierte la secuencia.
+  * `truncate(length, killwords=False, end='...')`: Trunca una cadena.
+  * `urlencode`: Codifica una URL.
+  * `tojson(indent=None)`: Convierte un objeto Python a JSON.
+  * `format(spec)`: Para formatear números/cadenas (similar al método `.format()` de Python).
+    ```html
+    <p>{{ "El precio es %.2f"|format(price) }}</p>
+    ```
+
+---
+
+## 6. ✔️ Tests
+
+Comprueban si una variable cumple una cierta condición. Se usan con el operador `is`.
+
+* **Formato general**: `{% if valor is test %}`
+* **Comunes**:
+
+  * `none`: Es `None`.
+  * `defined`: Está definido (no `None`).
+  * `undefined`: No está definido.
+  * `even` / `odd`: Es par / impar.
+  * `divisibleby(num)`: Es divisible por `num`.
+  * `string` / `number` / `boolean` / `list` / `dict` / `iterable`: Comprueba el tipo.
+  * `lower` / `upper`: Es todo minúsculas / mayúsculas.
+  * `empty`: Está vacío (cadena, lista, diccionario, etc.).
+  * `in(iterable)`: El valor está en el iterable.
+    ```html
+    {% if user.role is in(['admin', 'editor']) %}
+    ```
+
+---
+
+## 7. 🗂️ Inclusión de Plantillas (`include`, `import`, `macro`)
+
+* **`include`**: Incluye el contenido de otra plantilla.
+  ```html
+  {% include 'sidebar.html' %}
+  ```
+* **`import`**: Importa una plantilla para acceder a sus macros.
+  ```html
+  {% import 'forms.html' as form_macros %}
+  {{ form_macros.render_input('username', 'text', 'Nombre de Usuario') }}
+  ```
+* **`macro`**: Funciones reutilizables dentro de plantillas.
+  ```html
+  {# templates/forms.html #}
+  {% macro render_input(name, type, placeholder) %}
+      <input type="{{ type }}" name="{{ name }}" placeholder="{{ placeholder }}">
+  {% endmacro %}
+  ```
+
+---
+
+## 8. ⚠️ Control de Espacios en Blanco
+
+Jinja2 puede dejar mucho espacio en blanco.
+
+* **`{%- ... -%}`**: Elimina el espacio en blanco antes y/o después de un bloque.
+* **`{{- ... -}}`**: Elimina el espacio en blanco antes y/o después de una expresión.
+  ```html
+  {%- if condition -%}
+      Contenido sin espacios extra.
+  {%- endif -%}
+  ```
+* **`trim_blocks` y `lstrip_blocks` (en `Environment`)**: Configuraciones globales para gestionar el espacio en blanco.
+
+---
+
+## 9. 🔒 Seguridad
+
+* **Auto-escaping**: Jinja2 escapa automáticamente el HTML en las expresiones (`{{ ... }}`) para prevenir ataques XSS.
+
+  * Si necesitas renderizar HTML sin escapar (ej. contenido rico guardado de forma segura), usa el filtro `|safe`. **¡Solo haz esto con contenido de confianza!**
+
+  ```html
+  <p>{{ user_input | safe }}</p>
+  ```
+* **Sandboxing**: Prohíbe el acceso a atributos/métodos peligrosos en objetos Python pasados a las plantillas.
+
+---
+
+## 10. 💡 Buenas Prácticas y Consejos
+
+* **Separación de Preocupaciones**: Mantén la lógica de la aplicación en Python y la lógica de presentación en Jinja2. Evita cálculos complejos o manipulaciones de datos en las plantillas.
+* **Herencia de Plantillas**: Úsala para crear una estructura coherente y reutilizable en todo tu sitio.
+* **Macros para la Reutilización de UI**: Cuando tengas fragmentos de UI que se repiten (ej. campos de formulario, botones), conviértelos en macros.
+* **Nombres Descriptivos**: Nombra tus bloques, macros y variables de forma clara.
+* **Contexto Limpio**: Pasa solo los datos que la plantilla necesita. Evita pasar objetos Python complejos con muchos métodos internos.
+* **Manejo de Valores Faltantes**: Utiliza el filtro `default` o el test `is defined` para manejar variables que podrían no estar presentes en el contexto.
+* **Variables de Entorno (`Environment`)**: Configura el entorno de Jinja2 (`Environment`) solo una vez y reutilízalo para la eficiencia.
+* **Depuración**: Jinja2 proporciona modos de depuración para ayudarte a encontrar errores en tus plantillas.
+* **`url_for` (en Flask/Django)**: En frameworks web, usa las funciones proporcionadas por el framework (como `url_for` en Flask) para generar URLs, en lugar de escribirlas directamente.
+
+---

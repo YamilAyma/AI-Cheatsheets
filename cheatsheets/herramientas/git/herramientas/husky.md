@@ -1,0 +1,204 @@
+
+---
+
+# 🐺 Husky (Git Hooks) Cheatsheet Completo 🐺
+
+**Husky** es una utilidad que simplifica el uso de **Git Hooks**. Los Git Hooks son scripts personalizados que Git ejecuta automáticamente en puntos específicos de su ciclo de vida (antes de un commit, después de un push, etc.). Husky hace que sea fácil gestionar y compartir estos hooks en un proyecto de equipo, almacenándolos en `package.json` (o `.husky/` en versiones recientes) en lugar de en el directorio `.git/`.
+
+---
+
+## 1. 🌟 Conceptos Clave
+
+* **Git Hooks**: Son scripts de shell que Git ejecuta automáticamente antes o después de eventos específicos como `commit`, `push`, `merge`, etc.
+* **Pre-commit Hook**: Se ejecuta **antes** de que se cree un commit. Ideal para linting, formateo, o ejecutar pruebas unitarias rápidas. Si el script falla, el commit se aborta.
+* **Pre-push Hook**: Se ejecuta **antes** de que se suban los cambios a un repositorio remoto. Ideal para ejecutar todas las pruebas, asegurar que el build es exitoso, o verificar la convención de nombres de ramas. Si el script falla, el push se aborta.
+* **Husky**: Una herramienta que gestiona los Git Hooks. Instala los hooks en el directorio `.git/hooks/` de forma que apuntan a scripts controlados por `npm` (o `yarn`, `pnpm`), lo que permite que se versionen y compartan fácilmente entre desarrolladores.
+* **Lint-staged**: Una herramienta que a menudo se usa junto con Husky. Permite ejecutar comandos (como linters o formatters) **solo en los archivos stageados** (los que vas a commitear). Esto es mucho más rápido que linting/formateando todo el proyecto en cada commit.
+
+---
+
+## 2. 🛠️ Configuración Inicial (Husky v8+)
+
+Las versiones recientes de Husky (v8 y superior) tienen un proceso de configuración más directo.
+
+1. **Instalar Husky:**
+
+   ```bash
+   npm install --save-dev husky
+   # o
+   yarn add --dev husky
+   # o
+   pnpm add -D husky
+   ```
+2. **Habilitar Git Hooks (Post-instalación):**
+
+   * Este comando crea el directorio `.husky/` y configura Git para que lo use.
+
+   ```bash
+   npx husky install
+   ```
+
+   * Para asegurar que Husky se instale automáticamente para otros colaboradores después de `npm install`:
+
+   ```bash
+   npm pkg set scripts.prepare="husky install"
+   # Esto añade una entrada "prepare": "husky install" a tu package.json
+   # El script 'prepare' se ejecuta automáticamente después de 'npm install' y 'postinstall'.
+   ```
+3. **Añadir un Hook (Ej. `pre-commit`):**
+
+   * Este comando crea un archivo de hook en `.husky/pre-commit` y lo hace ejecutable.
+
+   ```bash
+   npx husky add .husky/pre-commit "npm test"
+   ```
+
+   * Ahora, antes de cada commit, se ejecutará `npm test`. Si `npm test` falla (salida con código de error distinto de 0), el commit se abortará.
+
+---
+
+## 3. 📝 Configuración de Hooks Comunes
+
+Los scripts de hook se escriben como comandos de shell dentro de los archivos en el directorio `.husky/`.
+
+### 3.1. `pre-commit` Hook
+
+* **Propósito**: Linting, formateo, pruebas unitarias rápidas.
+* **Archivo**: `.husky/pre-commit`
+
+  ```bash
+  #!/usr/bin/env sh
+  . "$(dirname -- "$0")/_/husky.sh"
+
+  # Ejecutar formateador (ej. Prettier) en archivos stageados
+  npx prettier --write .
+  git add . # Vuelve a añadir los archivos formateados al staging area
+
+  # Ejecutar linter (ej. ESLint)
+  npm run lint # O `npm run lint -- --fix` si el linter puede auto-corregir
+  if [ $? -ne 0 ]; then
+    echo "ESLint encontró errores. Por favor, corrígelos antes de commitear."
+    exit 1 # Aborta el commit si el linter falla
+  fi
+
+  # Ejecutar pruebas unitarias rápidas
+  npm test -- --findRelatedTests=true # Opcional: solo para archivos relacionados con los cambios
+  # Si las pruebas unitarias son lentas, considera moverlas al pre-push o CI.
+  ```
+
+### 3.2. `pre-push` Hook
+
+* **Propósito**: Pruebas completas, verificación de builds.
+* **Archivo**: `.husky/pre-push`
+
+  ```bash
+  #!/usr/bin/env sh
+  . "$(dirname -- "$0")/_/husky.sh"
+
+  echo "Ejecutando pruebas completas antes de hacer push..."
+  npm test # Ejecuta todas las pruebas
+
+  if [ $? -ne 0 ]; then
+    echo "Las pruebas fallaron. Abortando push."
+    exit 1
+  fi
+
+  echo "Verificando build antes de hacer push..."
+  npm run build # Asume que tienes un script 'build' en package.json
+
+  if [ $? -ne 0 ]; then
+    echo "El build falló. Abortando push."
+    exit 1
+  fi
+  ```
+
+### 3.3. `commit-msg` Hook
+
+* **Propósito**: Validar el formato del mensaje del commit.
+* **Archivo**: `.husky/commit-msg`
+
+  ```bash
+  #!/usr/bin/env sh
+  . "$(dirname -- "$0")/_/husky.sh"
+
+  # Ejemplo: Requiere que el mensaje de commit empiece con "feat:", "fix:", "docs:", etc.
+  # O usar una librería como commitlint (ver abajo)
+  COMMIT_MSG_FILE=$1
+  if ! grep -qE '^(feat|fix|docs|style|refactor|test|chore|perf|ci|build):' "$COMMIT_MSG_FILE"; then
+    echo "Error: El mensaje de commit debe seguir la convención de Conventional Commits (ej. feat: Add new feature)"
+    exit 1
+  fi
+  ```
+
+---
+
+## 4. 🤝 Integración con Lint-staged
+
+Lint-staged es una herramienta popular para ejecutar linters/formatters **solo en archivos stageados**, lo que la hace mucho más rápida y eficiente para el hook `pre-commit`.
+
+1. **Instalar Lint-staged:**
+   ```bash
+   npm install --save-dev lint-staged
+   ```
+2. **Configurar Lint-staged en `package.json`:**
+   ```json
+   // package.json
+   {
+     "name": "my-app",
+     "version": "1.0.0",
+     "scripts": {
+       "lint": "eslint . --ext .js,.jsx,.ts,.tsx",
+       "format": "prettier --write ."
+     },
+     "lint-staged": { // Configuración de lint-staged
+       "*.{js,jsx,ts,tsx}": [ // Patrones de archivos
+         "npm run lint -- --fix", // Ejecuta linter y autocorrige
+         "npm run format"       // Ejecuta formateador
+       ],
+       "*.{css,scss,md}": [
+         "npm run format"
+       ]
+     }
+   }
+   ```
+3. **Configurar Husky `pre-commit` para usar Lint-staged:**
+   ```bash
+   # .husky/pre-commit
+   #!/usr/bin/env sh
+   . "$(dirname -- "$0")/_/husky.sh"
+
+   npx lint-staged # Ejecuta lint-staged
+   ```
+
+   * Ahora, `lint-staged` se encargará de ejecutar los linters/formatters en los archivos relevantes y `husky` solo necesita llamarlo.
+
+---
+
+## 5. ⚙️ Comandos de Husky (CLI)
+
+* **`npx husky install`**: Instala los hooks en el directorio `.git/`.
+* **`npx husky add <file>`**: Añade un nuevo hook.
+* **`npx husky set <file> <command>`**: Establece el contenido de un hook.
+  * `npx husky set .husky/pre-commit "npm test"`
+* **`npx husky remove <file>`**: Elimina un hook.
+* **`npx husky uninstall`**: Desinstala Husky y limpia los hooks de Git.
+
+---
+
+## 6. 💡 Buenas Prácticas y Consejos
+
+* **Mantén los Hooks Ligeros**: Los hooks deben ser rápidos. Un hook `pre-commit` que tarda más de unos segundos puede frustrar a los desarrolladores y ser evitado. Mueve las pruebas lentas al `pre-push` o a tu pipeline de CI/CD.
+* **Utiliza `lint-staged` para Pre-commit**: Es la forma más eficiente de aplicar linters y formatters solo a los cambios relevantes.
+* **Feedback Claro**: Asegúrate de que tus scripts de hook proporcionen mensajes claros al desarrollador si fallan, indicando qué salió mal y cómo corregirlo.
+* **`exit 1` en caso de Fallo**: Si un hook falla (ej. linter encuentra errores, pruebas no pasan), el script debe salir con un código de estado distinto de cero (`exit 1`) para que Git aborte la operación.
+* **Versión de Node/NPM/Yarn**: Asegúrate de que los scripts en tus hooks utilicen la versión correcta de Node.js/NPM/Yarn. A menudo es mejor confiar en que los desarrolladores tienen la versión adecuada en su PATH, o usar herramientas de gestión de versiones como `nvm`/`fnm`/`volta`.
+* **Hacer Push al Repositorio**: Los archivos en `.husky/` deben ser parte de tu control de versiones y ser pusheados al repositorio para que todos los colaboradores tengan los mismos hooks.
+* **`prepare` Script**: Asegúrate de tener `"prepare": "husky install"` en tu `package.json` para que Husky se instale automáticamente cuando otros clonen y ejecuten `npm install`.
+* **Considera `commitlint`**: Para validaciones de mensajes de commit más sofisticadas (ej. Conventional Commits), usa `commitlint` junto con el hook `commit-msg`.
+  * `npm install --save-dev @commitlint/cli @commitlint/config-conventional`
+  * Crear `commitlint.config.js`: `module.exports = { extends: ['@commitlint/config-conventional'] };`
+  * Actualizar `.husky/commit-msg`: `npx --no-install commitlint --edit ${1}`
+
+---
+
+Este cheatsheet te proporciona una referencia completa de Husky, cubriendo sus conceptos esenciales, cómo configurarlo, los tipos de hooks más comunes, la integración con `lint-staged` y las mejores prácticas para automatizar y hacer cumplir los estándares de código en tus proyectos de Git.

@@ -1,0 +1,332 @@
+¡Excelente elección! Spring Security es un pilar fundamental para la seguridad en aplicaciones Spring y Spring Boot. Aquí tienes un "cheatsheet" completo y bien estructurado de Spring Security, optimizado para ser claro y conciso para una IA conversacional.
+
+---
+
+# 🔒 Spring Security Cheatsheet Completo 🔒
+
+Spring Security es un framework potente y altamente personalizable para autenticación y autorización. Se integra perfectamente con aplicaciones Spring y Spring Boot, proporcionando una seguridad robusta para aplicaciones web, APIs REST y microservicios.
+
+---
+
+## 1. 🌟 Conceptos Clave
+
+* **Autenticación**: Proceso de verificar la identidad de un usuario (¿Quién eres?).
+* **Autorización**: Proceso de determinar si un usuario autenticado tiene permiso para realizar una acción o acceder a un recurso (¿Qué puedes hacer?).
+* **`SecurityFilterChain`**: La secuencia de filtros que Spring Security aplica a cada petición HTTP para manejar la seguridad.
+* **`Authentication` Objeto**: Representa al principal (usuario) actualmente autenticado. Contiene el nombre de usuario, credenciales, y `GrantedAuthorities` (roles/permisos).
+* **`GrantedAuthority`**: Una interfaz que representa un permiso otorgado a un principal (usualmente un rol como "ADMIN", "USER").
+* **`UserDetailsService`**: Interfaz para cargar los detalles del usuario (nombre de usuario, contraseña, roles) desde una fuente de datos (ej. base de datos, memoria).
+* **`UserDetails`**: Interfaz que representa los detalles de un usuario.
+* **`PasswordEncoder`**: Interfaz para codificar y verificar contraseñas. **¡Siempre usa uno para almacenar contraseñas de forma segura!** (ej. BCryptPasswordEncoder).
+* **`SecurityContext`**: Almacena el objeto `Authentication` del principal actualmente autenticado.
+* **`SecurityContextHolder`**: Un helper que proporciona acceso al `SecurityContext`.
+
+---
+
+## 2. 🛠️ Configuración Inicial
+
+1. **Dependencia (Maven `pom.xml`):**
+
+   ```xml
+   <dependency>
+       <groupId>org.springframework.boot</groupId>
+       <artifactId>spring-boot-starter-security</artifactId>
+   </dependency>
+   <!-- Para JPA/Base de datos, si no la tienes ya -->
+   <dependency>
+       <groupId>org.springframework.boot</groupId>
+       <artifactId>spring-boot-starter-data-jpa</artifactId>
+   </dependency>
+   ```
+2. **Clase de Configuración de Seguridad:**
+
+   * Crea una clase con `@Configuration` y `@EnableWebSecurity`.
+   * A partir de Spring Security 5.7+, la configuración se hace predominantemente a través de un bean de `SecurityFilterChain`.
+
+   ```java
+   import org.springframework.context.annotation.Bean;
+   import org.springframework.context.annotation.Configuration;
+   import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity; // Para seguridad a nivel de método
+   import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+   import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+   import org.springframework.security.config.annotation.web.configuration.WebSecurityCustomizer; // Para ignorar peticiones
+   import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+   import org.springframework.security.crypto.password.PasswordEncoder;
+   import org.springframework.security.web.SecurityFilterChain;
+   import org.springframework.security.web.util.matcher.AntPathRequestMatcher; // Para ignorar recursos estáticos
+
+   @Configuration
+   @EnableWebSecurity // Habilita la seguridad web
+   @EnableMethodSecurity // Habilita seguridad a nivel de método (ej. @PreAuthorize)
+   public class SecurityConfig {
+
+       // 1. PasswordEncoder (¡Obligatorio para contraseñas seguras!)
+       @Bean
+       public PasswordEncoder passwordEncoder() {
+           return new BCryptPasswordEncoder();
+       }
+
+       // 2. Configuración de la cadena de filtros de seguridad (HTTP Security)
+       @Bean
+       public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+           http
+               // Deshabilita CSRF para APIs REST (considera CSRF para aplicaciones web con formularios)
+               .csrf(csrf -> csrf.disable())
+               // O: .csrf(Customizer.withDefaults()) // CSRF habilitado por defecto y configurado
+
+               // Configuración de autorización de peticiones HTTP
+               .authorizeHttpRequests(authorize -> authorize
+                   // Permitir acceso a recursos públicos (login, registro)
+                   .requestMatchers("/public/**", "/auth/**", "/h2-console/**").permitAll()
+                   // Requerir rol ADMIN para /admin/**
+                   .requestMatchers("/admin/**").hasRole("ADMIN")
+                   // Requerir rol USER para /user/**
+                   .requestMatchers("/user/**").hasAnyRole("USER", "ADMIN")
+                   // Cualquier otra petición debe estar autenticada
+                   .anyRequest().authenticated()
+               )
+               // Configuración de formulario de login
+               .formLogin(form -> form
+                   .loginPage("/login")        // URL de la página de login personalizada
+                   .permitAll()                // Permitir acceso a la página de login
+                   .defaultSuccessUrl("/dashboard", true) // Redirigir después de login exitoso
+                   .failureUrl("/login?error") // Redirigir si falla el login
+               )
+               // Configuración de logout
+               .logout(logout -> logout
+                   .logoutRequestMatcher(new AntPathRequestMatcher("/logout")) // URL para el logout
+                   .logoutSuccessUrl("/login?logout") // Redirigir después de logout exitoso
+                   .invalidateHttpSession(true) // Invalidar sesión HTTP
+                   .deleteCookies("JSESSIONID") // Eliminar cookies
+                   .permitAll()
+               );
+
+           // Importante para H2 Console si CSRF está deshabilitado:
+           http.headers(headers -> headers.frameOptions(frameOptions -> frameOptions.sameOrigin()));
+
+           return http.build();
+       }
+
+       // 3. (Opcional) Ignorar peticiones para recursos estáticos o Swagger
+       // Si no se hace aquí, el filterChain principal también las procesará
+       @Bean
+       public WebSecurityCustomizer webSecurityCustomizer() {
+           return (web) -> web.ignoring()
+               .requestMatchers(
+                   "/images/**",
+                   "/js/**",
+                   "/css/**",
+                   "/webjars/**",
+                   "/swagger-ui/**",
+                   "/v3/api-docs/**"
+               );
+       }
+
+       // --- Configuración de Autenticación (sección 3) ---
+   }
+   ```
+
+---
+
+## 3. 🔑 Autenticación
+
+### 3.1. Autenticación en Memoria (Solo para Desarrollo/Pruebas)
+
+* Define un bean `InMemoryUserDetailsManager` con usuarios y roles.
+
+  ```java
+  import org.springframework.security.core.userdetails.User;
+  import org.springframework.security.core.userdetails.UserDetails;
+  import org.springframework.security.provisioning.InMemoryUserDetailsManager;
+
+  @Bean
+  public InMemoryUserDetailsManager userDetailsService(PasswordEncoder passwordEncoder) {
+      UserDetails user = User.withUsername("user")
+          .password(passwordEncoder.encode("password"))
+          .roles("USER")
+          .build();
+      UserDetails admin = User.withUsername("admin")
+          .password(passwordEncoder.encode("adminpass"))
+          .roles("ADMIN", "USER")
+          .build();
+      return new InMemoryUserDetailsManager(user, admin);
+  }
+  ```
+
+### 3.2. Autenticación Basada en Base de Datos (Personalizada)
+
+* Implementa la interfaz `UserDetailsService`.
+* Inyecta tu `UserRepository` para cargar usuarios desde la base de datos.
+* Tu clase de usuario (`UserEntity`) debe implementar `UserDetails` o convertir a `org.springframework.security.core.userdetails.User`.
+
+  ```java
+  import org.springframework.security.core.userdetails.UserDetails;
+  import org.springframework.security.core.userdetails.UserDetailsService;
+  import org.springframework.security.core.userdetails.UsernameNotFoundException;
+  import org.springframework.stereotype.Service;
+
+  @Service
+  public class CustomUserDetailsService implements UserDetailsService {
+      private final UserRepository userRepository;
+
+      public CustomUserDetailsService(UserRepository userRepository) {
+          this.userRepository = userRepository;
+      }
+
+      @Override
+      public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
+          // Asume que UserEntity tiene propiedades como username, password, y roles
+          com.example.myapp.model.UserEntity userEntity = userRepository.findByUsername(username)
+              .orElseThrow(() -> new UsernameNotFoundException("Usuario no encontrado: " + username));
+
+          // Convierte tu UserEntity a UserDetails de Spring Security
+          return User.builder()
+              .username(userEntity.getUsername())
+              .password(userEntity.getPassword()) // La contraseña ya debe estar codificada en DB
+              .roles(userEntity.getRoles().toArray(new String[0])) // Asume getRoles() devuelve List<String>
+              .build();
+      }
+  }
+  ```
+
+---
+
+## 4. 👮 Autorización
+
+### 4.1. Autorización a Nivel de URL (Configurada en `SecurityFilterChain`)
+
+* `authorizeHttpRequests()`: Configura las reglas de autorización para las peticiones HTTP.
+* `requestMatchers(patterns).permitAll()`: Permite acceso a todos.
+* `requestMatchers(patterns).authenticated()`: Requiere autenticación.
+* `requestMatchers(patterns).hasRole("ROLE_NAME")`: Requiere un rol específico. (Spring añade automáticamente el prefijo "ROLE_" si no lo pones).
+* `requestMatchers(patterns).hasAuthority("PERMISSION")`: Requiere una autoridad/permiso específico.
+* `requestMatchers(patterns).hasAnyRole("ROLE1", "ROLE2")`: Requiere cualquiera de los roles.
+* `anyRequest()`: Cualquier otra petición no especificada anteriormente.
+
+### 4.2. Autorización a Nivel de Método
+
+* Habilita con `@EnableMethodSecurity` en tu clase `SecurityConfig`.
+* **`@PreAuthorize("hasRole('ADMIN')")`**: Se evalúa ANTES de ejecutar el método.
+
+  * `hasRole('ROLE_NAME')`
+  * `hasAnyRole('ROLE1', 'ROLE2')`
+  * `hasAuthority('PERMISSION')`
+  * `hasAnyAuthority('PERM1', 'PERM2')`
+  * `isAuthenticated()`
+  * `isAnonymous()`
+  * `permitAll()`
+  * `denyAll()`
+  * Puedes usar SpEL (Spring Expression Language) para lógica compleja:
+    * `@PreAuthorize("hasRole('ADMIN') or #username == authentication.name")` (Acceso si es ADMIN o si el parámetro `username` coincide con el nombre del usuario autenticado).
+    * `@PreAuthorize("@securityService.canAccess(#id)")` (Llamada a un bean de servicio para lógica de autorización).
+* **`@PostAuthorize("returnObject.owner == authentication.name")`**: Se evalúa DESPUÉS de ejecutar el método. Permite verificar el objeto de retorno.
+* **`@Secured({"ROLE_ADMIN", "ROLE_USER"})`**: Anotación simple para roles (requiere `@EnableGlobalMethodSecurity(securedEnabled = true)` en v5.x o `@EnableMethodSecurity(jsr250Enabled = true)` para `@RolesAllowed`).
+* **`@RolesAllowed({"ADMIN", "USER"})`**: Estándar JSR-250 para roles (similar a `@Secured`, requiere `@EnableMethodSecurity(jsr250Enabled = true)`).
+
+  ```java
+  @Service
+  @PreAuthorize("isAuthenticated()") // Todos los métodos de este servicio requieren autenticación
+  public class ProductService {
+
+      @PreAuthorize("hasRole('ADMIN')") // Solo admins pueden añadir productos
+      public Product addProduct(Product product) { /* ... */ return product; }
+
+      @PreAuthorize("hasAnyRole('ADMIN', 'USER')") // Admins o usuarios pueden ver productos
+      public List<Product> getAllProducts() { /* ... */ return List.of(); }
+
+      @PostAuthorize("returnObject.ownerId == authentication.principal.id") // Solo el dueño puede ver su propio producto
+      public Product getProductById(Long id) { /* ... */ return new Product(); }
+  }
+  ```
+
+---
+
+## 5. 📚 Acceso a los Detalles del Usuario Autenticado
+
+* **`SecurityContextHolder`**:
+  ```java
+  import org.springframework.security.core.context.SecurityContextHolder;
+  import org.springframework.security.core.Authentication;
+
+  // En cualquier parte de tu código
+  Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+  String currentPrincipalName = authentication.getName(); // Username
+  Object details = authentication.getPrincipal(); // Objeto UserDetails
+  Collection<? extends GrantedAuthority> authorities = authentication.getAuthorities();
+  ```
+* **`@AuthenticationPrincipal`**: Inyecta directamente el objeto `UserDetails` (o tu tipo personalizado de principal si lo usas) en un controlador o método.
+  ```java
+  import org.springframework.security.core.annotation.AuthenticationPrincipal;
+  import org.springframework.security.core.userdetails.UserDetails;
+  import org.springframework.web.bind.annotation.GetMapping;
+  import org.springframework.web.bind.annotation.RestController;
+
+  @RestController
+  public class ProfileController {
+      @GetMapping("/profile")
+      public String getProfile(@AuthenticationPrincipal UserDetails currentUser) {
+          return "Bienvenido, " + currentUser.getUsername() + ". Roles: " + currentUser.getAuthorities();
+      }
+  }
+  ```
+
+---
+
+## 6. 🌐 Características Comunes de Seguridad Web
+
+* **CSRF Protection**: Habilitado por defecto para peticiones POST/PUT/DELETE. Para APIs REST sin sesiones, a menudo se deshabilita (`.csrf(csrf -> csrf.disable())`), pero con precaución. Para aplicaciones web con formularios, es crucial.
+* **CORS Configuration**: Habilita la comunicación de origen cruzado.
+  ```java
+  import org.springframework.context.annotation.Bean;
+  import org.springframework.web.cors.CorsConfiguration;
+  import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+  import org.springframework.web.filter.CorsFilter;
+
+  @Bean
+  public CorsFilter corsFilter() {
+      UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+      CorsConfiguration config = new CorsConfiguration();
+      config.setAllowCredentials(true); // Permitir credenciales (cookies, auth headers)
+      config.addAllowedOriginPattern("*"); // Permite todos los orígenes (¡ajusta para producción!)
+      config.addAllowedHeader("*"); // Permite todas las cabeceras
+      config.addAllowedMethod("*"); // Permite todos los métodos HTTP (GET, POST, etc.)
+      source.registerCorsConfiguration("/**", config);
+      return new CorsFilter(source);
+  }
+  ```
+* **Session Management**: Controla cómo se gestionan las sesiones.
+  ```java
+  // En filterChain
+  .sessionManagement(session -> session
+      .sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED) // STATELESS para APIs sin sesión
+      .maximumSessions(1) // Máximo de sesiones por usuario
+      .maxSessionsPreventsLogin(true) // Si se excede, previene nuevo login
+      .expiredUrl("/login?expired") // URL de redirección si la sesión expira
+  )
+  ```
+
+---
+
+## 7. 🚀 Integración con JWT / OAuth2 (Mención)
+
+* **JWT (JSON Web Tokens)**: Spring Security no tiene soporte "nativo" para JWTs de forma out-of-the-box, pero se puede integrar fácilmente creando filtros personalizados que validen el token y configuren el `SecurityContext`. Requiere librerías externas (ej. JJWT). Generalmente se usa con `SessionCreationPolicy.STATELESS`.
+* **OAuth2**: Spring Security tiene un soporte robusto para OAuth2 (tanto cliente como servidor de recursos). Esto es un tema más avanzado que requeriría su propio cheatsheet.
+
+---
+
+## 8. 💡 Buenas Prácticas y Consejos
+
+* **Nunca almacenes contraseñas en texto plano**: ¡Siempre usa `PasswordEncoder`!
+* **Inyección por Constructor**: Prefiere la inyección de dependencias por constructor en lugar de `@Autowired` en campos para facilitar las pruebas unitarias y la inmutabilidad.
+* **Centraliza la configuración de seguridad**: Mantén toda la configuración de `HttpSecurity` en una única clase `@Configuration`.
+* **Roles vs. Permisos (Authorities)**:
+  * **Roles** (`ROLE_ADMIN`, `ROLE_USER`): Para agrupar conjuntos de permisos.
+  * **Permisos/Authorities** (`READ_PRODUCT`, `WRITE_PRODUCT`): Para control de acceso más granular.
+  * Usa `hasRole()` para roles y `hasAuthority()` para permisos.
+* **Prueba tu seguridad**: Asegúrate de que tus reglas de seguridad funcionen como esperas con tests de integración (usando `@SpringBootTest` y `MockMvc`).
+* **CSRF para Aplicaciones Web**: No deshabilites CSRF si estás construyendo una aplicación web tradicional con formularios, ya que te expone a ataques.
+* **Auditoría de Seguridad**: Considera usar Spring Data Envers o logs detallados para auditar quién hace qué.
+
+---
+
+Este cheatsheet te proporciona una referencia completa y concisa de Spring Security, cubriendo sus aspectos esenciales para la autenticación y autorización en tus aplicaciones Spring Boot.

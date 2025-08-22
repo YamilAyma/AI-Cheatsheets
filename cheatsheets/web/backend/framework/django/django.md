@@ -1,0 +1,750 @@
+
+---
+
+# 🌐 Django Cheatsheet Completo 🌐
+
+Django es un framework web de alto nivel en Python que fomenta el desarrollo rápido y un diseño limpio y pragmático. Sigue el patrón de arquitectura **MVT (Model-View-Template)**, aunque algunos lo interpretan como **MTV (Model-Template-View)**.
+
+---
+
+## 1. 🌟 Conceptos Clave
+
+* **MVT (Model-View-Template)**:
+  * **Model**: La capa de datos. Define la estructura de tus datos y cómo interactúan con la base de datos (Django ORM).
+  * **View**: La capa de lógica de negocio. Recibe una solicitud HTTP, interactúa con el Modelo, y selecciona el Template a renderizar (función o clase Python).
+  * **Template**: La capa de presentación. Define cómo se muestra la interfaz de usuario (HTML con lógica de plantilla de Django).
+* **ORM (Object-Relational Mapper)**: Permite interactuar con tu base de datos utilizando objetos Python, sin escribir SQL directamente.
+* **Aplicaciones (Apps)**: Django organiza los proyectos en "aplicaciones" reutilizables. Cada app tiene un propósito específico (ej. `users`, `products`, `blog`).
+* **URL Dispatcher**: Mapea las URLs a las Views.
+* **Admin Site**: Un panel de administración autogenerado para gestionar tus datos del modelo.
+* **Baterías Incluidas**: Viene con muchas funcionalidades listas para usar, como autenticación, sesiones, internacionalización, etc.
+
+---
+
+## 2. 🛠️ Configuración Inicial (Django CLI)
+
+1. **Crear Entorno Virtual (Recomendado):**
+
+   ```bash
+   python -m venv venv
+   # Windows: venv\Scripts\activate
+   # macOS/Linux: source venv/bin/activate
+   ```
+2. **Instalar Django:**
+
+   ```bash
+   pip install Django
+   ```
+3. **Crear un Nuevo Proyecto Django:**
+
+   ```bash
+   django-admin startproject myproject . # El '.' crea el proyecto en el directorio actual
+   ```
+
+   * Esto crea:
+     * `myproject/` (el paquete raíz de Python para tu proyecto)
+       * `__init__.py`
+       * `settings.py` (configuración del proyecto)
+       * `urls.py` (URL root del proyecto)
+       * `asgi.py` (para servidores asíncronos)
+       * `wsgi.py` (para servidores síncronos)
+     * `manage.py` (utilidad de línea de comandos para Django)
+4. **Crear una Nueva Aplicación (dentro del proyecto):**
+
+   ```bash
+   python manage.py startapp myapp
+   ```
+
+   * Esto crea:
+     * `myapp/`
+       * `migrations/`
+       * `__init__.py`
+       * `admin.py` (registro de modelos para el admin)
+       * `apps.py` (configuración de la app)
+       * `models.py` (definición de modelos)
+       * `tests.py` (para pruebas)
+       * `views.py` (definición de vistas)
+5. **Registrar la Aplicación en `settings.py`:**
+   Añade el nombre de tu app (ej. `'myapp'`) a `INSTALLED_APPS`.
+
+   ```python
+   # myproject/settings.py
+   INSTALLED_APPS = [
+       'django.contrib.admin',
+       'django.contrib.auth',
+       'django.contrib.contenttypes',
+       'django.contrib.sessions',
+       'django.contrib.messages',
+       'django.contrib.staticfiles',
+       'myapp', # ¡Añade tu app aquí!
+       # ... otras apps
+   ]
+   ```
+6. **Realizar Migraciones Iniciales (Crear tablas de DB):**
+
+   ```bash
+   python manage.py migrate
+   ```
+7. **Crear un Superusuario (para el Admin Site):**
+
+   ```bash
+   python manage.py createsuperuser
+   ```
+8. **Iniciar el Servidor de Desarrollo:**
+
+   ```bash
+   python manage.py runserver
+   ```
+
+   * Visita `http://127.0.0.1:8000/` y `http://127.0.0.1:8000/admin/`.
+
+---
+
+## 3. 💾 Modelos (`models.py`)
+
+Definen la estructura de los datos y la interacción con la base de datos (ORM).
+
+```python
+# myapp/models.py
+from django.db import models
+from django.contrib.auth.models import User # Si quieres relacionar con el usuario de Django
+
+class Product(models.Model):
+    # Campos de Modelo
+    name = models.CharField(max_length=200, verbose_name="Nombre del Producto") # String con longitud máxima
+    description = models.TextField(blank=True, null=True) # Texto largo, puede estar vacío/nulo
+    price = models.DecimalField(max_digits=10, decimal_places=2) # Número decimal
+    is_available = models.BooleanField(default=True) # Booleano con valor por defecto
+    created_at = models.DateTimeField(auto_now_add=True) # Fecha y hora de creación (auto)
+    updated_at = models.DateTimeField(auto_now=True) # Fecha y hora de actualización (auto)
+
+    # Relaciones
+    # ForeignKey: relación uno-a-muchos (un producto tiene una categoría, una categoría tiene muchos productos)
+    category = models.ForeignKey('Category', on_delete=models.CASCADE) # Requiere que Category esté definida
+    # ManyToManyField: relación muchos-a-muchos (un producto tiene muchos tags, un tag tiene muchos productos)
+    tags = models.ManyToManyField('Tag', blank=True)
+    # OneToOneField: relación uno-a-uno (un usuario puede tener un perfil)
+    owner = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
+
+    class Meta:
+        ordering = ['name'] # Ordenar por nombre por defecto
+        verbose_name_plural = "Productos" # Nombre para el Admin Site
+
+    def __str__(self): # Representación en string del objeto (importante para Admin)
+        return self.name
+
+    # Métodos personalizados (se pueden llamar en vistas o templates)
+    def get_price_with_tax(self):
+        return self.price * 1.21
+
+class Category(models.Model):
+    name = models.CharField(max_length=100, unique=True)
+
+    def __str__(self):
+        return self.name
+
+class Tag(models.Model):
+    name = models.CharField(max_length=50, unique=True)
+
+    def __str__(self):
+        return self.name
+```
+
+### 3.1. Operaciones Básicas del ORM (Shell Interactivo)
+
+```bash
+python manage.py shell```
+
+```python
+from myapp.models import Product, Category, Tag
+
+# Crear objetos
+category = Category.objects.create(name='Electronics')
+Product.objects.create(name='Laptop', price=1200.00, category=category)
+Product.objects.create(name='Smartphone', price=800.00, category=category, is_available=False)
+
+# Obtener objetos
+all_products = Product.objects.all() # Todos los productos
+one_product = Product.objects.get(id=1) # Por ID (lanza DoesNotExist si no encuentra)
+filtered_products = Product.objects.filter(is_available=True, price__gt=1000) # Filtrar
+# __gt, __lt, __gte, __lte, __exact, __iexact, __contains, __icontains, __startswith, __endswith, __isnull, __in
+
+# Actualizar objetos
+p = Product.objects.get(name='Laptop')
+p.price = 1150.00
+p.save() # Guardar cambios
+
+# Eliminar objetos
+p = Product.objects.get(name='Smartphone')
+p.delete()
+
+# Acceder a relaciones
+category = Category.objects.get(name='Electronics')
+products_in_category = category.product_set.all() # Acceso inverso (._set.all())
+
+# Añadir/Quitar M2M
+tag1 = Tag.objects.create(name='Tech')
+tag2 = Tag.objects.create(name='Mobile')
+p = Product.objects.get(name='Laptop')
+p.tags.add(tag1, tag2) # Añadir tags
+# p.tags.remove(tag1)
+# p.tags.clear() # Quitar todos
+# p.tags.all() # Ver tags
+```
+
+### 3.2. Migraciones de Base de Datos
+
+* Cuando modificas `models.py`, necesitas crear y aplicar migraciones.
+
+  ```bash
+  python manage.py makemigrations # Crea un nuevo archivo de migración
+  python manage.py migrate       # Aplica la migración a la base de datos
+  ```
+
+---
+
+## 4. 🌐 Rutas (URL Routing)
+
+Mapea las URLs a las Views.
+
+### 4.1. Proyecto `urls.py` (`myproject/urls.py`)
+
+```python
+# myproject/urls.py
+from django.contrib import admin
+from django.urls import path, include
+
+urlpatterns = [
+    path('admin/', admin.site.urls), # Ruta del panel de administración
+    path('products/', include('myapp.urls')), # Incluye las URLs de tu app 'myapp'
+    # path('api/', include('api_app.urls')), # Puedes incluir URLs de múltiples apps
+]
+```
+
+### 4.2. Aplicación `urls.py` (`myapp/urls.py`)
+
+```python
+# myapp/urls.py
+from django.urls import path
+from . import views # Importa las vistas de tu app
+
+app_name = 'myapp' # Espacio de nombres para tus URLs
+
+urlpatterns = [
+    path('', views.index, name='index'), # Ruta raíz de la app
+    path('about/', views.about, name='about'),
+    path('<int:product_id>/', views.product_detail, name='product_detail'), # Ruta con parámetro entero
+    path('categories/<slug:category_slug>/', views.category_products, name='category_products'), # Ruta con slug
+]
+```
+
+* **Path Converters**:
+  * `<str:name>`: Cadena (por defecto).
+  * `<int:num>`: Entero.
+  * `<slug:slug>`: Slug (letras, números, guiones).
+  * `<uuid:uuid>`: UUID.
+  * `<path:path>`: Cualquier cadena, incluyendo barras.
+
+---
+
+## 5. 👁️ Vistas (`views.py`)
+
+Procesan las solicitudes y devuelven respuestas. Pueden ser funciones o clases.
+
+### 5.1. Vistas Basadas en Funciones (FBV)
+
+```python
+# myapp/views.py
+from django.shortcuts import render, get_object_or_404, redirect
+from django.http import HttpResponse, JsonResponse
+from .models import Product, Category
+from django.contrib import messages # Para mensajes flash
+from django.urls import reverse # Para generar URLs programáticamente
+
+def index(request):
+    products = Product.objects.all()
+    context = {'products': products, 'page_title': 'Lista de Productos'}
+    return render(request, 'myapp/index.html', context) # Renderiza una plantilla
+
+def about(request):
+    return HttpResponse("<h1>Esta es la página Acerca de.</h1>") # Responde con HTML directo
+
+def product_detail(request, product_id):
+    product = get_object_or_404(Product, pk=product_id) # Obtiene obj o lanza 404
+    context = {'product': product}
+    return render(request, 'myapp/product_detail.html', context)
+
+def category_products(request, category_slug):
+    category = get_object_or_404(Category, name__iexact=category_slug.replace('-', ' ')) # Asume slug de nombre
+    products = Product.objects.filter(category=category)
+    context = {'category': category, 'products': products}
+    return render(request, 'myapp/category_products.html', context)
+
+# Ejemplo de vista para manejar POST
+def add_product_form(request):
+    if request.method == 'POST':
+        # Aquí manejarías el formulario y la creación del producto
+        name = request.POST.get('name')
+        price = request.POST.get('price')
+        # ... validación y guardado
+        messages.success(request, f'Producto "{name}" añadido exitosamente!')
+        return redirect(reverse('myapp:index')) # Redirige a la URL con nombre 'index' de la app 'myapp'
+    return render(request, 'myapp/add_product.html')
+```
+
+### 5.2. Vistas Basadas en Clases (CBV)
+
+Más estructuradas para operaciones CRUD comunes.
+
+```python
+# myapp/views.py
+from django.views.generic import ListView, DetailView, CreateView, UpdateView, DeleteView
+from django.urls import reverse_lazy # Para URLs en atributos de clase
+from .models import Product
+from .forms import ProductForm # Necesitarás un formulario para Create/UpdateView
+
+class ProductListView(ListView):
+    model = Product
+    template_name = 'myapp/product_list.html' # Plantilla por defecto: myapp/product_list.html
+    context_object_name = 'products' # Nombre de la variable de contexto para la lista (por defecto: object_list)
+    paginate_by = 10 # Paginación
+
+class ProductDetailView(DetailView):
+    model = Product
+    template_name = 'myapp/product_detail.html'
+    context_object_name = 'product'
+
+class ProductCreateView(CreateView):
+    model = Product
+    form_class = ProductForm # Usa un Django Form o ModelForm
+    template_name = 'myapp/product_form.html'
+    success_url = reverse_lazy('myapp:index') # URL a redirigir después de éxito
+
+class ProductUpdateView(UpdateView):
+    model = Product
+    form_class = ProductForm
+    template_name = 'myapp/product_form.html'
+    success_url = reverse_lazy('myapp:product_list')
+
+class ProductDeleteView(DeleteView):
+    model = Product
+    template_name = 'myapp/product_confirm_delete.html'
+    success_url = reverse_lazy('myapp:product_list')
+```
+
+**Configurar URLs para CBV:**
+
+```python
+# myapp/urls.py
+from django.urls import path
+from .views import ProductListView, ProductDetailView, ProductCreateView, ProductUpdateView, ProductDeleteView
+
+urlpatterns = [
+    path('list/', ProductListView.as_view(), name='product_list'), # .as_view() para usar CBV
+    path('<int:pk>/', ProductDetailView.as_view(), name='product_detail'), # pk es el nombre de parámetro por defecto para DetailView
+    path('new/', ProductCreateView.as_view(), name='product_new'),
+    path('<int:pk>/edit/', ProductUpdateView.as_view(), name='product_edit'),
+    path('<int:pk>/delete/', ProductDeleteView.as_view(), name='product_delete'),
+]
+```
+
+---
+
+## 6. 📜 Plantillas (Templates)
+
+Django usa su propio lenguaje de plantilla. Las plantillas se buscan en `templates/` en la raíz de tu proyecto o en `app_name/templates/app_name/`.
+
+### 6.1. Sintaxis Básica
+
+* **Variables**: `{{ variable }}`
+* **Etiquetas**: `{% tag %}` (para lógica como bucles, condicionales)
+* **Filtros**: `{{ variable | filter }}` (modifican la salida de las variables)
+* **Comentarios**: `{# comment #}`
+
+### 6.2. `templates/base.html` (Herencia de Plantillas)
+
+```html
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Mi App Django{% endblock %}</title>
+    <link rel="stylesheet" href="{% static 'css/style.css' %}"> {# Cargar archivo estático #}
+</head>
+<body>
+    <header>
+        <h1><a href="{% url 'myapp:index' %}">{% block header_title %}Mi Sitio{% endblock %}</a></h1>
+        <nav>
+            <ul>
+                <li><a href="{% url 'myapp:product_list' %}">Productos</a></li>
+                <li><a href="{% url 'myapp:about' %}">Acerca</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <main>
+        {% if messages %} {# Mensajes Flash #}
+            <ul class="messages">
+                {% for message in messages %}
+                    <li{% if message.tags %} class="{{ message.tags }}"{% endif %}>{{ message }}</li>
+                {% endfor %}
+            </ul>
+        {% endif %}
+
+        {% block content %} {# Contenido específico de la página #}
+            {# Contenido por defecto si no se sobrescribe #}
+        {% endblock %}
+    </main>
+
+    <footer>
+        <p>© 2023 Mi Compañía</p>
+    </footer>
+
+    {% block extra_js %}{% endblock %} {# Para JS específico de la página #}
+</body>
+</html>
+```
+
+### 6.3. `templates/myapp/index.html` (Plantilla Hija)
+
+```html
+{% extends "base.html" %} {# Extiende la plantilla base #}
+{% load static %} {# Cargar la etiqueta 'static' para usar archivos estáticos #}
+
+{% block title %}{{ page_title }} - Mi App{% endblock %} {# Sobrescribe el título #}
+{% block header_title %}{{ page_title }}{% endblock %} {# Sobrescribe el título del encabezado #}
+
+{% block content %}
+    <h2>{{ page_title }}</h2>
+    <p>Bienvenido a nuestra aplicación de productos.</p>
+
+    <h3>Productos Destacados:</h3>
+    <ul>
+        {% for product in products %}
+            <li>
+                <a href="{% url 'myapp:product_detail' product.id %}">
+                    {{ product.name }} - ${{ product.price }}
+                </a>
+            </li>
+        {% empty %} {# Si la lista 'products' está vacía #}
+            <li>No hay productos disponibles.</li>
+        {% endfor %}
+    </ul>
+
+    <a href="{% url 'myapp:product_new' %}" class="btn btn-primary">Añadir Nuevo Producto</a>
+
+{% endblock %}
+```
+
+### 6.4. Filtros de Plantilla Comunes
+
+* `|date:"F j, Y"`: Formatea fechas.
+* `|length`: Longitud de listas o cadenas.
+* `|safe`: Deshabilita el auto-escape de HTML (usar con precaución).
+* `|truncatechars:20`: Trunca una cadena a 20 caracteres con `...`.
+* `|linebreaks`: Convierte saltos de línea a etiquetas `<br>` o `<p>`.
+* `|default:"N/A"`: Provee un valor por defecto si la variable es vacía/None.
+
+---
+
+## 7. 📝 Formularios (`forms.py`)
+
+Gestionan la entrada de usuario, validación y renderizado.
+
+### 7.1. Formularios Normales (`forms.Form`)
+
+Para datos no vinculados directamente a un modelo.
+
+```python
+# myapp/forms.py
+from django import forms
+
+class ContactForm(forms.Form):
+    name = forms.CharField(max_length=100, label='Tu Nombre')
+    email = forms.EmailField(label='Tu Email')
+    message = forms.CharField(widget=forms.Textarea, label='Tu Mensaje')
+
+    # Validación personalizada para el campo 'name'
+    def clean_name(self):
+        name = self.cleaned_data['name']
+        if "admin" in name.lower():
+            raise forms.ValidationError("El nombre no puede contener 'admin'.")
+        return name
+
+    # Validación a nivel de formulario
+    def clean(self):
+        cleaned_data = super().clean()
+        name = cleaned_data.get('name')
+        email = cleaned_data.get('email')
+        # Ejemplo: si el nombre y el email son iguales, error
+        if name and email and name.lower() == email.split('@')[0].lower():
+            raise forms.ValidationError("El nombre de usuario no puede ser igual al email.")
+        return cleaned_data
+```
+
+### 7.2. Formularios de Modelo (`forms.ModelForm`)
+
+Generan formularios automáticamente a partir de tus modelos.
+
+```python
+# myapp/forms.py
+from django import forms
+from .models import Product
+
+class ProductForm(forms.ModelForm):
+    class Meta:
+        model = Product
+        fields = ['name', 'description', 'price', 'is_available', 'category', 'tags'] # Qué campos incluir
+        # exclude = ['created_at', 'updated_at'] # O qué campos excluir
+        widgets = { # Personalizar widgets
+            'description': forms.Textarea(attrs={'rows': 4}),
+        }
+        labels = { # Personalizar etiquetas
+            'name': 'Nombre del Producto',
+            'is_available': 'Disponible',
+        }
+        help_texts = { # Añadir texto de ayuda
+            'name': 'Nombre único del producto.',
+        }
+
+    # Puedes añadir validación personalizada aquí también (clean_name, clean, etc.)
+```
+
+### 7.3. Procesar Formularios en Vistas
+
+```python
+# myapp/views.py (para ContactForm)
+from .forms import ContactForm
+
+def contact_view(request):
+    if request.method == 'POST':
+        form = ContactForm(request.POST) # Rellenar formulario con datos POST
+        if form.is_valid(): # Ejecutar validación
+            name = form.cleaned_data['name']
+            email = form.cleaned_data['email']
+            message = form.cleaned_data['message']
+            # ... procesar datos (ej. enviar email)
+            messages.success(request, 'Tu mensaje ha sido enviado!')
+            return redirect(reverse('myapp:index'))
+        else:
+            messages.error(request, 'Por favor, corrige los errores del formulario.')
+    else:
+        form = ContactForm() # Crear formulario vacío para GET
+    return render(request, 'myapp/contact_form.html', {'form': form})
+```
+
+### 7.4. Renderizar Formularios en Plantillas
+
+```html
+{# templates/myapp/contact_form.html #}
+{% extends "base.html" %}
+{% load static %}
+
+{% block content %}
+    <h2>Formulario de Contacto</h2>
+    <form method="post">
+        {% csrf_token %} {# ¡CRÍTICO para seguridad! Añade token CSRF #}
+
+        {{ form.as_p }} {# Renderiza todos los campos como párrafos #}
+        {# También puedes renderizar campo por campo: #}
+        {#
+        <div class="form-group">
+            <label for="{{ form.name.id_for_label }}">{{ form.name.label }}</label>
+            {{ form.name }}
+            {% if form.name.errors %}
+                <ul class="errorlist">{% for error in form.name.errors %}<li>{{ error }}</li>{% endfor %}</ul>
+            {% endif %}
+        </div>
+        #}
+
+        <button type="submit">Enviar Mensaje</button>
+    </form>
+{% endblock %}
+```
+
+---
+
+## 8. 👤 Autenticación y Autorización
+
+Django viene con un sistema de autenticación robusto.
+
+* **`User` Model**: `django.contrib.auth.models.User` (o `AbstractUser` para personalizarlo).
+* **Vistas de Autenticación**: Django proporciona vistas de login, logout, registro, cambio de contraseña.
+
+  * No necesitas escribirlas desde cero.
+  * Simplemente inclúyelas en tus `urls.py`.
+
+  ```python
+  # myproject/urls.py
+  from django.contrib import admin
+  from django.urls import path, include
+
+  urlpatterns = [
+      path('admin/', admin.site.urls),
+      path('accounts/', include('django.contrib.auth.urls')), # Incluye URLs de autenticación
+      # path('mi_app/', include('myapp.urls')),
+  ]
+  ```
+
+  * Esto proporciona URLs como `/accounts/login/`, `/accounts/logout/`, `/accounts/password_change/`, etc.
+* **`LOGIN_REDIRECT_URL`, `LOGOUT_REDIRECT_URL`, `LOGIN_URL`**: Configúralas en `settings.py`.
+
+  ```python
+  # myproject/settings.py
+  LOGIN_REDIRECT_URL = '/' # URL a la que redirigir después de login
+  LOGOUT_REDIRECT_URL = '/accounts/login/' # URL a la que redirigir después de logout
+  LOGIN_URL = '/accounts/login/' # URL de login
+  ```
+
+### 8.1. Restringir Acceso a Vistas
+
+* **FBV**: `@login_required` decorador.
+  ```python
+  from django.contrib.auth.decorators import login_required
+
+  @login_required
+  def my_protected_view(request):
+      return render(request, 'protected.html')
+
+  # También puedes usar @permission_required('myapp.can_do_something')
+  # O @staff_member_required (para is_staff=True)
+  ```
+* **CBV**: `LoginRequiredMixin`.
+  ```python
+  from django.contrib.auth.mixins import LoginRequiredMixin
+
+  class ProtectedListView(LoginRequiredMixin, ListView):
+      model = Product
+      template_name = 'protected_list.html'
+      # login_url = '/accounts/login/' # Opcional si LOGIN_URL está en settings
+      # redirect_field_name = 'next' # Nombre del query param para la URL original
+  ```
+
+### 8.2. Acceder a Información del Usuario en Plantillas
+
+* **`request.user`**: Acceso al objeto `User` del usuario autenticado.
+
+  ```html
+  {% if user.is_authenticated %}
+      <p>Bienvenido, {{ user.username }}!</p>
+      <a href="{% url 'logout' %}">Cerrar Sesión</a>
+  {% else %}
+      <p>Por favor, <a href="{% url 'login' %}">inicia sesión</a>.</p>
+  {% endif %}
+  ```
+* **Permisos en Plantillas**:
+
+  ```html
+  {% if perms.myapp.can_view_dashboard %}
+      <a href="/dashboard">Ver Dashboard</a>
+  {% endif %}
+  {% if user.is_superuser %}
+      <p>¡Eres un superusuario!</p>
+  {% endif %}
+  ```
+
+---
+
+## 9. ⚙️ Admin Site
+
+Un potente panel de administración autogenerado.
+
+* **Registro de Modelos**: Para que un modelo aparezca en el Admin.
+
+  ```python
+  # myapp/admin.py
+  from django.contrib import admin
+  from .models import Product, Category, Tag
+
+  admin.site.register(Product)
+  admin.site.register(Category)
+  admin.site.register(Tag)
+  ```
+* **Personalización (`ModelAdmin`)**: Controla cómo se muestra el modelo en el Admin.
+
+  ```python
+  # myapp/admin.py
+  from django.contrib import admin
+  from .models import Product, Category, Tag
+
+  @admin.register(Product) # Decorador para registrar
+  class ProductAdmin(admin.ModelAdmin):
+      list_display = ('name', 'price', 'is_available', 'category', 'created_at') # Columnas en la lista
+      list_filter = ('is_available', 'category', 'created_at') # Filtros laterales
+      search_fields = ('name', 'description') # Campos para la búsqueda
+      prepopulated_fields = {'slug': ('name',)} # Rellena slugs automáticamente (si tuvieras campo slug)
+      date_hierarchy = 'created_at' # Navegación por fecha
+      raw_id_fields = ('owner',) # Campo de relación como raw ID input
+
+  @admin.register(Category)
+  class CategoryAdmin(admin.ModelAdmin):
+      list_display = ('name',)
+      search_fields = ('name',)
+  ```
+
+---
+
+## 10. 📁 Archivos Estáticos y Medios
+
+* **Archivos Estáticos (`STATIC_URL`, `STATICFILES_DIRS`, `STATIC_ROOT`)**: CSS, JS, imágenes de tu app.
+
+  * Configura `STATIC_URL` en `settings.py`.
+  * Crea una carpeta `static/` dentro de cada app o `templates/static` a nivel de proyecto.
+  * Usa `{% load static %}` y `{% static 'path/to/file' %}` en plantillas.
+* **Archivos de Medios (`MEDIA_URL`, `MEDIA_ROOT`)**: Archivos subidos por los usuarios (ej. imágenes de perfil).
+
+  * Configura `MEDIA_URL` y `MEDIA_ROOT` en `settings.py`.
+  * Necesitas el paquete `Pillow` para imágenes (`pip install Pillow`).
+  * Añade la configuración para servir archivos de medios en desarrollo.
+
+  ```python
+  # myproject/settings.py
+  import os
+
+  BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
+  STATIC_URL = '/static/'
+  STATICFILES_DIRS = [
+      os.path.join(BASE_DIR, 'static_dev'), # Opcional: para archivos estáticos comunes del proyecto
+  ]
+  STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles') # Para `collectstatic` en producción
+
+  MEDIA_URL = '/media/'
+  MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+
+  # myproject/urls.py (solo para desarrollo, no para producción)
+  from django.conf import settings
+  from django.conf.urls.static import static
+
+  urlpatterns = [
+      # ... tus URLs
+  ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+  # + static(settings.STATIC_URL, document_root=settings.STATIC_ROOT) # Si quieres servir estáticos en desarrollo desde STATIC_ROOT
+  ```
+* **Recopilar Estáticos para Producción**:
+
+  ```bash
+  python manage.py collectstatic
+  ```
+
+---
+
+## 11. 💡 Buenas Prácticas y Consejos
+
+* **Entornos Virtuales**: Siempre usa entornos virtuales para aislar las dependencias de tus proyectos.
+* **`SECRET_KEY`**: Genera una clave secreta fuerte y única para tu aplicación de Django y guárdala como una variable de entorno, no en el código fuente.
+* **`DEBUG = False` en Producción**: Nunca ejecutes tu aplicación con `DEBUG = True` en producción, ya que expone información sensible.
+* **Separación de Aplicaciones**: Organiza tu código en aplicaciones lógicas y reutilizables.
+* **`__str__` Method**: Siempre define el método `__str__` en tus modelos para una representación legible.
+* **Inyección de CSRF**: Siempre usa `{% csrf_token %}` en todos tus formularios POST.
+* **Paginación**: Utiliza la clase `Paginator` de Django para manejar la paginación de resultados en tus vistas.
+* **Logging**: Configura el logging para monitorear tu aplicación en producción.
+* **Validación de Formularios**: Aprovecha el sistema de formularios de Django para manejar la validación de entrada del usuario.
+* **Django Debug Toolbar**: Una excelente herramienta para depurar aplicaciones Django en desarrollo.
+* **Testing**: Escribe pruebas unitarias y de integración para tus modelos, vistas y formularios.
+* **Deploy**: En producción, usa un servidor WSGI (Gunicorn, uWSGI) y un servidor web (Nginx, Apache) como proxy inverso.
+
+---
+
+Este cheatsheet te proporciona una referencia completa y concisa de Django, cubriendo los fundamentos del framework y las características esenciales para construir aplicaciones web robustas y escalables en Python.

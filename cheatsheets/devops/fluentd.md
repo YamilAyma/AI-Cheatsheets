@@ -1,0 +1,242 @@
+
+---
+
+# 📝 Fluentd Cheatsheet Completo 📝
+
+**Fluentd** es un colector de datos de código abierto que unifica la recopilación y el consumo de logs y datos de eventos para una mejor utilización y comprensión. Permite recolectar datos de diversas fuentes, filtrarlos, transformarlos y luego enviarlos a múltiples destinos.
+
+---
+
+## 1. 🌟 Conceptos Clave
+
+*   **Colector de Datos Unificado**: Fluentd centraliza el proceso de recopilación de logs de diferentes fuentes y los normaliza en un formato estructurado (JSON).
+*   **Pipeline de Procesamiento de Datos**: Los datos fluyen a través de una serie de pasos: **Input (Entrada) -> Parser (Analizador) -> Filter (Filtro) -> Output (Salida)**.
+*   **Plugins**: El corazón de la flexibilidad de Fluentd. Prácticamente todas las funcionalidades (entradas, salidas, filtros, parsers) son plugins, lo que permite conectar Fluentd a casi cualquier sistema.
+*   **Tags (Etiquetas)**: Un identificador clave para cada evento de log. Los plugins de entrada asignan tags, y los filtros/salidas los utilizan para enrutar o procesar eventos.
+*   **Time (Timestamp)**: Cada evento de log tiene una marca de tiempo.
+*   **Record (Registro)**: El mensaje de log en sí, en formato JSON.
+*   **Buffer (Buffer)**: Almacenamiento temporal para los eventos antes de enviarlos a la salida. Mejora la fiabilidad y el rendimiento.
+
+---
+
+## 2. 🛠️ Configuración Inicial y Ejecución
+
+### 2.1. Instalación
+
+*   **Linux (apt/yum)**:
+    ```bash
+    curl -L https://toolbelt.treasuredata.com/sh/install-ubuntu-focal-td-agent4.sh | sh # Para td-agent (paquete oficial)
+    # O para Fluentd nativo (requiere Ruby): gem install fluentd
+    ```
+*   **Docker (Recomendado para contenedores)**:
+    ```bash
+    docker run -d -p 24224:24224 -p 24224:24224/udp fluentd/fluentd:v1.16-debian
+    # Para usar un custom config:
+    # docker run -d -p 24224:24224 -p 24224:24224/udp -v /path/to/fluentd.conf:/fluentd/etc/fluent.conf fluentd/fluentd:v1.16-debian
+    ```
+
+### 2.2. Archivo de Configuración (`fluent.conf` o `td-agent.conf`)
+
+*   Es un archivo basado en directivas, con secciones para `source`, `filter`, `match`.
+
+```conf
+# fluent.conf
+# GLOBAL CONFIGURATION (Optional, but good practice)
+<system>
+  log_level debug # info, warn, error, debug, trace
+  # root_dir /var/log/fluentd # Directorio de trabajo
+  # ...
+</system>
+
+# 1. INPUT (SOURCE): Define cómo Fluentd recolecta los logs
+<source>
+  @type tail            # Plugin de entrada: lee desde el final de un archivo
+  @id input_file_app_logs # ID único para este source
+  path /var/log/app/*.log # Ruta de los archivos de log
+  pos_file /var/log/fluentd/app_logs.pos # Archivo para guardar la posición de lectura (para reiniciar)
+  tag app.web           # Etiqueta para los eventos de este source
+  <parse>                # Parser: cómo Fluentd interpreta cada línea de log
+    @type json          # Asume que las líneas de log son JSON
+    time_key time       # Campo que contiene el timestamp
+    time_format %Y-%m-%dT%H:%M:%S%z # Formato del timestamp
+  </parse>
+</source>
+
+<source>
+  @type http             # Plugin de entrada: recibe logs vía HTTP POST
+  @id input_http_endpoint
+  port 8888              # Puerto para escuchar
+  bind 0.0.0.0           # Interfaz para escuchar
+  body_size_limit 32m    # Tamaño máximo del cuerpo de la petición
+  keepalive_timeout 10s
+  tag http.data          # Etiqueta para los eventos HTTP
+</source>
+
+<source>
+  @type forward          # Plugin de entrada: recibe logs de otros agentes Fluentd o clientes (TCP/UDP)
+  @id input_forward_endpoint
+  port 24224
+  bind 0.0.0.0
+</source>
+
+# 2. FILTER: Transforma o filtra los logs. Se aplican en orden.
+<filter app.web> # Este filtro se aplica a eventos con la etiqueta 'app.web'
+  @type record_transformer # Plugin de filtro: añade/modifica campos en el registro
+  <record>
+    hostname "#{Socket.gethostname}" # Añade el hostname del servidor
+    env "production"                 # Añade un campo estático
+    log_level ${record["level"]}     # Extrae un campo existente (asume JSON de entrada con 'level')
+  </record>
+</filter>
+
+<filter http.data>
+  @type grep           # Plugin de filtro: filtra eventos basándose en patrones
+  <exclude>             # Excluye eventos
+    key message         # Campo a comprobar
+    pattern /healthcheck/ # Excluye mensajes que contengan "healthcheck"
+  </exclude>
+  <regexp>              # Incluye eventos (si hay conflicto, exclude tiene prioridad)
+    key status          # Campo a comprobar
+    pattern /^(ERROR|WARN)$/ # Solo incluye los que tienen status ERROR o WARN
+  </regexp>
+</filter>
+
+# 3. OUTPUT (MATCH): Define dónde Fluentd envía los logs.
+# Cada <match> solo procesa los tags que coinciden con su patrón.
+<match app.**> # Coincide con 'app.web', 'app.auth', etc. (cualquier tag que empiece con app.)
+  @type elasticsearch # Plugin de salida: envía a Elasticsearch
+  host elasticsearch.example.com # Host de Elasticsearch
+  port 9200
+  logstash_format true # Formato compatible con Logstash (índices diarios)
+  logstash_prefix my-app-logs # Prefijo para el índice de Elasticsearch (my-app-logs-YYYY.MM.DD)
+  include_tag_key true # Añadir el tag original como campo 'tag' en el JSON
+  <buffer tag,time> # Buffer para este output
+    @type file # Almacenar en disco si hay fallos o acumulación
+    path /var/log/fluentd/buffer/app_es # Ruta del buffer
+    chunk_limit_size 10m # Tamaño máximo del chunk en buffer
+    flush_interval 5s    # Frecuencia de envío del buffer
+    retry_limit 17 # Número de reintentos
+    retry_wait 1s # Espera entre reintentos
+  </buffer>
+</match>
+
+<match http.data>
+  @type stdout # Plugin de salida: imprime los logs en la consola (para depuración)
+  <format>
+    @type json # Formato de salida JSON
+  </format>
+</match>
+
+<match **> # Coincide con CUALQUIER tag que no haya sido procesado antes
+  @type file
+  path /var/log/fluentd/other-logs.log
+  <format>
+    @type json
+  </format>
+</match>
+```
+
+### 2.3. Ejecutar Fluentd
+
+```bash
+fluentd -c /path/to/fluent.conf -v # Inicia Fluentd con la configuración y verbosidad
+# O si usas td-agent:
+# sudo systemctl start td-agent
+# sudo systemctl status td-agent
+```
+
+---
+
+## 3. 🧩 Componentes Clave de Configuración
+
+### 3.1. `source` (Input Plugins)
+
+Definen cómo Fluentd ingesta los datos.
+
+*   `@type`: El tipo de plugin de entrada.
+*   `path`: (para `tail`) Archivos a observar.
+*   `tag`: Etiqueta asignada a los eventos de este source.
+*   `port`, `bind`: (para `http`, `forward`) Puertos y direcciones para escuchar.
+
+### 3.2. `filter` (Filter Plugins)
+
+Modifican o transforman los eventos a medida que fluyen. Se aplican solo a los eventos con el `tag` que coincide.
+
+*   `@type`: Tipo de plugin de filtro.
+*   `tag`: Patrón de etiqueta al que se aplica el filtro.
+*   **`record_transformer`**: Añade, modifica o elimina campos en el registro.
+*   **`grep`**: Filtra eventos basándose en patrones de expresión regular.
+*   **`parser`**: Re-parsea un campo específico del registro.
+*   **`stdout`**: Imprime el evento en la salida estándar (para depuración).
+*   **`throttle`**: Limita la tasa de eventos.
+
+### 3.3. `match` (Output Plugins)
+
+Envían los eventos a destinos finales. Solo procesan los eventos con el `tag` que coincide.
+
+*   `@type`: Tipo de plugin de salida.
+*   `tag`: Patrón de etiqueta al que se aplica el output.
+*   **`elasticsearch`**: Envía a Elasticsearch.
+*   **`file`**: Escribe en un archivo.
+*   **`stdout`**: Imprime en la consola.
+*   **`s3`**: Envía a Amazon S3.
+*   **`kafka`**: Envía a Apache Kafka.
+*   **`forward`**: Reenvía a otro Fluentd o Fluent Bit.
+*   **`http`**: Envía a un endpoint HTTP.
+
+### 3.4. `parse` (Parser Plugins)
+
+Define cómo se analiza el formato de los datos de entrada dentro de un `source`.
+
+*   `@type`: Tipo de parser.
+*   **`json`**: Parsear líneas como JSON.
+*   **`regexp`**: Parsear líneas con una expresión regular.
+*   **`apache2`**: Para logs de Apache.
+*   **`syslog`**: Para logs de Syslog.
+*   **`csv`**: Para logs en formato CSV.
+*   **`none`**: No parsear (tratar el log como texto plano en un campo `message`).
+
+### 3.5. `buffer` (Buffer Section)
+
+Define cómo Fluentd almacena temporalmente los datos antes de enviarlos a la salida. Se configura dentro de un `match`.
+
+*   `@type`: `memory` (default) o `file`. `file` es persistente y tolerante a fallos.
+*   `path`: (para `file` buffer) Ruta del directorio para almacenar los chunks.
+*   `chunk_limit_size`: Tamaño máximo de los chunks de buffer.
+*   `flush_interval`: Intervalo de tiempo para vaciar el buffer.
+*   `retry_limit`: Número máximo de reintentos si el envío falla.
+*   `retry_wait`: Tiempo de espera inicial para reintentos (se puede usar `exponential_backoff_base`).
+
+---
+
+## 4. 📝 Tags (Etiquetas)
+
+*   **`tag`**: Asigna una etiqueta a un `source` (`<source><tag>...</tag></source>`).
+*   **Patrones de Tag**:
+    *   `app.web`: Un tag simple.
+    *   `app.**`: Coincide con `app.web`, `app.database`, `app.web.error`, etc.
+    *   `app.*`: Coincide con `app.web`, `app.database`, pero no `app.web.error`.
+    *   `**`: Coincide con cualquier tag (usado en el último `match` como catch-all).
+*   **`@type rewrite_tag` (Plugin de Filtro)**: Para modificar tags de eventos.
+
+---
+
+## 5. 💡 Buenas Prácticas y Consejos
+
+*   **Centraliza la Configuración**: Mantén un único archivo de configuración principal y utiliza `include` para modularizarlo en archivos más pequeños.
+*   **Usa `file` Buffer en Producción**: Para asegurar la entrega de mensajes, configura buffers de tipo `file` para tus outputs críticos.
+*   **Manejo de Errores con `retry_limit` y `retry_wait`**: Configura los parámetros de reintento en el buffer para manejar fallos temporales del destino.
+*   **Tags Significativos**: Diseña una estrategia de tags consistente para que puedas enrutar y filtrar tus logs de manera efectiva.
+*   **Parsers Apropiados**: Elige el parser adecuado para el formato de tus logs de entrada. Un buen parseo es clave para la estructura JSON y la facilidad de consulta posterior.
+*   **Transformación de Registros**: Utiliza `record_transformer` para añadir metadatos (hostname, entorno, IP de cliente) o para normalizar los nombres de los campos.
+*   **Logging Interno de Fluentd**: Configura el `log_level` en `<system>` para depurar Fluentd mismo.
+*   **Fluentd vs. Fluent Bit**:
+    *   **Fluentd**: Mayor funcionalidad, más plugins, escrito en Ruby. Más pesado. Ideal para agregadores centrales o servidores intermedios.
+    *   **Fluent Bit**: Más ligero, menor huella de memoria/CPU, escrito en C. Ideal para agentes en el borde (ej. en cada Pod de Kubernetes).
+    *   A menudo se usan juntos: Fluent Bit recolecta y envía a Fluentd, y Fluentd agrega y envía al destino final.
+*   **Monitoriza Fluentd**: Monitoriza el rendimiento de Fluentd (uso de CPU/memoria, tamaño de los buffers, errores de salida) para asegurar que está funcionando eficientemente.
+*   **Volúmenes Persistentes para Logs y Buffers**: Cuando ejecutes Fluentd en contenedores (ej. Docker, Kubernetes), asegúrate de que los directorios de logs (`/var/log/app/`) y los buffers (`/var/log/fluentd/buffer/`) se monten en volúmenes persistentes.
+
+---
+
+Este cheatsheet te proporciona una referencia completa de Fluentd, cubriendo sus conceptos esenciales, cómo configurarlo para inputs, filtros y outputs, los plugins comunes y las mejores prácticas para construir una tubería de gestión de logs robusta y eficiente.

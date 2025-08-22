@@ -1,0 +1,438 @@
+¡Absolutamente! Zod es una librería increíble para la validación de esquemas y tipos en TypeScript/JavaScript, famosa por su simplicidad y excelente inferencia de tipos. Aquí tienes un "cheatsheet" completo y bien estructurado, diseñado para ser claro y conciso para una IA conversacional.
+
+---
+
+# 🛡️ Zod (zod) Cheatsheet Completo 🛡️
+
+Zod es una librería de declaración y validación de esquemas (schema declaration and validation) centrada en la inferencia de tipos TypeScript. Te permite definir la forma de tus datos con una API concisa y robusta, y luego validar tus datos en tiempo de ejecución para asegurar que cumplen con esa forma.
+
+---
+
+## 1. 🌟 Conceptos Clave
+
+* **Esquema (Schema)**: Un objeto Zod que define la estructura y las reglas de validación para un tipo de dato.
+* **Validación (Parsing)**: El proceso de tomar datos y verificar si coinciden con un esquema.
+* **Inferencia de Tipos (Type Inference)**: La capacidad de Zod para deducir automáticamente el tipo TypeScript de los datos que coinciden con un esquema.
+* **Inmutabilidad**: La mayoría de los métodos de Zod devuelven una nueva instancia de esquema, lo que permite encadenar métodos.
+
+---
+
+## 2. 🛠️ Configuración Inicial
+
+1. **Instalación:**
+   ```bash
+   npm install zod
+   # o
+   yarn add zod
+   ```
+2. **Importación:**
+   ```javascript
+   import { z } from 'zod';
+   ```
+
+---
+
+## 3. 🧩 Tipos de Esquemas Básicos
+
+Aquí están los tipos de esquemas más comunes que puedes definir con Zod:
+
+### 3.1. Primitivos
+
+* **`z.string()`**: Para cadenas de texto.
+  ```typescript
+  const myString = z.string(); // "abc", "123"
+  ```
+
+  * **Métodos comunes para `string`**:
+    * `.min(length, message?)`: Longitud mínima.
+    * `.max(length, message?)`: Longitud máxima.
+    * `.length(length, message?)`: Longitud exacta.
+    * `.email(message?)`: Valida formato de email.
+    * `.url(message?)`: Valida formato de URL.
+    * `.uuid(message?)`: Valida formato UUID.
+    * `.emoji(message?)`: Valida si es un emoji.
+    * `.datetime(message?)`: Valida formato de fecha y hora ISO 8601.
+    * `.ip({ version?, message? })`: Valida dirección IP.
+    * `.cuid(message?)`: Valida CUID.
+    * `.endsWith(suffix, message?)`: Termina con un sufijo.
+    * `.startsWith(prefix, message?)`: Empieza con un prefijo.
+    * `.trim()`: Elimina espacios en blanco del inicio y final.
+    * `.toLowerCase()`: Convierte a minúsculas.
+    * `.toUpperCase()`: Convierte a mayúsculas.
+    * `.regex(regex, message?)`: Valida con expresión regular.
+    * `.includes(value, message?)`: Contiene una subcadena.
+    * `.trim()`, `.toLowerCase()`, `.toUpperCase()`: Transformaciones.
+* **`z.number()`**: Para números (enteros o flotantes).
+  ```typescript
+  const myNumber = z.number(); // 123, 3.14
+  ```
+
+  * **Métodos comunes para `number`**:
+    * `.min(value, message?)`: Valor mínimo.
+    * `.max(value, message?)`: Valor máximo.
+    * `.gt(value, message?)`: Mayor que.
+    * `.gte(value, message?)`: Mayor o igual que.
+    * `.lt(value, message?)`: Menor que.
+    * `.lte(value, message?)`: Menor o igual que.
+    * `.int(message?)`: Debe ser un entero.
+    * `.finite(message?)`: Debe ser un número finito (no Infinity).
+    * `.safeInt(message?)`: Entero seguro (dentro de `Number.MAX_SAFE_INTEGER`).
+    * `.positive(message?)`: Mayor que 0.
+    * `.nonnegative(message?)`: Mayor o igual que 0.
+    * `.negative(message?)`: Menor que 0.
+    * `.nonpositive(message?)`: Menor o igual que 0.
+    * `.multipleOf(value, message?)`: Múltiplo de un número.
+* **`z.boolean()`**: Para booleanos.
+  ```typescript
+  const myBoolean = z.boolean(); // true, false
+  ```
+* **`z.date()`**: Para objetos `Date`.
+  ```typescript
+  const myDate = z.date(); // new Date()
+  ```
+* **`z.bigint()`**: Para `BigInt`.
+* **`z.symbol()`**: Para `Symbol`.
+* **`z.undefined()`**: Para `undefined`.
+* **`z.null()`**: Para `null`.
+* **`z.any()`**: Acepta cualquier valor (desactiva la validación de tipos).
+* **`z.unknown()`**: Similar a `any`, pero requiere un `Narrowing` posterior.
+* **`z.never()`**: Nunca debe coincidir (útil para `exhaustiveCheck` o errores).
+* **`z.void()`**: Similar a `undefined`, pero para funciones que no devuelven nada.
+
+### 3.2. Combinadores (Composers)
+
+* **`z.object(shape)`**: Para objetos. Define la forma de sus propiedades.
+  ```typescript
+  const userSchema = z.object({
+    id: z.string().uuid(),
+    name: z.string().min(1, "Nombre es requerido"),
+    email: z.string().email("Email inválido").optional(), // Opcional
+    age: z.number().int().positive().nullish(), // Puede ser null o undefined
+  });
+  // Tipo inferido: { id: string, name: string, email?: string | undefined, age?: number | null | undefined }
+  ```
+* **`z.array(elementType)`**: Para arrays.
+  ```typescript
+  const stringArray = z.array(z.string()); // ["a", "b"]
+  const numberArray = z.array(z.number().min(0)).min(1, "Debe tener al menos un número");
+  ```
+
+  * **Métodos comunes para `array`**:
+    * `.min(length, message?)`: Longitud mínima del array.
+    * `.max(length, message?)`: Longitud máxima del array.
+    * `.length(length, message?)`: Longitud exacta del array.
+    * `.nonempty(message?)`: El array no puede estar vacío.
+* **`z.tuple([element1, element2, ...])`**: Para tuplas (arrays con tipos y longitud fijos).
+  ```typescript
+  const stringNumberTuple = z.tuple([z.string(), z.number()]); // ["hello", 123]
+  ```
+* **`z.union([type1, type2, ...])`**: Para tipos que pueden ser uno de varios esquemas.
+  ```typescript
+  const stringOrNumber = z.union([z.string(), z.number()]); // "hello" o 123
+  ```
+
+  * **Nota**: El orden es importante para la validación de discriminación (ver "discriminatedUnion").
+* **`z.discriminatedUnion(discriminator, [option1, option2, ...])`**: Para uniones donde una propiedad (discriminator) determina el tipo exacto.
+  ```typescript
+  const shapeSchema = z.discriminatedUnion("type", [
+    z.object({ type: z.literal("circle"), radius: z.number() }),
+    z.object({ type: z.literal("square"), side: z.number() }),
+  ]);
+  // { type: "circle", radius: 10 } o { type: "square", side: 5 }
+  ```
+* **`z.intersection(type1, type2)`**: Combina las propiedades de dos objetos.
+  ```typescript
+  const baseUser = z.object({ name: z.string() });
+  const isAdmin = z.object({ role: z.literal("admin") });
+  const adminUser = z.intersection(baseUser, isAdmin); // { name: "Alice", role: "admin" }
+  ```
+* **`z.literal(value)`**: Para valores exactos (literales).
+  ```typescript
+  const fifty = z.literal(50); // Solo el número 50
+  ```
+* **`z.enum(['value1', 'value2'])`**: Para un conjunto fijo de cadenas.
+  ```typescript
+  const colors = z.enum(["red", "green", "blue"]); // "red"
+  ```
+* **`z.nativeEnum(SomeTypeScriptEnum)`**: Para enums de TypeScript.
+  ```typescript
+  enum Role { Admin = "ADMIN", User = "USER" }
+  const roleSchema = z.nativeEnum(Role); // "ADMIN" o "USER"
+  ```
+* **`z.map(keySchema, valueSchema)`**: Para `Map`s.
+* **`z.set(valueSchema)`**: Para `Set`s.
+* **`z.function()`**: Para funciones.
+* **`z.promise()`**: Para Promesas.
+* **`z.lazy(() => SomeSchema)`**: Para referencias circulares de esquemas (útil para estructuras de árbol).
+
+### 3.3. Modificadores de Opcionalidad
+
+* **`.optional()`**: El valor puede ser `undefined`.
+  ```typescript
+  z.string().optional(); // string | undefined
+  ```
+* **`.nullable()`**: El valor puede ser `null`.
+  ```typescript
+  z.number().nullable(); // number | null
+  ```
+* **`.nullish()`**: El valor puede ser `null` o `undefined`. (Es un atajo para `.nullable().optional()`)
+  ```typescript
+  z.boolean().nullish(); // boolean | null | undefined
+  ```
+
+---
+
+## 4. 🚀 Validación (Parsing)
+
+### 4.1. `schema.parse(data)`
+
+* Valida los datos. Si la validación es exitosa, devuelve los datos validados.
+* Si falla, lanza un error `ZodError`.
+  ```typescript
+  import { z } from 'zod';
+
+  const userSchema = z.object({
+    name: z.string(),
+    age: z.number().int().positive(),
+  });
+
+  try {
+    const validUser = userSchema.parse({ name: "Alice", age: 30 });
+    console.log(validUser); // { name: "Alice", age: 30 }
+
+    const invalidUser = userSchema.parse({ name: "Bob", age: -5 }); // Lanza ZodError
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      console.error("Errores de validación:", error.errors);
+    }
+  }
+  ```
+
+### 4.2. `schema.safeParse(data)`
+
+* Valida los datos de forma segura. Devuelve un objeto con `success: boolean` y `data` (si es exitoso) o `error` (si falla).
+* No lanza un error. Ideal para formularios o APIs donde quieres manejar los errores de validación explícitamente.
+  ```typescript
+  const result = userSchema.safeParse({ name: "Charlie", age: "veinte" });
+
+  if (result.success) {
+    console.log("Datos válidos:", result.data);
+  } else {
+    console.error("Errores de validación:", result.error.errors);
+    // result.error es una instancia de ZodError
+  }
+  ```
+
+### 4.3. Acceso a Errores (`ZodError`)
+
+Cuando ocurre un error, `error.errors` es un array de objetos con detalles del error:
+
+```json
+[
+  {
+    "code": "invalid_type",
+    "expected": "number",
+    "received": "nan",
+    "path": ["age"],
+    "message": "Expected number, received nan"
+  },
+  {
+    "code": "too_small",
+    "minimum": 1,
+    "type": "string",
+    "inclusive": true,
+    "exact": false,
+    "message": "String must contain at least 1 character(s)",
+    "path": ["name"]
+  }
+]
+```
+
+---
+
+## 5. ↔️ Transformaciones (`.transform()`, `.preprocess()`)
+
+* **`.transform((value) => newValue)`**:
+  * Modifica el valor después de que ha sido validado.
+  * ```typescript
+    const stringToNumber = z.string().transform((val) => Number(val));
+    const num = stringToNumber.parse("123"); // num es 123 (tipo number)
+
+    const userSchema = z.object({
+      name: z.string(),
+      email: z.string().email(),
+    }).transform((user) => ({
+      ...user,
+      initials: user.name.charAt(0).toUpperCase(),
+    }));
+    // El tipo inferido incluye 'initials'
+    ```
+* **`.preprocess((value) => preprocessedValue, schema)`**:
+  * Modifica el valor *antes* de que sea validado por el esquema. Útil para coercionar tipos.
+  * ```typescript
+    const stringToNumberSchema = z.preprocess((val) => Number(val), z.number());
+    stringToNumberSchema.parse("123"); // 123
+    stringToNumberSchema.parse("abc"); // Lanza error: NaN no es un número válido
+    ```
+  * **Nota**: `z.coerce` es un atajo para preprocesar tipos primitivos (string, number, boolean, date).
+    ```typescript
+    const coerceNumber = z.coerce.number(); // Convierte a número antes de validar
+    coerceNumber.parse("123"); // 123
+    ```
+
+---
+
+## 6. ✍️ Refinamientos (`.refine()`, `.superRefine()`)
+
+Para validaciones personalizadas que no pueden ser expresadas con los métodos estándar.
+
+* **`.refine((value) => boolean, messageOrObject)`**:
+  * Valida el valor del esquema. La función de validación devuelve `true` si es válido, `false` si no.
+  * `messageOrObject`: Mensaje de error o un objeto de configuración `{ message, path }`.
+  * ```typescript
+    const passwordSchema = z.string().min(8).refine(
+      (val) => /[A-Z]/.test(val) && /[a-z]/.test(val) && /[0-9]/.test(val),
+      "La contraseña debe contener mayúsculas, minúsculas y números"
+    );
+
+    const confirmPasswordSchema = z.string().refine(
+      (val) => val === passwordSchema.parse(val), // Requiere acceder al valor de la contraseña
+      "Las contraseñas no coinciden"
+    );
+    ```
+* **`.superRefine((value, ctx) => void)`**:
+  * Permite añadir errores de validación de forma más granular usando el objeto `ctx` (contexto).
+  * `ctx.addIssue({ code, message, path })`.
+  * Ideal para validaciones que dependen de múltiples campos o que requieren mensajes de error específicos para sub-rutas.
+  * ```typescript
+    const formSchema = z.object({
+      password: z.string().min(8),
+      confirmPassword: z.string(),
+    }).superRefine(({ password, confirmPassword }, ctx) => {
+      if (password !== confirmPassword) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "Las contraseñas no coinciden",
+          path: ["confirmPassword"], // Indica dónde está el error
+        });
+      }
+    });
+    ```
+
+---
+
+## 7. 🤝 Valores por Defecto (`.default()`)
+
+* Establece un valor por defecto si el valor de entrada es `undefined`.
+  ```typescript
+  const count = z.number().default(0);
+  count.parse(undefined); // 0
+  count.parse(5);       // 5
+
+  const name = z.string().optional().default("Anónimo"); // string (ya no es opcional)
+  ```
+
+---
+
+## 8. 🎯 Inferencia de Tipos
+
+Una de las características más potentes de Zod. Obtén los tipos TypeScript de tus esquemas.
+
+```typescript
+import { z } from 'zod';
+
+const productSchema = z.object({
+  id: z.string().uuid(),
+  name: z.string().min(3),
+  price: z.number().positive(),
+  category: z.enum(["electronics", "books", "food"]),
+});
+
+// Inferir el tipo de TypeScript a partir del esquema
+type Product = z.infer<typeof productSchema>;
+
+// Product ahora es:
+// {
+//   id: string;
+//   name: string;
+//   price: number;
+//   category: "electronics" | "books" | "food";
+// }
+
+// Inferir el tipo de entrada (antes de transformaciones, si las hay)
+type ProductInput = z.input<typeof productSchema>;
+
+// Inferir el tipo de salida (después de transformaciones)
+type ProductOutput = z.output<typeof productSchema>;
+```
+
+---
+
+## 9. 🌐 Integración con React Hook Form (Mención)
+
+React Hook Form se integra perfectamente con Zod usando `@hookform/resolvers/zod`.
+
+```bash
+npm install @hookform/resolvers
+```
+
+```jsx
+// En tu componente de formulario con React Hook Form
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
+
+const loginSchema = z.object({
+  username: z.string().min(3, "Usuario debe tener al menos 3 caracteres"),
+  password: z.string().min(6, "Contraseña debe tener al menos 6 caracteres"),
+});
+
+function LoginForm() {
+  const { register, handleSubmit, formState: { errors } } = useForm({
+    resolver: zodResolver(loginSchema), // Aquí se integra Zod
+  });
+
+  const onSubmit = (data) => console.log(data);
+
+  return (
+    <form onSubmit={handleSubmit(onSubmit)}>
+      <input {...register("username")} />
+      {errors.username && <p>{errors.username.message}</p>}
+
+      <input type="password" {...register("password")} />
+      {errors.password && <p>{errors.password.message}</p>}
+
+      <button type="submit">Login</button>
+    </form>
+  );
+}
+```
+
+---
+
+## 10. 💡 Buenas Prácticas y Consejos
+
+* **Composición de Esquemas**: Construye esquemas complejos a partir de esquemas más pequeños y reutilizables.
+  ```typescript
+  const AddressSchema = z.object({
+    street: z.string(),
+    city: z.string(),
+  });
+  const UserWithAddressSchema = z.object({
+    name: z.string(),
+    address: AddressSchema, // Reutilización
+  });
+  ```
+* **Mensajes de Error Personalizados**: Haz que tus mensajes de error sean claros y útiles para el usuario.
+  ```typescript
+  z.string().min(1, { message: "El campo no puede estar vacío" });
+  ```
+* **Coerción de Tipos (`z.coerce`)**: Usa `z.coerce` con precaución, ya que puede ocultar errores de entrada inesperados. Es útil para entradas de usuario (ej., formularios) donde esperas que un string pueda ser un número.
+* **`parse` vs `safeParse`**:
+  * Usa `parse` cuando estés seguro de que los datos son válidos o cuando los errores de validación deben detener el flujo de la aplicación (ej., en el backend después de un middleware de validación).
+  * Usa `safeParse` cuando necesites manejar errores de validación sin lanzar excepciones, como en la validación de formularios en el frontend.
+* **Refinements con cuidado**: Los `refine` y `superRefine` no se infieren en el tipo de salida. Úsalos solo para validaciones personalizadas, no para transformaciones.
+
+---
+
+Este cheatsheet proporciona una visión completa de Zod, cubriendo sus características más importantes y cómo utilizarlas de manera efectiva en tus proyectos.

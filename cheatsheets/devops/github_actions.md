@@ -1,0 +1,345 @@
+
+---
+
+# 🚀 GitHub Actions Cheatsheet Completo 🚀
+
+**GitHub Actions** es una plataforma de CI/CD que te permite automatizar flujos de trabajo de desarrollo de software directamente desde tu repositorio de GitHub. Puedes crear workflows personalizados que se ejecutan en respuesta a eventos de GitHub (como pushes, pull requests, creación de issues) o en un cronograma.
+
+---
+
+## 1. 🌟 Conceptos Clave
+
+* **Workflow (Flujo de Trabajo)**: Un proceso automatizado que se ejecuta en respuesta a un evento. Se define en un archivo YAML (`.github/workflows/*.yml`).
+* **Event (Evento)**: Una actividad específica en GitHub que dispara un workflow (ej. `push`, `pull_request`, `issue_comment`, `schedule`).
+* **Job (Trabajo)**: Un conjunto de `steps` que se ejecutan en un mismo `runner`. Los jobs se ejecutan en paralelo por defecto, pero pueden definirse dependencias (`needs`).
+* **Step (Paso)**: Una tarea individual dentro de un `job`. Puede ser un comando de shell (`run`) o una `Action` reutilizable (`uses`).
+* **Action (Acción)**: Una aplicación empaquetada y reutilizable que realiza una tarea específica (ej. clonar un repositorio, configurar un entorno, publicar un paquete). Pueden ser creadas por la comunidad, por GitHub, o por ti.
+* **Runner (Ejecutor)**: Una máquina virtual (VM) o un contenedor donde se ejecutan tus `jobs`. Pueden ser hosteados por GitHub (Linux, macOS, Windows) o auto-hosteados.
+* **Context (Contexto)**: Objetos que contienen información sobre el workflow, el job, el runner, el evento, etc. (ej. `github`, `env`, `job`, `steps`, `runner`, `secrets`, `strategy`).
+* **Secrets (Secretos)**: Variables de entorno cifradas que puedes usar en tus workflows para datos sensibles (tokens, contraseñas).
+
+---
+
+## 2. 🛠️ Estructura Básica de un Workflow (`.github/workflows/*.yml`)
+
+Todos los workflows se definen en archivos YAML dentro del directorio `.github/workflows/` en la raíz de tu repositorio.
+
+```yaml
+# .github/workflows/my-first-workflow.yml
+name: Mi Primer Workflow de CI # Nombre visible del workflow
+
+on: # Define los eventos que disparan este workflow
+  push:
+    branches: [ "main", "develop" ] # Se ejecuta en cada push a estas ramas
+  pull_request:
+    branches: [ "main" ] # Se ejecuta en cada Pull Request a la rama main
+  workflow_dispatch: {} # Permite ejecutar el workflow manualmente desde GitHub UI
+
+jobs: # Define uno o más trabajos
+  build-and-test: # ID único del trabajo
+    name: Construir y Probar la Aplicación # Nombre visible del trabajo
+    runs-on: ubuntu-latest # Especifica el runner (ubuntu-latest, windows-latest, macos-latest)
+
+    steps: # Una secuencia de pasos
+      - name: Checkout del Repositorio # Nombre del paso
+        uses: actions/checkout@v4 # Usa una Action predefinida para clonar el repositorio
+
+      - name: Configurar Node.js # Configura el entorno de Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18' # Versión específica de Node.js
+
+      - name: Instalar Dependencias # Ejecuta un comando de shell
+        run: npm ci # 'npm ci' es mejor para CI/CD que 'npm install'
+
+      - name: Ejecutar Pruebas Unitarias
+        run: npm test
+
+      - name: Ejecutar Build de Producción
+        run: npm run build # Asume que tu package.json tiene un script 'build'
+
+  deploy: # Otro trabajo, que depende del anterior
+    name: Desplegar a Producción
+    runs-on: ubuntu-latest
+    needs: [build-and-test] # Este trabajo se ejecutará SÓLO si 'build-and-test' se completa con éxito
+    if: github.ref == 'refs/heads/main' # Condición para ejecutar este job (solo en push a main)
+
+    steps:
+      - name: Checkout de nuevo (si es necesario)
+        uses: actions/checkout@v4
+
+      - name: Desplegar Aplicación
+        env: # Variables de entorno para este paso/job
+          DEPLOY_HOST: ${{ secrets.FTP_HOST }} # Acceso a un secreto
+          DEPLOY_USER: ${{ secrets.FTP_USER }}
+          DEPLOY_PASS: ${{ secrets.FTP_PASS }}
+        run: | # Multi-línea de comando de shell
+          echo "Desplegando a ${{ env.DEPLOY_HOST }}..."
+          # ftp -n $DEPLOY_HOST <<END_SCRIPT
+          # user $DEPLOY_USER $DEPLOY_PASS
+          # put build/index.html /var/www/html/index.html
+          # END_SCRIPT
+          echo "Despliegue completado!"
+```
+
+---
+
+## 3. 🎯 Eventos (`on`) - Disparadores del Workflow
+
+Define cuándo se ejecuta el workflow.
+
+* **`push`**: Se ejecuta cuando hay un push a una rama.
+  ```yaml
+  on:
+    push:
+      branches:
+        - main
+        - develop
+      tags: # En pushes de tags
+        - v1.*
+      paths: # Solo si cambian archivos específicos
+        - 'src/**'
+  ```
+* **`pull_request`**: Se ejecuta cuando se abre o actualiza un Pull Request.
+  ```yaml
+  on:
+    pull_request:
+      branches: [ "main" ]
+      types: [opened, synchronize, reopened] # Solo en estos tipos de eventos PR
+  ```
+* **`workflow_dispatch`**: Permite ejecutar el workflow manualmente desde la interfaz de usuario de GitHub.
+  ```yaml
+  on:
+    workflow_dispatch:
+      inputs: # Puedes definir entradas personalizadas
+        logLevel:
+          description: 'Nivel de log'
+          required: true
+          default: 'info'
+          type: choice
+          options:
+            - info
+            - warning
+            - debug
+        environment:
+          description: 'Entorno para desplegar'
+          required: true
+          default: 'dev'
+          type: environment
+  ```
+* **`schedule`**: Se ejecuta en un cronograma definido (sintaxis cron).
+  ```yaml
+  on:
+    schedule:
+      - cron: '0 0 * * *' # Cada día a medianoche UTC
+      - cron: '0 12 * * 1-5' # Cada día laboral a las 12 PM UTC
+  ```
+* **`issue_comment`**: Cuando se crea o edita un comentario en un issue/PR.
+  ```yaml
+  on:
+    issue_comment:
+      types: [created]
+  ```
+* **`workflow_call`**: Permite que un workflow sea llamado desde otro workflow (para flujos de trabajo reutilizables).
+  ```yaml
+  # reusable-workflow.yml
+  on:
+    workflow_call:
+      inputs:
+        config_path:
+          required: true
+          type: string
+      outputs:
+        output_value:
+          value: ${{ jobs.my_job.outputs.value }}
+      secrets:
+        my_secret:
+          required: true
+  jobs:
+    my_job:
+      runs-on: ubuntu-latest
+      outputs:
+        value: "some-output"
+      steps:
+        - run: echo ${{ inputs.config_path }}
+        - run: echo ${{ secrets.my_secret }}
+  ```
+
+---
+
+## 4. 🏃 Runners (`runs-on`)
+
+El entorno donde se ejecutan los jobs.
+
+* **Hosteados por GitHub**:
+  * `ubuntu-latest` (recomendado, más barato)
+  * `windows-latest`
+  * `macos-latest`
+  * También versiones específicas como `ubuntu-20.04`, `windows-2019`.
+* **Auto-hosteados (Self-hosted)**: Para entornos personalizados o con requisitos de red/hardware específicos.
+
+---
+
+## 5. 🧰 Pasos (`steps`) y Acciones (`uses`, `run`)
+
+### 5.1. `uses: <action>` (Usar una Action)
+
+* `actions/checkout@v4`: Clona el repositorio.
+* `actions/setup-node@v4`, `actions/setup-java@v4`, `actions/setup-python@v5`, etc.: Configura el entorno de desarrollo.
+* `actions/cache@v4`: Almacena y restaura archivos para acelerar los workflows (ej. `node_modules`).
+* `actions/upload-artifact@v4`: Sube artefactos (ej. binarios de construcción, resultados de pruebas) para accederlos después.
+* `actions/download-artifact@v4`: Descarga artefactos.
+
+### 5.2. `run: <command>` (Ejecutar Comandos de Shell)
+
+```yaml
+- name: Ejecutar un comando simple
+  run: echo "Hola desde un comando de shell"
+
+- name: Ejecutar múltiples comandos
+  run: | # Usa | para comandos multilínea
+    npm install
+    npm test --coverage
+    ./scripts/deploy.sh
+```
+
+### 5.3. Entradas (`with`) y Salidas (`outputs`)
+
+* **Entradas (`with`)**: Para configurar una `Action`.
+  ```yaml
+  - uses: actions/setup-node@v4
+    with:
+      node-version: '20'
+      cache: 'npm' # Habilita el cache para npm
+  ```
+* **Salidas (`outputs`)**: Un paso puede definir salidas que otros pasos o jobs pueden usar.
+  ```yaml
+  - name: Generar un ID único
+    id: generate-id # ID para referenciar este paso
+    run: echo "random_id=$(date +%s)" >> $GITHUB_OUTPUT # Establece la salida
+  - name: Usar el ID
+    run: echo "El ID generado es: ${{ steps.generate-id.outputs.random_id }}"
+  ```
+
+---
+
+## 6. 🔒 Variables, Contextos y Secretos
+
+### 6.1. Variables de Entorno (`env`)
+
+* Definidas a nivel de job o step. Accesibles vía `env.VAR_NAME` en expresiones y `$VAR_NAME` en scripts de shell.
+  ```yaml
+  jobs:
+    my-job:
+      env:
+        APP_VERSION: 1.0.0 # Variable de entorno para todo el job
+      steps:
+        - run: echo "Versión de la app: ${{ env.APP_VERSION }}"
+        - run: echo "Versión de la app (shell): $APP_VERSION"
+          env:
+            STEP_SPECIFIC_VAR: "value" # Variable solo para este step
+  ```
+
+### 6.2. Contextos (`${{ <context>.<property> }}`)
+
+Objetos globales que contienen información.
+
+* **`github`**: Información sobre el evento, el repositorio, el flujo de trabajo.
+  * `github.event_name`: `push`, `pull_request`, etc.
+  * `github.ref`: Rama/tag que disparó el workflow (ej. `refs/heads/main`).
+  * `github.sha`: Hash del commit.
+  * `github.actor`: Usuario que disparó el workflow.
+  * `github.repository`: Nombre completo del repo (ej. `octocat/hello-world`).
+  * `github.workspace`: Ruta del directorio de trabajo.
+* **`env`**: Variables de entorno del job o step.
+* **`secrets`**: Valores sensibles.
+  * `secrets.MY_SECRET_NAME`: Acceso a un secreto definido en la configuración del repositorio/organización.
+* **`inputs`**: Para workflows reutilizables (`workflow_call`).
+* **`runner`**: Información sobre el runner.
+* **`job`**: Información sobre el job actual.
+* **`steps`**: Salidas de los pasos anteriores (usando su `id`).
+  * `steps.<step_id>.outputs.<output_name>`
+
+### 6.3. Secretos (`secrets`)
+
+* Almacenados en "Settings > Secrets and variables > Actions" de tu repositorio u organización.
+* **¡Nunca expongas secretos directamente en logs ni en código!**
+  ```yaml
+  - name: Usar Secreto
+    run: |
+      echo "Token: $MY_TOKEN" # Accesible en shell
+    env:
+      MY_TOKEN: ${{ secrets.SUPER_SECRET_TOKEN }} # Pasa el secreto a una variable de entorno
+  ```
+
+---
+
+## 7. ⚖️ Expresiones Condicionales (`if`)
+
+Ejecuta un step o job solo si una condición es verdadera.
+
+```yaml
+- name: Ejecutar solo si es un push a main
+  if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+  run: echo "Desplegando..."
+
+- name: Ejecutar solo si el job anterior falló
+  if: failure()
+  run: echo "El job anterior falló, enviando notificación de error."
+
+- name: Ejecutar solo si el job anterior fue exitoso
+  if: success()
+  run: echo "El job anterior fue exitoso."
+
+- name: Ejecutar siempre (incluso si el job anterior falló)
+  if: always()
+  run: echo "Este paso siempre se ejecuta."
+
+- name: Ejecutar si una variable es verdadera
+  if: ${{ env.FEATURE_FLAG == 'true' }}
+  run: echo "Feature activada."
+```
+
+---
+
+## 8. 📊 Estrategia de Matriz (`strategy.matrix`)
+
+Ejecuta un job con múltiples configuraciones.
+
+```yaml
+jobs:
+  build-matrix:
+    runs-on: ${{ matrix.os }} # El SO variará según la matriz
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest] # Array de sistemas operativos
+        node_version: [16, 18, 20] # Array de versiones de Node.js
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Node.js ${{ matrix.node_version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node_version }}
+      - name: Instalar dependencias y probar
+        run: npm ci && npm test
+```
+
+---
+
+## 9. 💡 Buenas Prácticas y Consejos
+
+* **Mantén los Workflows Simples**: Cada workflow debe tener un propósito claro (ej. CI, CD, Linting).
+* **Modulariza con Jobs y Pasos**: Divide la lógica compleja en jobs y pasos más pequeños y nombrados.
+* **Usa Versiones Específicas de Actions (`@vX`)**: Siempre especifica la versión de una Action (ej. `actions/checkout@v4`) en lugar de `latest` para garantizar la reproducibilidad.
+* **`npm ci` vs `npm install`**: Usa `npm ci` en tus workflows de CI/CD para instalaciones limpias y reproducibles, y `npm install` en desarrollo.
+* **Cachea Dependencias (`actions/cache`)**: Reduce los tiempos de construcción al almacenar en caché `node_modules`, dependencias de Maven, etc.
+* **Protege Secretos**: No los "hardcodees". Almacénalos en GitHub Secrets y accede a ellos a través de `secrets.<nombre>`.
+* **Reglas de Protección de Ramas**: Configura reglas para la rama `main` (ej. requerir checks de CI/CD y revisiones de PR antes de fusionar).
+* **Registro y Depuración**: Usa nombres de pasos descriptivos. Para depurar, añade `run: echo "..."` o `run: npm run test -- --debug` o habilita el log de depuración en el runner.
+* **Valida tus Workflows**: Usa el editor de GitHub o herramientas como `act` para validar la sintaxis YAML.
+* **Contextos para Información**: Familiarízate con los diferentes contextos (ej. `github`, `env`, `steps`) para acceder a la información necesaria.
+* **Artefactos para Salidas**: Sube los resultados de compilación, informes de pruebas o coberturas como artefactos para su posterior revisión o descarga.
+
+---
+
+Este cheatsheet te proporciona una referencia completa de GitHub Actions, cubriendo sus conceptos esenciales, estructura de workflows, eventos, tipos de jobs, gestión de variables y secretos, y las mejores prácticas para construir pipelines de CI/CD automatizados y robustos.

@@ -1,0 +1,161 @@
+
+---
+
+# 📊 Kibana Cheatsheet Completo 📊
+
+**Kibana** es una interfaz de usuario de código abierto basada en web que permite visualizar y explorar los datos indexados en Elasticsearch. Proporciona potentes capacidades de análisis, visualización y gestión para logs, métricas y datos de aplicaciones, siendo un componente clave de la Elastic Stack (ELK: Elasticsearch, Logstash/Beats, Kibana).
+
+---
+
+## 1. 🌟 Conceptos Clave
+
+*   **Elasticsearch Backend**: Kibana funciona exclusivamente con Elasticsearch como su fuente de datos.
+*   **Índice (Index)**: Colección lógica de documentos en Elasticsearch.
+*   **Patrón de Índice (Index Pattern)**: Una forma de agrupar uno o más índices relacionados en Elasticsearch para su exploración en Kibana (ej. `logs-*`, `metricbeat-*`).
+*   **Descubrir (Discover)**: La interfaz principal para buscar y explorar tus datos de forma interactiva.
+*   **Visualizar (Visualize)**: Herramienta para crear gráficos, tablas y otros tipos de visualizaciones a partir de tus datos.
+*   **Dashboard (Panel)**: Una colección de visualizaciones que se organizan y presentan juntas en una sola página.
+*   **Query DSL (Domain Specific Language)**: El lenguaje de consulta JSON utilizado por Elasticsearch, que Kibana utiliza por debajo para sus búsquedas.
+*   **KQL (Kibana Query Language)**: Un lenguaje de consulta simplificado y potente para Kibana, ideal para búsquedas de texto completo y de campo.
+*   **Time Range (Rango de Tiempo)**: El rango de tiempo de los datos que se muestran en una visualización o dashboard.
+
+---
+
+## 2. 🛠️ Configuración Inicial y Acceso
+
+1.  **Instalar Elasticsearch y que esté en ejecución.**
+2.  **Descargar e Instalar Kibana**: Descarga desde [elastic.co/downloads/kibana](https://www.elastic.co/downloads/kibana).
+3.  **Configurar `config/kibana.yml`**:
+    ```yaml
+    # config/kibana.yml
+    server.port: 5601 # Puerto por defecto de Kibana
+    server.host: "0.0.0.0" # Para que sea accesible desde cualquier IP
+    elasticsearch.hosts: ["http://localhost:9200"] # URLs de tu clúster Elasticsearch
+    # Opcional si Elasticsearch tiene seguridad
+    # elasticsearch.username: "kibana_system"
+    # elasticsearch.password: "your_password"
+    # kibana.externalURL: "http://mykibana.example.com" # Si accedes desde un dominio
+    ```
+4.  **Iniciar Kibana**:
+    ```bash
+    ./bin/kibana # Linux/macOS
+    bin\kibana.bat # Windows
+    ```
+5.  **Acceder a la UI**: Abre tu navegador en `http://localhost:5601`.
+6.  **Crear un Patrón de Índice**:
+    *   Al acceder por primera vez, Kibana te guiará para crear un patrón de índice.
+    *   Ve a `Stack Management` -> `Index Patterns`.
+    *   Haz clic en `Create index pattern`.
+    *   Introduce un patrón (ej. `logstash-*`, `my_app_logs-*`, `*` para todos).
+    *   Selecciona el campo de `Time filter field name` (generalmente `@timestamp` o `timestamp`).
+    *   Haz clic en `Create index pattern`.
+
+---
+
+## 3. 🖥️ Módulos Principales de la UI
+
+Kibana se organiza en una barra lateral izquierda con diferentes módulos:
+
+### 3.1. `Analytics`
+
+*   **Discover (Descubrir)**:
+    *   **Propósito**: Búsqueda interactiva y exploración de datos crudos.
+    *   **Componentes**:
+        *   **Search Bar (Barra de Búsqueda)**: Para consultas KQL o Query DSL.
+        *   **Time Picker (Selector de Tiempo)**: Para definir el rango de tiempo.
+        *   **Fields List (Lista de Campos)**: Muestra los campos disponibles. Puedes añadir/quitar columnas.
+        *   **Document Table (Tabla de Documentos)**: Muestra los documentos que coinciden con la consulta.
+        *   **Histograma de Tiempo**: Muestra la distribución de los documentos a lo largo del tiempo.
+    *   **Consultas KQL (Kibana Query Language)**:
+        *   `status_code:200`
+        *   `message:"error"`
+        *   `user.name:john AND level:ERROR`
+        *   `response_time > 100`
+        *   `NOT category:admin`
+        *   `_exists_:field_name`
+    *   **Query DSL**: Puedes alternar a Query DSL para consultas complejas.
+*   **Visualize (Visualizar)**:
+    *   **Propósito**: Crear visualizaciones (gráficos, tablas, mapas) a partir de tus datos.
+    *   **Tipos de Visualizaciones**:
+        *   **Agregación de Datos**:
+            *   `Vertical Bar`: Gráficos de barras.
+            *   `Horizontal Bar`: Gráficos de barras horizontales.
+            *   `Line`: Gráficos de líneas.
+            *   `Area`: Gráficos de área.
+            *   `Pie`: Gráficos de pastel.
+            *   `Gauge`, `Goal`: Indicadores de métricas.
+            *   `Metric`: Muestra un único número grande.
+            *   `Data Table`: Tabla de datos agregados.
+            *   `Tag Cloud`: Nube de etiquetas.
+        *   **Maps**: Visualización de datos geoespaciales.
+        *   **Lens**: Una interfaz de arrastrar y soltar para construir visualizaciones rápidamente.
+        *   **Vega / Vega-Lite**: Para visualizaciones altamente personalizadas usando una sintaxis declarativa.
+        *   **TSVB (Time Series Visual Builder)**: Para visualizaciones de series de tiempo complejas.
+*   **Dashboard (Panel)**:
+    *   **Propósito**: Crear paneles interactivos combinando múltiples visualizaciones.
+    *   **Interactividad**: Los filtros aplicados en una visualización se pueden propagar a todo el dashboard.
+    *   Puedes guardar y compartir Dashboards.
+
+### 3.2. `Observability`
+
+*   **Logs**: Visor de logs en tiempo real, con capacidades de búsqueda y filtrado.
+*   **Metrics**: Visualiza métricas de infraestructura (CPU, RAM, red) y de aplicaciones.
+*   **APM (Application Performance Monitoring)**: Monitorea el rendimiento de las aplicaciones a nivel de traza.
+*   **Uptime**: Monitorea la disponibilidad de servicios y URLs.
+
+### 3.3. `Security`
+
+*   **Users**: Gestionar usuarios.
+*   **Roles**: Definir roles y permisos (ej. `read_only`, `admin`).
+*   **API Keys**: Gestionar claves de API.
+
+### 3.4. `Stack Management`
+
+*   **Index Patterns**: Crear y gestionar patrones de índice.
+*   **Saved Objects**: Exportar/importar visualizaciones, dashboards, búsquedas guardadas.
+*   **Index Management**: Gestionar índices de Elasticsearch (ciclo de vida, snapshots).
+*   **Watcher**: (X-Pack) Para configurar alertas basadas en datos.
+*   **Dev Tools (Herramientas de Desarrollo)**:
+    *   **Console**: Una interfaz HTTP para enviar solicitudes directamente a Elasticsearch (Query DSL, CRUD, gestión de índices).
+    *   **Search Profiler**: Analiza el rendimiento de tus consultas de búsqueda.
+
+---
+
+## 4. 📊 Creación de Visualizaciones (Ejemplo con Lens)
+
+1.  **Ir a `Visualize` -> `Create Visualization` -> `Lens`**.
+2.  **Seleccionar un Patrón de Índice**.
+3.  **Arrastrar y Soltar Campos**:
+    *   Arrastra un campo de tipo `date` al eje X para un gráfico de series de tiempo.
+    *   Arrastra un campo numérico (ej. `bytes`) al eje Y para un promedio, suma, etc.
+    *   Arrastra un campo `keyword` (ej. `http.method.keyword`) a `Break down by` para ver barras para cada método.
+4.  **Configurar Agregaciones y Métricas**:
+    *   En el eje Y, puedes cambiar la agregación (ej. `Count of records`, `Average`, `Sum`).
+    *   Añadir múltiples métricas o series.
+5.  **Añadir Filtros**: Usa la barra de búsqueda superior o los filtros en la barra lateral.
+6.  **Guardar la Visualización**: Haz clic en `Save` y dale un nombre.
+
+---
+
+## 5. 💡 Buenas Prácticas y Consejos
+
+*   **Patrones de Índice Bien Definidos**: Crea patrones de índice que agrupen lógicamente tus datos.
+*   **Campos Indexados Correctamente**: Asegúrate de que tus mappings de Elasticsearch sean correctos (`text` vs `keyword`, `date`, `numeric`) para que Kibana pueda visualizarlos y consultarlos eficazmente.
+*   **Consulta KQL vs. Query DSL**:
+    *   **KQL**: Más simple y amigable para búsquedas rápidas.
+    *   **Query DSL**: Necesario para consultas complejas (ej. `bool` con `must`/`should`/`filter`, nested queries, puntuación de relevancia).
+*   **Usa el Selector de Tiempo**: Siempre ajusta el rango de tiempo para ver los datos relevantes.
+*   **Construye Dashboards Temáticos**: Organiza tus visualizaciones en dashboards que cuenten una historia o monitoreen un área específica de tu sistema.
+*   **Aprovecha la Interactividad de Dashboard**: Permite a los usuarios filtrar el dashboard haciendo clic en elementos de las visualizaciones.
+*   **Seguridad**: Habilita la seguridad de X-Pack en Elasticsearch y Kibana. Define roles y usuarios con los permisos mínimos necesarios.
+*   **Logs y Métricas Correlacionadas**: Asegúrate de que tus logs y métricas compartan IDs de correlación (Trace ID, Span ID) para poder saltar entre APM, Logs y Metrics en Kibana.
+*   **Optimización del Rendimiento**: Para Dashboards con muchas visualizaciones, considera:
+    *   Reducir el rango de tiempo.
+    *   Optimizar las consultas en Elasticsearch.
+    *   Usar índices con menos shards.
+    *   Actualizar tu clúster de Elasticsearch.
+*   **Dev Tools Console**: Una herramienta invaluable para aprender el Query DSL, probar consultas y gestionar índices directamente.
+
+---
+
+Este cheatsheet te proporciona una referencia completa de Kibana, cubriendo sus conceptos esenciales, la navegación por la UI, la creación de visualizaciones y dashboards, las herramientas de observabilidad y las mejores prácticas para explorar y analizar tus datos en Elasticsearch.

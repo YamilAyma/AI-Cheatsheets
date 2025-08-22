@@ -1,0 +1,388 @@
+
+---
+
+# 🌳 Git Cheatsheet Completo 🌳
+
+**Git** es un sistema de control de versiones distribuido (DVCS) diseñado para manejar proyectos pequeños o muy grandes con velocidad y eficiencia. Permite a los desarrolladores rastrear cambios en el código, colaborar en proyectos, y revertir a versiones anteriores si es necesario.
+
+---
+
+## 1. 🌟 Conceptos Clave
+
+* **Repositorio (Repository)**: Un proyecto gestionado por Git. Contiene todos los archivos del proyecto y el historial de revisiones.
+  * **Local Repository**: El repositorio en tu máquina.
+  * **Remote Repository**: El repositorio en un servidor remoto (ej. GitHub, GitLab, Bitbucket).
+* **Historial (History)**: La secuencia de cambios registrados en el repositorio.
+* **Commit**: Una "instantánea" de los cambios en tu código en un momento dado. Cada commit tiene un mensaje y un ID único (hash SHA-1).
+* **Rama (Branch)**: Un puntero móvil a un commit. Permite trabajar en nuevas características o arreglos de forma aislada sin afectar la línea principal de desarrollo. `main` (o `master`) es la rama principal por defecto.
+* **HEAD**: Un puntero que indica el commit actual en el que te encuentras.
+* **Staging Area (Index)**: Un área intermedia donde preparas los cambios (archivos) que quieres incluir en el próximo commit.
+* **Merge**: Proceso de integrar cambios de una rama a otra.
+* **Rebase**: Alternativa a `merge` para integrar cambios, que reescribe el historial de commits.
+* **Pull Request / Merge Request**: Mecanismo para proponer cambios de una rama a otra en un repositorio remoto, común en plataformas como GitHub/GitLab.
+
+---
+
+## 2. 🛠️ Configuración Inicial
+
+### 2.1. Configuración Global (una vez por máquina)
+
+```bash
+git config --global user.name "Tu Nombre"
+git config --global user.email "tu.email@example.com"
+```
+
+* Verificar configuración: `git config --list`
+
+### 2.2. Inicializar un Nuevo Repositorio Local
+
+* En un directorio existente:
+  ```bash
+  cd mi_proyecto/
+  git init
+  ```
+* Esto crea un subdirectorio `.git/` oculto que contiene todo el historial del repositorio.
+
+### 2.3. Clonar un Repositorio Remoto
+
+* Obtener una copia local de un repositorio existente:
+  ```bash
+  git clone <URL_del_repositorio> [nombre_directorio]
+  # Ej: git clone https://github.com/usuario/mi-repo.git
+  ```
+
+---
+
+## 3. 🚀 Flujo de Trabajo Básico
+
+### 3.1. Verificar Estado
+
+* Muestra los archivos modificados, stageados y no rastreados.
+  ```bash
+  git status
+  ```
+
+### 3.2. Añadir Cambios al Staging Area (Index)
+
+* Prepara los cambios para el próximo commit.
+  ```bash
+  git add <nombre_archivo>    # Añadir un archivo específico
+  git add .                   # Añadir todos los cambios en el directorio actual (recursivo)
+  git add -u                  # Añadir solo archivos modificados y eliminados (no nuevos)
+  git add -p                  # Añadir cambios interactivamente (por partes)
+  ```
+
+### 3.3. Realizar un Commit (Guardar Cambios Locales)
+
+* Guarda los cambios stageados en el historial local.
+  ```bash
+  git commit -m "Mensaje descriptivo del commit"
+  # El mensaje debe ser claro y conciso sobre lo que hace el commit.
+  ```
+* **Combinar `add` y `commit` (solo para archivos ya rastreados):**
+  ```bash
+  git commit -am "Mensaje para archivos modificados/eliminados (no nuevos)"
+  ```
+* **Modificar el último commit:** (¡CUIDADO! Solo si el commit NO ha sido empujado a un repositorio remoto compartido)
+  ```bash
+  git commit --amend -m "Nuevo mensaje o para añadir más cambios al último commit"
+  ```
+
+---
+
+## 4. 🌿 Ramas (Branches)
+
+### 4.1. Ver Ramas
+
+* Listar todas las ramas locales:
+  ```bash
+  git branch
+  ```
+* Listar todas las ramas (locales y remotas):
+  ```bash
+  git branch -a
+  ```
+
+### 4.2. Crear una Nueva Rama
+
+* Crea una rama pero no te cambies a ella:
+  ```bash
+  git branch <nombre_nueva_rama>
+  ```
+
+### 4.3. Cambiar de Rama
+
+* Cambiar a una rama existente:
+  ```bash
+  git checkout <nombre_rama_existente>
+  # O (más moderno y seguro)
+  git switch <nombre_rama_existente>
+  ```
+* Crear una nueva rama y cambiarte a ella:
+  ```bash
+  git checkout -b <nombre_nueva_rama>
+  # O (más moderno y seguro)
+  git switch -c <nombre_nueva_rama>
+  ```
+
+### 4.4. Eliminar Ramas
+
+* Eliminar una rama local (solo si está completamente fusionada):
+  ```bash
+  git branch -d <nombre_rama>
+  ```
+* Eliminar una rama local (forzar eliminación, aunque no esté fusionada):
+  ```bash
+  git branch -D <nombre_rama>
+  ```
+* Eliminar una rama remota:
+  ```bash
+  git push origin --delete <nombre_rama_remota>
+  # O una sintaxis más corta
+  git push origin :<nombre_rama_remota>
+  ```
+
+---
+
+## 5. 🔄 Fusión (Merging) e Integración
+
+### 5.1. Fusionar Cambios de una Rama a Otra
+
+* Asegúrate de estar en la rama donde quieres traer los cambios (la rama "destino").
+  ```bash
+  git checkout <rama_destino>
+  git merge <rama_a_fusionar>
+  ```
+
+  * Si no hay conflictos, Git realiza una fusión automática (fast-forward o 3-way merge).
+  * Si hay conflictos, Git te lo notificará.
+
+### 5.2. Resolver Conflictos de Fusión
+
+1. Git marcará los archivos con conflictos.
+2. Edita manualmente los archivos para resolver los conflictos (buscar `<<<<<<<`, `=======`, `>>>>>>>`).
+3. Después de resolver, añade los archivos al staging area:
+   ```bash
+   git add <archivos_resolvidos>
+   ```4.  Completa el merge con un commit:
+   ```bash
+   git commit -m "Merge branch '<rama_a_fusionar>'"
+   ```
+
+   * Git generará un mensaje de commit predeterminado para el merge.
+
+### 5.3. Rebase (Rebasing)
+
+* Reescribe el historial, reubicando una serie de commits en una nueva base (otra rama).
+* **¡CUIDADO! Nunca uses `rebase` en ramas que ya han sido compartidas (empujadas a un repositorio remoto y usadas por otros).**
+  ```bash
+  git checkout <mi_rama_de_caracteristica>
+  git rebase main # Reaplicar los commits de mi_rama_de_caracteristica sobre main
+  ```
+* **Resolver conflictos en rebase**: Es similar a merge, pero después de resolver un conflicto en un commit, usas `git rebase --continue`. Para abortar: `git rebase --abort`.
+
+---
+
+## 6. ↩️ Deshacer Cambios (Undoing Changes)
+
+### 6.1. Deshacer Cambios en el Área de Trabajo (No Staged)
+
+* Descartar todos los cambios no stageados en un archivo:
+  ```bash
+  git restore <nombre_archivo>
+  # O (sintaxis antigua)
+  git checkout -- <nombre_archivo>
+  ```
+
+### 6.2. Deshacer Cambios en el Staging Area (Unstage)
+
+* Quitar un archivo del staging area, pero mantener los cambios en el área de trabajo:
+  ```bash
+  git restore --staged <nombre_archivo>
+  # O (sintaxis antigua)
+  git reset HEAD <nombre_archivo>
+  ```
+
+### 6.3. Deshacer Commits (¡CUIDADO!)
+
+* **`git reset`**: Mueve el puntero HEAD a un commit anterior, reescribiendo el historial.
+
+  * `git reset --soft <commit_hash>`: Mueve HEAD, los cambios del commit deshecho permanecen stageados.
+  * `git reset --mixed <commit_hash>`: Mueve HEAD, los cambios del commit deshecho están en el área de trabajo (no stageados). (Este es el comportamiento por defecto si no especificas `--soft` ni `--hard`).
+  * `git reset --hard <commit_hash>`: **¡PELIGROSO!** Mueve HEAD y descarta todos los cambios en el área de trabajo y staging area hasta ese commit. **Se pierden datos no comprometidos.**
+    * `git reset --hard HEAD~1`: Deshacer el último commit por completo.
+* **`git revert <commit_hash>`**: Crea un **nuevo commit** que deshace los cambios de un commit anterior. **¡Seguro para el historial compartido!** No reescribe el historial.
+
+  ```bash
+  git revert <commit_hash_a_revertir>
+  ```
+
+### 6.4. Limpiar Archivos No Rastreables
+
+* Eliminar archivos no rastreados (`? ?` en `git status`):
+  ```bash
+  git clean -f            # Elimina archivos no rastreados
+  git clean -fd           # Elimina archivos y directorios no rastreados
+  git clean -n            # Simula la limpieza (dry run)
+  ```
+
+---
+
+## 7. 📤 Sincronización con Repositorios Remotos
+
+### 7.1. Ver Remotos
+
+* Ver los remotos configurados:
+  ```bash
+  git remote -v
+  ```
+
+### 7.2. Añadir un Remoto
+
+* Normalmente "origin" se configura al clonar. Si inicializaste un repo localmente:
+  ```bash
+  git remote add origin <URL_del_repositorio_remoto>
+  ```
+
+### 7.3. Descargar Cambios del Remoto
+
+* Descarga cambios del remoto, pero no los fusiona automáticamente con tu rama local.
+  ```bash
+  git fetch origin
+  ```
+
+### 7.4. Descargar y Fusionar Cambios del Remoto
+
+* Descarga cambios del remoto y los fusiona automáticamente con tu rama local actual.
+  ```bash
+  git pull origin <rama_remota> # Ej: git pull origin main
+  # O si tienes una rama remota rastreada (upstream)
+  git pull
+  ```
+
+### 7.5. Subir Cambios al Remoto
+
+* Sube tus commits locales a la rama remota.
+  ```bash
+  git push origin <mi_rama_local> # Ej: git push origin main
+  ```
+* Configurar la rama remota de seguimiento (upstream):
+  ```bash
+  git push -u origin <mi_rama_local>
+  # Después de esto, puedes usar solo 'git push' y 'git pull' en esa rama.
+  ```
+* Forzar un push (¡CUIDADO! Sobrescribe el historial remoto):
+  ```bash
+  git push -f origin <rama> # Solo si sabes lo que haces, por ejemplo, después de un rebase en una rama no compartida.
+  ```
+
+---
+
+## 8. 📜 Ver Historial
+
+* Ver el historial de commits:
+  ```bash
+  git log
+  ```
+* Historial conciso (una línea por commit):
+  ```bash
+  git log --oneline
+  ```
+* Historial con un gráfico de ramas:
+  ```bash
+  git log --graph --oneline --all
+  ```
+* Ver los cambios introducidos por un commit específico:
+  ```bash
+  git show <commit_hash>
+  ```
+* Ver las diferencias entre el área de trabajo y el staging area:
+  ```bash
+  git diff
+  ```
+* Ver las diferencias entre el staging area y el último commit:
+  ```bash
+  git diff --staged
+  # O: git diff --cached
+  ```
+
+---
+
+## 9. 🚫 Ignorar Archivos
+
+* Crea un archivo llamado `.gitignore` en la raíz de tu repositorio.
+* Lista patrones de archivos/directorios que Git debe ignorar.
+
+```
+# .gitignore
+# Ignorar directorios
+node_modules/
+dist/
+build/
+*.DS_Store # macOS specific
+
+# Ignorar archivos específicos
+.env
+*.log
+my_secret_file.txt
+
+# Ignorar todos los archivos .txt excepto uno
+*.txt
+!important.txt
+```
+
+---
+
+## 10. 📦 Stash (Guardar Cambios Temporalmente)
+
+* Guarda los cambios no comprometidos (en el área de trabajo y staging area) temporalmente para poder cambiar de rama.
+  ```bash
+  git stash save "Mensaje opcional"
+  ```
+* Ver la lista de stashes:
+  ```bash
+  git stash list
+  ```
+* Aplicar el último stash guardado y eliminarlo de la pila:
+  ```bash
+  git stash pop
+  ```
+* Aplicar el último stash pero mantenerlo en la pila:
+  ```bash
+  git stash apply
+  ```
+* Eliminar un stash:
+  ```bash
+  git stash drop <stash@{n}>
+  ```
+
+---
+
+## 11. ✨ Otras Herramientas Útiles
+
+* **`git tag <tag-name> [<commit-hash>]`**: Marca un punto específico en el historial como importante (ej. versiones de lanzamiento).
+  ```bash
+  git tag v1.0.0
+  git tag v1.0.0 <commit_hash>
+  git push origin --tags # Empujar tags al remoto
+  ```
+* **`git cherry-pick <commit-hash>`**: Aplica los cambios introducidos por un commit específico de una rama a otra.
+* **`git reflog`**: Muestra un registro de todas las operaciones de HEAD (muy útil para recuperar commits "perdidos").
+
+---
+
+## 12. 💡 Buenas Prácticas y Consejos
+
+* **Commits Pequeños y Focales**: Cada commit debe resolver una sola preocupación o implementar una característica pequeña.
+* **Mensajes de Commit Claros**:
+  * Línea de asunto concisa (máx. 50-72 caracteres) que resuma el cambio.
+  * Cuerpo detallado (opcional) que explique el *porqué* del cambio.
+* **Estrategia de Ramificación**: Elige una estrategia de ramificación (ej. Git Flow, GitHub Flow) y síguela consistentemente en tu equipo.
+* **Sincroniza Frecuentemente (`git pull`)**: Mantén tu rama local actualizada con los cambios del remoto para evitar conflictos grandes.
+* **Prueba tus Cambios**: Asegúrate de que tu código funcione antes de hacer un commit y empujar.
+* **No Rebasar Ramas Compartidas**: Si una rama ya ha sido empujada y otros están trabajando en ella, evita `git rebase`. Usa `git merge` en su lugar.
+* **Usa `.gitignore`**: Para evitar que archivos innecesarios o sensibles (dependencias, logs, variables de entorno, claves) se rastreen.
+
+---
+
+Este cheatsheet te proporciona una referencia completa y concisa de Git, cubriendo desde sus conceptos esenciales hasta los comandos más comunes y las mejores prácticas para un control de versiones efectivo y la colaboración.

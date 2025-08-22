@@ -1,0 +1,185 @@
+
+---
+
+# 🔎 Zipkin Cheatsheet Completo 🔎
+
+**Zipkin** es un sistema de trazabilidad distribuida de código abierto. Ayuda a recopilar datos de tiempo para cada operación a medida que una solicitud fluye a través de múltiples microservicios. Proporciona una interfaz de usuario para visualizar estos flujos de trazas, facilitando el análisis de latencia, la depuración de microservicios y el monitoreo del rendimiento.
+
+---
+
+## 1. 🌟 Conceptos Clave de Zipkin y Trazabilidad
+
+*   **Trace (Traza)**: Representa el camino completo de una única solicitud/transacción a través de un sistema distribuido. Tiene un `Trace ID` único.
+*   **Span (Tramo)**: Una unidad de trabajo lógica dentro de una traza (ej. una llamada a un servicio, una operación de base de datos). Cada Span tiene un `Span ID` y un `Parent Span ID` (que lo vincula a su operación padre), formando una jerarquía.
+*   **Annotation (Anotación)**: Una marca de tiempo asociada a un Span. Zipkin las utiliza para marcar eventos clave dentro de la vida de un Span (ej. `cs` - client send, `sr` - server receive, `ss` - server send, `cr` - client receive).
+*   **Binary Annotation (Anotación Binaria / Etiqueta)**: Pares clave-valor que proporcionan metadatos adicionales sobre un Span (ej. `http.method`, `http.url`, `error`, `db.statement`). Son el equivalente a los "tags" en OpenTelemetry/Micrometer Tracing.
+*   **Colector (Collector)**: El componente de Zipkin que recibe los Spans de los servicios instrumentados.
+*   **Almacenamiento (Storage)**: Zipkin almacena las trazas en un backend (Memoria, MySQL, Cassandra, Elasticsearch).
+*   **Query Service (Servicio de Consulta)**: Permite a la UI de Zipkin buscar y recuperar trazas del almacenamiento.
+*   **UI (Interfaz de Usuario)**: La interfaz web de Zipkin para visualizar y explorar las trazas.
+
+---
+
+## 2. 🛠️ Configuración e Instalación de Zipkin Server
+
+### 2.1. Con Docker (Recomendado para Desarrollo/Pruebas)
+
+```bash
+docker run -d -p 9411:9411 openzipkin/zipkin
+```
+
+*   Accede a la UI en `http://localhost:9411`.
+
+### 2.2. Con `java -jar` (Alternativa)
+
+*   Descarga el archivo `.jar` de Zipkin desde [search.maven.org/remotecontent?filepath=io/zipkin/zipkin-server/LATEST/zipkin-server-LATEST-exec.jar](https://search.maven.org/remotecontent?filepath=io/zipkin/zipkin-server/2.26.0/zipkin-server-2.26.0-exec.jar) (o la versión más reciente).
+*   Ejecútalo:
+    ```bash
+    java -jar zipkin-server-LATEST-exec.jar
+    ```
+
+### 2.3. Configuración de Almacenamiento (Opcional)
+
+Por defecto, Zipkin usa almacenamiento en memoria (no persistente). Para persistencia, usa variables de entorno al iniciar Zipkin:
+
+*   **MySQL**:
+    ```bash
+    docker run -d -p 9411:9411 \
+      -e STORAGE_TYPE=mysql \
+      -e MYSQL_HOST=your_mysql_host \
+      -e MYSQL_USER=your_user \
+      -e MYSQL_PASS=your_password \
+      -e MYSQL_DB=zipkin \
+      openzipkin/zipkin
+    ```
+*   **Elasticsearch**:
+    ```bash
+    docker run -d -p 9411:9411 \
+      -e STORAGE_TYPE=elasticsearch \
+      -e ES_HOSTS=http://your_es_host:9200 \
+      openzipkin/zipkin
+    ```
+*   **Cassandra**:
+    ```bash
+    docker run -d -p 9411:9411 \
+      -e STORAGE_TYPE=cassandra \
+      -e CASSANDRA_CONTACT_POINTS=your_cassandra_host \
+      openzipkin/zipkin
+    ```
+
+---
+
+## 3. 📝 Instrumentación de Aplicaciones (Spring Boot con Micrometer Tracing)
+
+Micrometer Tracing (el sucesor de Spring Cloud Sleuth) es la forma recomendada de instrumentar aplicaciones Spring Boot para Zipkin (basado en OpenTelemetry).
+
+1.  **Añadir dependencias en `pom.xml` (en tu microservicio):**
+    ```xml
+    <dependencies>
+        <!-- Micrometer Tracing Bridge para OpenTelemetry -->
+        <dependency>
+            <groupId>io.micrometer</groupId>
+            <artifactId>micrometer-tracing-bridge-otel</artifactId>
+        </dependency>
+        <!-- Exporter para Zipkin -->
+        <dependency>
+            <groupId>io.opentelemetry</groupId>
+            <artifactId>opentelemetry-exporter-zipkin</artifactId>
+        </dependency>
+        <!-- Para la API de OpenTelemetry (si necesitas instrumentación manual) -->
+        <dependency>
+            <groupId>io.opentelemetry</groupId>
+            <artifactId>opentelemetry-api</artifactId>
+            <version>1.34.1</version> <!-- Usar la versión compatible -->
+        </dependency>
+        <!-- Spring Boot Actuator para exposición de métricas y health -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-actuator</artifactId>
+        </dependency>
+    </dependencies>
+    ```
+
+2.  **Configurar `application.yml` (en tu microservicio cliente):**
+    ```yaml
+    # src/main/resources/application.yml
+    spring:
+      application:
+        name: my-service-name # CRÍTICO: Nombre del servicio para las trazas
+      zipkin:
+        base-url: http://localhost:9411 # URL del servidor Zipkin
+      sleuth: # Propiedades del "bridge" OpenTelemetry
+        sampler:
+          probability: 1.0 # Muestrear el 100% de las trazas (0.0 a 1.0)
+        propagation:
+          type: W3C # Usar el formato de encabezado W3C Trace Context (traceparent, tracestate)
+          # Otros: B3 (para sistemas antiguos), B3_MULTI, B3_SINGLE
+
+    # Configuración explícita del exportador OTel (opcional si spring.zipkin.base-url es suficiente)
+    management:
+      tracing:
+        sampling:
+          probability: 1.0
+        propagation:
+          type: W3C
+        exporters:
+          zipkin:
+            endpoint: http://localhost:9411/api/v2/spans # Endpoint V2 de Zipkin
+          logging: # Útil para depuración local
+            enabled: true # Para ver las trazas en los logs de la consola
+    ```
+
+---
+
+## 4. 🚀 Visualización de Trazas en la UI de Zipkin
+
+1.  **Acceder a la UI**: `http://localhost:9411`
+2.  **Buscar Trazas**:
+    *   **Service Name**: Filtra por el nombre de la aplicación (definido en `spring.application.name`).
+    *   **Span Name**: Filtra por el nombre de una operación (ej. `GET /api/users`).
+    *   **Min Duration / Max Duration**: Filtra por la duración de la traza.
+    *   **Limit**: Número máximo de trazas a mostrar.
+    *   **Annotation Query**: Buscar trazas con anotaciones/tags específicos (ej. `error` o `http.status_code=500`).
+3.  **Visualizar Detalles de la Traza**:
+    *   Al seleccionar una traza, verás un gráfico de Gantt mostrando todos los Spans, su duración, y su relación jerárquica.
+    *   Haz clic en un Span para ver sus detalles (tags, logs de eventos, duración).
+
+---
+
+## 5. 📝 Envío de Spans a Zipkin (Protocolos)
+
+Zipkin soporta varios protocolos para enviar Spans desde los servicios instrumentados a su Colector:
+
+*   **HTTP (JSON/Thrift)**: El protocolo más común para clientes web y la mayoría de los frameworks. El `opentelemetry-exporter-zipkin` (y el antiguo Spring Cloud Sleuth) lo usan por defecto para `http://<zipkin-host>:9411/api/v2/spans`.
+*   **Kafka**: Para alto volumen de Spans, se pueden enviar a un topic de Kafka, y Zipkin los consume de Kafka.
+    *   Configuración: `COLLECTOR_KAFKA_TOPIC`, `COLLECTOR_KAFKA_BOOTSTRAP_SERVERS`.
+*   **gRPC**: Para un protocolo de alto rendimiento y bajo ancho de banda.
+*   **RabbitMQ**: Similar a Kafka, usando un Message Queue.
+
+---
+
+## 6. 🌐 Integración con Otros Componentes
+
+*   **Spring Cloud Gateway**: Si tu API Gateway (con Spring Cloud Gateway) también está instrumentado, las trazas se iniciarán y propagarán desde allí.
+*   **Spring Cloud Sleuth (Legacy)**: Las versiones de Spring Boot anteriores a 3.x usan Spring Cloud Sleuth, que se integra directamente con Brave (una librería de trazabilidad) para Zipkin. Micrometer Tracing es la evolución compatible con OpenTelemetry.
+*   **JMS/Kafka/RabbitMQ**: Los clientes de mensajería están instrumentados para propagar el contexto de la traza a través de los headers del mensaje.
+*   **Logs**: Configura tus logs para incluir el `Trace ID` y `Span ID` para que puedas correlacionar fácilmente los logs con las trazas en Zipkin.
+    *   **Spring Boot**: Por defecto, los logs ya incluyen `[<app-name>,<trace-id>,<span-id>,<true/false>]`.
+
+---
+
+## 7. 💡 Buenas Prácticas y Consejos
+
+*   **Muestreo (Sampling)**: En producción, el muestreo es CRÍTICO. No envíes el 100% de las trazas a Zipkin a menos que tengas un volumen de tráfico muy bajo. Un 1% o 10% es común para equilibrar visibilidad y rendimiento.
+    *   `spring.sleuth.sampler.probability=0.01`
+*   **Nombres de Servicios Únicos**: Asegúrate de que `spring.application.name` sea único y descriptivo para cada microservicio. Es la clave para identificar tus servicios en Zipkin.
+*   **Tags Significativos**: Añade tags personalizados a tus Spans (`Span.tag("key", "value")` o `@NewSpan`) para incluir información valiosa para la depuración (ej. `user.id`, `customer.type`, `http.status_code`, `db.query`).
+*   **Context Propagation Consistente**: Asegúrate de que todos los servicios y componentes que se comunican entre sí usen el mismo formato de propagación de contexto (ej. `W3C` o `B3`).
+*   **Monitoreo del Servidor Zipkin**: Monitorea la salud y el rendimiento de tu instancia de Zipkin Server.
+*   **Limpieza de Datos**: Si usas almacenamiento en memoria para Zipkin, las trazas se perderán al reiniciar. Para otros backends, considera una política de retención de datos para evitar que crezca indefinidamente.
+*   **Usa un API Gateway Instrumentado**: Si tienes un API Gateway (ej. Spring Cloud Gateway), asegúrate de que esté instrumentado. Será el punto de entrada de todas las trazas.
+*   **Correlaciona Logs y Métricas**: Un `Trace ID` y `Span ID` en tus logs te permite saltar de una traza a la línea de log específica que la causó. Las métricas te dan la "qué", las trazas te dan el "por qué".
+
+---
+
+Este cheatsheet te proporciona una referencia completa de Zipkin, cubriendo sus conceptos esenciales de trazabilidad distribuida, cómo instalar el servidor, instrumentar aplicaciones Spring Boot con Micrometer Tracing, visualizar trazas y aplicar las mejores prácticas para un monitoreo y depuración eficientes en arquitecturas de microservicios.

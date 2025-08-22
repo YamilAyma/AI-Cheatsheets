@@ -1,0 +1,391 @@
+
+---
+
+# 🚀 Node.js Cheatsheet Completo 🚀
+
+Node.js es un entorno de ejecución de JavaScript basado en el motor V8 de Chrome. Utiliza un modelo de E/S sin bloqueo y basado en eventos, lo que lo hace ligero y eficiente, ideal para construir aplicaciones de red escalables.
+
+---
+
+## 1. 🌟 Conceptos Clave
+
+* **Motor V8**: El motor de JavaScript de alto rendimiento de Google Chrome que compila JavaScript a código de máquina directamente.
+* **Modelo Asíncrono y Basado en Eventos**: Node.js no bloquea la ejecución de operaciones de E/S. En su lugar, utiliza callbacks, promesas o `async/await` para manejar las respuestas una vez que las operaciones se completan. Esto lo hace muy eficiente para tareas de red.
+* **Single-Threaded Event Loop (Bucle de Eventos de un solo hilo)**: El corazón de Node.js. Procesa todas las operaciones de E/S no bloqueantes en un solo hilo, lo que simplifica la concurrencia.
+* **Módulos**: Funcionalidad organizada en archivos o directorios reutilizables. Node.js soporta CommonJS (`require`/`exports`) y ES Modules (`import`/`export`).
+* **NPM (Node Package Manager)**: El gestor de paquetes por defecto para Node.js, el ecosistema de librerías de código abierto más grande del mundo.
+
+---
+
+## 2. 🛠️ Configuración Inicial
+
+1. **Instalar Node.js**: Descarga e instala el instalador desde [nodejs.org](https://nodejs.org/). Incluye `npm`.
+2. **Verificar Instalación**: Abre tu terminal/CMD y escribe:
+   ```bash
+   node -v
+   npm -v
+   ```
+3. **Ejecutar un Archivo JavaScript**: Guarda tu código en un archivo `.js` (ej. `app.js`) y ejecútalo:
+   ```bash
+   node app.js
+   ```
+
+---
+
+## 3. 📦 Gestión de Paquetes (NPM)
+
+* **`npm init`**: Inicializa un nuevo proyecto Node.js, creando un archivo `package.json`.
+  ```bash
+  npm init -y # Para aceptar todas las opciones por defecto
+  ```
+* **`package.json`**: Archivo de metadatos del proyecto. Define dependencias, scripts, información del autor, etc.
+  ```json
+  {
+    "name": "my-node-app",
+    "version": "1.0.0",
+    "description": "Mi primera aplicación Node.js",
+    "main": "index.js",
+    "scripts": {
+      "start": "node index.js",
+      "dev": "nodemon index.js"
+    },
+    "dependencies": {
+      "express": "^4.17.1"
+    },
+    "devDependencies": {
+      "nodemon": "^2.0.15"
+    }
+  }
+  ```
+* **`npm install <package-name>`**: Instala un paquete y lo añade a `dependencies`.
+  ```bash
+  npm install express
+  ```
+* **`npm install <package-name> --save-dev`**: Instala un paquete y lo añade a `devDependencies` (para desarrollo, testing, building).
+  ```bash
+  npm install nodemon --save-dev
+  ```
+* **`npm install`**: Instala todas las dependencias listadas en `package.json`.
+* **`npm uninstall <package-name>`**: Desinstala un paquete.
+* **`npm update <package-name>`**: Actualiza un paquete.
+* **`npm run <script-name>`**: Ejecuta un script definido en la sección `scripts` de `package.json`.
+  ```bash
+  npm run dev
+  ```
+
+---
+
+## 4. 🧩 Módulos (Organización del Código)
+
+### 4.1. CommonJS (Por defecto para `.js` a menos que se configure `type: "module"`)
+
+* **Exportar**:
+  ```javascript
+  // myModule.js
+  const myVar = 'Hola';
+  function myFunction() {
+    return 'Desde mi función';
+  }
+  module.exports = { myVar, myFunction }; // Exportar múltiples elementos
+  // O: exports.myVar = myVar; exports.myFunction = myFunction;
+  // O: module.exports = myFunction; // Exportar un solo elemento
+  ```
+* **Importar**:
+  ```javascript
+  // app.js
+  const { myVar, myFunction } = require('./myModule');
+  console.log(myVar);        // Hola
+  console.log(myFunction()); // Desde mi función
+  ```
+
+### 4.2. ES Modules (Para `.mjs` o cuando `type: "module"` en `package.json`)
+
+* **Exportar**:
+  ```javascript
+  // myModule.mjs o myModule.js (con type: "module")
+  export const myVar = 'Hola';
+  export function myFunction() {
+    return 'Desde mi función';
+  }
+  // O: export { myVar, myFunction };
+  // O: export default myFunction;
+  ```
+* **Importar**:
+  ```javascript
+  // app.mjs o app.js (con type: "module")
+  import { myVar, myFunction } from './myModule.js'; // ¡Importante: incluir la extensión!
+  // import myFunction from './myModule.js'; // Para default exports
+  console.log(myVar);        // Hola
+  console.log(myFunction()); // Desde mi función
+  ```
+
+---
+
+## 5. ⚡ Programación Asíncrona
+
+### 5.1. Callbacks (Enfoque Tradicional)
+
+```javascript
+const fs = require('fs');
+
+fs.readFile('file.txt', 'utf8', (err, data) => {
+  if (err) {
+    console.error('Error al leer el archivo:', err);
+    return;
+  }
+  console.log('Contenido del archivo:', data);
+});
+console.log('Lectura de archivo iniciada (asíncrono)...'); // Se ejecuta antes del callback
+```
+
+### 5.2. Promesas (`Promise`)
+
+```javascript
+const fs = require('fs/promises'); // Usa la versión de promesas del módulo fs
+
+fs.readFile('file.txt', 'utf8')
+  .then(data => {
+    console.log('Contenido del archivo (Promise):', data);
+  })
+  .catch(err => {
+    console.error('Error al leer el archivo (Promise):', err);
+  });
+```
+
+```
+
+```
+
+### 5.3. `async`/`await` (Sintaxis Moderna)
+
+```javascript
+const fs = require('fs/promises');
+
+async function readMyFile() {
+  try {
+    const data = await fs.readFile('file.txt', 'utf8');
+    console.log('Contenido del archivo (async/await):', data);
+  } catch (err) {
+    console.error('Error al leer el archivo (async/await):', err);
+  }
+}
+readMyFile();
+```
+
+### 5.4. Event Emitters (`events` module)
+
+Para manejar eventos personalizados.
+
+```javascript
+const EventEmitter = require('events');
+class MyEmitter extends EventEmitter {}
+
+const myEmitter = new MyEmitter();
+myEmitter.on('event', (data) => { // Escucha el evento 'event'
+  console.log('Un evento ha ocurrido:', data);
+});
+
+myEmitter.emit('event', { id: 1, message: 'Hola!' }); // Emite el evento
+```
+
+---
+
+## 6. 📚 Módulos Core de Node.js
+
+Node.js viene con un conjunto de módulos incorporados.
+
+### 6.1. `fs` (File System) - Operaciones de Archivos
+
+```javascript
+const fs = require('fs'); // Versión con Callbacks
+// const fs = require('fs/promises'); // Versión con Promesas
+
+// Leer archivo
+fs.readFile('input.txt', 'utf8', (err, data) => { /* ... */ }); // Callback
+// await fs.readFile('input.txt', 'utf8'); // Promise
+
+// Escribir archivo (crea o sobrescribe)
+fs.writeFile('output.txt', 'Hola desde Node.js', (err) => { /* ... */ });
+// await fs.writeFile('output.txt', 'Hola desde Node.js');
+
+// Añadir a archivo
+fs.appendFile('log.txt', 'Nuevo log\n', (err) => { /* ... */ });
+
+// Crear directorio
+fs.mkdir('my_folder', (err) => { /* ... */ });
+
+// Eliminar archivo
+fs.unlink('temp.txt', (err) => { /* ... */ });
+
+// Comprobar si existe
+fs.access('file.txt', fs.constants.F_OK, (err) => {
+  console.log(`${err ? 'no existe' : 'existe'} el archivo`);
+});
+```
+
+### 6.2. `path` - Rutas de Archivos y Directorios
+
+```javascript
+const path = require('path');
+
+const filePath = path.join(__dirname, 'data', 'file.txt'); // Construye una ruta segura
+console.log(filePath); // /ruta/a/tu/app/data/file.txt
+
+console.log(path.basename(filePath)); // file.txt
+console.log(path.dirname(filePath));  // /ruta/a/tu/app/data
+console.log(path.extname(filePath));  // .txt
+console.log(path.parse(filePath));    // Objeto con root, dir, base, ext, name
+```
+
+### 6.3. `http` - Servidor Web Básico
+
+```javascript
+const http = require('http');
+
+const server = http.createServer((req, res) => {
+  if (req.url === '/') {
+    res.writeHead(200, { 'Content-Type': 'text/html' });
+    res.end('<h1>Página de Inicio</h1>');
+  } else if (req.url === '/api/data') {
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ message: 'Datos de la API', timestamp: Date.now() }));
+  } else {
+    res.writeHead(404, { 'Content-Type': 'text/html' });
+    res.end('<h1>404 Not Found</h1>');
+  }
+});
+
+const PORT = process.env.PORT || 3000;
+server.listen(PORT, () => console.log(`Servidor corriendo en http://localhost:${PORT}`));
+```
+
+### 6.4. `url` - Parsear URLs
+
+```javascript
+const url = require('url');
+const address = 'http://localhost:8080/default.html?year=2023&month=february';
+const q = url.parse(address, true); // `true` para parsear query string
+
+console.log(q.host);     // 'localhost:8080'
+console.log(q.pathname); // '/default.html'
+console.log(q.search);   // '?year=2023&month=february'
+console.log(q.query);    // { year: '2023', month: 'february' }
+```
+
+### 6.5. `process` - Información del Proceso Actual
+
+```javascript
+console.log(process.platform); // 'win32', 'darwin', 'linux'
+console.log(process.version);  // Versión de Node.js
+console.log(process.cwd());    // Directorio de trabajo actual
+
+// Acceder a variables de entorno
+console.log(process.env.NODE_ENV); // 'development', 'production', etc.
+
+// Argumentos de línea de comandos
+// node app.js arg1 arg2
+process.argv.forEach((val, index) => {
+  console.log(`${index}: ${val}`); // 0: node, 1: app.js, 2: arg1, 3: arg2
+});
+
+// Salir del proceso
+// process.exit(0); // Exit con éxito
+// process.exit(1); // Exit con error
+```
+
+---
+
+## 7. 🌐 Desarrollo Web con Express.js (Framework Popular)
+
+Express.js es un framework web minimalista y flexible para Node.js que proporciona un conjunto robusto de características para aplicaciones web y APIs.
+
+1. **Instalación**: `npm install express`
+2. **Servidor Básico**:
+
+   ```javascript
+   // server.js
+   const express = require('express');
+   const app = express();
+   const port = 3000;
+
+   // Middleware: para parsear JSON en el cuerpo de las solicitudes
+   app.use(express.json());
+   // Middleware: para servir archivos estáticos (ej. HTML, CSS, JS del frontend)
+   app.use(express.static('public'));
+
+   // Ruta GET
+   app.get('/', (req, res) => {
+     res.send('¡Hola desde Express!');
+   });
+
+   // Ruta con parámetro
+   app.get('/users/:id', (req, res) => {
+     const userId = req.params.id;
+     res.json({ message: `Obteniendo usuario con ID: ${userId}` });
+   });
+
+   // Ruta POST
+   app.post('/api/products', (req, res) => {
+     const product = req.body; // Acceder al cuerpo JSON
+     console.log('Producto recibido:', product);
+     res.status(201).json({ message: 'Producto creado', product });
+   });
+
+   // Ruta 404 (Middleware de manejo de errores al final)
+   app.use((req, res) => {
+     res.status(404).send('Ruta no encontrada');
+   });
+
+   app.listen(port, () => {
+     console.log(`Express app listening at http://localhost:${port}`);
+   });
+   ```
+
+---
+
+## 8. 🚨 Manejo de Errores
+
+* **`try...catch`**: Para errores síncronos.
+* **Manejo de Promesas**: `.catch()` para errores asíncronos en promesas.
+* **Errores del Servidor (Express)**: Middleware de manejo de errores.
+
+  ```javascript
+  // Express error handling middleware (último middleware en ser definido)
+  app.use((err, req, res, next) => {
+    console.error(err.stack); // Imprime el stack trace en la consola
+    res.status(500).send('¡Algo salió mal!');
+  });
+  ```
+* **Errores No Capturados (Unhandled Rejection/Uncaught Exception)**:
+
+  ```javascript
+  process.on('uncaughtException', (err) => {
+    console.error('Excepción no capturada:', err);
+    // Realizar limpieza, logear y luego salir de forma segura
+    process.exit(1); // Salir del proceso
+  });
+
+  process.on('unhandledRejection', (reason, promise) => {
+    console.error('Promesa no manejada:', reason, promise);
+    // Loggear y manejar, pero no necesariamente salir
+  });
+  ```
+
+---
+
+## 9. 💡 Buenas Prácticas y Consejos
+
+* **Modularidad**: Divide tu aplicación en módulos pequeños y reutilizables.
+* **Código Asíncrono**: Abraza el modelo asíncrono. Evita operaciones de E/S síncronas a toda costa en producción, ya que bloquean el Event Loop.
+* **Manejo de Errores Completo**: Implementa un manejo de errores robusto para todas las rutas y operaciones asíncronas.
+* **Variables de Entorno**: Utiliza variables de entorno (ej. `process.env.PORT`) para configurar tu aplicación, especialmente para datos sensibles como credenciales de base de datos (`.env` con librerías como `dotenv`).
+* **NPM Scripts**: Define scripts útiles en `package.json` para automatizar tareas (ej. `start`, `dev`, `test`).
+* **Logging**: Usa librerías de logging (ej. Winston, Pino) en lugar de solo `console.log` para un mejor manejo de logs en producción.
+* **Seguridad**: Sé consciente de las vulnerabilidades comunes (XSS, CSRF, SQL Injection) y usa librerías de seguridad (ej. Helmet para Express).
+* **Pruebas**: Escribe pruebas unitarias e de integración para tu código (ej. Jest, Mocha).
+* **Nodemon**: Usa `nodemon` en desarrollo para recargar automáticamente tu servidor al detectar cambios en los archivos.
+* **Frameworks Web**: Para la mayoría de las aplicaciones web, usa un framework como Express, NestJS o Hapi para acelerar el desarrollo.
+
+---
+
+Este cheatsheet te proporciona una referencia completa de Node.js, cubriendo sus conceptos esenciales, operaciones de archivos, desarrollo web básico, gestión de paquetes y las mejores prácticas para construir aplicaciones escalables y eficientes.

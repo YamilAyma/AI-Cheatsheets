@@ -1,0 +1,184 @@
+/* Estilos generales */
+body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    line-height: 1.6;
+    background-color: #f4f7f6;
+    color: #333;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+}
+
+header {
+    background-color: #fff;
+    padding: 1rem 2rem;
+    border-bottom: 1px solid #ddd;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+header h1 {
+    margin: 0;
+    font-size: 1.5rem;
+    color: #2c3e50;
+}
+
+.breadcrumbs {
+    font-size: 0.9rem;
+    color: #7f8c8d;
+}
+
+.breadcrumbs a {
+    color: #3498db;
+    text-decoration: none;
+}
+
+.breadcrumbs a:hover {
+    text-decoration: underline;
+}
+
+main {
+    flex: 1;
+    padding: 2rem;
+    max-width: 900px;
+    margin: 0 auto;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.content-container {
+    background-color: #fff;
+    padding: 2rem;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+}
+
+footer {
+    text-align: center;
+    padding: 1rem;
+    font-size: 0.8rem;
+    color: #95a5a6;
+    background-color: #fff;
+    border-top: 1px solid #ddd;
+}
+
+/* Estilos del explorador de archivos */
+ul {
+    list-style: none;
+    padding: 0;
+}
+
+li a {
+    display: block;
+    padding: 0.75rem 1rem;
+    text-decoration: none;
+    color: #2980b9;
+    border-radius: 5px;
+    transition: background-color 0.2s ease;
+    margin-bottom: 5px;
+}
+
+li a:hover {
+    background-color: #ecf0f1;
+}
+
+li a.folder::before {
+    content: '📁 ';
+    margin-right: 10px;
+}
+
+li a.file::before {
+    content: '📄 ';
+    margin-right: 10px;
+}
+
+/* Estilos para el contenido del Cheatsheet */
+.content-container h1, .content-container h2, .content-container h3 {
+    border-bottom: 1px solid #eee;
+    padding-bottom: 0.3em;
+    margin-top: 1.5em;
+}
+
+/* Estilo BASE para los Botones de Acción Flotantes (FAB) */
+.fab {
+    position: fixed;
+    right: 25px;
+    z-index: 1000;
+    width: 55px;
+    height: 55px;
+    border-radius: 50%;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.25);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s ease;
+}
+.fab:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.3);
+}
+.fab svg {
+    stroke: #ffffff;
+}
+
+/* Estilo específico para el botón de Volver (Azul) */
+.fab-back {
+    bottom: 25px;
+    background-color: #3498db;
+}
+.fab-back:hover {
+    background-color: #2980b9;
+}
+
+/* Estilo específico para el botón de Imprimir (Rojo) */
+.fab-print {
+    bottom: 95px; /* 25px (margen) + 55px (botón de abajo) + 15px (separación) */
+    background-color: #e74c3c;
+}
+.fab-print:hover {
+    background-color: #c0392b;
+}
+
+/* --- Estilos para la Impresión --- */
+@media print {
+    /* Oculta todo lo que no queremos imprimir */
+    header, footer, .fab {
+        display: none !important;
+    }
+
+    /* Ajusta el cuerpo y el contenedor principal para la impresión */
+    body {
+        background-color: #ffffff;
+        color: #000000;
+        font-family: Georgia, serif; /* Una fuente serif es más legible en papel */
+    }
+    main, .content-container {
+        width: 100%;
+        max-width: 100%;
+        margin: 0;
+        padding: 0;
+        box-shadow: none;
+        border: none;
+    }
+    
+    /* Asegura que los enlaces se muestren (opcional) */
+    a {
+        text-decoration: underline;
+        color: #000000;
+    }
+
+    /* Evita que los bloques de código y los títulos se corten entre páginas */
+    pre, h1, h2, h3 {
+        page-break-inside: avoid;
+    }
+
+    /* Invierte los colores de los bloques de código para ahorrar tinta */
+    pre {
+        background: #f4f4f4 !important;
+        color: #000 !important;
+        border: 1px solid #ddd;
+    }
+    code[class*="language-"], pre[class*="language-"] {
+         text-shadow: none !important;
+    }
+}

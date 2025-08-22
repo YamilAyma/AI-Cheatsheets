@@ -1,0 +1,337 @@
+
+---
+
+# 🧪 JUnit Cheatsheet Completo 🧪
+
+**JUnit** es un framework de código abierto para escribir y ejecutar pruebas unitarias en Java. Permite a los desarrolladores asegurar la calidad de su código, detectar errores temprano y facilitar el refactoring. JUnit 5 (conocido como JUnit Jupiter) es la versión moderna y modular.
+
+---
+
+## 1. 🌟 Conceptos Clave
+
+*   **Prueba Unitaria (Unit Test)**: Una prueba que verifica la funcionalidad de la unidad más pequeña y aislada de código (generalmente un método o una clase) en un programa.
+*   **Aserción (Assertion)**: Una declaración en una prueba que verifica si una condición particular es verdadera. Si falla, la prueba falla.
+*   **Fixture de Prueba (Test Fixture)**: El estado del sistema necesario para ejecutar una prueba (configuración, datos).
+*   **Desarrollo Guiado por Pruebas (Test-Driven Development - TDD)**: Un ciclo de desarrollo donde se escribe una prueba que falla, luego se escribe el código mínimo para que la prueba pase, y finalmente se refactoriza el código.
+*   **Clase de Prueba (Test Class)**: Una clase que contiene uno o más métodos de prueba.
+*   **Método de Prueba (Test Method)**: Un método dentro de una clase de prueba que ejecuta una prueba específica.
+
+---
+
+## 2. 🛠️ Configuración Inicial (Maven)
+
+Para usar JUnit 5 (Jupiter), necesitas las siguientes dependencias en tu `pom.xml`:
+
+```xml
+<dependencies>
+    <!-- Módulo de API de JUnit Jupiter (para escribir pruebas) -->
+    <dependency>
+        <groupId>org.junit.jupiter</groupId>
+        <artifactId>junit-jupiter-api</artifactId>
+        <version>5.10.0</version> <!-- Usar la versión más reciente -->
+        <scope>test</scope>
+    </dependency>
+    <!-- Módulo de Engine de JUnit Jupiter (para ejecutar pruebas) -->
+    <dependency>
+        <groupId>org.junit.jupiter</groupId>
+        <artifactId>junit-jupiter-engine</artifactId>
+        <version>5.10.0</version>
+        <scope>test</scope>
+    </dependency>
+    <!-- Para ejecutar pruebas JUnit 4 en la plataforma JUnit 5 (opcional) -->
+    <dependency>
+        <groupId>org.junit.vintage</groupId>
+        <artifactId>junit-vintage-engine</artifactId>
+        <version>5.10.0</version>
+        <scope>test</scope>
+    </dependency>
+</dependencies>
+
+<build>
+    <plugins>
+        <!-- Plugin para configurar el compilador -->
+        <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-compiler-plugin</artifactId>
+            <version>3.11.0</version>
+            <configuration>
+                <source>17</source> <!-- Versión de Java -->
+                <target>17</target>
+            </configuration>
+        </plugin>
+        <!-- Plugin para ejecutar pruebas JUnit 5 -->
+        <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-surefire-plugin</artifactId>
+            <version>3.1.2</version>
+            <configuration>
+                <argLine>
+                    --enable-preview
+                </argLine>
+            </configuration>
+        </plugin>
+    </plugins>
+</build>
+```
+*   Las clases de prueba suelen estar en `src/test/java/`.
+
+---
+
+## 3. 📝 Estructura Básica de una Prueba
+
+```java
+// src/main/java/com/example/myapp/Calculadora.java
+package com.example.myapp;
+
+public class Calculadora {
+    public int sumar(int a, int b) {
+        return a + b;
+    }
+
+    public int dividir(int a, int b) {
+        if (b == 0) {
+            throw new IllegalArgumentException("No se puede dividir por cero");
+        }
+        return a / b;
+    }
+}
+```
+
+```java
+// src/test/java/com/example/myapp/CalculadoraTest.java
+package com.example.myapp;
+
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.*; // Importa todas las aserciones estáticas
+
+class CalculadoraTest {
+
+    @Test // Anotación que marca el método como un método de prueba
+    @DisplayName("Prueba de suma básica: 5 + 3 debería ser 8") // Nombre legible en reportes
+    void testSumarNumerosPositivos() {
+        // Arrange (Preparación): Instanciar objetos, preparar datos
+        Calculadora calculadora = new Calculadora();
+        int a = 5;
+        int b = 3;
+
+        // Act (Ejecución): Llamar al método a probar
+        int resultado = calculadora.sumar(a, b);
+
+        // Assert (Verificación): Comprobar el resultado
+        assertEquals(8, resultado, "5 + 3 debería ser 8"); // Esperado, Actual, Mensaje opcional
+        assertTrue(resultado > 0, "El resultado debería ser positivo");
+    }
+
+    @Test
+    @DisplayName("Prueba de división por cero: debería lanzar IllegalArgumentException")
+    void testDividirPorCero() {
+        Calculadora calculadora = new Calculadora();
+
+        // Verificar que una excepción específica es lanzada
+        assertThrows(IllegalArgumentException.class, () -> {
+            calculadora.dividir(10, 0);
+        }, "Dividir por cero debería lanzar IllegalArgumentException");
+    }
+}
+```
+
+---
+
+## 4. 🧮 Anotaciones Comunes de JUnit Jupiter
+
+*   **`@Test`**: Marca un método como un método de prueba.
+*   **`@DisplayName("Nombre legible")`**: Proporciona un nombre legible para la prueba o clase.
+*   **`@BeforeEach`**: Se ejecuta **antes de cada** método de prueba en la clase. Útil para reconfigurar el estado (fixture) para cada prueba.
+*   **`@AfterEach`**: Se ejecuta **después de cada** método de prueba en la clase. Útil para limpiar recursos después de cada prueba.
+*   **`@BeforeAll`**: Se ejecuta **una vez antes de todas** las pruebas en la clase. Debe ser un método `static`. Útil para inicializar recursos costosos que se comparten entre pruebas.
+*   **`@AfterAll`**: Se ejecuta **una vez después de todas** las pruebas en la clase. Debe ser un método `static`. Útil para limpiar recursos después de que todas las pruebas han terminado.
+    *   **Nota**: Si la clase está anotada con `@TestInstance(TestInstance.Lifecycle.PER_CLASS)`, `@BeforeAll` y `@AfterAll` no necesitan ser `static`.
+*   **`@Disabled("Razón para deshabilitar")`**: Deshabilita una clase de prueba o un método de prueba.
+*   **`@Tag("nombre_tag")`**: Asigna una etiqueta a una prueba o clase de prueba para categorizarlas y poder ejecutarlas selectivamente.
+*   **`@Nested`**: Permite definir clases de prueba anidadas para organizar mejor las pruebas, especialmente para probar clases internas o escenarios relacionados.
+*   **`@RepeatedTest(count)`**: Repite un método de prueba `count` veces.
+*   **`@ParameterizedTest`**: Permite ejecutar el mismo método de prueba múltiples veces con diferentes argumentos. (Ver sección 6).
+*   **`@TestFactory`**: Un método de prueba que es una "fábrica" de pruebas dinámicas generadas en tiempo de ejecución. (Uso avanzado).
+
+---
+
+## 5. ✅ Aserciones (clase `org.junit.jupiter.api.Assertions`)
+
+Métodos estáticos para verificar condiciones.
+
+*   **`assertEquals(expected, actual, [message])`**: Comprueba si dos valores son iguales.
+    *   `assertEquals(5, calculadora.sumar(2,3));`
+*   **`assertNotEquals(unexpected, actual, [message])`**: Comprueba si dos valores no son iguales.
+*   **`assertTrue(condition, [message])`**: Comprueba si una condición es verdadera.
+*   **`assertFalse(condition, [message])`**: Comprueba si una condición es falsa.
+*   **`assertNull(actual, [message])`**: Comprueba si un objeto es `null`.
+*   **`assertNotNull(actual, [message])`**: Comprueba si un objeto no es `null`.
+*   **`assertThrows(expectedType, executable, [message])`**: Comprueba que un método lanza una excepción específica.
+    *   `assertThrows(IllegalArgumentException.class, () -> myObject.doSomethingInvalid());`
+*   **`assertDoesNotThrow(executable, [message])`**: Comprueba que un método no lanza ninguna excepción.
+*   **`assertArrayEquals(expectedArray, actualArray, [message])`**: Comprueba si dos arrays son iguales (elemento a elemento).
+*   **`assertIterableEquals(expectedIterable, actualIterable, [message])`**: Comprueba si dos iterables son iguales.
+*   **`assertAll(heading, executables...)`**: Agrupa múltiples aserciones. Todas se ejecutan, y se reportan todos los fallos.
+    ```java
+    assertAll("Test de usuario",
+        () -> assertEquals("John", user.getFirstName()),
+        () -> assertEquals("Doe", user.getLastName()),
+        () -> assertTrue(user.isActive())
+    );
+    ```
+*   **`assertTimeout(duration, executable, [message])`**: Falla si el `executable` excede el tiempo de duración.
+    *   `assertTimeout(Duration.ofMillis(100), () -> myMethod());`
+*   **`assertTimeoutPreemptively(duration, executable, [message])`**: Similar a `assertTimeout`, pero termina el hilo si se excede el tiempo. **¡CUIDADO con efectos secundarios!**
+
+---
+
+## 6. 🔄 Pruebas Parametrizadas (`@ParameterizedTest`)
+
+Ejecuta el mismo método de prueba con diferentes conjuntos de datos.
+
+*   **`@ValueSource`**: Provee un array de valores primitivos (strings, ints, doubles, booleans).
+    ```java
+    import org.junit.jupiter.params.ParameterizedTest;
+    import org.junit.jupiter.params.provider.ValueSource;
+
+    class StringUtilsTest {
+        @ParameterizedTest
+        @ValueSource(strings = {"racecar", "madam", "level"})
+        void isPalindrome_shouldReturnTrueForPalindromes(String word) {
+            assertTrue(StringUtils.isPalindrome(word));
+        }
+    }
+    // Suponiendo: public static boolean isPalindrome(String s) { ... }
+    ```
+*   **`@CsvSource`**: Provee valores como cadenas separadas por coma.
+    ```java
+    import org.junit.jupiter.params.provider.CsvSource;
+
+    class CalculadoraParamTest {
+        @ParameterizedTest
+        @CsvSource({ "1, 1, 2", "2, 3, 5", "5, 5, 10" })
+        void sumar_variosNumeros(int a, int b, int esperado) {
+            Calculadora calculadora = new Calculadora();
+            assertEquals(esperado, calculadora.sumar(a, b));
+        }
+    }
+    ```
+*   **`@MethodSource`**: Provee valores desde un método estático en la misma o diferente clase. Permite objetos más complejos.
+    ```java
+    import org.junit.jupiter.params.provider.MethodSource;
+    import java.util.stream.Stream;
+
+    class Producto { // Clase de ejemplo
+        String nombre; int precio;
+        Producto(String n, int p) { this.nombre = n; this.precio = p; }
+    }
+
+    class ProductoTest {
+        @ParameterizedTest
+        @MethodSource("productosDePrueba")
+        void testProductoTienePrecio(Producto p, int precioEsperado) {
+            assertEquals(precioEsperado, p.precio);
+        }
+
+        static Stream<Object[]> productosDePrueba() { // Debe devolver Stream<Arguments> o Stream<Object[]>
+            return Stream.of(
+                new Object[]{new Producto("Laptop", 1200), 1200},
+                new Object[]{new Producto("Teclado", 75), 75}
+            );
+        }
+    }
+    ```
+
+---
+
+## 7. ⚖️ Asunciones (`Assumptions`)
+
+Permiten "saltar" una prueba si una condición no se cumple. A diferencia de `assert`, no hacen que la prueba falle, sino que la "abortan" o la "ignoran".
+
+*   **`assumeTrue(condition)`**: Aborta la prueba si la condición es `false`.
+*   **`assumeFalse(condition)`**: Aborta la prueba si la condición es `true`.
+*   **`assumingThat(condition, executable)`**: Ejecuta el `executable` solo si la condición es `true`.
+
+```java
+import org.junit.jupiter.api.Assumptions;
+import org.junit.jupiter.api.Test;
+
+class AssumptionTest {
+    @Test
+    void testSoloEnDesarrollo() {
+        Assumptions.assumeTrue(System.getenv("ENV") != null && System.getenv("ENV").equals("DEV"));
+        // El resto de la prueba solo se ejecuta si la variable de entorno ENV es "DEV"
+        System.out.println("Ejecutando prueba de desarrollo...");
+    }
+
+    @Test
+    void testConRecursoOpcional() {
+        boolean recursoDisponible = false; // Simula si un recurso externo está disponible
+        Assumptions.assumingThat(recursoDisponible, () -> {
+            // Esta lambda solo se ejecuta si recursoDisponible es true
+            System.out.println("Ejecutando prueba que depende de un recurso.");
+            assertTrue(true);
+        });
+        // La prueba principal siempre continuará desde aquí
+        System.out.println("Prueba principal continúa.");
+    }
+}
+```
+
+---
+
+## 8. 📦 Extensiones (`@ExtendWith`)
+
+El mecanismo de extensión de JUnit 5. Permite integrar funcionalidades de terceros (ej. Mockito, Spring, etc.) o crear tus propias extensiones.
+
+```java
+// Ejemplo con Mockito (requiere dependencia mockito-junit-jupiter)
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+import static org.mockito.Mockito.when;
+
+@ExtendWith(MockitoExtension.class) // Habilita la extensión de Mockito
+class UserServiceTest {
+    @Mock // Mockea la dependencia
+    private UserRepository userRepository;
+
+    @Test
+    void testGetUserById() {
+        // Configura el mock
+        when(userRepository.findById(1L)).thenReturn("John Doe");
+
+        // ... usa userRepository en tu servicio
+        // UserService userService = new UserService(userRepository);
+        // assertEquals("John Doe", userService.getUserById(1L));
+    }
+}
+```
+
+---
+
+## 9. 💡 Buenas Prácticas y Consejos
+
+*   **Principios FIRST para Pruebas Unitarias**:
+    *   **F**ast (Rápidas): Deben ejecutarse rápidamente para feedback continuo.
+    *   **I**solated/Independent (Aisladas/Independientes): No deben depender unas de otras.
+    *   **R**epeatable (Repetibles): Deben producir el mismo resultado cada vez que se ejecutan.
+    *   **S**elf-validating (Auto-validables): No requieren intervención humana para interpretar el resultado.
+    *   **T**imely (Oportunas): Escribir las pruebas antes del código (TDD).
+*   **Patrón Arrange-Act-Assert (AAA)**:
+    1.  **Arrange**: Prepara el entorno de prueba (instanciar objetos, mockear dependencias, preparar datos).
+    2.  **Act**: Ejecuta la acción o el método que estás probando.
+    3.  **Assert**: Verifica que el resultado o el estado del objeto es el esperado.
+*   **Nombres de Pruebas Significativos**: Usa nombres descriptivos para los métodos de prueba (ej. `nombreMetodoATestar_condicion_resultadoEsperado` o `@DisplayName`).
+*   **Una Aserción por Prueba (Ideal)**: Intenta tener una sola aserción significativa por método de prueba. Esto hace que las pruebas sean más claras y concisas. Si necesitas múltiples aserciones relacionadas, considera `assertAll`.
+*   **No Pruebes Código de Librerías/Frameworks**: Concéntrate en probar tu propia lógica de negocio.
+*   **Mocks y Stubs**: Utiliza frameworks de mocking (ej. Mockito) para aislar la unidad bajo prueba de sus dependencias.
+*   **Limpieza de Recursos**: Usa `@AfterEach` o `try-with-resources` para asegurar que los recursos (archivos, conexiones de BD) se cierren o limpien después de cada prueba.
+*   **Evita Pruebas "Frágiles" (Fragile Tests)**: Pruebas que fallan por razones no relacionadas con un error en el código (ej. dependencia de orden, datos externos, tiempos).
+*   **Separar Código de Prueba del Código de Producción**: Mantén las pruebas en el directorio `src/test/java/`.
+
+---
+
+Este cheatsheet te proporciona una referencia completa de JUnit 5, cubriendo sus conceptos esenciales, cómo estructurar pruebas, las anotaciones clave, las aserciones, las pruebas parametrizadas y las mejores prácticas para escribir pruebas unitarias de Java efectivas y robustas.

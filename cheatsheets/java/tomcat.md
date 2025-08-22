@@ -1,0 +1,170 @@
+---
+
+# 🐱 Apache Tomcat Cheatsheet Completo 🐱
+
+**Apache Tomcat** es un servidor web de código abierto y un contenedor de servlets desarrollado por la Apache Software Foundation. Implementa las especificaciones Java Servlet, JavaServer Pages (JSP), Java Unified Expression Language (JUEL) y Java WebSocket. Es un pilar para el despliegue de aplicaciones web basadas en Java.
+
+---
+
+## 1. 🌟 Conceptos Clave
+
+*   **Servidor Web**: Capaz de servir contenido estático (HTML, CSS, JS, imágenes).
+*   **Contenedor de Servlets**: El componente principal que gestiona el ciclo de vida de los Servlets y JSPs. Proporciona el entorno de ejecución para las aplicaciones web Java.
+*   **Servlet**: Una clase Java que extiende las capacidades de un servidor, respondiendo a solicitudes HTTP. Es el componente fundamental de las aplicaciones web Java del lado del servidor.
+*   **JSP (JavaServer Pages)**: Una tecnología que permite incrustar código Java directamente en páginas HTML. Similar a PHP, pero para Java. Se compilan a Servlets.
+*   **WAR (Web Application ARchive)**: El formato de archivo estándar para empaquetar una aplicación web Java completa para su despliegue en un servidor de aplicaciones o contenedor de servlets como Tomcat. Contiene código Java compilado, JSPs, HTML, CSS, JS, recursos e información de configuración (`web.xml`).
+*   **Catalina**: El contenedor de servlets principal de Tomcat.
+*   **Coyote**: El conector HTTP de Tomcat, que maneja las solicitudes HTTP entrantes.
+*   **Manager App**: Una aplicación web de Tomcat para gestionar aplicaciones desplegadas (WARs).
+*   **Host**: Una entrada en Tomcat que representa un nombre de dominio (ej. `www.example.com`). Puede tener múltiples Contexts.
+*   **Context**: Representa una aplicación web individual dentro de un Host. Cada Context tiene una ruta de contexto (ej. `/myApp`).
+
+---
+
+## 2. 🛠️ Instalación y Estructura de Directorios
+
+1.  **Descargar Tomcat**: Desde [tomcat.apache.org/download](https://tomcat.apache.org/download.cgi). Descarga el paquete binario (Core, ej. `zip` o `tar.gz`).
+2.  **Extraer**: Descomprime el archivo en tu directorio preferido (ej. `C:\tomcat`, `/opt/tomcat`). Esto será tu `CATALINA_HOME` o `TOMCAT_HOME`.
+3.  **Configurar JAVA_HOME**: Asegúrate de que la variable de entorno `JAVA_HOME` esté configurada y apunte a tu instalación de JDK.
+
+### 2.1. Estructura de Directorios de Tomcat
+
+*   **`bin/`**: Scripts para iniciar/detener Tomcat (ej. `startup.sh`/`.bat`, `shutdown.sh`/`.bat`).
+*   **`conf/`**: Archivos de configuración de Tomcat (ej. `server.xml`, `web.xml`, `context.xml`).
+*   **`lib/`**: Archivos JAR de librerías compartidas por todas las aplicaciones web.
+*   **`logs/`**: Archivos de logs de Tomcat.
+*   **`temp/`**: Directorio para archivos temporales.
+*   **`webapps/`**: Directorio donde se despliegan las aplicaciones web (archivos WAR).
+*   **`work/`**: Directorio donde Tomcat almacena archivos compilados (ej. JSPs convertidos a Servlets).
+
+---
+
+## 3. 🚀 Comandos Básicos (Línea de Comandos)
+
+*   **Iniciar Tomcat**:
+    ```bash
+    cd <CATALINA_HOME>/bin
+    ./startup.sh   # Linux/macOS
+    startup.bat    # Windows
+    ```
+*   **Detener Tomcat**:
+    ```bash
+    cd <CATALINA_HOME>/bin
+    ./shutdown.sh  # Linux/macOS
+    shutdown.bat   # Windows
+    ```*   **Ver Logs**:
+    ```bash
+    tail -f <CATALINA_HOME>/logs/catalina.out # Linux/macOS
+    ```
+*   **Acceder al Servidor**: Por defecto, Tomcat escucha en `http://localhost:8080`.
+
+---
+
+## 4. ⚙️ Archivos de Configuración Clave (`conf/`)
+
+### 4.1. `server.xml` (Configuración Principal)
+
+Define la configuración del servidor, puertos, conectores, hosts.
+
+*   **`<Server>`**: Elemento raíz.
+    *   `port="8005"`: Puerto de apagado de Tomcat.
+*   **`<Service>`**: Contiene uno o más `Connectors` y un `Engine`.
+*   **`<Connector>`**: Habilita a Tomcat para escuchar en un puerto específico y procesar solicitudes (HTTP, AJP).
+    *   `port="8080"`: Puerto HTTP por defecto.
+    *   `protocol="HTTP/1.1"`
+    *   `connectionTimeout="20000"`
+    *   `redirectPort="8443"` (para HTTPS)
+*   **`<Engine>`**: Representa el motor de servlets. Puede contener múltiples `Host`s.
+    *   `name="Catalina"`
+    *   `defaultHost="localhost"`
+*   **`<Host>`**: Un host virtual, generalmente mapeado a un nombre de dominio.
+    *   `name="localhost"`: Host por defecto.
+    *   `appBase="webapps"`: Directorio donde se buscan las aplicaciones web.
+    *   `unpackWARs="true"`: Descomprime los WARs en directorios al desplegar.
+    *   `autoDeploy="true"`: Despliega automáticamente aplicaciones nuevas o actualizadas en `webapps`.
+    *   **`<Context>`**: Define una aplicación web individual.
+        *   `path="/myApp"`: La ruta de contexto (URL) de la aplicación.
+        *   `docBase="path/to/myApp.war"`: Ruta al archivo WAR o al directorio de la aplicación.
+        *   Puede definirse directamente en `server.xml` (menos común) o en `conf/Catalina/localhost/myApp.xml`.
+
+### 4.2. `web.xml` (Configuración Global de Servlets)
+
+Define las propiedades por defecto y los mappings de servlets para **todas** las aplicaciones desplegadas en Tomcat.
+
+*   No modificar directamente a menos que sea estrictamente necesario. Las aplicaciones deben tener su propio `web.xml` o configurarse con anotaciones.
+
+### 4.3. `context.xml` (Configuración Global de Contexto)
+
+Define la configuración por defecto para **todos** los Contexts (aplicaciones web) desplegados.
+
+*   Útil para configurar JNDI `Resource`s (ej. fuentes de datos) que se comparten entre todas las aplicaciones.
+
+---
+
+## 5. 📦 Despliegue de Aplicaciones Web (WARs)
+
+1.  **Construir el archivo WAR**: Empaqueta tu aplicación web Java (Spring Boot, Spring MVC, JSP, Servlets) en un archivo `.war`. (Ej. `mvn package` para Maven).
+2.  **Copiar el WAR**: Coloca el archivo `.war` en el directorio `<CATALINA_HOME>/webapps/`.
+3.  **Despliegue Automático**: Si `autoDeploy="true"` en `server.xml`, Tomcat desplegará el WAR automáticamente al iniciarse o al detectarlo. Descomprimirá el WAR en un directorio del mismo nombre (ej. `webapps/myApp/`).
+4.  **Acceder a la Aplicación**: Si el WAR se llama `myApp.war`, la aplicación estará accesible en `http://localhost:8080/myApp/`.
+
+### 5.1. Despliegue Manual (Manager App)
+
+*   Accede a la `Manager App` en `http://localhost:8080/manager/html`.
+*   Necesitas configurar usuarios con roles `manager-gui` o `manager-script` en `conf/tomcat-users.xml`.
+*   Desde la interfaz, puedes subir WARs, iniciar/detener/desplegar/desplegar aplicaciones.
+
+---
+
+## 6. 🛠️ Seguridad (Tomcat Users)
+
+*   **`conf/tomcat-users.xml`**: Define usuarios y roles para acceder a las aplicaciones de gestión de Tomcat (Manager App, Host Manager App).
+    ```xml
+    <tomcat-users>
+        <role rolename="manager-gui"/>
+        <role rolename="admin-gui"/>
+        <user username="admin" password="my_secure_password" roles="manager-gui,admin-gui"/>
+        <user username="manager" password="manager_password" roles="manager-gui"/>
+        <!-- ... otros usuarios y roles -->
+    </tomcat-users>
+    ```
+*   **¡Cambia las contraseñas por defecto!**
+*   **Roles de Gestión**:
+    *   `manager-gui`: Acceso a la interfaz web de la Manager App.
+    *   `manager-script`: Acceso a la API del Manager (para scripts de automatización).
+    *   `admin-gui`: Acceso a la interfaz web de la Host Manager App.
+*   **Seguridad en `web.xml` de las apps de gestión**: Los archivos `web.xml` dentro de los directorios `webapps/manager` y `webapps/host-manager` definen qué roles pueden acceder a ellos.
+
+---
+
+## 7. 📈 Rendimiento y Optimización Básica
+
+*   **Ajustar Conectores en `server.xml`**:
+    *   `maxThreads`: Número máximo de hilos que el conector puede crear para manejar solicitudes. Aumentar para más concurrencia.
+    *   `acceptCount`: Número de solicitudes pendientes en la cola cuando todos los hilos están ocupados.
+    *   `compression="on"`: Habilita la compresión GZIP para texto, JS, CSS.
+    *   `compressionMinSize="2048"`: Tamaño mínimo de respuesta para comprimir.
+    *   `noCompressionUserAgents="gozilla,traviata"`: Agentes de usuario a excluir de la compresión.
+    *   `compressableMimeTypes="text/html,text/xml,text/plain,text/css,text/javascript,application/javascript,application/json"`: Tipos MIME a comprimir.
+*   **Habilitar Caching de Recursos**: Para contenido estático, configurar `Cache-Control` en el servidor web o en las cabeceras HTTP de tu aplicación.
+*   **Optimizar la JVM**: Ajustar los parámetros de la JVM (memoria, recolector de basura) en `bin/setenv.sh` (o `.bat`).
+    *   `CATALINA_OPTS="-Xms512m -Xmx1024m"`: Tamaño inicial y máximo del heap de la JVM.
+*   **Usar el Conector AJP**: Si Tomcat está detrás de un servidor web frontal (ej. Apache HTTP Server con `mod_jk` o `mod_proxy_ajp`), usa el conector AJP para una comunicación más eficiente.
+*   **Servir Estáticos con un Servidor Web Frontal**: Para alto rendimiento con archivos estáticos (imágenes, CSS, JS), es mejor usar un servidor web dedicado (Apache HTTP Server, Nginx) como proxy frontal que redirija solo las solicitudes dinámicas a Tomcat.
+
+---
+
+## 8. 💡 Buenas Prácticas y Consejos
+
+*   **No Ejecutar como Root**: Nunca ejecutes Tomcat como usuario `root`. Crea un usuario dedicado con permisos mínimos.
+*   **Cambiar el Puerto por Defecto**: Si despliegas en un servidor público, cambia el puerto 8080 a 80 (o usa un proxy inverso como Nginx/Apache que redirija del puerto 80 al 8080).
+*   **Asegurar las Aplicaciones de Gestión**: Cambia las contraseñas por defecto y considera restringir el acceso a la `Manager App` por IP.
+*   **Monitoreo**: Utiliza herramientas de monitoreo (ej. JMX, Prometheus/Grafana) para observar el rendimiento y la salud de tu instancia de Tomcat.
+*   **Logging**: Configura los logs de Tomcat y de tu aplicación para obtener información útil sobre errores y comportamiento.
+*   **Actualizaciones de Seguridad**: Mantén tu versión de Tomcat actualizada con los últimos parches de seguridad.
+*   **Spring Boot y Tomcat Embebido**: Para la mayoría de las aplicaciones Spring Boot modernas, Tomcat viene embebido y preconfigurado, simplificando el despliegue. No necesitas un WAR o una instalación de Tomcat separada. Este cheatsheet es más relevante si despliegas WARs en un Tomcat "standalone".
+*   **Context Path**: Si tu aplicación es la única en el Tomcat o es la aplicación principal, puedes configurarla como la aplicación raíz (ROOT.war) para que se acceda directamente en `http://localhost:8080/`.
+
+---
+
+Este cheatsheet te proporciona una referencia completa de Apache Tomcat, cubriendo sus conceptos esenciales, cómo instalarlo, configurarlo, desplegar aplicaciones, gestionar la seguridad y aplicar optimizaciones básicas, lo que te permitirá gestionar eficazmente tus aplicaciones web Java.

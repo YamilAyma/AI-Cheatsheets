@@ -1,0 +1,307 @@
+
+---
+
+# ☸️ Istio (Service Mesh) Cheatsheet Completo ☸️
+
+**Istio** es una **malla de servicios (Service Mesh)** de código abierto que proporciona una capa de infraestructura transparente para gestionar las comunicaciones de servicio a servicio. Permite a los desarrolladores y operadores controlar el tráfico, hacer cumplir políticas, aplicar la seguridad y obtener telemetría de forma programática, sin modificar el código de la aplicación.
+
+---
+
+## 1. 🌟 Conceptos Clave
+
+*   **Service Mesh (Malla de Servicios)**: Una capa de infraestructura dedicada para gestionar las comunicaciones de servicio a servicio.
+*   **Control Plane (Plano de Control)**: El cerebro de Istio. Gestiona y configura el Data Plane. En versiones modernas de Istio, está consolidado en `istiod`.
+*   **Data Plane (Plano de Datos)**: Compuesto por **proxies Envoy** que se despliegan como "sidecars" junto a cada instancia de servicio (Pod en Kubernetes). Interceptan y gestionan todo el tráfico de red de entrada y salida del Pod.
+*   **Envoy Proxy**: Un proxy de servicio de alto rendimiento, de código abierto, diseñado para lenguajes de programación modernos. Es el proxy por defecto en Istio.
+*   **Sidecar Pattern (Patrón Sidecar)**: Un patrón de diseño donde un "contenedor sidecar" (Envoy) se ejecuta junto al contenedor principal de la aplicación dentro del mismo Pod. Comparten red y almacenamiento.
+*   **Inyección de Sidecar**: El proceso de añadir automáticamente el proxy Envoy como un contenedor sidecar a un Pod de Kubernetes.
+*   **CRDs (Custom Resource Definitions)**: Istio extiende Kubernetes añadiendo sus propios tipos de recursos personalizados para configurar sus funcionalidades (ej. `VirtualService`, `Gateway`, `DestinationRule`).
+
+---
+
+## 2. 🛠️ Arquitectura de Istio
+
+### 2.1. Componentes del Plano de Control (`istiod`)
+
+*   **`Discovery`**: Provee servicios de descubrimiento a los proxies Envoy, incluyendo la configuración de políticas de tráfico, timeouts, retries, etc. (anteriormente `Pilot`).
+*   **`Security`**: Gestiona la autoridad de certificación (CA) para generar y rotar certificados de mTLS (anteriormente `Citadel`).
+*   **`Configuration`**: Provee validación, almacenamiento y distribución de la configuración de Istio (anteriormente `Galley`).
+*   **`Telemetry`**: (Funcionalidad heredada) Recopila telemetría de Envoy (métricas, logs, trazas) y la exporta a sistemas de backend (anteriormente `Mixer`). Ahora, muchos datos se envían directamente de Envoy.
+
+### 2.2. Componentes del Plano de Datos (Proxies Envoy)
+
+*   Se inyectan como sidecars en los Pods.
+*   Interceptan y enrutan el tráfico.
+*   Aplican políticas de tráfico y seguridad.
+*   Recopilan métricas, trazas y logs de acceso.
+
+---
+
+## 3. ⚙️ Instalación y CLI (`istioctl`)
+
+1.  **Descargar `istioctl`**: La herramienta de línea de comandos de Istio.
+    *   `curl -L https://istio.io/downloadIstio | sh -` (Instala en un directorio local).
+    *   Añade el directorio `bin` al `PATH`.
+2.  **Instalar Istio en Kubernetes (usando `istioctl`)**:
+    *   `istioctl install --set profile=demo` (o `default`, `minimal`, `production`).
+3.  **Habilitar la Inyección Automática de Sidecars**:
+    *   Etiqueta un namespace para que la inyección automática funcione:
+        ```bash
+        kubectl label namespace default istio-injection=enabled --overwrite
+        ```
+    *   Los Pods desplegados en este namespace obtendrán automáticamente un sidecar Envoy.
+4.  **Verificar la Instalación**:
+    ```bash
+    istioctl verify-install
+    istioctl analyze # Analiza problemas de configuración de Istio
+    kubectl get pods -n istio-system # Ver los componentes del Control Plane
+    ```
+
+---
+
+## 4. 🌐 Gestión de Tráfico (Traffic Management)
+
+Controlar el flujo de tráfico y las llamadas a la API entre servicios.
+
+### 4.1. `Gateway` (Puerta de Enlace)
+
+*   Define un punto de entrada para el tráfico externo (fuera de la malla) a la malla de servicios.
+*   Especifica qué puertos y protocolos deben estar expuestos.
+*   Normalmente se usa con un `VirtualService`.
+
+    ```yaml
+    # my-gateway.yaml
+    apiVersion: networking.istio.io/v1beta1
+    kind: Gateway
+    metadata:
+      name: my-app-gateway
+      namespace: default
+    spec:
+      selector:
+        istio: ingressgateway # Usa el ingress gateway por defecto de Istio
+      servers:
+        - port:
+            number: 80
+            name: http
+            protocol: HTTP
+          hosts:
+            - "my.example.com" # Host al que responde este Gateway
+        - port:
+            number: 443
+            name: https
+            protocol: HTTPS
+          hosts:
+            - "my.example.com"
+          tls: # Configuración TLS
+            mode: SIMPLE
+            credentialName: my-app-cert # Nombre del Secret de Kubernetes con el certificado
+    ```
+
+### 4.2. `VirtualService` (Servicio Virtual)
+
+*   Define reglas de enrutamiento para cómo el tráfico se envía a los servicios dentro de la malla.
+*   Se puede aplicar a tráfico interno o tráfico externo (si se une a un `Gateway`).
+*   **Reglas**: Enrutamiento basado en HTTP headers, paths, pesos para traffic splitting.
+
+    ```yaml
+    # my-virtualservice.yaml
+    apiVersion: networking.istio.io/v1beta1
+    kind: VirtualService
+    metadata:
+      name: my-app-vs
+      namespace: default
+    spec:
+      hosts:
+        - "my.example.com" # Se enlaza a un Gateway si es tráfico externo
+        - "my-service"     # O al nombre interno del servicio para tráfico dentro de la malla
+      gateways:
+        - my-app-gateway # Enlaza a un Gateway específico
+        - mesh           # Para que la regla aplique a tráfico interno de la malla también
+      http:
+        - match: # Coincidir solicitudes
+            - uri:
+                prefix: /api/v1/products # Coincide con /api/v1/products/*
+              headers:
+                user-agent:
+                  regex: "^.*Chrome.*$" # Ejemplo: solo para navegadores Chrome
+          route: # Reglas de enrutamiento
+            - destination:
+                host: product-service # Servicio de Kubernetes al que enrutar
+                port:
+                  number: 8080 # Puerto del servicio
+              weight: 90 # 90% del tráfico
+            - destination:
+                host: product-service-v2 # Otra versión del servicio
+                port:
+                  number: 8080
+              weight: 10 # 10% del tráfico (para Canary Release)
+          timeout: 5s # Timeout para la solicitud
+          retries: # Reintentos automáticos
+            attempts: 3
+            perTryTimeout: 2s
+            retryOn: 5xx,gateway-error,connect-failure # Condiciones para reintentar
+    ```
+
+### 4.3. `DestinationRule` (Regla de Destino)
+
+*   Define políticas aplicables al tráfico *después* de que el enrutamiento (VirtualService) ha determinado el servicio de destino.
+*   **Subsets**: Permite definir "subsets" (subgrupos) de instancias de un servicio (ej. `v1`, `v2`, `stable`, `canary`) basados en etiquetas de Pod.
+*   **Políticas**: Balanceo de carga, Pool de conexiones, detección de anomalías.
+
+    ```yaml
+    # my-destinationrule.yaml
+    apiVersion: networking.istio.io/v1beta1
+    kind: DestinationRule
+    metadata:
+      name: product-service-dr
+      namespace: default
+    spec:
+      host: product-service # Nombre del servicio de Kubernetes
+      trafficPolicy: # Políticas de tráfico para este host
+        loadBalancer: # Política de balanceo de carga
+          simple: ROUND_ROBIN # ROUND_ROBIN, LEAST_CONN, RANDOM, PASSTHROUGH
+        connectionPool: # Pool de conexiones (para HTTP y TCP)
+          http:
+            http1MaxPendingRequests: 10
+            http2MaxRequests: 100
+            maxRequestsPerConnection: 10
+          tcp:
+            maxConnections: 100
+            connectTimeout: 1s
+        outlierDetection: # Detección de anomalías (expulsar instancias de servicio con fallos)
+          consecutiveErrors: 5 # Expulsar si hay 5 errores consecutivos
+          interval: 30s # Cada 30 segundos
+          baseEjectionTime: 60s # Duración mínima de la expulsión
+          maxEjectionPercent: 100 # % máximo de instancias a expulsar
+      subsets: # Definir subsets basados en etiquetas de Pod
+        - name: v1 # Nombre del subset
+          labels:
+            version: v1 # Coincide con Pods que tienen label 'version: v1'
+        - name: v2
+          labels:
+            version: v2
+    ```
+
+---
+
+## 5. 🔒 Seguridad (Security)
+
+Istio proporciona seguridad en la capa de la malla de servicios.
+
+### 5.1. Mutual TLS (mTLS)
+
+*   Cifrado de tráfico y autenticación mutua entre servicios. Por defecto es `PERMISSIVE` (acepta mTLS o texto plano), pero puede forzarse a `STRICT`.
+*   **`PeerAuthentication`**: Configura la política mTLS.
+
+    ```yaml
+    # my-peerauthentication.yaml
+    apiVersion: security.istio.io/v1beta1
+    kind: PeerAuthentication
+    metadata:
+      name: default
+      namespace: default
+    spec:
+      mtls:
+        mode: STRICT # STRICT, PERMISSIVE, DISABLE
+    ```
+    *   Puede aplicarse a nivel de malla, namespace o servicio.
+
+### 5.2. `AuthorizationPolicy` (Política de Autorización)
+
+*   Controla el acceso a los servicios de la malla (quién puede hacer qué).
+*   Define reglas de ALLOW (permitir) o DENY (denegar).
+
+    ```yaml
+    # my-authz-policy.yaml
+    apiVersion: security.istio.io/v1beta1
+    kind: AuthorizationPolicy
+    metadata:
+      name: product-viewer-policy
+      namespace: default
+    spec:
+      selector:
+        matchLabels:
+          app: product-service # Aplicar a Pods con este label
+      action: ALLOW # Acción: ALLOW o DENY
+      rules:
+        - from: # Permitir desde
+            - source:
+                namespaces: ["frontend"] # Desde Pods en el namespace 'frontend'
+                principals: ["cluster.local/ns/default/sa/my-service-account"] # Desde un Service Account específico
+          to: # A métodos HTTP y rutas
+            - operation:
+                methods: ["GET"]
+                paths: ["/api/products/*"] # Solo a GET en estas rutas
+          when: # Condiciones adicionales
+            - key: request.headers[x-api-key] # Si el header x-api-key existe
+              values: ["my-secret-key"]
+    ```
+
+### 5.3. `RequestAuthentication` (Validación de JWT)
+
+*   Valida tokens JWT entrantes.
+
+    ```yaml
+    # my-request-auth.yaml
+    apiVersion: security.istio.io/v1beta1
+    kind: RequestAuthentication
+    metadata:
+      name: jwt-auth
+      namespace: default
+    spec:
+      selector:
+        matchLabels:
+          app: my-service
+      jwtRules:
+        - issuer: "https://accounts.google.com" # Emisor del JWT
+          jwksUri: "https://www.googleapis.com/oauth2/v3/certs" # URL de las claves públicas para verificación
+          audiences: ["your-client-id.apps.googleusercontent.com"]
+          forwardOriginalToken: true # Reenviar el token original al servicio
+    ```
+    *   Una vez que el JWT es validado por `RequestAuthentication`, las políticas de autorización pueden usar sus claims (ej. `request.auth.claims[email]`).
+
+---
+
+## 6. 📊 Observabilidad (Observability)
+
+Istio proporciona telemetría sin instrumentación de código.
+
+*   **Métricas**: Recopila automáticamente métricas de 4 "golden signals" (latencia, tráfico, errores, saturación) para todos los servicios. Se integra con Prometheus por defecto.
+    *   Acceso a Prometheus UI: `istioctl dashboard prometheus`
+*   **Trazabilidad Distribuida**: Genera y propaga trazas para el seguimiento de solicitudes a través de múltiples servicios. Se integra con Jaeger o Zipkin.
+    *   Acceso a Jaeger UI: `istioctl dashboard jaeger`
+    *   Acceso a Zipkin UI: `istioctl dashboard zipkin`
+*   **Registros (Access Logs)**: Recopila logs de acceso detallados del tráfico de la malla.
+*   **Kiali**: Un panel de control de visualización de mallas de servicios para Istio, que proporciona un mapa gráfico de la malla, métricas, trazas y configuraciones.
+    *   Acceso a Kiali UI: `istioctl dashboard kiali`
+
+---
+
+## 7. 🧰 Otros Recursos de Istio
+
+*   **`ServiceEntry`**: Permite a los servicios de la malla acceder a servicios externos (fuera de la malla de Istio) como si fueran parte de la malla.
+*   **`Sidecar`**: Controla el comportamiento del proxy Envoy para un Pod o un namespace (ej. restringir qué servicios puede alcanzar).
+*   **`RequestAuthentication`**: (Ver en Seguridad) Valida tokens JWT.
+*   **`WorkloadEntry`**: Registra manualmente instancias de carga de trabajo (VMs, bare-metals) en la malla.
+*   **`Telemetry`**: (Alpha/Beta) Un recurso para configurar la generación de telemetría (métricas, trazas, logs de acceso) para un servicio.
+
+---
+
+## 8. 💡 Buenas Prácticas y Consejos
+
+*   **Empieza Sencillo (`profile=demo`/`minimal`)**: Para entornos de desarrollo o pruebas, no necesitas la instalación completa de producción.
+*   **Inyección de Sidecar**: Etiqueta tus namespaces para la inyección automática. No inyectes sidecars manualmente a menos que sea necesario.
+*   **`Gateway` para Tráfico Externo**: Siempre usa un `Gateway` para exponer tus servicios al mundo exterior.
+*   **`VirtualService` y `DestinationRule`**: Son las CRDs fundamentales para la gestión del tráfico. `VirtualService` define el "cómo enrutar" y `DestinationRule` define el "a dónde enrutar y qué políticas aplicar" para el destino.
+*   **Definir Subsets en `DestinationRule`**: Es crucial para habilitar patrones avanzados de tráfico como Canary releases y A/B testing.
+*   **`mTLS STRICT` en Producción**: Habilita mTLS en modo `STRICT` en producción para asegurar todas las comunicaciones de servicio a servicio.
+*   **Políticas de Autorización Detalladas (`AuthorizationPolicy`)**: Define políticas de control de acceso granulares para proteger tus servicios.
+*   **Monitorea y Depura con Herramientas de Observabilidad**: Usa Prometheus, Grafana, Jaeger/Zipkin y Kiali para entender el comportamiento de tu malla. Son indispensables.
+*   **`istioctl analyze`**: Ejecuta esta herramienta regularmente para detectar problemas de configuración de Istio.
+*   **Actualizaciones**: Mantén Istio actualizado, ya que evoluciona rápidamente.
+*   **Riesgos de Rendimiento**: Aunque Istio es eficiente, la inyección de proxies introduce una latencia mínima. Mide el rendimiento de tus aplicaciones después de integrarlo.
+*   **Aprende el modelo de Kubernetes**: Un buen entendimiento de Kubernetes es fundamental para usar Istio de manera efectiva.
+
+---
+
+Este cheatsheet te proporciona una referencia completa de Istio, cubriendo sus conceptos esenciales, arquitectura, cómo instalarlo y configurarlo, la gestión de tráfico, la seguridad, la observabilidad y las mejores prácticas para construir microservicios robustos y gestionables.

@@ -1,0 +1,349 @@
+
+---
+
+# 🔄 MapStruct Cheatsheet Completo 🔄
+
+**MapStruct** es un generador de código que simplifica la implementación de mapeos de datos entre clases de objetos de Java. En lugar de usar reflexión en tiempo de ejecución (como ModelMapper o Dozer), MapStruct genera clases de implementación de mapeo en tiempo de compilación. Esto resulta en código de mapeo completamente seguro para tipos y de alto rendimiento, sin sobrecarga en tiempo de ejecución.
+
+---
+
+## 1. 🌟 Conceptos Clave
+
+*   **Generación de Código en Tiempo de Compilación**: A diferencia de otras librerías de mapeo, MapStruct no usa reflexión. Genera una clase Java concreta (la implementación del "mapper") durante la fase de compilación de tu proyecto.
+*   **Convención sobre Configuración**: MapStruct intenta automáticamente mapear propiedades con nombres y tipos similares.
+*   **`@Mapper` Anotación**: La anotación principal que marca una interfaz Java como una interfaz de mapeo para la cual MapStruct debe generar una implementación.
+*   **Mappers**: Son interfaces Java que definen los métodos de mapeo.
+*   **Tipado Seguro**: Como el código se genera en tiempo de compilación, cualquier error de mapeo (ej. propiedad no encontrada, tipos incompatibles) se detecta antes de la ejecución.
+*   **Alto Rendimiento**: El código generado es código Java plano y optimizado, sin sobrecarga de reflexión.
+
+---
+
+## 2. 🛠️ Configuración Inicial (Maven)
+
+Añade las dependencias necesarias en tu `pom.xml`.
+
+```xml
+<dependencies>
+    <!-- MapStruct Core API -->
+    <dependency>
+        <groupId>org.mapstruct</groupId>
+        <artifactId>mapstruct</artifactId>
+        <version>1.5.5.Final</version> <!-- Usar la versión más reciente -->
+    </dependency>
+</dependencies>
+
+<build>
+    <plugins>
+        <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-compiler-plugin</artifactId>
+            <version>3.11.0</version>
+            <configuration>
+                <source>17</source> <!-- Tu versión de Java -->
+                <target>17</target>
+                <annotationProcessorPaths>
+                    <!-- MapStruct Processor: Genera las implementaciones de los mappers -->
+                    <path>
+                        <groupId>org.mapstruct</groupId>
+                        <artifactId>mapstruct-processor</artifactId>
+                        <version>1.5.5.Final</version>
+                    </path>
+                    <!-- Opcional: Si usas Lombok, para que el procesador de Lombok se ejecute antes -->
+                    <!-- <path>
+                        <groupId>org.projectlombok</groupId>
+                        <artifactId>lombok</artifactId>
+                        <version>1.18.30</version>
+                    </path>
+                    <path>
+                        <groupId>org.projectlombok</groupId>
+                        <artifactId>lombok-mapstruct-binding</artifactId>
+                        <version>0.2.0</version>
+                    </path> -->
+                </annotationProcessorPaths>
+            </configuration>
+        </plugin>
+    </plugins>
+</build>
+```
+
+---
+
+## 3. 🚀 Mapeo Básico
+
+### 3.1. Clases de Ejemplo
+
+```java
+// src/main/java/com/example/model/User.java
+package com.example.model;
+public class User {
+    private Long id;
+    private String firstName;
+    private String lastName;
+    private String email;
+    private boolean isActive;
+    // Constructor, Getters y Setters
+    public User() {}
+    public User(Long id, String fn, String ln, String e, boolean active) {
+        this.id = id; this.firstName = fn; this.lastName = ln; this.email = e; this.isActive = active;
+    }
+    public Long getId() { return id; } public void setId(Long id) { this.id = id; }
+    public String getFirstName() { return firstName; } public void setFirstName(String firstName) { this.firstName = firstName; }
+    public String getLastName() { return lastName; } public void setLastName(String lastName) { this.lastName = lastName; }
+    public String getEmail() { return email; } public void setEmail(String email) { this.email = email; }
+    public boolean isActive() { return isActive; } public void setActive(boolean active) { isActive = active; }
+}
+
+// src/main/java/com/example/dto/UserDto.java
+package com.example.dto;
+public class UserDto {
+    private Long userId; // Nombre diferente
+    private String fullName; // Combinación de nombres
+    private String userEmail; // Nombre diferente
+    private String status; // Transformación booleana a string
+    // Constructor, Getters y Setters
+    public UserDto() {}
+    public Long getUserId() { return userId; } public void setUserId(Long userId) { this.userId = userId; }
+    public String getFullName() { return fullName; } public void setFullName(String fullName) { this.fullName = fullName; }
+    public String getUserEmail() { return userEmail; } public void setUserEmail(String userEmail) { this.userEmail = userEmail; }
+    public String getStatus() { return status; } public void setStatus(String status) { this.status = status; }
+}
+```
+
+### 3.2. Definir una Interfaz Mapper
+
+```java
+// src/main/java/com/example/mapper/UserMapper.java
+package com.example.mapper;
+
+import com.example.model.User;
+import com.example.dto.UserDto;
+import org.mapstruct.Mapper;
+import org.mapstruct.Mapping; // Para mapeos personalizados
+import org.mapstruct.factory.Mappers; // Para obtener la instancia del mapper
+
+@Mapper // Anota la interfaz para que MapStruct genere la implementación
+public interface UserMapper {
+
+    // Obtener la instancia del mapper generado
+    UserMapper INSTANCE = Mappers.getMapper(UserMapper.class);
+
+    // Método de mapeo de User a UserDto
+    @Mapping(source = "id", target = "userId") // Mapea 'id' de User a 'userId' de UserDto
+    @Mapping(target = "fullName", expression = "java(user.getFirstName() + \" \" + user.getLastName())") // Combinación de campos
+    @Mapping(source = "email", target = "userEmail") // Mapea 'email' a 'userEmail'
+    @Mapping(target = "status", expression = "java(user.isActive() ? \"Activo\" : \"Inactivo\")") // Lógica de transformación
+    UserDto userToUserDto(User user); // Define el método de mapeo
+
+    // Método de mapeo inverso (opcional)
+    @Mapping(source = "userId", target = "id")
+    @Mapping(target = "firstName", expression = "java(extractFirstName(userDto.getFullName()))")
+    @Mapping(target = "lastName", expression = "java(extractLastName(userDto.getFullName()))")
+    @Mapping(source = "userEmail", target = "email")
+    @Mapping(target = "isActive", expression = "java(userDto.getStatus().equals(\"Activo\"))")
+    User userDtoToUser(UserDto userDto);
+
+    // Métodos auxiliares dentro de la interfaz (Java 8+) o en clases separadas
+    default String extractFirstName(String fullName) {
+        if (fullName == null || !fullName.contains(" ")) return fullName;
+        return fullName.substring(0, fullName.indexOf(" "));
+    }
+
+    default String extractLastName(String fullName) {
+        if (fullName == null || !fullName.contains(" ")) return "";
+        return fullName.substring(fullName.indexOf(" ") + 1);
+    }
+}
+```
+
+### 3.3. Uso del Mapper
+
+```java
+// src/main/java/com/example/MainApp.java
+package com.example;
+
+import com.example.model.User;
+import com.example.dto.UserDto;
+import com.example.mapper.UserMapper;
+
+public class MainApp {
+    public static void main(String[] args) {
+        User user = new User(1L, "Alice", "Smith", "alice@example.com", true);
+
+        // Obtener la instancia del mapper y realizar el mapeo
+        UserDto userDto = UserMapper.INSTANCE.userToUserDto(user);
+
+        System.out.println("Mapped UserDto:");
+        System.out.println("User ID: " + userDto.getUserId());        // 1
+        System.out.println("Full Name: " + userDto.getFullName());    // Alice Smith
+        System.out.println("User Email: " + userDto.getUserEmail());  // alice@example.com
+        System.out.println("Status: " + userDto.getStatus());         // Activo
+
+        User convertedUser = UserMapper.INSTANCE.userDtoToUser(userDto);
+        System.out.println("\nConverted User:");
+        System.out.println("ID: " + convertedUser.getId());
+        System.out.println("First Name: " + convertedUser.getFirstName());
+        System.out.println("Last Name: " + convertedUser.getLastName());
+        System.out.println("Email: " + convertedUser.getEmail());
+        System.out.println("Is Active: " + convertedUser.isActive());
+    }
+}
+```
+
+---
+
+## 4. 📝 Anotaciones y Opciones Comunes de `@Mapping`
+
+*   **`@Mapping(source = "sourceProperty", target = "targetProperty")`**: Mapeo explícito entre propiedades con nombres diferentes.
+    *   `source`: El nombre de la propiedad en el objeto fuente.
+    *   `target`: El nombre de la propiedad en el objeto destino.
+*   **`@Mapping(target = "targetProperty", ignore = true)`**: Ignora una propiedad específica en el objeto destino. No se mapeará.
+*   **`@Mapping(target = "targetProperty", constant = "some_value")`**: Asigna un valor constante a una propiedad de destino.
+*   **`@Mapping(target = "targetProperty", defaultValue = "some_default")`**: Asigna un valor por defecto si la propiedad fuente es `null`.
+*   **`@Mapping(target = "targetProperty", expression = "java(some Java expression)")`**: Permite escribir una expresión de Java para mapear o transformar el valor. La expresión se evalúa en el contexto del método de mapeo.
+    *   `expression = "java(source.getFirstName() + \" \" + source.getLastName())"`
+    *   `expression = "java(myHelper.formatDate(source.getDate()))"` (si `myHelper` está inyectado).
+*   **`@Mapping(target = "targetProperty", dateFormat = "yyyy-MM-dd")`**: Para mapear entre `java.util.Date` / `java.time.LocalDate` y `String`.
+*   **`@Mapping(source = "sourceProperty", target = "targetProperty", qualifiedByName = "myCustomQualifier")`**: Usa un método personalizado (anotado con `@Named`) para el mapeo.
+*   **`@Mapping(source = "sourceProperty", target = "targetProperty", qualifiedBy = MyCustomQualifierClass.class)`**: Usa un calificador basado en tipo/anotación.
+*   **`@Mapping(target = "targetProperty", qualifiedBy = MyQualifier.class)`**: Cuando el método a invocar para el mapeo está en una clase auxiliar separada y esa clase auxiliar está anotada con `@MyQualifier`.
+
+---
+
+## 5. ⚙️ Opciones Comunes de `@Mapper`
+
+*   **`componentModel = "default"`**: (Por defecto) MapStruct genera una implementación con `Mappers.getMapper()`.
+*   **`componentModel = "spring"`**: MapStruct genera la implementación como un bean de Spring (`@Component`), lo que permite inyectarla con `@Autowired`.
+*   **`componentModel = "cdi"`**: Para Contexts and Dependency Injection (CDI) (ej. Quarkus, Jakarta EE).
+*   **`uses = {AnotherMapper.class}`**: Especifica otros mappers que esta interfaz de mapper necesita para mapear propiedades anidadas o tipos de datos complejos.
+    *   MapStruct buscará métodos de mapeo en los mappers listados en `uses`.
+*   **`unmappedTargetPolicy = ReportingPolicy.ERROR`**: (Por defecto es `WARN`) Define cómo manejar propiedades de destino que no tienen una propiedad fuente coincidente.
+    *   `ERROR`: Lanza un error de compilación.
+    *   `WARN`: Emite una advertencia de compilación.
+    *   `IGNORE`: Ignora la propiedad sin advertencia.
+*   **`nullValueMappingStrategy = NullValueMappingStrategy.RETURN_NULL`**: (Por defecto) Si la instancia fuente es `null`, el método de mapeo devuelve `null`.
+*   **`nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.SET_TO_NULL`**: (Por defecto) Si una propiedad fuente es `null`, la propiedad destino correspondiente se establecerá en `null`.
+    *   `NullValuePropertyMappingStrategy.IGNORE`: Ignora la propiedad de destino si la fuente es `null`.
+*   **`nullValueCheckStrategy = NullValueCheckStrategy.ON_IMPLICIT_CONVERSION`**: Controla cómo se manejan los `null` en las conversiones implícitas de tipo.
+
+---
+
+## 6. 🔄 Actualización de Objetos Existentes
+
+Puedes actualizar una instancia de objeto existente en lugar de crear una nueva.
+
+```java
+// UserMapper.java (continuando la interfaz)
+import org.mapstruct.MappingTarget; // Importa MappingTarget
+
+@Mapper
+public interface UserMapper {
+    // ... métodos de mapeo anteriores
+
+    // Método para actualizar un User existente a partir de un UserDto
+    @Mapping(source = "userId", target = "id")
+    @Mapping(target = "firstName", expression = "java(extractFirstName(userDto.getFullName()))")
+    @Mapping(target = "lastName", expression = "java(extractLastName(userDto.getFullName()))")
+    @Mapping(source = "userEmail", target = "email")
+    @Mapping(target = "isActive", expression = "java(userDto.getStatus().equals(\"Activo\"))")
+    void updateUserFromDto(UserDto userDto, @MappingTarget User user); // @MappingTarget indica el objeto a actualizar
+}
+
+// Uso
+// User existingUser = new User(1L, "Old", "User", "old@example.com", false);
+// UserDto updateUserDto = new UserDto(1L, "New Name", "new@example.com", "Activo");
+// UserMapper.INSTANCE.updateUserFromDto(updateUserDto, existingUser);
+// System.out.println(existingUser.getFullName()); // New Name (as updated by extractFirstName/LastName)
+```
+
+---
+
+## 7. 🏷️ Mapeo de Colecciones y Objetos Anidados
+
+MapStruct maneja automáticamente las colecciones (List, Set, Map) si hay un mapeador disponible para el tipo de elemento. Para objetos anidados, usa la opción `uses`.
+
+```java
+// Clase anidada de ejemplo
+class Address {
+    private String street;
+    private String city;
+    // Constructor, getters, setters
+    public String getStreet() { return street; } public void setStreet(String street) { this.street = street; }
+    public String getCity() { return city; } public void setCity(String city) { this.city = city; }
+}
+
+class AddressDto {
+    private String fullAddress;
+    // Constructor, getters, setters
+    public String getFullAddress() { return fullAddress; } public void setFullAddress(String fullAddress) { this.fullAddress = fullAddress; }
+}
+
+class Customer {
+    private String name;
+    private Address address; // Objeto anidado
+    private List<String> phones; // Colección de primitivos
+    // Constructor, getters, setters
+    public String getName() { return name; } public void setName(String name) { this.name = name; }
+    public Address getAddress() { return address; } public void setAddress(Address address) { this.address = address; }
+    public List<String> getPhones() { return phones; } public void setPhones(List<String> phones) { this.phones = phones; }
+}
+
+class CustomerDto {
+    private String customerName;
+    private AddressDto customerAddress;
+    private List<String> customerPhones;
+    // Constructor, getters, setters
+    public String getCustomerName() { return customerName; } public void setCustomerName(String customerName) { this.customerName = customerName; }
+    public AddressDto getCustomerAddress() { return customerAddress; } public void setCustomerAddress(AddressDto customerAddress) { this.customerAddress = customerAddress; }
+    public List<String> getCustomerPhones() { return customerPhones; } public void setCustomerPhones(List<String> customerPhones) { this.customerPhones = customerPhones; }
+}
+
+@Mapper
+public interface AddressMapper {
+    @Mapping(target = "fullAddress", expression = "java(address.getStreet() + \", \" + address.getCity())")
+    AddressDto addressToAddressDto(Address address);
+
+    @Mapping(target = "street", expression = "java(addressDto.getFullAddress().split(\", \")[0])")
+    @Mapping(target = "city", expression = "java(addressDto.getFullAddress().split(\", \")[1])")
+    Address addressDtoToAddress(AddressDto addressDto);
+}
+
+@Mapper(uses = {AddressMapper.class}) // Indica que CustomerMapper necesita AddressMapper
+public interface CustomerMapper {
+    CustomerMapper INSTANCE = Mappers.getMapper(CustomerMapper.class);
+
+    @Mapping(source = "name", target = "customerName")
+    @Mapping(source = "address", target = "customerAddress") // MapStruct usará AddressMapper
+    @Mapping(source = "phones", target = "customerPhones") // Mapeo automático de colecciones
+    CustomerDto customerToCustomerDto(Customer customer);
+}
+```
+
+---
+
+## 8. 🧰 Otras Características Avanzadas
+
+*   **`@InheritConfiguration`**: Reutiliza las configuraciones de `@Mapping` de otros métodos de mapeo.
+*   **`@InheritInverseConfiguration`**: Para inferir automáticamente el mapeo inverso de un método.
+*   **`@Context`**: Para pasar un objeto de contexto a lo largo de la cadena de mapeo (útil para prevenir ciclos infinitos en relaciones bidireccionales).
+*   **`@Named` y `qualifiedByName` / `qualifiedBy`**: Para tener múltiples métodos de mapeo entre los mismos tipos y distinguirlos por nombre o calificador.
+*   **`@BeforeMapping` / `@AfterMapping`**: Para ejecutar lógica personalizada justo antes o justo después de un mapeo.
+    *   Métodos anotados en la interfaz del mapper o en las clases en `uses`.
+
+---
+
+## 9. 💡 Buenas Prácticas y Consejos
+
+*   **Compila después de cada cambio en el Mapper**: Recuerda que MapStruct genera código en tiempo de compilación. Si modificas tu interfaz de mapper, necesitas recompilar para ver los cambios o que los errores se detecten.
+*   **Usa `Mappers.getMapper()` o Inyección de Dependencias**:
+    *   Para aplicaciones pequeñas o pruebas, `Mappers.getMapper(YourMapper.class)` está bien.
+    *   Para frameworks como Spring, usa `componentModel="spring"` en `@Mapper` y luego inyecta el mapper con `@Autowired`.
+*   **Una Instancia de Mapper por Aplicación**: Los mappers generados son seguros para hilos y sin estado. Es eficiente usar una única instancia singleton de cada mapper en tu aplicación.
+*   **Mapeos Granulares y Específicos**: Crea mappers pequeños y enfocados para tipos de mapeo específicos (ej. `ProductMapper`, `UserMapper`, `AddressMapper`).
+*   **Manejo de Nulos (Null Handling)**: Entiende las estrategias de manejo de nulos (`nullValuePropertyMappingStrategy`, `nullValueMappingStrategy`) y configúralas según las necesidades de tu aplicación.
+*   **`@Mapping` para Claridad**: Incluso si MapStruct puede inferir un mapeo, a veces es bueno usar `@Mapping` explícitamente para documentar la intención o cuando el mapeo no es 1:1.
+*   **Manejo de Colecciones**: MapStruct maneja listas, conjuntos y mapas automáticamente, pero si necesitas lógica personalizada para la adición/remoción de elementos, puedes usar `@MappingTarget` con un método de actualización.
+*   **Pruebas Unitarias para Mapeos Complejos**: Aunque MapStruct genera código, es una buena práctica escribir pruebas unitarias para tus mappers, especialmente para mapeos complejos o personalizados, para asegurar que se comportan como esperas.
+
+---
+
+Este cheatsheet te proporciona una referencia completa de MapStruct, cubriendo sus conceptos esenciales, cómo configurar el proyecto, realizar mapeos básicos y personalizados, manejar colecciones, usar objetos anidados y aplicar las mejores prácticas para un mapeo de objetos eficiente y tipo-seguro en tus aplicaciones Java.

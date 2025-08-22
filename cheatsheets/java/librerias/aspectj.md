@@ -1,0 +1,318 @@
+
+---
+
+# ✂️ AspectJ Cheatsheet Completo ✂️
+
+**AspectJ** es una extensión "seamless" (sin costuras) de Java que implementa la **Programación Orientada a Aspectos (AOP)**. Permite la modularización de preocupaciones transversales (cross-cutting concerns) que no encajan bien en la programación orientada a objetos tradicional, mejorando la modularidad, mantenibilidad y reusabilidad del código.
+
+---
+
+## 1. 🌟 Conceptos Clave de AOP y AspectJ
+
+*   **Concern (Preocupación)**: Un área funcional de un programa (ej. lógica de negocio) o un área no funcional (ej. logging, seguridad, transacciones).
+*   **Cross-Cutting Concern (Preocupación Transversal)**: Una preocupación que afecta a múltiples partes del sistema y no puede encapsularse fácilmente en una sola unidad modular (clase, método). Si no se maneja con AOP, se dispersa (código duplicado) o se enreda (múltiples preocupaciones en un solo módulo).
+*   **Aspect (Aspecto)**: Una unidad modular que encapsula una preocupación transversal.
+    *   **Notación**: En AspectJ, los aspectos se escriben usando un sintaxis extendida de Java o anotaciones (estilo Spring AOP).
+*   **Join Point (Punto de Unión)**: Un punto específico durante la ejecución de un programa donde un aspecto puede "engancharse" (ej. llamada a un método, ejecución de un método, acceso a un campo, lanzamiento de una excepción).
+*   **Pointcut (Punto de Corte)**: Una expresión que define dónde y cuándo se aplica un consejo (advice). Selecciona un conjunto de Join Points.
+*   **Advice (Consejo)**: El código que implementa la lógica de la preocupación transversal. Se inyecta en los Join Points seleccionados por el Pointcut.
+    *   **Tipos de Advice**: Before, After, After Returning, After Throwing, Around.
+*   **Weaving (Tejido)**: El proceso de inyectar el código del aspecto (Advice) en los Join Points de la aplicación. Puede ocurrir en diferentes momentos:
+    *   **Compile-Time Weaving**: En tiempo de compilación (AspectJ compila el código fuente).
+    *   **Post-Compile Weaving (Binary/Load-Time Weaving - LTW)**: Después de compilar el código Java (en bytecode). Para LTW, se necesita un agente Java en tiempo de ejecución.
+    *   **Runtime Weaving**: En tiempo de ejecución (Spring AOP usa proxies en tiempo de ejecución). AspectJ no hace esto.
+*   **Target Object (Objeto Objetivo)**: El objeto cuyo método se está ejecutando o el objeto que está siendo asesorado por un aspecto.
+
+---
+
+## 2. 🛠️ Configuración Inicial (Maven con Compile-Time Weaving)
+
+Compile-time weaving es la forma más potente de AspectJ, ya que modifica directamente el bytecode de las clases para inyectar el aspecto.
+
+1.  **Añadir dependencias en `pom.xml`:**
+    ```xml
+    <dependencies>
+        <!-- AspectJ Runtime (para que el código compilado pueda ejecutar el aspecto) -->
+        <dependency>
+            <groupId>org.aspectj</groupId>
+            <artifactId>aspectjrt</artifactId>
+            <version>1.9.21</version> <!-- Usar la versión más reciente -->
+        </dependency>
+        <!-- AspectJ Weaver (necesario para compilar el código con AspectJ) -->
+        <dependency>
+            <groupId>org.aspectj</groupId>
+            <artifactId>aspectjweaver</artifactId>
+            <version>1.9.21</version>
+            <scope>runtime</scope> <!-- Solo necesario en tiempo de ejecución si usas LTW -->
+        </dependency>
+    </dependencies>
+
+    <build>
+        <plugins>
+            <!-- Plugin para configurar el compilador Java -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>3.11.0</version>
+                <configuration>
+                    <source>17</source>
+                    <target>17</target>
+                </configuration>
+            </plugin>
+            <!-- AspectJ Maven Plugin para Compile-Time Weaving -->
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>aspectj-maven-plugin</artifactId>
+                <version>1.14.0</version>
+                <configuration>
+                    <complianceLevel>17</complianceLevel> <!-- Tu versión de Java -->
+                    <Xlint>warning</Xlint>
+                    <showWeaveInfo>true</showWeaveInfo> <!-- Muestra información de weaving -->
+                    <verbose>true</verbose>
+                    <aspectLibraries>
+                        <!-- Si tuvieras aspectos en librerías externas -->
+                        <!-- <aspectLibrary>
+                            <groupId>com.example</groupId>
+                            <artifactId>my-logging-aspect</artifactId>
+                        </aspectLibrary> -->
+                    </aspectLibraries>
+                </configuration>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>compile</goal>    <!-- Para compilar AspectJ -->
+                            <goal>test-compile</goal> <!-- Para compilar tests con AspectJ -->
+                        </goals>
+                    </execution>
+                </executions>
+                <dependencies>
+                    <dependency> <!-- Importante: la misma versión que aspectjweaver -->
+                        <groupId>org.aspectj</groupId>
+                        <artifactId>aspectjtools</artifactId>
+                        <version>1.9.21</version>
+                    </dependency>
+                </dependencies>
+            </plugin>
+        </plugins>
+    </build>
+    ```
+
+---
+
+## 3. 📝 Definición de Aspectos (Estilo AspectJ Native)
+
+Un aspecto es una clase Java especial con la extensión `.aj` o una clase Java con anotaciones específicas (estilo Spring AOP, pero AspectJ también las soporta).
+
+```java
+// src/main/java/com/example/myapp/logging/LoggingAspect.java (O LoggingAspect.aj)
+package com.example.myapp.logging;
+
+import org.aspectj.lang.JoinPoint;
+import org.aspectj.lang.ProceedingJoinPoint;
+import org.aspectj.lang.annotation.*; // Anotaciones de AspectJ
+
+// @Aspect (solo si usas el estilo de anotaciones de AspectJ)
+public aspect LoggingAspect { // La palabra clave 'aspect' para aspectos nativos
+
+    // 1. Pointcuts (Expresiones para seleccionar Join Points)
+    // Se definen con la palabra clave 'pointcut' (o @Pointcut para anotaciones)
+
+    // Un pointcut que selecciona la ejecución de cualquier método público
+    // dentro del paquete com.example.myapp.service
+    pointcut serviceMethodExecution(): execution(public * com.example.myapp.service.*.*(..));
+
+    // Un pointcut que selecciona cualquier método que termine con 'Controller'
+    pointcut controllerMethod(): execution(* *..*Controller.*(..));
+
+    // Un pointcut para un método específico
+    pointcut createUserMethod(): execution(* com.example.myapp.service.UserService.createUser(..));
+
+    // Un pointcut que toma un argumento de método
+    pointcut methodWithUserId(Long userId): args(userId, ..) && execution(* com.example.myapp.service.UserService.getUserById(..));
+
+    // Combinación de pointcuts
+    pointcut allBusinessOperations(): serviceMethodExecution() || controllerMethod();
+
+
+    // 2. Advice (El código a ejecutar en los Join Points)
+    // Se definen con palabras clave (o anotaciones como @Before, @AfterReturning, etc.)
+
+    // Before Advice: Se ejecuta antes de la ejecución del Join Point
+    before(): serviceMethodExecution() {
+        System.out.println("LOG: Antes de ejecutar un método de servicio.");
+    }
+
+    before(JoinPoint jp): allBusinessOperations() { // Acceso a JoinPoint
+        System.out.println("LOG: Entrada a " + jp.getSignature().getName() + " en " + jp.getSignature().getDeclaringTypeName());
+        // jp.getArgs(): argumentos del método
+    }
+
+    // After Advice: Se ejecuta después de la ejecución del Join Point (siempre, haya excepción o no)
+    after(): serviceMethodExecution() {
+        System.out.println("LOG: Después de ejecutar un método de servicio.");
+    }
+
+    // After Returning Advice: Se ejecuta después de la ejecución exitosa del Join Point (si devuelve un valor)
+    afterReturning(Object result): serviceMethodExecution() { // result es el valor devuelto
+        System.out.println("LOG: Retornando: " + result);
+    }
+
+    // After Throwing Advice: Se ejecuta si el Join Point lanza una excepción
+    afterThrowing(Throwable ex): serviceMethodExecution() { // ex es la excepción lanzada
+        System.err.println("LOG: Excepción lanzada: " + ex.getClass().getSimpleName() + " - " + ex.getMessage());
+    }
+
+    // Around Advice: Envuelve la ejecución del Join Point. Puede modificar argumentos, resultado o la ejecución misma.
+    Object around(): serviceMethodExecution() {
+        long startTime = System.currentTimeMillis();
+        Object result = null;
+        try {
+            // Proceed: Invoca el Join Point original
+            result = proceed(); // O proceed(argumentos_modificados)
+            long endTime = System.currentTimeMillis();
+            System.out.println("LOG: " + thisJoinPointStaticPart.getSignature().getName() + " ejecutado en " + (endTime - startTime) + "ms. Resultado: " + result);
+            return result;
+        } catch (Throwable e) {
+            long endTime = System.currentTimeMillis();
+            System.err.println("LOG: " + thisJoinPointStaticPart.getSignature().getName() + " falló en " + (endTime - startTime) + "ms. Error: " + e.getMessage());
+            throw e; // Re-lanza la excepción
+        }
+    }
+
+    // 3. Introducción (Inter-type Declaration): Añadir métodos/campos a clases existentes
+    // Requiere la sintaxis .aj o LTW con anotaciones.
+    // public void com.example.myapp.service.UserService.newMethod() {
+    //     System.out.println("Este método fue introducido por un aspecto.");
+    // }
+
+    // Introducción de interfaz
+    // declare parents: com.example.myapp.service.UserService implements com.example.myapp.security.Securable;
+}
+```
+
+### 3.1. Aspectos Basados en Anotaciones (Estilo Spring AOP, soportado por AspectJ)
+
+Si estás trabajando en un entorno Spring Boot, a menudo usarás Spring AOP, que se basa en proxies y solo soporta `execution` Join Points en métodos públicos. Sin embargo, AspectJ puede interpretar estas anotaciones y hacer Compile-Time Weaving para un AOP más completo.
+
+```java
+// src/main/java/com/example/myapp/logging/AnnotatedLoggingAspect.java
+package com.example.myapp.logging;
+
+import org.aspectj.lang.ProceedingJoinPoint;
+import org.aspectj.lang.annotation.Around;
+import org.aspectj.lang.annotation.Aspect;
+import org.aspectj.lang.annotation.Pointcut;
+import org.springframework.stereotype.Component; // Para Spring IoC
+
+@Aspect // Marca la clase como un aspecto
+@Component // Para que Spring la gestione como un bean
+public class AnnotatedLoggingAspect {
+
+    // Pointcut para todos los métodos en el paquete de servicio
+    @Pointcut("execution(* com.example.myapp.service.*.*(..))")
+    private void serviceMethods() {}
+
+    // Around Advice para medir el tiempo de ejecución
+    @Around("serviceMethods()")
+    public Object profileServiceMethods(ProceedingJoinPoint joinPoint) throws Throwable {
+        long start = System.currentTimeMillis();
+        Object result = joinPoint.proceed(); // Invoca el método original
+        long end = System.currentTimeMillis();
+        System.out.println("Annotated LOG: " + joinPoint.getSignature().getName() +
+                           " took " + (end - start) + "ms and returned " + result);
+        return result;
+    }
+
+    // Puedes añadir @Before, @AfterReturning, @AfterThrowing aquí también
+}
+```
+
+---
+
+## 4. 🌐 Pointcut Expressions (Expresiones de Punto de Corte)
+
+La sintaxis para seleccionar Join Points.
+
+*   **`execution()`**: Selecciona Join Points de ejecución de método. **¡El más común!**
+    *   `execution(modificadores? tipo_retorno? paquete.clase.metodo(argumentos) throws?)`
+    *   `*`: Coincide con cualquier cosa (cualquier modificador, cualquier tipo de retorno, cualquier nombre de paquete/clase/método, cualquier argumento).
+    *   `..`: Coincide con cualquier subpaquete o cualquier número de argumentos.
+    *   `com.example.myapp.service.*.*(..)`: Cualquier método en cualquier clase dentro de `com.example.myapp.service`.
+    *   `* com.example..*Service.*(..)`: Cualquier método en cualquier clase que termine en `Service` en cualquier subpaquete de `com.example`.
+    *   `execution(* save*(..))`: Cualquier método que comience con `save`.
+    *   `execution(void com.example..*.*(String, ..))`: Métodos `void` con al menos un `String` como primer argumento.
+*   **`within()`**: Selecciona Join Points dentro de un tipo.
+    *   `within(com.example.myapp.service.*)`: Todos los Join Points dentro de cualquier clase en el paquete `com.example.myapp.service`.
+*   **`this()`**: Selecciona Join Points donde el objeto proxy (si AOP usa proxies) es una instancia de un tipo dado.
+*   **`target()`**: Selecciona Join Points donde el objeto objetivo (la instancia real) es una instancia de un tipo dado.
+    *   `target(com.example.myapp.service.UserService)`
+*   **`args()`**: Selecciona Join Points basándose en los argumentos pasados al método.
+    *   `args(String, ..)`: El primer argumento es un String, el resto cualquiera.
+    *   `args(userId)`: Un argumento llamado `userId`.
+*   **`@annotation()`**: Selecciona Join Points donde la ejecución del método tiene una anotación específica.
+    *   `@annotation(com.example.myapp.annotations.Loggable)`: Métodos anotados con `@Loggable`.
+*   **`@within()`**: Selecciona Join Points donde la clase que contiene el método tiene una anotación específica.
+*   **`@args()`**: Selecciona Join Points donde los argumentos tienen una anotación específica.
+*   **`bean()` (solo Spring AOP)**: Para seleccionar beans por su ID o patrón de nombre.
+
+---
+
+## 5. ⚙️ Tipos de Advice (Consejos)
+
+*   **`@Before`**: Antes del método objetivo.
+    *   Acceso a `JoinPoint`.
+*   **`@AfterReturning`**: Después de que el método objetivo retorna con éxito.
+    *   Acceso a `JoinPoint` y al valor de retorno.
+*   **`@AfterThrowing`**: Después de que el método objetivo lanza una excepción.
+    *   Acceso a `JoinPoint` y a la excepción.
+*   **`@After`**: Después de que el método objetivo termina (ya sea éxito o excepción).
+    *   Acceso a `JoinPoint`.
+*   **`@Around`**: Envuelve el método objetivo. Permite controlar la ejecución del método objetivo con `ProceedingJoinPoint.proceed()`. Es el más potente y flexible.
+    *   Acceso a `ProceedingJoinPoint`.
+
+---
+
+## 6. 🌐 Load-Time Weaving (LTW)
+
+Alternativa a Compile-Time Weaving, útil cuando no puedes modificar el proceso de compilación (ej. librerías de terceros).
+
+1.  **Dependencias**: `aspectjweaver` con `scope=runtime`.
+2.  **`META-INF/aop.xml`**: Archivo de configuración que especifica qué aspectos tejer.
+    ```xml
+    <!-- src/main/resources/META-INF/aop.xml -->
+    <aspectj>
+        <aspects>
+            <!-- Define tu aspecto aquí -->
+            <aspect name="com.example.myapp.logging.LoggingAspect"/>
+            <!-- O si es un aspecto basado en anotaciones -->
+            <!-- <aspect name="com.example.myapp.logging.AnnotatedLoggingAspect"/> -->
+        </aspects>
+        <weaver options="-verbose">
+            <!-- Incluir/excluir clases para tejer -->
+            <include within="com.example.myapp..*"/>
+        </weaver>
+    </aspectj>
+    ```
+3.  **Configurar Agente Java**: Ejecutar la JVM con el agente `aspectjweaver`.
+    ```bash
+    java -javaagent:/path/to/aspectjweaver-1.9.21.jar -jar your_app.jar
+    ```
+    *   Para Spring Boot, puedes añadir la dependencia `spring-aspects` y usar `--spring.profiles.active=aspectj` o configurar explícitamente el agente.
+
+---
+
+## 7. 💡 Buenas Prácticas y Consejos
+
+*   **Entender AOP**: Antes de usar AspectJ, asegúrate de entender los fundamentos de la Programación Orientada a Aspectos.
+*   **Usa AOP para Concerns Transversales**: No uses AOP para la lógica de negocio central. Es para preocupaciones que realmente se "cortan" a través de múltiples módulos (ej. logging, seguridad, transacciones, caching, auditoría, manejo de excepciones).
+*   **Precisión en los Pointcuts**: Sé lo más específico posible con tus expresiones de pointcut para evitar tejer aspectos donde no son necesarios.
+*   **`@Around` con Cuidado**: Aunque es muy potente, `Around` Advice es el más complejo y propenso a errores. Úsalo solo cuando necesites controlar explícitamente la ejecución del método objetivo.
+*   **Comprensión del Weaving**: Entiende la diferencia entre Compile-Time Weaving y Load-Time Weaving, y cuándo usar cada uno. Compile-Time Weaving es más potente pero requiere modificar el proceso de compilación. LTW es más flexible.
+*   **Evita el Over-Weaving**: No crees demasiados aspectos o hagas que los aspectos sean demasiado complejos.
+*   **Considera Spring AOP (si usas Spring)**: Para la mayoría de las aplicaciones Spring, Spring AOP (que usa proxies dinámicos y no requiere AspectJ nativo para muchos casos) es suficiente y más fácil de configurar. AspectJ nativo es necesario para Join Points más avanzados (ej. constructor, acceso a campo, Introducción).
+*   **Pruebas**: Prueba tus aspectos para asegurarte de que se tejen correctamente y que el Advice se ejecuta como se espera.
+*   **Modularidad**: Agrupa aspectos relacionados en paquetes lógicos.
+
+---
+
+Este cheatsheet te proporciona una referencia completa de AspectJ, cubriendo sus conceptos esenciales de AOP, cómo configurar el weaving, definir aspectos y consejos, usar expresiones de pointcut y aplicar las mejores prácticas para modularizar tus preocupaciones transversales de manera efectiva en aplicaciones Java.
