@@ -1,0 +1,30 @@
+# Nombre del workflow que aparecerá en la pestaña "Actions" de GitHub
+name: Deploy to InfinityFree
+
+# Se activa cada vez que haces un 'push' a la rama 'main'
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  ftp-deploy:
+    # El tipo de máquina virtual en la que se ejecutará el trabajo
+    runs-on: ubuntu-latest
+    steps:
+      # 1. Este paso descarga el código de tu repositorio a la máquina virtual
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # 2. Este paso usa una "Action" popular para subir archivos vía FTP
+      - name: FTP Deploy
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.4
+        with:
+          # Servidor FTP, usando el "secret" que creaste
+          server: ${{ secrets.FTP_SERVER }}
+          # Usuario FTP, usando el "secret"
+          username: ${{ secrets.FTP_USERNAME }}
+          # Contraseña FTP, usando el "secret"
+          password: ${{ secrets.FTP_PASSWORD }}
+          # Directorio en el servidor donde se subirán los archivos.
+          server-dir: /htdocs/
