@@ -37,7 +37,9 @@ header h1 {
 .breadcrumbs a:hover {
     text-decoration: underline;
 }
-
+code{
+    border-radius: .4rem;
+}
 main {
     flex: 1;
     padding: 2rem;
@@ -226,4 +228,36 @@ footer {
     code[class*="language-"], pre[class*="language-"] {
          text-shadow: none !important;
     }
+}
+
+/* --- Estilos para la Barra de Búsqueda --- */
+.search-container {
+    padding: 1.5rem 0; /* Espacio arriba y abajo de la barra */
+    margin-bottom: 1rem;
+}
+
+#searchInput {
+    width: 100%;
+    padding: 1rem 1rem 1rem 3rem; /* Padding izquierdo para el icono */
+    font-size: 1rem;
+    border-radius: 8px;
+    border: 1px solid #d1d5db;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    box-sizing: border-box; /* Asegura que el padding no afecte el ancho total */
+    
+    /* Icono de búsqueda (SVG como background) */
+    background-image: url('data:image/svg+xml;charset=UTF-8,<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="%239ca3af" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>');
+    background-repeat: no-repeat;
+    background-position: 1rem center;
+}
+
+#searchInput:focus {
+    outline: none;
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+}
+
+#searchInput::placeholder {
+    color: #9ca3af;
 }

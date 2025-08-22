@@ -74,6 +74,12 @@ else if (is_dir($user_path)) {
     }
 
     $items = scandir($user_path);
+
+        // Barra de búsqueda
+    $content_html .= '
+    <div class="search-container">
+        <input type="text" id="searchInput" onkeyup="filterFiles()" placeholder="Buscar archivos y carpetas...">
+    </div>';
     
     $content_html .= '<ul class="file-list">';
 
@@ -152,13 +158,29 @@ if (!empty($path)) {
     <script>hljs.highlightAll();</script>
 
     <script src="BlurDotBg.js"></script>
+    <!-- FUNCIONALIDAD PARA LA BÚSQUEDA -->
     <script>
-    let colorbg = new Color4Bg.BlurDotBg({
-        dom: "box",
-        colors: ["#A7DDBC","#8FC5AA","#78AE99","#609687"],
-        loop: true
-    })
-    </script>
+        function filterFiles() {
+            // 1. Obtener los elementos del DOM
+            const input = document.getElementById('searchInput');
+            const filter = input.value.toLowerCase();
+            const ul = document.querySelector('.file-list');
+            const li = ul.getElementsByTagName('li');
+
+            // 2. Recorrer todos los elementos de la lista
+            for (let i = 0; i < li.length; i++) {
+                const a = li[i].getElementsByTagName('a')[0];
+                const txtValue = a.textContent || a.innerText;
+
+                // 3. Comprobar si el texto del elemento coincide con la búsqueda
+                if (txtValue.toLowerCase().indexOf(filter) > -1) {
+                    li[i].style.display = ""; // Muestra el elemento si coincide
+                } else {
+                    li[i].style.display = "none"; // Oculta el elemento si no coincide
+                }
+            }
+        }
+        </script>
     
 
 			
