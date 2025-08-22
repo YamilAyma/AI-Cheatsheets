@@ -64,9 +64,18 @@ if (is_file($user_path) && pathinfo($user_path, PATHINFO_EXTENSION) == 'md') {
 // Si la ruta apunta a un directorio
 else if (is_dir($user_path)) {
     $page_title = 'Explorando: ' . ($path ?: 'Inicio');
+    
+    if (empty($path)) {
+        $content_html .= '
+        <div class="hero">
+            <h2>Antes de aprender, explora estas guías rápidas</h2>
+            <p>Resumenes e información servida para desarrolladores. Explora las categorías para empezar.</p>
+        </div>';
+    }
+
     $items = scandir($user_path);
     
-    $content_html .= '<ul>';
+    $content_html .= '<ul class="file-list">';
 
     // Listar directorios primero
     foreach ($items as $item) {
@@ -123,7 +132,6 @@ if (!empty($path)) {
             <?php echo $breadcrumbs; ?>
         </nav>
     </header>
-
     <main>
         <div class="content-container">
             <?php echo $content_html; ?>
@@ -142,6 +150,18 @@ if (!empty($path)) {
 
     <!-- Inicializar -->
     <script>hljs.highlightAll();</script>
+
+    <script src="BlurDotBg.js"></script>
+    <script>
+    let colorbg = new Color4Bg.BlurDotBg({
+        dom: "box",
+        colors: ["#A7DDBC","#8FC5AA","#78AE99","#609687"],
+        loop: true
+    })
+    </script>
+    
+
+			
 
 </body>
 </html>
