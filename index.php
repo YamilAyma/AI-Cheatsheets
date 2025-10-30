@@ -93,7 +93,7 @@ else if (is_dir($user_path)) {
         $content_html .= '
         <div class="hero">
             <h2>Antes de aprender, explora estas guías rápidas</h2>
-            <p>Resumenes e información servida para desarrolladores. Explora las categorías para empezar.</p>
+            <p>Resumenes e información servida para desarrolladores. Explora las categorías para empezar. Nuevos cheatsheets marcados con => ✨</p>
         </div>';
     }
 
