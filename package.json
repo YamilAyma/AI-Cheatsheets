@@ -7,12 +7,13 @@
   },
   "scripts": {
     "dev": "astro dev",
-    "build": "astro build",
+    "build": "astro build && node scripts/flatten_sitemap.cjs",
     "preview": "astro preview",
     "astro": "astro"
   },
   "dependencies": {
     "@astrojs/mdx": "^5.0.4",
+    "@astrojs/sitemap": "^3.7.2",
     "astro": "^6.1.10"
   }
 }
