@@ -71,7 +71,23 @@ const socialImageURL = new URL('/default-og-image.png', Astro.url);
 			</div>
 		</main>
 		<footer>
-			<p>Plataforma de Cheatsheets v2.0 (Astro SSG)</p>
+			<div class="footer-content">
+				<div class="footer-logo">
+					<span class="logo-text">IA Cheatsheets</span>
+					<p>Tu centro de conocimiento SSG</p>
+				</div>
+				<div class="footer-links">
+					<h4>Navegación</h4>
+					<div class="parent-links">
+						{breadcrumbs.map((crumb) => (
+							<a href={crumb.href}>{crumb.name}</a>
+						))}
+					</div>
+				</div>
+				<div class="footer-info">
+					<p>&copy; {new Date().getFullYear()} - v2.0</p>
+				</div>
+			</div>
 		</footer>
 
 		<slot name="fab" />

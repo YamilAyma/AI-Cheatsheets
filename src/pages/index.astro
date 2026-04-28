@@ -1,5 +1,6 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
+import FloatingButtons from '../components/FloatingButtons.astro';
 import { getCollection } from 'astro:content';
 
 const allCheatsheets = await getCollection('cheatsheets');
@@ -56,4 +57,5 @@ const searchData = allCheatsheets.map(post => ({
             </li>
         ))}
     </ul>
+    <FloatingButtons slot="fab" />
 </BaseLayout>

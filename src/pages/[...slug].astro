@@ -87,7 +87,6 @@ const searchData = allCheatsheets.map(post => ({
     {type === 'content' ? (
         <>
             <Content />
-            <FloatingButtons backHref={parentPath} slot="fab" />
         </>
     ) : (
         <>
@@ -118,7 +117,7 @@ const searchData = allCheatsheets.map(post => ({
                     </li>
                 ))}
             </ul>
-            <FloatingButtons backHref={parentPath} slot="fab" />
         </>
     )}
+    <FloatingButtons backHref={parentPath} slot="fab" />
 </BaseLayout>
