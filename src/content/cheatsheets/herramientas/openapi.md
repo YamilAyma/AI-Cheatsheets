@@ -1,0 +1,443 @@
+---
+title: "openapi"
+---
+
+
+---
+
+# 📄 OpenAPI (OAS) Cheatsheet Completo 📄
+
+OpenAPI Specification (OAS) es un formato de descripción de API estándar, independiente del lenguaje, legible tanto por humanos como por máquinas. Permite describir la estructura y las capacidades de las APIs RESTful de forma declarativa utilizando archivos YAML o JSON.
+
+---
+
+## 1. 🌟 Conceptos Clave
+
+* **API RESTful**: Una interfaz que permite a diferentes sistemas comunicarse utilizando principios REST (transferencia de estado representacional).
+* **Descripción Declarativa**: Define la API (rutas, operaciones, parámetros, respuestas, modelos de datos) en un archivo estático, en lugar de generarla a partir del código.
+* **Interoperabilidad**: Al ser un estándar, permite que diferentes herramientas (documentación, generación de código, pruebas) trabajen con la misma descripción de API.
+* **Diseño First**: Facilita el diseño de APIs antes de la implementación, promoviendo la consistencia y la colaboración.
+* **Swagger**: Es un conjunto de herramientas de código abierto que implementan la especificación OpenAPI (Swagger UI, Swagger Editor, Swagger Codegen). OpenAPI es la especificación; Swagger es la suite de herramientas.
+
+---
+
+## 2. 🛠️ Estructura Básica del Documento OpenAPI
+
+Un documento OpenAPI (ya sea YAML o JSON) siempre comienza con la versión de la especificación y metadatos básicos.
+
+```yaml
+openapi: 3.0.0 # ¡CRÍTICO! Versión de la especificación OpenAPI
+info:        # Metadatos de la API
+  title: Mi API de Productos
+  description: Una API simple para gestionar productos.
+  version: 1.0.0
+  contact:
+    email: api.support@example.com
+  license:
+    name: Apache 2.0
+    url: http://www.apache.org/licenses/LICENSE-2.0.html
+servers:     # URLs base de los servidores donde se despliega la API
+  - url: https://api.example.com/v1
+    description: Servidor de producción
+  - url: http://localhost:8080/v1
+    description: Servidor de desarrollo local
+tags:        # Agrupación lógica de operaciones (para documentación, ej. "Usuarios", "Productos")
+  - name: Productos
+    description: Operaciones relacionadas con productos
+  - name: Usuarios
+    description: Operaciones de gestión de usuarios
+paths:       # ¡CRÍTICO! Aquí se definen todas las rutas (endpoints) y operaciones
+  # ... (definición de rutas)
+components:  # ¡CRÍTICO! Componentes reutilizables (esquemas, parámetros, respuestas, seguridad)
+  # ... (definición de componentes)
+security:    # Seguridad global para toda la API (opcional)
+  # ... (definición de esquemas de seguridad aplicados globalmente)
+externalDocs: # Enlace a documentación externa
+  description: Enlace a nuestra documentación completa
+  url: https://docs.example.com
+```
+
+---
+
+## 3. 🗺️ Definición de Rutas y Operaciones (`paths`)
+
+La sección `paths` describe los endpoints individuales y las operaciones HTTP que se pueden realizar en ellos.
+
+```yaml
+paths:
+  /products: # La ruta URL
+    summary: Operaciones sobre la lista de productos
+    description: Aquí se pueden listar y crear nuevos productos.
+    get:       # Operación GET (obtener recursos)
+      tags: ["Productos"]
+      summary: Obtener todos los productos
+      description: Recupera una lista de todos los productos disponibles.
+      operationId: getAllProducts # ID único para el código generado
+      parameters: # Parámetros de la solicitud (query, header, path, cookie)
+        - name: limit # Nombre del parámetro
+          in: query   # Dónde se encuentra el parámetro (query string)
+          description: Número máximo de productos a devolver
+          required: false # No es obligatorio
+          schema:     # Esquema del tipo de dato del parámetro
+            type: integer
+            format: int32
+            minimum: 1
+            example: 10
+        - name: X-Request-ID # Ejemplo de parámetro en el encabezado
+          in: header
+          description: ID de solicitud para traza
+          required: false
+          schema:
+            type: string
+      responses: # Posibles respuestas HTTP
+        '200': # Código de estado HTTP
+          description: Lista de productos devuelta exitosamente.
+          content: # Tipos de contenido de la respuesta
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Product' # Referencia a un esquema definido en components
+              examples:
+                successList: # Nombre del ejemplo
+                  summary: Ejemplo de lista de productos
+                  value:
+                    - id: 1
+                      name: "Laptop Pro"
+                      price: 1200.00
+                      available: true
+                    - id: 2
+                      name: "Mouse Ergonomico"
+                      price: 25.00
+                      available: true
+        '400':
+          $ref: '#/components/responses/BadRequestError' # Reutilizar una respuesta de error común
+        '500':
+          description: Error interno del servidor.
+
+    post:      # Operación POST (crear un recurso)
+      tags: ["Productos"]
+      summary: Crear un nuevo producto
+      description: Añade un nuevo producto al catálogo.
+      operationId: createProduct
+      requestBody: # Cuerpo de la solicitud
+        description: Objeto Producto a crear
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProductInput' # Esquema del cuerpo de la solicitud
+            examples:
+              newLaptop:
+                summary: Crear una nueva laptop
+                value:
+                  name: "Laptop Deluxe"
+                  price: 1500.00
+                  available: true
+      responses:
+        '201':
+          description: Producto creado exitosamente.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Product'
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+        '409': # Conflicto (ej. producto ya existe)
+          description: El producto ya existe.
+
+  /products/{productId}: # Ruta con un parámetro de ruta (Path Parameter)
+    parameters: # Parámetro definido a nivel de ruta (se aplica a todas las operaciones)
+      - name: productId
+        in: path
+        description: ID único del producto
+        required: true
+        schema:
+          type: string
+          format: uuid
+        example: "a1b2c3d4-e5f6-7890-1234-567890abcdef"
+    get:
+      tags: ["Productos"]
+      summary: Obtener producto por ID
+      operationId: getProductById
+      responses:
+        '200':
+          description: Detalles del producto.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Product'
+        '404':
+          $ref: '#/components/responses/NotFoundError' # Reutilizar una respuesta de "no encontrado"
+    put:
+      tags: ["Productos"]
+      summary: Actualizar un producto existente
+      operationId: updateProduct
+      requestBody:
+        $ref: '#/components/requestBodies/ProductUpdateRequest' # Reutilizar un cuerpo de solicitud
+      responses:
+        '200':
+          description: Producto actualizado exitosamente.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Product'
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+    delete:
+      tags: ["Productos"]
+      summary: Eliminar un producto
+      operationId: deleteProduct
+      responses:
+        '204':
+          description: Producto eliminado exitosamente (No Content).
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+```
+
+---
+
+## 4. 📦 Componentes Reutilizables (`components`)
+
+La sección `components` es fundamental para la modularidad y la reutilización en un documento OpenAPI. Usa la sintaxis `'$ref': '#/components/<type>/<name>'` para referenciar estos componentes.
+
+### 4.1. Schemas (`components/schemas`)
+
+Definen los modelos de datos (objetos, arrays, primitivos) que se utilizan para solicitudes y respuestas.
+
+```yaml
+components:
+  schemas:
+    Product: # Un objeto JSON que representa un producto completo
+      type: object
+      required:
+        - id
+        - name
+        - price
+        - available
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: ID único del producto
+          example: "123e4567-e89b-12d3-a456-426614174000"
+        name:
+          type: string
+          description: Nombre del producto
+          minLength: 3
+          maxLength: 200
+          example: "Laptop Ultrabook"
+        description:
+          type: string
+          nullable: true # Puede ser null
+          example: "Laptop ligera y potente para profesionales."
+        price:
+          type: number
+          format: float
+          minimum: 0
+          example: 999.99
+        available:
+          type: boolean
+          description: Si el producto está en stock
+          example: true
+        category:
+          type: string
+          enum: ["electronics", "books", "food"] # Valores permitidos
+          example: "electronics"
+
+    ProductInput: # Esquema para crear un nuevo producto (sin ID)
+      type: object
+      required:
+        - name
+        - price
+      properties:
+        name:
+          type: string
+        price:
+          type: number
+        available:
+          type: boolean
+          default: true # Valor por defecto si no se proporciona
+  
+    Error: # Esquema para un objeto de error genérico
+      type: object
+      required:
+        - code
+        - message
+      properties:
+        code:
+          type: string
+          description: Código de error único
+          example: "INVALID_INPUT"
+        message:
+          type: string
+          description: Descripción legible del error
+          example: "El campo 'nombre' no puede estar vacío."
+        details:
+          type: array
+          items:
+            type: string
+          description: Detalles adicionales del error (ej. campos específicos)
+          nullable: true
+```
+
+### 4.2. Parameters (`components/parameters`)
+
+Para definir parámetros comunes que se usan en múltiples operaciones.
+
+```yaml
+components:
+  parameters:
+    PaginationLimit: # Un parámetro query para límite de paginación
+      name: limit
+      in: query
+      description: Número máximo de ítems a devolver
+      required: false
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 100
+        default: 20
+    AuthorizationHeader: # Un encabezado de autorización común
+      name: Authorization
+      in: header
+      description: Token de autenticación Bearer
+      required: true
+      schema:
+        type: string
+        format: Bearer {token}
+```
+
+### 4.3. Responses (`components/responses`)
+
+Para definir estructuras de respuesta comunes (ej. errores estándar).
+
+```yaml
+components:
+  responses:
+    NotFoundError: # Respuesta 404 genérica
+      description: Recurso no encontrado.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          examples:
+            productNotFound:
+              value:
+                code: "NOT_FOUND"
+                message: "Producto con ID X no encontrado."
+    BadRequestError: # Respuesta 400 para entradas inválidas
+      description: Solicitud inválida.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          examples:
+            invalidInput:
+              value:
+                code: "INVALID_INPUT"
+                message: "Datos de solicitud inválidos."
+                details: ["El campo 'precio' es obligatorio."]
+    UnauthorizedError: # Respuesta 401 para acceso no autorizado
+      description: No autorizado. La autenticación es necesaria o ha fallado.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          examples:
+            unauthorized:
+              value:
+                code: "UNAUTHORIZED"
+                message: "No se proporcionó token de autenticación válido."
+```
+
+### 4.4. Security Schemes (`components/securitySchemes`)
+
+Definen los mecanismos de autenticación y autorización.
+
+```yaml
+components:
+  securitySchemes:
+    ApiKeyAuth: # Autenticación por clave API en el encabezado
+      type: apiKey
+      in: header
+      name: X-API-Key
+      description: Requiere una clave API válida para acceder.
+    BearerAuth: # Autenticación con token Bearer (ej. JWT)
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Token JWT requerido para la autenticación.
+    OAuth2: # Flujo OAuth2 (ej. para autenticación de usuario)
+      type: oauth2
+      flows:
+        authorizationCode: # Flujo de código de autorización
+          authorizationUrl: https://example.com/oauth/authorize
+          tokenUrl: https://example.com/oauth/token
+          scopes: # Scopes de permisos
+            read: Permiso de lectura
+            write: Permiso de escritura
+```
+
+### 4.5. Aplicar Seguridad (Global o por Operación)
+
+* **Global (`security` en nivel raíz)**:
+  ```yaml
+  security:
+    - BearerAuth: [] # Aplica BearerAuth a todas las operaciones
+    - ApiKeyAuth: []
+  ```
+* **Por Operación**: Anula o añade seguridad a nivel de operación. Un array de objetos, donde cada objeto es una opción "O". Un array vacío `[]` dentro de una opción "Y" significa que no requiere ningún scope.
+  ```yaml
+  paths:
+    /protected-endpoint:
+      get:
+        summary: Acceso protegido
+        security: # Esta operación requiere BearerAuth O ApiKeyAuth
+          - BearerAuth: []
+          - ApiKeyAuth: []
+        responses:
+          '200':
+            description: Datos protegidos.
+          '401':
+            $ref: '#/components/responses/UnauthorizedError'
+      post:
+        summary: Requiere scope de escritura
+        security:
+          - OAuth2: [write] # Requiere OAuth2 con scope 'write'
+        responses:
+          '201':
+            description: Recurso creado.
+          '403':
+            description: Acceso denegado (permisos insuficientes).
+  ```
+
+---
+
+## 5. 🛠️ Herramientas Comunes del Ecosistema OpenAPI/Swagger
+
+* **Swagger UI**: Herramienta de código abierto para generar documentación interactiva a partir de una especificación OpenAPI. Puedes "probar" los endpoints directamente desde el navegador.
+* **Swagger Editor**: Un editor basado en navegador para escribir y validar especificaciones OpenAPI. Ayuda con el autocompletado y la detección de errores.
+* **Swagger Codegen**: Genera automáticamente SDKs de cliente y stubs de servidor en varios lenguajes (Java, Python, TypeScript, Go, etc.) a partir de una especificación OpenAPI.
+* **Postman / Insomnia**: Clientes de API populares que pueden importar especificaciones OpenAPI para generar colecciones de solicitudes, facilitando las pruebas.
+* **Spectral**: Un linter de API que valida tu especificación OpenAPI contra un conjunto de reglas para asegurar la consistencia y las mejores prácticas.
+
+---
+
+## 6. 💡 Buenas Prácticas y Consejos
+
+* **Mantente DRY (Don't Repeat Yourself)**: Utiliza la sección `components` para definir modelos de datos (`schemas`), parámetros, respuestas y esquemas de seguridad una sola vez y referenciarlos (`$ref`) donde sea necesario.
+* **Sé Explícito y Descriptivo**: Proporciona `summary` y `description` claros y concisos para cada API, ruta y operación.
+* **Define Todas las Respuestas Posibles**: Incluye no solo las respuestas exitosas (200, 201) sino también las respuestas de error esperadas (400, 401, 403, 404, 500) con sus respectivos esquemas y ejemplos.
+* **Proporciona Ejemplos (`examples`)**: Ofrecer ejemplos de solicitud (`requestBody`) y respuesta (`responses`) hace que tu API sea mucho más fácil de entender y consumir.
+* **Usa `tags` para Agrupar**: Organiza tus operaciones en grupos lógicos para una mejor navegación en la documentación generada.
+* **Nombres Semánticos (`operationId`)**: Asigna `operationId`s únicos y significativos a cada operación. Esto es crucial para la generación de código.
+* **Control de Versiones**: Mantén tu especificación OpenAPI versionada junto con tu código fuente (ej. en Git). Actualiza la `info.version` con cada cambio significativo.
+* **Valida tu Especificación**: Usa herramientas como Swagger Editor o Spectral para validar que tu documento OpenAPI es sintácticamente correcto y sigue las mejores prácticas.
+* **Diseña Primero**: Utiliza OpenAPI como una herramienta para diseñar tu API antes de escribir el código. Esto puede mejorar la consistencia y la calidad.
+
+---
+
+Este cheatsheet te proporciona una referencia completa y concisa de OpenAPI, cubriendo su estructura esencial, la definición de rutas, el uso de componentes reutilizables, la seguridad y las herramientas clave para crear APIs bien documentadas y fáciles de consumir.

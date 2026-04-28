@@ -1,0 +1,402 @@
+---
+title: "react-dnd"
+---
+
+---
+
+# 🚚 `react-dnd` Cheatsheet Completo 🚚
+
+`react-dnd` es un conjunto de utilidades para crear interfaces de usuario de arrastrar y soltar en React. Se basa en la API HTML5 de arrastrar y soltar (o en backends personalizados) y se centra en mantener el estado de arrastrar/soltar fuera de tus componentes, lo que los hace fáciles de probar y componer.
+
+---
+
+## 1. 🌟 Conceptos Clave
+
+*   **Drag Source (Origen de Arrastre)**: Un componente que puede ser arrastrado.
+*   **Drop Target (Objetivo de Soltar)**: Un componente donde se pueden soltar elementos arrastrados.
+*   **`DndProvider`**: El componente de nivel superior que envuelve tu aplicación (o la parte de ella que necesita D&D) y le proporciona un "backend" de arrastrar/soltar.
+*   **Backend**: Una implementación que maneja la interacción real de arrastrar/soltar (ej. `HTML5Backend` para navegadores, `TouchBackend` para dispositivos táctiles).
+*   **Item (Elemento Arrastrado)**: Un objeto JavaScript plano que representa los datos que se están arrastrando.
+*   **Type (Tipo)**: Un identificador único (string o Symbol) que conecta un "Drag Source" con un "Drop Target". Un "Drop Target" solo aceptará "Items" de un "Type" específico.
+*   **Monitor**: Un objeto que te permite consultar el estado actual de la operación de arrastrar/soltar.
+*   **Collection Function (`collect`)**: Una función que utiliza el `monitor` para mapear el estado de arrastrar/soltar a las props de tu componente, lo que permite actualizar la UI.
+
+---
+
+## 2. 🛠️ Configuración Inicial
+
+1.  **Instalación:**
+    ```bash
+    npm install react-dnd react-dnd-html5-backend
+    # o
+    yarn add react-dnd react-dnd-html5-backend
+    ```
+
+2.  **Envolver la Aplicación con `DndProvider`:**
+    *   Esto se hace típicamente en el archivo raíz de tu aplicación (ej. `App.js`, `index.js`, `main.jsx`).
+
+    ```jsx
+    // src/App.js
+    import React from 'react';
+    import { DndProvider } from 'react-dnd';
+    import { HTML5Backend } from 'react-dnd-html5-backend'; // O TouchBackend
+
+    import MyDragAndDropApp from './MyDragAndDropApp'; // Tu componente principal con D&D
+
+    function App() {
+      return (
+        <DndProvider backend={HTML5Backend}> {/* Provee el backend a toda la aplicación */}
+          <MyDragAndDropApp />
+        </DndProvider>
+      );
+    }
+
+    export default App;
+    ```
+
+---
+
+## 3. 🚀 Componentes Principales: `useDrag` y `useDrop` Hooks
+
+Estos son los hooks fundamentales para implementar arrastrar y soltar.
+
+### 3.1. `useDrag()` Hook (Para el Origen de Arrastre)
+
+Hace que un componente sea arrastrable.
+
+*   **Sintaxis:** `const [{ isDragging }, dragRef, previewRef] = useDrag(spec);`
+    *   `isDragging`: Booleano que indica si el elemento está siendo arrastrado.
+    *   `dragRef`: Una ref para adjuntar al elemento HTML que se arrastrará.
+    *   `previewRef`: Una ref opcional para adjuntar al elemento HTML que servirá como vista previa de arrastre personalizada (si no quieres usar la imagen fantasma por defecto).
+    *   `spec`: Un objeto de configuración.
+
+*   **Objeto `spec` para `useDrag`:**
+    *   **`type: string | symbol`**: **(Obligatorio)** El tipo de item que se está arrastrando. Debe coincidir con `accept` en el `useDrop` target.
+    *   **`item: object | (monitor) => object`**: **(Obligatorio)** Los datos que se pasan al "Drop Target" cuando se suelta el "Item".
+        *   Puede ser un objeto plano o una función que devuelve un objeto. Si es una función, recibe el `monitor`.
+        *   `{ id: '123', name: 'My draggable item' }`
+    *   **`collect?(monitor: DragSourceMonitor) => object`**: Una función que devuelve un objeto de props que se inyectan en tu componente. Se vuelve a ejecutar cuando el estado de arrastrar/soltar cambia.
+        *   `monitor.isDragging()`: `true` si el item actual está siendo arrastrado.
+        *   `monitor.getItem()`: El objeto `item` que se está arrastrando actualmente.
+        *   `monitor.getItemType()`: El `type` del item que se está arrastrando.
+    *   **`canDrag?(monitor: DragSourceMonitor) => boolean`**: Opcional. Devuelve `true` si el item es arrastrable, `false` en caso contrario.
+    *   **`isDragging?(monitor: DragSourceMonitor) => boolean`**: Opcional. Predicado personalizado para determinar si un item está siendo arrastrado. Útil para arrastrar un item y que otro componente represente que está siendo arrastrado.
+    *   **`end?(item: object, monitor: DragSourceMonitor) => void`**: Opcional. Se llama cuando la operación de arrastrar termina (después de soltar). Útil para limpiar el estado o disparar acciones.
+        *   `monitor.didDrop()`: `true` si el item fue soltado en un target válido.
+        *   `monitor.getDropResult()`: El valor retornado por el método `drop` del "Drop Target".
+
+### 3.2. `useDrop()` Hook (Para el Objetivo de Soltar)
+
+Hace que un componente sea un objetivo de soltar.
+
+*   **Sintaxis:** `const [{ isOver, canDrop }, dropRef] = useDrop(spec);`
+    *   `isOver`: Booleano que indica si un item arrastrado está sobre este target.
+    *   `canDrop`: Booleano que indica si el item arrastrado puede ser soltado en este target.
+    *   `dropRef`: Una ref para adjuntar al elemento HTML que será el "Drop Target".
+    *   `spec`: Un objeto de configuración.
+
+*   **Objeto `spec` para `useDrop`:**
+    *   **`accept: string | symbol | Array<string | symbol>`**: **(Obligatorio)** El `type`(s) de los items que este target puede aceptar.
+    *   **`collect?(monitor: DropTargetMonitor) => object`**: Una función que devuelve un objeto de props que se inyectan en tu componente. Se vuelve a ejecutar cuando el estado de arrastrar/soltar cambia.
+        *   `monitor.isOver()`: `true` si un item está siendo arrastrado sobre este target.
+        *   `monitor.canDrop()`: `true` si el item arrastrado puede ser soltado en este target.
+        *   `monitor.getItem()`: El objeto `item` que se está arrastrando actualmente.
+        *   `monitor.getItemType()`: El `type` del item que se está arrastrando.
+        *   `monitor.getDropResult()`: El valor retornado por el método `drop` de otro target si el item fue soltado en él.
+    *   **`canDrop?(item: object, monitor: DropTargetMonitor) => boolean`**: Opcional. Devuelve `true` si el item puede ser soltado en este target.
+    *   **`hover?(item: object, monitor: DropTargetMonitor) => void`**: Opcional. Se llama repetidamente mientras un item arrastrado está sobre este target. Útil para reordenar elementos en tiempo real.
+    *   **`drop?(item: object, monitor: DropTargetMonitor) => object | void`**: Opcional. Se llama cuando un item se suelta en este target. Los datos del item están disponibles. Puedes devolver un objeto como resultado de la operación.
+
+---
+
+## 4. 🚀 Ejemplo Básico (Arrastrar un Cuadro a una Papelera)
+
+```jsx
+// src/components/Box.js
+import React from 'react';
+import { useDrag } from 'react-dnd';
+
+const ItemTypes = {
+  BOX: 'box',
+};
+
+function Box({ id, name }) {
+  const [{ isDragging }, dragRef] = useDrag(() => ({
+    type: ItemTypes.BOX,
+    item: { id, name }, // Datos que se envían al soltar
+    collect: (monitor) => ({
+      isDragging: monitor.isDragging(), // True si este box está siendo arrastrado
+    }),
+  }));
+
+  const style = {
+    padding: '10px',
+    margin: '10px',
+    backgroundColor: isDragging ? 'lightgray' : 'white',
+    border: '1px solid black',
+    cursor: 'move',
+    opacity: isDragging ? 0.5 : 1, // Reducir opacidad al arrastrar
+  };
+
+  return (
+    <div ref={dragRef} style={style}>
+      {name}
+    </div>
+  );
+}
+export default Box;
+
+// src/components/Dustbin.js
+import React from 'react';
+import { useDrop } from 'react-dnd';
+
+const ItemTypes = {
+  BOX: 'box',
+};
+
+function Dustbin() {
+  const [{ canDrop, isOver }, dropRef] = useDrop(() => ({
+    accept: ItemTypes.BOX, // Acepta items de tipo BOX
+    collect: (monitor) => ({
+      isOver: monitor.isOver(),   // True si un item está sobre la papelera
+      canDrop: monitor.canDrop(), // True si el item actual puede ser soltado
+    }),
+    drop: (item, monitor) => { // Se llama al soltar
+      console.log('Item soltado en la papelera:', item);
+      alert(`¡"${item.name}" eliminado!`);
+      // Aquí puedes dispatch una acción para eliminar el item del estado global
+      return { dropped: true, itemId: item.id }; // Resultado que se puede recuperar en end() del DragSource
+    },
+  }));
+
+  const isActive = canDrop && isOver;
+  let backgroundColor = '#f0f0f0';
+  if (isActive) {
+    backgroundColor = '#aaddaa'; // Verde si se puede soltar
+  } else if (canDrop) {
+    backgroundColor = '#ffffaa'; // Amarillo si se puede soltar pero no está encima
+  }
+
+  const style = {
+    width: '200px',
+    height: '100px',
+    border: '1px dashed black',
+    backgroundColor,
+    display: 'flex',
+    justifyContent: 'center',
+    alignItems: 'center',
+    margin: '20px',
+  };
+
+  return (
+    <div ref={dropRef} style={style}>
+      {isActive ? '¡Suelta aquí!' : 'Arrastra un cuadro aquí'}
+    </div>
+  );
+}
+export default Dustbin;
+
+// src/MyDragAndDropApp.js
+import React from 'react';
+import Box from './components/Box';
+import Dustbin from './components/Dustbin';
+
+function MyDragAndDropApp() {
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+      <h1>Arrastrar y Soltar Simple</h1>
+      <Box id="box1" name="Mi Primer Cuadro" />
+      <Box id="box2" name="Otro Cuadro" />
+      <Dustbin />
+    </div>
+  );
+}
+export default MyDragAndDropApp;
+```
+
+---
+
+## 5. 🎨 Personalización de la Vista Previa de Arrastre
+
+Por defecto, el navegador crea una "imagen fantasma" del elemento arrastrado. Puedes personalizarla.
+
+### 5.1. `DragPreviewImage`
+
+*   Para usar una imagen personalizada como vista previa.
+*   Debe importarse de `react-dnd`.
+*   Se usa junto con el `previewRef` de `useDrag`.
+
+```jsx
+import React, { useEffect } from 'react';
+import { useDrag, DragPreviewImage } from 'react-dnd';
+
+function CustomDragPreviewBox({ id, name, imageUrl }) {
+  const [{ isDragging }, dragRef, preview] = useDrag(() => ({
+    type: 'CUSTOM_BOX',
+    item: { id, name },
+    collect: (monitor) => ({
+      isDragging: monitor.isDragging(),
+    }),
+  }));
+
+  // Usa useEffect para vincular la imagen de vista previa
+  // preview es la función que se pasa como segundo elemento del array de retorno de useDrag
+  useEffect(() => {
+    if (preview) {
+      const img = new Image();
+      img.src = imageUrl;
+      img.onload = () => preview(img); // Registra la imagen como vista previa
+    }
+  }, [preview, imageUrl]);
+
+  return (
+    <>
+      {/* Opcional: <DragPreviewImage connect={preview} src={imageUrl} /> (más simple para una imagen directa) */}
+      <div ref={dragRef} style={{ opacity: isDragging ? 0.5 : 1 }}>
+        {name} (Arrastrarme con imagen)
+      </div>
+    </>
+  );
+}
+export default CustomDragPreviewBox;
+```
+
+---
+
+## 6. 🔄 Reordenar Elementos en una Lista
+
+Este es un caso de uso común y más complejo, que involucra `hover` en `useDrop` y la lógica de mutación en el estado del componente padre.
+
+**Principios:**
+1.  Cada elemento de la lista es un `DragSource` y un `DropTarget`.
+2.  El `hover` del `DropTarget` maneja la reordenación visual (movimiento del placeholder).
+3.  El `drop` del `DropTarget` dispara la acción de actualización real del estado en el componente padre.
+
+```jsx
+// src/components/DraggableCard.js
+import React, { useRef } from 'react';
+import { useDrag, useDrop } from 'react-dnd';
+
+const ItemTypes = { CARD: 'card' };
+
+function DraggableCard({ id, text, index, moveCard }) {
+  const ref = useRef(null);
+
+  // useDrag: para hacer la tarjeta arrastrable
+  const [{ isDragging }, drag] = useDrag(() => ({
+    type: ItemTypes.CARD,
+    item: { id, index },
+    collect: (monitor) => ({
+      isDragging: monitor.isDragging(),
+    }),
+  }));
+
+  // useDrop: para hacer la tarjeta un objetivo donde soltar
+  const [, drop] = useDrop(() => ({
+    accept: ItemTypes.CARD,
+    hover: (draggedItem, monitor) => { // Se ejecuta cuando un item está sobre este
+      if (!ref.current) return;
+      if (draggedItem.id === id) return; // No mover si es el mismo item
+
+      const hoverBoundingRect = ref.current?.getBoundingClientRect();
+      const hoverMiddleY = (hoverBoundingRect.bottom - hoverBoundingRect.top) / 2;
+      const clientOffset = monitor.getClientOffset();
+      const hoverClientY = clientOffset.y - hoverBoundingRect.top;
+
+      // Solo mover si el item arrastrado ha pasado el "punto medio" del item hovereado
+      if (draggedItem.index < index && hoverClientY < hoverMiddleY) return;
+      if (draggedItem.index > index && hoverClientY > hoverMiddleY) return;
+
+      moveCard(draggedItem.id, id); // Llama a la función del padre para reordenar
+      draggedItem.index = index; // Actualiza el índice del item arrastrado para el siguiente hover
+    },
+  }));
+
+  drag(drop(ref)); // Conecta ambas refs al mismo nodo DOM
+
+  const opacity = isDragging ? 0 : 1;
+  const style = {
+    padding: '8px 12px',
+    margin: '4px',
+    backgroundColor: 'white',
+    border: '1px solid #ccc',
+    cursor: 'grab',
+    opacity,
+  };
+
+  return (
+    <div ref={ref} style={style}>
+      {text}
+    </div>
+  );
+}
+export default DraggableCard;
+
+// src/components/CardList.js
+import React, { useState, useCallback } from 'react';
+import update from 'immutability-helper'; // npm install immutability-helper
+import DraggableCard from './DraggableCard';
+
+function CardList() {
+  const [cards, setCards] = useState([
+    { id: 1, text: 'Aprender React' },
+    { id: 2, text: 'Estudiar Vue' },
+    { id: 3, text: 'Explorar Angular' },
+    { id: 4, text: 'Dominar Node.js' },
+  ]);
+
+  // Función para reordenar las tarjetas
+  const moveCard = useCallback((draggedId, targetId) => {
+    const draggedIndex = cards.findIndex(card => card.id === draggedId);
+    const targetIndex = cards.findIndex(card => card.id === targetId);
+    const draggedCard = cards[draggedIndex];
+
+    setCards(
+      update(cards, {
+        $splice: [
+          [draggedIndex, 1], // Eliminar la tarjeta arrastrada
+          [targetIndex, 0, draggedCard], // Insertarla en la nueva posición
+        ],
+      })
+    );
+  }, [cards]);
+
+  return (
+    <div style={{ width: '300px', border: '1px dashed lightgray', padding: '10px' }}>
+      <h3>Lista Reordenable</h3>
+      {cards.map((card, index) => (
+        <DraggableCard
+          key={card.id}
+          id={card.id}
+          text={card.text}
+          index={index}
+          moveCard={moveCard}
+        />
+      ))}
+    </div>
+  );
+}
+export default CardList;
+
+// En tu App.js (después de DndProvider)
+// import CardList from './components/CardList';
+// <CardList />
+```
+
+---
+
+## 7. 💡 Buenas Prácticas y Consejos
+
+*   **Tipos Explícitos (`ItemTypes`)**: Define tus tipos de "Item" como constantes para evitar errores tipográficos y mejorar la legibilidad.
+*   **Actualizaciones Inmutables**: Siempre que modifiques el estado (especialmente arrays y objetos) en el contexto de arrastrar y soltar, hazlo de forma inmutable. Librerías como `immutability-helper` (`update` en el ejemplo de reordenación) son muy útiles.
+*   **`key` Prop en Listas**: Asegúrate de que los elementos arrastrables en listas tengan una prop `key` única y estable para ayudar a React a optimizar el renderizado.
+*   **Optimiza `collect` Functions**: Las funciones `collect` se ejecutan con frecuencia. Mantenlas simples y solo devuelven las props que tu componente realmente necesita para re-renderizar. Si las funciones `collect` son complejas o lentas, pueden afectar el rendimiento.
+*   **`useCallback` y `useMemo`**: Utiliza estos hooks para memorizar funciones y valores en componentes que se re-renderizan con frecuencia para mejorar el rendimiento, especialmente con `moveCard` o `drop` callbacks.
+*   **Feedback Visual Claro**: Proporciona retroalimentación visual al usuario (ej. cambios de opacidad, colores de fondo del objetivo de soltar) para indicar el estado de arrastrar/soltar.
+*   **Manejo de Errores/Resultados en `end()`**: Usa el método `end` de `useDrag` para limpiar el estado del item arrastrado o realizar acciones basadas en si el item fue soltado con éxito o no (`monitor.didDrop()` y `monitor.getDropResult()`).
+*   **Arrastrar y Soltar Anidados**: Es un caso avanzado y puede requerir lógica compleja para asegurarse de que el `drop` se maneje en el target correcto y no en sus hijos, o para permitir arrastrar objetivos de soltar.
+*   **Accesibilidad**: Si bien `react-dnd` maneja la interfaz de arrastrar y soltar a un nivel bajo, la accesibilidad de tu UI final sigue siendo tu responsabilidad. Asegúrate de proporcionar alternativas de teclado y usar atributos ARIA apropiados.
+
+---
+
+Este cheatsheet te proporciona una referencia completa de `react-dnd`, cubriendo sus conceptos esenciales, cómo configurar el proveedor, los hooks `useDrag` y `useDrop`, ejemplos básicos y avanzados, estilización y las mejores prácticas para construir interfaces de usuario de arrastrar y soltar en React.

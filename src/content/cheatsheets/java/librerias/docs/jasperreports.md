@@ -1,0 +1,447 @@
+---
+title: "jasperreports"
+---
+
+
+---
+
+# 📊 JasperReports Cheatsheet Completo 📊
+
+**JasperReports** es una librería de código abierto y motor de informes más popular en Java. Permite generar informes complejos y altamente personalizables en varios formatos (PDF, HTML, XLS, CSV, DOCX, ODT, RTF, etc.) a partir de diferentes fuentes de datos (JDBC, JavaBeans, XML, CSV, etc.).
+
+---
+
+## 1. 🌟 Conceptos Clave
+
+*   **JRXML**: El formato de archivo XML en el que se diseñan los informes. Contiene la estructura del informe, los elementos visuales, los campos, los parámetros, las variables y las consultas de datos.
+*   **JasperReport Object (`JasperReport`)**: La representación compilada de un archivo JRXML. Se crea compilando el JRXML.
+*   **JasperPrint Object (`JasperPrint`)**: El objeto que representa un informe "rellenado" (filled report). Contiene los datos del informe y su formato, pero aún no está exportado a un formato final.
+*   **JasperViewer**: Una herramienta simple para visualizar informes `JasperPrint`.
+*   **DataSource (Fuente de Datos)**: El origen de los datos que se utilizarán para rellenar el informe (ej. JDBC Connection, JRBeanCollectionDataSource, JRXlsDataSource).
+*   **Parameters (Parámetros)**: Valores de entrada que se pasan al informe para influir en su comportamiento o en la consulta de datos (ej. un `ID_Cliente` para filtrar).
+*   **Fields (Campos)**: Los datos recuperados del `DataSource` que se muestran en el informe (ej. `$F{nombreProducto}`).
+*   **Variables (Variables)**: Cálculos que se realizan sobre los datos recuperados (ej. `$V{totalVentas}`, `$V{contadorPaginas}`).
+*   **Bands (Bandas)**: Secciones horizontales del informe que controlan el diseño y la repetición de elementos.
+
+---
+
+## 2. 🛠️ Configuración Inicial (Maven)
+
+Añade las dependencias necesarias en tu `pom.xml`.
+
+```xml
+<dependencies>
+    <!-- JasperReports Library -->
+    <dependency>
+        <groupId>net.sf.jasperreports</groupId>
+        <artifactId>jasperreports</artifactId>
+        <version>6.20.5</version> <!-- Usar la versión más reciente -->
+    </dependency>
+    <!-- Módulos de exportación adicionales según necesites -->
+    <dependency>
+        <groupId>net.sf.jasperreports</groupId>
+        <artifactId>jasperreports-functions</artifactId>
+        <version>6.20.5</version>
+    </dependency>
+    <dependency>
+        <groupId>net.sf.jasperreports</groupId>
+        <artifactId>jasperreports-fonts</artifactId>
+        <version>6.20.5</version>
+    </dependency>
+    <!-- Para exportar a DOCX -->
+    <dependency>
+        <groupId>org.apache.poi</groupId>
+        <artifactId>poi</artifactId>
+        <version>5.2.5</version>
+    </dependency>
+    <dependency>
+        <groupId>org.apache.poi</groupId>
+        <artifactId>poi-ooxml</artifactId>
+        <version>5.2.5</version>
+    </dependency>
+    <!-- Para exportar a HTML -->
+    <dependency>
+        <groupId>com.lowagie</groupId>
+        <artifactId>itext</artifactId>
+        <version>2.1.7</version> <!-- A veces necesario para HTML, puede dar problemas con Java 11+ -->
+        <exclusions>
+            <exclusion>
+                <groupId>bouncycastle</groupId>
+                <artifactId>bcmail-jdk14</artifactId>
+            </exclusion>
+            <exclusion>
+                <groupId>bouncycastle</groupId>
+                <artifactId>bcprov-jdk14</artifactId>
+            </exclusion>
+            <exclusion>
+                <groupId>org.bouncycastle</groupId>
+                <artifactId>bctsp-jdk14</artifactId>
+            </exclusion>
+        </exclusions>
+    </dependency>
+    <!-- JDBC Driver (ej. para MySQL) -->
+    <dependency>
+        <groupId>mysql</groupId>
+        <artifactId>mysql-connector-java</artifactId>
+        <version>8.0.33</version>
+        <scope>runtime</scope>
+    </dependency>
+</dependencies>
+```
+*   **Herramienta de Diseño**: Se recomienda usar **TIBCO Jaspersoft Studio** (descarga independiente) para diseñar los archivos JRXML visualmente.
+
+---
+
+## 3. 📄 Diseño del Informe (JRXML)
+
+El diseño del informe se realiza en un archivo XML (`.jrxml`). Jaspersoft Studio facilita esto enormemente.
+
+### 3.1. Estructura Básica JRXML
+
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd"
+    name="MySimpleReport"
+    pageWidth="595" pageHeight="842"
+    columnWidth="555" leftMargin="20" rightMargin="20" topMargin="20" bottomMargin="20">
+
+    <property name="com.jaspersoft.studio.data.defaultdataadapter" value="One Empty Record"/>
+
+    <!-- Parámetros -->
+    <parameter name="ReportTitle" class="java.lang.String"/>
+    <parameter name="SubreportData" class="net.sf.jasperreports.engine.JRDataSource"/>
+
+    <!-- Fields (Campos) -->
+    <field name="id" class="java.lang.Integer"/>
+    <field name="productName" class="java.lang.String"/>
+    <field name="price" class="java.lang.Double"/>
+
+    <!-- Variables -->
+    <variable name="TotalPrice" class="java.lang.Double" calculation="Sum">
+        <variableExpression><![CDATA[$F{price}]]></variableExpression>
+    </variable>
+    <variable name="REPORT_COUNT" class="java.lang.Integer" calculation="Count">
+        <variableExpression><![CDATA[$F{id}]]></variableExpression>
+    </variable>
+
+    <!-- Query de datos (ej. SQL) -->
+    <queryString>
+        <![CDATA[SELECT id, product_name as productName, price FROM products]]>
+    </queryString>
+
+    <!-- Bandas (Sections) -->
+    <title>
+        <band height="50">
+            <textField>
+                <reportElement x="0" y="0" width="555" height="40"/>
+                <textElement textAlignment="Center" verticalAlignment="Middle">
+                    <font size="20" isBold="true"/>
+                </textElement>
+                <textFieldExpression><![CDATA[$P{ReportTitle}]]></textFieldExpression>
+            </textField>
+        </band>
+    </title>
+    <pageHeader>
+        <band height="30">
+            <staticText>
+                <reportElement x="0" y="0" width="100" height="20"/>
+                <textElement/>
+                <text><![CDATA[ID]]></text>
+            </staticText>
+            <staticText>
+                <reportElement x="100" y="0" width="200" height="20"/>
+                <textElement/>
+                <text><![CDATA[Producto]]></text>
+            </staticText>
+            <staticText>
+                <reportElement x="300" y="0" width="100" height="20"/>
+                <textElement textAlignment="Right"/>
+                <text><![CDATA[Precio]]></text>
+            </staticText>
+        </band>
+    </pageHeader>
+    <detail>
+        <band height="20">
+            <textField>
+                <reportElement x="0" y="0" width="100" height="20"/>
+                <textElement/>
+                <textFieldExpression><![CDATA[$F{id}]]></textFieldExpression>
+            </textField>
+            <textField>
+                <reportElement x="100" y="0" width="200" height="20"/>
+                <textElement/>
+                <textFieldExpression><![CDATA[$F{productName}]]></textFieldExpression>
+            </textField>
+            <textField>
+                <reportElement x="300" y="0" width="100" height="20"/>
+                <textElement textAlignment="Right"/>
+                <textFieldExpression><![CDATA[$F{price}]]></textFieldExpression>
+            </textField>
+        </band>
+    </detail>
+    <pageFooter>
+        <band height="30">
+            <textField>
+                <reportElement x="450" y="0" width="100" height="20"/>
+                <textElement textAlignment="Right"/>
+                <textFieldExpression><![CDATA["Página " + $V{PAGE_NUMBER} + " de " + $V{PAGE_COUNT}]]></textFieldExpression>
+            </textField>
+        </band>
+    </pageFooter>
+    <summary>
+        <band height="40">
+            <staticText>
+                <reportElement x="300" y="0" width="100" height="20"/>
+                <textElement textAlignment="Right" isBold="true"/>
+                <text><![CDATA[Total:]]></text>
+            </staticText>
+            <textField>
+                <reportElement x="400" y="0" width="155" height="20"/>
+                <textElement textAlignment="Right" isBold="true"/>
+                <textFieldExpression><![CDATA[$V{TotalPrice}]]></textFieldExpression>
+            </textField>
+            <textField>
+                <reportElement x="0" y="0" width="100" height="20"/>
+                <textElement/>
+                <textFieldExpression><![CDATA["Número de productos: " + $V{REPORT_COUNT}]]></textFieldExpression>
+            </textField>
+        </band>
+    </summary>
+</jasperReport>
+```
+
+---
+
+## 4. 🚀 Generación de Informes (Proceso Java)
+
+El proceso general en Java para generar un informe implica 3 pasos principales: Compilar, Rellenar y Exportar.
+
+```java
+import net.sf.jasperreports.engine.*;
+import net.sf.jasperreports.engine.data.JRBeanCollectionDataSource; // Para colecciones de JavaBeans
+import net.sf.jasperreports.engine.export.HtmlExporter; // Para exportar a HTML
+import net.sf.jasperreports.engine.export.JRCsvExporter; // Para exportar a CSV
+import net.sf.jasperreports.engine.export.ooxml.JRDocxExporter; // Para exportar a DOCX
+import net.sf.jasperreports.engine.export.ooxml.JRXlsxExporter; // Para exportar a XLSX
+import net.sf.jasperreports.export.*; // Para configuraciones de exportación
+import net.sf.jasperreports.view.JasperViewer; // Para visualizar el informe
+
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+// Clases de ejemplo para DataSource de JavaBeans
+class Product {
+    private Integer id;
+    private String productName;
+    private Double price;
+    public Product(Integer id, String name, Double price) { this.id = id; this.productName = name; this.price = price; }
+    public Integer getId() { return id; } public String getProductName() { return productName; } public Double getPrice() { return price; }
+}
+
+public class ReportGenerator {
+
+    private static final String JRXML_PATH = "src/main/resources/reports/MySimpleReport.jrxml";
+    private static final String JASPER_PATH = "target/classes/reports/MySimpleReport.jasper"; // Compilado
+
+    public static void main(String[] args) {
+        try {
+            // 1. Compilar el archivo JRXML a un objeto JasperReport
+            System.out.println("Compilando informe JRXML...");
+            JasperCompileManager.compileReportToFile(JRXML_PATH, JASPER_PATH); // O .compileReport(inputStream)
+            System.out.println("Informe compilado: " + JASPER_PATH);
+
+            JasperReport jasperReport = JasperFillManager.loadReport(JASPER_PATH);
+
+            // 2. Preparar Parámetros (Map)
+            Map<String, Object> parameters = new HashMap<>();
+            parameters.put("ReportTitle", "Informe de Productos Anual");
+
+            // 3. Preparar la Fuente de Datos (DataSource)
+            JRDataSource dataSource;
+            // Opción A: Desde una conexión JDBC (si el JRXML tiene un <queryString>)
+            Connection connection = getJDBCConnection(); // Obtener tu conexión a la DB
+            dataSource = new JREmptyDataSource(); // Se usa si el query es directo de JDBC
+
+            // Opción B: Desde una colección de JavaBeans (si el JRXML NO tiene <queryString> o usa `FROM DUMMY`)
+            // Los nombres de los fields en JRXML deben coincidir con los getters de tus JavaBeans (ej. $F{productName} -> getProductName())
+            List<Product> productList = new ArrayList<>();
+            productList.add(new Product(1, "Laptop XYZ", 1200.00));
+            productList.add(new Product(2, "Mouse Inalámbrico", 25.50));
+            productList.add(new Product(3, "Teclado Mecánico", 75.00));
+            // dataSource = new JRBeanCollectionDataSource(productList);
+
+            // Opción C: Si el JRXML usa un subreport y le pasas datos
+            // parameters.put("SubreportData", new JRBeanCollectionDataSource(subreportList));
+
+            // 4. Rellenar el informe con datos y parámetros para obtener un JasperPrint
+            System.out.println("Rellenando informe...");
+            // Si usas JDBC:
+            JasperPrint jasperPrint = JasperFillManager.fillReport(jasperReport, parameters, connection);
+            // Si usas JavaBeans (o JRXlsDataSource, JRCsvDataSource, etc.):
+            // JasperPrint jasperPrint = JasperFillManager.fillReport(jasperReport, parameters, dataSource);
+            System.out.println("Informe rellenado.");
+
+            // 5. Exportar el informe a varios formatos
+            String outputPath = "reports/";
+            new File(outputPath).mkdirs(); // Crear directorio de salida si no existe
+
+            // Exportar a PDF
+            String pdfFilePath = outputPath + "MyReport.pdf";
+            JasperExportManager.exportReportToPdfFile(jasperPrint, pdfFilePath);
+            System.out.println("Exportado a PDF: " + pdfFilePath);
+
+            // Exportar a HTML
+            String htmlFilePath = outputPath + "MyReport.html";
+            HtmlExporter htmlExporter = new HtmlExporter();
+            htmlExporter.setExporterInput(new SimpleExporterInput(jasperPrint));
+            htmlExporter.setExporterOutput(new SimpleHtmlExporterOutput(htmlFilePath));
+            htmlExporter.exportReport();
+            System.out.println("Exportado a HTML: " + htmlFilePath);
+
+            // Exportar a XLSX (Excel 2007+)
+            String xlsxFilePath = outputPath + "MyReport.xlsx";
+            JRXlsxExporter xlsxExporter = new JRXlsxExporter();
+            xlsxExporter.setExporterInput(new SimpleExporterInput(jasperPrint));
+            xlsxExporter.setExporterOutput(new SimpleOutputStreamExporterOutput(xlsxFilePath));
+            SimpleXlsxReportConfiguration xlsxConfig = new SimpleXlsxReportConfiguration();
+            xlsxConfig.setDetectCellType(true); // Detectar tipo de celda
+            xlsxConfig.setCollapseRowSpan(false);
+            xlsxExporter.setConfiguration(xlsxConfig);
+            xlsxExporter.exportReport();
+            System.out.println("Exportado a XLSX: " + xlsxFilePath);
+
+            // Exportar a DOCX (Word 2007+)
+            String docxFilePath = outputPath + "MyReport.docx";
+            JRDocxExporter docxExporter = new JRDocxExporter();
+            docxExporter.setExporterInput(new SimpleExporterInput(jasperPrint));
+            docxExporter.setExporterOutput(new SimpleOutputStreamExporterOutput(docxFilePath));
+            docxExporter.exportReport();
+            System.out.println("Exportado a DOCX: " + docxFilePath);
+
+            // Exportar a CSV
+            String csvFilePath = outputPath + "MyReport.csv";
+            JRCsvExporter csvExporter = new JRCsvExporter();
+            csvExporter.setExporterInput(new SimpleExporterInput(jasperPrint));
+            csvExporter.setExporterOutput(new SimpleWriterExporterOutput(csvFilePath));
+            csvExporter.exportReport();
+            System.out.println("Exportado a CSV: " + csvFilePath);
+
+
+            // 6. Visualizar el informe (solo para aplicaciones de escritorio)
+            // JasperViewer.viewReport(jasperPrint, false); // false para no salir de la app al cerrar viewer
+            // System.out.println("Informe visualizado.");
+
+        } catch (JRException | IOException | SQLException e) {
+            System.err.println("Error al generar el informe: " + e.getMessage());
+            e.printStackTrace();
+        } finally {
+            // Asegurarse de cerrar la conexión si se abrió aquí
+            System.out.println("Proceso de informe completado.");
+        }
+    }
+
+    private static Connection getJDBCConnection() throws SQLException {
+        // Configura tu conexión JDBC aquí
+        String url = "jdbc:mysql://localhost:3306/mi_base_de_datos";
+        String user = "user";
+        String password = "password";
+        return DriverManager.getConnection(url, user, password);
+    }
+}
+```
+
+---
+
+## 5. 🗄️ Fuentes de Datos (JRDataSource)
+
+JasperReports es muy flexible con las fuentes de datos.
+
+*   **`java.sql.Connection`**: Para consultas SQL directas en el JRXML.
+*   **`JRBeanCollectionDataSource`**: Para pasar una `java.util.Collection` de objetos JavaBeans.
+    *   Los `fields` en el JRXML deben coincidir con los nombres de las propiedades (con sus getters) de tus JavaBeans.
+*   **`JREmptyDataSource`**: Cuando el informe no tiene datos de detalle (ej. solo usa parámetros y variables en el resumen).
+*   **`JRCsvDataSource`**: Para datos desde archivos CSV.
+*   **`JRXlsDataSource`**: Para datos desde archivos Excel.
+*   **`JRXmlDataSource`**: Para datos desde archivos XML.
+
+---
+
+## 6. 🖼️ Elementos Comunes del Diseño JRXML
+
+*   **`staticText`**: Texto estático.
+*   **`textField`**: Muestra el valor de un parámetro, campo o variable.
+    *   `<textFieldExpression><![CDATA[$P{MyParam}]]></textFieldExpression>`
+    *   `<textFieldExpression><![CDATA[$F{myField}]]></textFieldExpression>`
+    *   `<textFieldExpression><![CDATA[$V{MyVar}]]></textFieldExpression>`
+*   **`image`**: Muestra una imagen.
+    *   `<imageExpression><![CDATA["classpath:images/logo.png"]]></imageExpression>`
+*   **`line`**: Dibuja una línea.
+*   **`rectangle`**: Dibuja un rectángulo.
+*   **`frame`**: Contenedor para agrupar elementos y aplicar estilos/diseños comunes.
+
+### 6.1. Propiedades Comunes de `reportElement`
+
+*   `x`, `y`: Posición (en píxeles).
+*   `width`, `height`: Ancho y alto.
+*   `stretchType`: Cómo se estira el elemento si el contenido es grande (ej. `RelativeToTallestObject`).
+*   `printWhenExpression`: Una expresión booleana para imprimir el elemento condicionalmente.
+    *   `<printWhenExpression><![CDATA[$F{price} > 100]]></printWhenExpression>`
+*   `uuid`: ID único (generado por Jaspersoft Studio).
+
+### 6.2. Atributos de `textElement`
+
+*   `textAlignment`: `Left`, `Center`, `Right`, `Justified`.
+*   `verticalAlignment`: `Top`, `Middle`, `Bottom`.
+*   `rotation`: `None`, `Left`, `Right`, `UpsideDown`.
+*   **`<font>`**: `fontName`, `size`, `isBold`, `isItalic`, `isUnderline`, `isStrikeThrough`.
+*   **`<box>`**: `topPadding`, `leftPadding`, `border` (para celdas/bordes).
+
+---
+
+## 7. 🔗 Subinformes (Subreports)
+
+Para incluir otros informes dentro de un informe principal.
+
+*   **En JRXML principal:**
+    ```xml
+    <subreport>
+        <reportElement x="0" y="0" width="555" height="100"/>
+        <subreportParameter name="ParentParam">
+            <subreportParameterExpression><![CDATA[$P{ReportTitle}]]></subreportParameterExpression>
+        </subreportParameter>
+        <connectionExpression><![CDATA[$P{REPORT_CONNECTION}]]></connectionExpression> <!-- Pasa la misma conexión -->
+        <!-- O para JavaBeans: <dataSourceExpression><![CDATA[$P{SubreportData}]]></dataSourceExpression> -->
+        <subreportExpression><![CDATA[$P{SUBREPORT_DIR} + "MySubreport.jasper"]]></subreportExpression>
+    </subreport>
+    ```
+*   Necesitas compilar el subinforme también y pasarlo como parámetro si no lo defines directamente.
+*   `$P{REPORT_CONNECTION}` es un parámetro de sistema para la conexión de base de datos del informe principal.
+*   `$P{SUBREPORT_DIR}` es útil para la ruta de los subinformes.
+
+---
+
+## 8. 💡 Buenas Prácticas y Consejos
+
+*   **Usa Jaspersoft Studio**: Es la herramienta estándar para diseñar visualmente los informes. Intentar escribir JRXML a mano es muy tedioso.
+*   **Compilar y Cachear `.jasper`**: Siempre compila tus archivos `.jrxml` a `.jasper` y usa los `.jasper` para rellenar los informes. Cachea los objetos `JasperReport` si generas muchos informes repetidamente para mejorar el rendimiento.
+*   **Manejo de Excepciones**: Las operaciones de JasperReports (`compileReport`, `fillReport`, `exportReport`) lanzan `JRException` o `IOException`. Manéjalas adecuadamente.
+*   **Cerrar Recursos**: Si usas `java.sql.Connection` directamente, asegúrate de cerrar la conexión en un bloque `finally`.
+*   **Parámetros y Fields Claros**: Nombra tus parámetros y fields de forma descriptiva.
+*   **Evita Queries Complejas en JRXML**: Si la consulta SQL se vuelve muy compleja, es mejor procesar los datos en Java y pasarlos al informe como un `JRBeanCollectionDataSource`.
+*   **Personalización de Exportación**: Utiliza las clases `SimpleXxxReportConfiguration` (ej. `SimpleXlsxReportConfiguration`) para controlar finamente el formato de salida.
+*   **Fuentes Incrustadas**: Para garantizar que los informes se vean igual en diferentes entornos, incrusta las fuentes en el informe JRXML (Jaspersoft Studio tiene una opción para esto). Si usas fuentes que no son las PDF Core Fonts (Helvetica, Times-Roman, Courier), necesitarás `jasperreports-fonts` y configurar las fuentes.
+*   **Testing**: Prueba la generación de tus informes para diferentes escenarios de datos y parámetros.
+
+---
+
+Este cheatsheet te proporciona una referencia completa de JasperReports, cubriendo sus conceptos esenciales, el proceso de generación de informes en Java, el diseño JRXML, el uso de fuentes de datos, subinformes y las mejores prácticas para crear informes complejos y personalizables.

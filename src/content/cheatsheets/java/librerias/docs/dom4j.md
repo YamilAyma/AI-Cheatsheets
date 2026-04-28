@@ -1,0 +1,330 @@
+---
+title: "dom4j"
+---
+
+
+---
+
+# 🌲 dom4j Cheatsheet Completo 🌲
+
+**dom4j** es una biblioteca de código abierto para Java que proporciona una forma amigable y flexible de trabajar con XML, utilizando los principios del DOM (Document Object Model) y SAX (Simple API for XML). Es conocida por su rendimiento, su API concisa y su integración con XPath y JAXB.
+
+---
+
+## 1. 🌟 Conceptos Clave
+
+*   **`Document`**: La representación de un documento XML completo en memoria. Es el nodo raíz de la estructura de árbol XML.
+*   **`Element`**: Representa un elemento XML (una etiqueta con un nombre, atributos e hijos).
+*   **`Attribute`**: Representa un atributo de un elemento XML.
+*   **`Node`**: La interfaz base para todos los componentes de un documento XML (Document, Element, Attribute, Text, Comment, etc.).
+*   **XPath**: Un lenguaje para navegar y seleccionar nodos en un documento XML. dom4j tiene un excelente soporte integrado.
+*   **DOM (Document Object Model)**: Carga el documento XML completo en memoria como un árbol de objetos, permitiendo la navegación y modificación.
+*   **SAX (Simple API for XML)**: Un parser basado en eventos. Procesa el XML de forma secuencial, disparando eventos cuando encuentra elementos (inicio/fin de etiqueta, texto, etc.). Es más eficiente en memoria para documentos grandes, pero no permite la navegación o modificación del árbol. dom4j lo utiliza internamente para cargar documentos.
+
+---
+
+## 2. 🛠️ Configuración Inicial (Maven)
+
+Añade la dependencia en tu `pom.xml`:
+
+```xml
+<dependencies>
+    <dependency>
+        <groupId>org.dom4j</groupId>
+        <artifactId>dom4j</artifactId>
+        <version>2.1.4</version> <!-- Usar la versión más reciente y estable -->
+    </dependency>
+    <!-- Opcional: Para XPath, si no está en tu JDK o si necesitas una implementación específica -->
+    <!-- dom4j usa la implementación XPath de JAXP por defecto, que suele estar en el JDK.
+         Si tienes problemas con JAXP o quieres algo diferente, puedes añadir:
+    <dependency>
+        <groupId>jaxen</groupId>
+        <artifactId>jaxen</artifactId>
+        <version>1.2.0</version>
+    </dependency>
+    -->
+</dependencies>
+```
+
+---
+
+## 3. 📄 Creación de Documentos XML
+
+### 3.1. Crear un Documento Simple
+
+```java
+import org.dom4j.Document;
+import org.dom4j.DocumentHelper;
+import org.dom4j.Element;
+import java.io.FileWriter;
+import java.io.IOException;
+
+public class CreateXml {
+    public static void main(String[] args) throws IOException {
+        // 1. Crear un nuevo documento
+        Document document = DocumentHelper.createDocument();
+
+        // 2. Añadir el elemento raíz
+        Element root = document.addElement("library");
+
+        // 3. Añadir elementos hijos y atributos
+        Element book1 = root.addElement("book")
+                            .addAttribute("id", "1")
+                            .addAttribute("category", "fiction");
+        book1.addElement("title").setText("El Señor de los Anillos");
+        book1.addElement("author").setText("J.R.R. Tolkien");
+        book1.addElement("year").setText("1954");
+
+        Element book2 = root.addElement("book")
+                            .addAttribute("id", "2")
+                            .addAttribute("category", "science");
+        book2.addElement("title").setText("Cosmos");
+        book2.addElement("author").setText("Carl Sagan");
+        book2.addElement("year").setText("1980");
+
+        // 4. Guardar el documento en un archivo
+        try (FileWriter out = new FileWriter("library.xml")) {
+            document.write(out);
+        }
+        System.out.println("Archivo 'library.xml' creado exitosamente.");
+        System.out.println("XML generado:\n" + document.asXML()); // Imprime a consola
+    }
+}
+```
+
+---
+
+## 4. 📁 Lectura y Parseo de Documentos XML
+
+### 4.1. Cargar un Documento desde un Archivo
+
+```java
+import org.dom4j.Document;
+import org.dom4j.DocumentException;
+import org.dom4j.io.SAXReader;
+import java.io.File;
+
+public class ReadXmlFromFile {
+    public static void main(String[] args) throws DocumentException {
+        File xmlFile = new File("library.xml"); // Asume que 'library.xml' existe
+        if (!xmlFile.exists()) {
+            System.out.println("Archivo 'library.xml' no encontrado. Por favor, créalo primero.");
+            return;
+        }
+
+        // 1. Crear un lector SAX (recomendado para cargar)
+        SAXReader reader = new SAXReader();
+        // Opcional: Validar XML durante la lectura
+        // reader.setValidation(true); // Requiere un DTD o Schema
+        // reader.setFeature("http://apache.org/xml/features/validation/schema", true); // Para XML Schema
+
+        // 2. Leer el documento
+        Document document = reader.read(xmlFile);
+
+        // 3. Acceder al elemento raíz
+        System.out.println("Elemento raíz: " + document.getRootElement().getName());
+        System.out.println("Número de libros: " + document.getRootElement().elements("book").size());
+    }
+}
+```
+
+### 4.2. Cargar un Documento desde un String
+
+```java
+import org.dom4j.Document;
+import org.dom4j.DocumentHelper;
+import org.dom4j.DocumentException;
+
+public class ReadXmlFromString {
+    public static void main(String[] args) throws DocumentException {
+        String xmlString = "<person><name>Alice</name><age>30</age></person>";
+
+        Document document = DocumentHelper.parseText(xmlString);
+        Element root = document.getRootElement();
+        System.out.println("Nombre: " + root.elementText("name"));
+        System.out.println("Edad: " + root.elementText("age"));
+    }
+}
+```
+
+---
+
+## 5. 🔍 Navegación y Consulta (DOM-like)
+
+### 5.1. Acceder a Elementos y Atributos
+
+```java
+import org.dom4j.Document;
+import org.dom4j.Element;
+import org.dom4j.Attribute;
+import org.dom4j.io.SAXReader;
+import java.io.File;
+import java.util.Iterator;
+import java.util.List;
+
+public class NavigateXml {
+    public static void main(String[] args) throws DocumentException {
+        SAXReader reader = new SAXReader();
+        Document document = reader.read(new File("library.xml"));
+        Element root = document.getRootElement(); // <library>
+
+        // Acceder a elementos hijos por nombre
+        Element firstBook = root.element("book"); // Primer elemento <book>
+        System.out.println("Primer libro: " + firstBook.elementText("title"));
+
+        // Acceder a atributos
+        Attribute idAttr = firstBook.attribute("id");
+        System.out.println("ID del primer libro: " + idAttr.getValue());
+        // O directamente: firstBook.attributeValue("id")
+
+        // Iterar sobre todos los elementos hijos con un nombre específico
+        List<Element> books = root.elements("book"); // Devuelve una lista de todos los <book>
+        System.out.println("\nTodos los libros:");
+        for (Element book : books) {
+            System.out.println("- " + book.elementText("title") + " (" + book.attributeValue("category") + ")");
+        }
+
+        // Iterar sobre todos los elementos hijos (sin importar el nombre)
+        System.out.println("\nIterando todos los hijos de la raíz:");
+        for (Iterator<Element> it = root.elementIterator(); it.hasNext(); ) {
+            Element element = it.next();
+            System.out.println("Elemento: " + element.getName());
+        }
+
+        // Iterar sobre todos los atributos de un elemento
+        System.out.println("\nAtributos del primer libro:");
+        for (Iterator<Attribute> it = firstBook.attributeIterator(); it.hasNext(); ) {
+            Attribute attr = it.next();
+            System.out.println("  " + attr.getName() + " = " + attr.getValue());
+        }
+    }
+}
+```
+
+---
+
+## 6. 🌐 Consultas con XPath
+
+dom4j tiene un excelente soporte para XPath.
+
+```java
+import org.dom4j.Document;
+import org.dom4j.DocumentException;
+import org.dom4j.Node; // Importa Node para XPath
+import org.dom4j.io.SAXReader;
+import java.io.File;
+import java.util.List;
+
+public class XPathQuery {
+    public static void main(String[] args) throws DocumentException {
+        SAXReader reader = new SAXReader();
+        Document document = reader.read(new File("library.xml"));
+
+        // Seleccionar todos los títulos de libros
+        List<Node> titles = document.selectNodes("//book/title"); // // para cualquier nivel, / para hijo directo
+        System.out.println("Títulos de libros:");
+        for (Node node : titles) {
+            System.out.println("- " + node.getText()); // Obtiene el texto del nodo
+        }
+
+        // Seleccionar libros de categoría "fiction"
+        List<Node> fictionBooks = document.selectNodes("//book[@category='fiction']"); // @ para atributo
+        System.out.println("\nLibros de ficción:");
+        for (Node node : fictionBooks) {
+            Element book = (Element) node; // Castear a Element para acceder a sus métodos
+            System.out.println("- " + book.elementText("title"));
+        }
+
+        // Seleccionar el autor del libro con ID "1"
+        Node authorNode = document.selectSingleNode("//book[@id='1']/author"); // selectSingleNode para un único resultado
+        if (authorNode != null) {
+            System.out.println("\nAutor del libro con ID 1: " + authorNode.getText());
+        }
+
+        // Seleccionar el precio de un libro (si existiera)
+        // Node priceNode = document.selectSingleNode("//book[@id='1']/price");
+        // if (priceNode != null) {
+        //     System.out.println("Precio: " + priceNode.getText());
+        // }
+    }
+}
+```
+
+---
+
+## 7. ✍️ Modificación de Documentos XML
+
+```java
+import org.dom4j.Document;
+import org.dom4j.DocumentException;
+import org.dom4j.Element;
+import org.dom4j.io.OutputFormat;
+import org.dom4j.io.SAXReader;
+import org.dom4j.io.XMLWriter;
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.util.List;
+
+public class ModifyXml {
+    public static void main(String[] args) throws DocumentException, IOException {
+        SAXReader reader = new SAXReader();
+        Document document = reader.read(new File("library.xml"));
+        Element root = document.getRootElement();
+
+        // 1. Modificar un elemento existente
+        Element book1 = root.element("book"); // Obtener el primer libro
+        Element title1 = book1.element("title");
+        title1.setText("El Señor de los Anillos (Edición Extendida)"); // Modificar texto del título
+
+        // 2. Modificar un atributo existente
+        book1.attribute("category").setValue("fantasy"); // Cambiar la categoría
+
+        // 3. Añadir un nuevo elemento a un existente
+        book1.addElement("publisher").setText("Allen & Unwin");
+
+        // 4. Añadir un nuevo atributo a un existente
+        book1.addAttribute("language", "en");
+
+        // 5. Eliminar un elemento
+        List<Element> books = root.elements("book");
+        if (books.size() > 1) {
+            root.remove(books.get(1)); // Eliminar el segundo libro (<book id="2">Cosmos</book>)
+            System.out.println("Segundo libro eliminado.");
+        }
+
+        // 6. Eliminar un atributo
+        if (book1.attribute("id") != null) {
+            book1.remove(book1.attribute("id"));
+            System.out.println("Atributo 'id' del primer libro eliminado.");
+        }
+
+        // 7. Guardar los cambios en un nuevo archivo o sobrescribir
+        OutputFormat format = OutputFormat.createPrettyPrint(); // Formato bonito para salida
+        try (FileWriter out = new FileWriter("modified_library.xml");
+             XMLWriter writer = new XMLWriter(out, format)) {
+            writer.write(document);
+        }
+        System.out.println("Archivo 'modified_library.xml' creado con cambios.");
+    }
+}
+```
+
+---
+
+## 8. 💡 Buenas Prácticas y Consejos
+
+*   **Reutiliza `SAXReader` y `XMLWriter`**: Crear instancias de `SAXReader` y `XMLWriter` puede ser costoso. Reutilízalas si vas a procesar múltiples documentos.
+*   **Manejo de Excepciones**: Siempre maneja `DocumentException` (al leer/parsear) e `IOException` (al trabajar con archivos).
+*   **Usa `try-with-resources`**: Cuando trabajes con `FileWriter`, `FileInputStream`, etc., usa `try-with-resources` para asegurar que los flujos se cierren automáticamente.
+*   **`OutputFormat.createPrettyPrint()`**: Utilízalo al escribir XML para generar una salida legible con indentación. `OutputFormat.createCompactFormat()` es para XML sin espacios/indentación.
+*   **XPath para Consultas Complejas**: Para navegar por el árbol XML de forma compleja, XPath es mucho más potente y conciso que la navegación DOM manual (ej. `element.element("child").element("grandchild")`).
+*   **Manejo de Namespaces**: Para XML con namespaces, necesitas usar `QName` o configurar `NamespaceStack` para las consultas XPath.
+    *   `DocumentHelper.createElement(QName.get("nombre", "uri_namespace"))`
+    *   `document.getRootElement().selectNodes("//ns:element", new HashMap<String, String>() {{ put("ns", "uri_namespace"); }});`
+*   **Evita la Mutación si es posible**: Si solo necesitas leer, puedes obtener un `Document` y hacer consultas. Si necesitas modificar, ten en cuenta que estás manipulando el árbol en memoria.
+*   **Rendimiento**: Para documentos XML extremadamente grandes que no caben cómodamente en memoria, considera usar un parser SAX directamente (aunque dom4j usa SAX internamente, carga el DOM en memoria). Si solo necesitas extraer información sin construir el árbol completo, SAX puro o StAX pueden ser más eficientes.
+
+---
+
+Este cheatsheet te proporciona una referencia completa de dom4j, cubriendo sus conceptos esenciales, cómo crear, leer y modificar documentos XML, el uso de XPath y las mejores prácticas para un manejo eficiente de XML en Java.

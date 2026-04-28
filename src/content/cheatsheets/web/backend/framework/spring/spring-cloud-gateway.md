@@ -1,0 +1,314 @@
+---
+title: "spring-cloud-gateway"
+---
+
+
+
+---
+
+# 🚪 Spring Cloud Gateway Cheatsheet Completo 🚪
+
+**Spring Cloud Gateway** es un framework API Gateway construido sobre Spring Framework 5, Spring Boot 2 y Project Reactor. Proporciona una forma potente y flexible de enrutar solicitudes HTTP y aplicar filtros a esas solicitudes. Es una alternativa reactiva al Zuul 1 de Netflix.
+
+---
+
+## 1. 🌟 Conceptos Clave
+
+*   **API Gateway**: Un punto de entrada único para todos los clientes que acceden a un conjunto de microservicios. Enruta solicitudes a los servicios apropiados.
+*   **Enrutamiento (Routing)**: Define cómo las solicitudes entrantes se dirigen a los servicios backend. Se basa en `Predicates` que coinciden con las solicitudes y `Filters` que modifican las solicitudes o respuestas.
+*   **Predicates (Predicados)**: Condicionales que coinciden con atributos de la solicitud HTTP (ej. path, host, headers, query parameters, method). Si un predicado coincide, la ruta se aplica.
+*   **Filters (Filtros)**: Funciones que pueden modificar la solicitud entrante antes de que se envíe al servicio backend, o modificar la respuesta del servicio backend antes de que se envíe al cliente. Son "cross-cutting concerns".
+*   **`Route` (Ruta)**: Un bloque de construcción fundamental de Gateway, que combina uno o más `Predicates` y `Filters` con una URI de destino.
+*   **Reactive**: Construido sobre Project Reactor, lo que lo hace no bloqueante y eficiente en el manejo de un gran número de conexiones concurrentes.
+
+---
+
+## 2. 🛠️ Configuración Inicial (Spring Boot)
+
+1.  **Añadir dependencias en `pom.xml` (Maven):**
+    ```xml
+    <dependencies>
+        <parent>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-parent</artifactId>
+            <version>3.2.0</version>
+            <relativePath/>
+        </parent>
+
+        <dependency>
+            <groupId>org.springframework.cloud</groupId>
+            <artifactId>spring-cloud-starter-gateway</artifactId>
+        </dependency>
+        <!-- Spring Cloud BOM (para gestionar versiones de Spring Cloud) -->
+        <dependencyManagement>
+            <dependencies>
+                <dependency>
+                    <groupId>org.springframework.cloud</groupId>
+                    <artifactId>spring-cloud-dependencies</artifactId>
+                    <version>2023.0.0</version> <!-- Usar la versión compatible con tu Spring Boot -->
+                    <type>pom</type>
+                    <scope>import</scope>
+                </dependency>
+            </dependencies>
+        </dependencyManagement>
+        <!-- Opcional: Para descubrimiento de servicios (ej. Eureka) -->
+        <dependency>
+            <groupId>org.springframework.cloud</groupId>
+            <artifactId>spring-cloud-starter-netflix-eureka-client</artifactId>
+        </dependency>
+        <!-- Para pruebas -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+    ```
+
+2.  **Configurar `application.yml` (o `application.properties`):**
+    ```yaml
+    # src/main/resources/application.yml
+    server:
+      port: 8080 # Puerto del Gateway
+
+    spring:
+      application:
+        name: api-gateway # Nombre de la aplicación Gateway
+      cloud:
+        gateway:
+          routes: # Definición de rutas
+            - id: product_service_route # ID único de la ruta
+              uri: http://localhost:8081 # URI del servicio backend
+              predicates:
+                - Path=/products/** # Coincide con solicitudes a /products/cualquiercosa
+              filters:
+                - AddRequestHeader=X-Gateway-Request, true # Añade un encabezado a la solicitud
+                - StripPrefix=1 # Elimina el prefijo /products de la URL enviada al backend
+            - id: user_service_route
+              uri: http://localhost:8082
+              predicates:
+                - Path=/users/{id} # Coincide con /users/123
+                - Method=GET # Solo para método GET
+              filters:
+                - RewritePath=/users/(?<segment>.*), /api/v1/users/${segment} # Reescribe la URL para el backend
+          default-filters: # Filtros que se aplican a todas las rutas (opcional)
+            - AddResponseHeader=X-Powered-By, SpringCloudGateway
+    ```
+
+---
+
+## 3. 🗺️ Definición de Rutas
+
+Las rutas pueden definirse en la configuración (`application.yml`) o programáticamente (`RouteLocator`).
+
+### 3.1. Rutas Basadas en Configuración (YAML - Recomendado para la mayoría de los casos)
+
+```yaml
+spring:
+  cloud:
+    gateway:
+      routes:
+        - id: mi_ruta_id # Identificador único de la ruta
+          uri: lb://nombre-servicio-eureka # URI del servicio destino. 'lb://' para balanceo de carga con Eureka
+          # uri: http://localhost:8081 # URI directa a un servicio
+          predicates: # Condicionales para que la ruta coincida
+            - Path=/api/miservicio/** # Coincide con el path
+            - Host=*.example.com # Coincide con el host
+            - Method=GET,POST # Coincide con el método HTTP
+            - Header=X-Custom-Header, myValue # Coincide con un encabezado
+            - Query=param, value # Coincide con un parámetro de query string
+            - Cookie=mycookie, myvalue # Coincide con una cookie
+            - After=2023-01-01T12:00:00+01:00[Europe/Madrid] # Después de una fecha/hora
+            - Before=2024-01-01T12:00:00+01:00[Europe/Madrid] # Antes de una fecha/hora
+            - Between=2023-01-01T12:00:00+01:00[Europe/Madrid], 2023-12-31T23:59:59+01:00[Europe/Madrid] # Entre dos fechas
+            - RemoteAddr=192.168.1.1/24 # Coincide con la IP remota
+            - Weight=myGroup, 8 # Para Canary deployments (ver Filters)
+          filters: # Filtros a aplicar a esta ruta
+            - StripPrefix=1 # Elimina 1 segmento de la ruta (ej. /api/users -> /users)
+            - AddRequestHeader=X-Request-ID, {uuid} # Añade un encabezado a la solicitud backend
+            - RewritePath=/old/(?<segment>.*), /new/${segment} # Reescribe el path
+            - RequestRateLimiter=#{ ... } # Rate limiting
+          metadata: # Metadatos opcionales (no afectan el routing, para otros sistemas)
+            key: value
+```
+
+### 3.2. Rutas Basadas en Java (Programáticas)
+
+*   Utiliza un bean `RouteLocator` para definir rutas. Útil para lógica compleja o rutas dinámicas.
+
+```java
+import org.springframework.cloud.gateway.route.RouteLocator;
+import org.springframework.cloud.gateway.route.builder.RouteLocatorBuilder;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+
+@Configuration
+public class GatewayRoutesConfig {
+
+    @Bean
+    public RouteLocator myCustomRoutes(RouteLocatorBuilder builder) {
+        return builder.routes()
+                .route(p -> p
+                    .path("/api/legacy/**") // Predicado de Path
+                    .filters(f -> f.stripPrefix(1) // Elimina /api
+                                   .addRequestHeader("X-Legacy-Route", "true")) // Añade un encabezado
+                    .uri("http://localhost:8083")) // URI de destino
+                .route(p -> p
+                    .host("*.example.com") // Predicado de Host
+                    .and() // Conecta predicados con AND
+                    .path("/users/{id}")
+                    .filters(f -> f.rewritePath("/users/(?<segment>.*)", "/api/v1/users/${segment}"))
+                    .uri("lb://user-service")) // Usa el nombre del servicio Eureka
+                .build();
+    }
+}
+```
+
+---
+
+## 4. 🧰 Predicados (Built-in Predicate Factories)
+
+Para definir las condiciones de coincidencia de una ruta.
+
+*   `After`: Coincide si la solicitud llega después de un `DateTime`.
+*   `Before`: Coincide si la solicitud llega antes de un `DateTime`.
+*   `Between`: Coincide si la solicitud llega entre dos `DateTime`.
+*   `Cookie`: Coincide con una cookie y su valor.
+*   `Header`: Coincide con un encabezado y su valor.
+*   `Host`: Coincide con el host de la solicitud.
+*   `Method`: Coincide con el método HTTP (GET, POST, etc.).
+*   `Path`: Coincide con el path de la URI.
+*   `Query`: Coincide con un parámetro de query string y su valor.
+*   `RemoteAddr`: Coincide con la dirección IP remota del cliente.
+*   `Weight`: Para asignar peso a las rutas en un grupo para balanceo de carga (ej. Canary deployments).
+
+---
+
+## 5. ⚙️ Filtros (Built-in GatewayFilter Factories)
+
+Para modificar las solicitudes o respuestas.
+
+*   **Modificación de Solicitud (Pre-Filter)**:
+    *   `AddRequestHeader`: Añade un encabezado a la solicitud backend.
+    *   `AddRequestParameter`: Añade un parámetro de query a la solicitud backend.
+    *   `PrefixPath`: Añade un prefijo al path de la solicitud backend.
+    *   `RewritePath`: Reescribe el path de la solicitud backend usando regex.
+    *   `StripPrefix`: Elimina prefijos del path de la solicitud.
+    *   `RemoveRequestHeader`: Elimina un encabezado de la solicitud.
+*   **Modificación de Respuesta (Post-Filter)**:
+    *   `AddResponseHeader`: Añade un encabezado a la respuesta del cliente.
+    *   `RemoveResponseHeader`: Elimina un encabezado de la respuesta.
+    *   `RewriteResponse`: Reescribe el cuerpo de la respuesta.
+*   **Control de Flujo / Errores**:
+    *   `FallbackHeaders`: Añade encabezados si el servicio backend falla o excede el timeout.
+    *   `RequestRateLimiter`: Implementa rate limiting.
+    *   `Retry`: Reintenta la solicitud al servicio backend si falla.
+    *   `CircuitBreaker`: Implementa el patrón Circuit Breaker (con Resilience4j).
+    *   `Hystrix`: (Legado) Implementa Hystrix.
+    *   `DedupeResponseHeader`: Elimina encabezados de respuesta duplicados.
+    *   `SetPath`: Establece el path para la solicitud backend.
+    *   `SetRequestHeader`: Establece un encabezado en la solicitud backend.
+    *   `SetResponseHeader`: Establece un encabezado en la respuesta.
+    *   `SetStatus`: Establece el código de estado HTTP de la respuesta.
+    *   `RedirectTo`: Redirige a otra URL.
+    *   `RewriteLocationResponseHeader`: Reescribe el encabezado `Location` en la respuesta.
+    *   `SecureHeaders`: Añade encabezados de seguridad (CSP, X-Frame-Options, etc.).
+
+---
+
+## 6. 🌐 Integración con Eureka (DiscoveryClient)
+
+*   Si `spring-cloud-starter-netflix-eureka-client` está en el classpath, Gateway se integra automáticamente con Eureka.
+*   Usa `lb://<nombre-servicio-eureka>` como URI para las rutas. Gateway usará Ribbon (o Spring Cloud LoadBalancer en versiones más nuevas) para el balanceo de carga.
+
+```yaml
+spring:
+  application:
+    name: api-gateway
+  cloud:
+    gateway:
+      discovery:
+        locator:
+          enabled: true # Habilita el Service Discovery para las rutas
+          lower-case-service-id: true # Convierte los IDs de servicio a minúsculas
+      routes:
+        - id: my_service_discovery_route
+          uri: lb://MY-MICROSERVICE # Eureka resolverá 'MY-MICROSERVICE' a instancias registradas
+          predicates:
+            - Path=/my-app/**
+          filters:
+            - StripPrefix=1
+    # Configuración de Eureka Client
+    eureka:
+      client:
+        service-url:
+          defaultZone: http://localhost:8761/eureka/
+```
+*   `spring.cloud.gateway.discovery.locator.enabled=true`: Crea automáticamente rutas para cada servicio registrado en el Service Discovery (ej. `http://localhost:8080/my-product-service/**`). No se recomienda para producción; es mejor definir las rutas explícitamente.
+
+---
+
+## 7. 🔒 Seguridad
+
+*   Spring Cloud Gateway se integra con Spring Security para la autenticación y autorización.
+*   Puedes aplicar filtros de seguridad globales o por ruta.
+*   Comúnmente, se usa el Gateway para la autenticación/autorización con un IDP (Identity Provider) como OAuth2/JWT y luego pasa un token a los servicios backend.
+
+```java
+import org.springframework.cloud.gateway.filter.GatewayFilter;
+import org.springframework.cloud.gateway.filter.factory.AbstractGatewayFilterFactory;
+import org.springframework.http.HttpStatus;
+import org.springframework.stereotype.Component;
+import org.springframework.web.server.ServerWebExchange;
+import reactor.core.publisher.Mono;
+
+@Component
+public class CustomAuthFilterFactory extends AbstractGatewayFilterFactory<CustomAuthFilterFactory.Config> {
+
+    public CustomAuthFilterFactory() {
+        super(Config.class);
+    }
+
+    @Override
+    public GatewayFilter apply(Config config) {
+        return (exchange, chain) -> {
+            // Lógica de autenticación/autorización
+            if (!exchange.getRequest().getHeaders().containsKey("Authorization")) {
+                exchange.getResponse().setStatusCode(HttpStatus.UNAUTHORIZED);
+                return exchange.getResponse().setComplete();
+            }
+            // Validar token, etc.
+            // Si es válido, pasar al siguiente filtro
+            return chain.filter(exchange);
+        };
+    }
+
+    public static class Config {
+        // Cualquier configuración para tu filtro
+    }
+}
+
+// Configuración en application.yml:
+# filters:
+#   - CustomAuth
+```
+
+---
+
+## 8. 💡 Buenas Prácticas y Consejos
+
+*   **Centraliza el Tráfico**: Haz que el Gateway sea el único punto de entrada para los clientes.
+*   **Routing Declarativo**: Prefiere la configuración basada en YAML (`application.yml`) para la mayoría de las rutas por su simplicidad y legibilidad. Usa el enfoque Java (`RouteLocator`) para rutas que requieren lógica compleja o son muy dinámicas.
+*   **Filtros Globales vs. por Ruta**: Usa `default-filters` para preocupaciones transversales que afectan a TODAS las rutas (ej. logging, seguridad básica). Usa filtros por ruta para lógica específica de un servicio.
+*   **Manejo de Errores**: Implementa un manejo de errores robusto en el Gateway para proporcionar respuestas de error consistentes a los clientes, incluso si los servicios backend fallan.
+*   **Circuit Breakers y Rate Limiting**: Implementa estos patrones de resiliencia (con filtros como `CircuitBreaker` y `RequestRateLimiter`) para proteger tus servicios backend de la sobrecarga y los fallos en cascada.
+*   **Métricas y Monitoreo**: Integra Actuator con Gateway para monitorear el tráfico, el rendimiento y los errores del Gateway.
+*   **Seguridad**: Asegura tu Gateway con Spring Security. Es el primer punto de defensa.
+*   **Inmutable y Sin Estado**: Los filtros deben ser puros (si es posible) y sin estado.
+*   **`StripPrefix` y `RewritePath`**: Entiende bien la diferencia y cuándo usar cada uno para que los servicios backend reciban la URL que esperan.
+*   **Descubrimiento de Servicios**: Si usas un registro de servicios (Eureka, Consul), usa `lb://nombre-servicio` para aprovechar el balanceo de carga del cliente.
+*   **Despliegue Independiente**: Despliega tu Gateway como un servicio independiente.
+
+---
+
+Este cheatsheet te proporciona una referencia completa de Spring Cloud Gateway, cubriendo sus conceptos esenciales, cómo configurarlo, la definición de rutas con predicados y filtros, las integraciones clave, la seguridad y las mejores prácticas para construir un API Gateway robusto y escalable en arquitecturas de microservicios.

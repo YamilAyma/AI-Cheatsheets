@@ -1,0 +1,440 @@
+---
+title: "axios"
+---
+
+
+¡Por supuesto! Axios es una librería muy popular para realizar peticiones HTTP desde el navegador o Node.js, conocida por su interfaz amigable basada en promesas. Aquí tienes un "cheatsheet" completo y bien estructurado de Axios, diseñado para ser claro y conciso para una IA conversacional.
+
+---
+
+# 📡 Axios (axios) Cheatsheet Completo 📡
+
+Axios es un cliente HTTP basado en promesas para el navegador y Node.js. Simplifica la realización de solicitudes HTTP (GET, POST, PUT, DELETE, etc.) y ofrece características como interceptores, manejo automático de JSON, y soporte para la cancelación de peticiones.
+
+---
+
+## 1. 🌟 Conceptos Clave
+
+* **Basado en Promesas**: Todas las operaciones de Axios devuelven Promesas, facilitando el uso de `async/await` o `.then()/.catch()`.
+* **Peticiones HTTP**: Soporta todos los métodos HTTP estándar (GET, POST, PUT, DELETE, PATCH, OPTIONS, HEAD).
+* **Transformación de Datos**: Transforma automáticamente los datos de las solicitudes y respuestas (JSON por defecto).
+* **Manejo de Errores Robustos**: Diferencia entre errores de red, errores de servidor y errores de cancelación.
+* **Interceptors**: Permite interceptar peticiones o respuestas antes de que sean manejadas por `.then()` o `.catch()`.
+* **Cancelación de Peticiones**: Permite cancelar peticiones pendientes.
+
+---
+
+## 2. 🛠️ Configuración Inicial
+
+1. **Instalación:**
+   ```bash
+   npm install axios
+   # o
+   yarn add axios
+   ```
+2. **Importación:**
+   ```javascript
+   import axios from 'axios';
+   ```
+
+---
+
+## 3. 🚀 Peticiones HTTP Básicas
+
+Axios ofrece métodos convenientes para cada tipo de petición HTTP.
+
+### 3.1. `GET` Request (Obtener Datos)
+
+```javascript
+import axios from 'axios';
+
+// Obtener todos los posts
+axios.get('https://jsonplaceholder.typicode.com/posts')
+  .then(response => {
+    console.log('Datos obtenidos:', response.data); // Los datos están en response.data
+    console.log('Status:', response.status); // 200 OK
+  })
+  .catch(error => {
+    console.error('Error al obtener posts:', error);
+  });
+
+// Usando async/await
+async function getPost(postId) {
+  try {
+    const response = await axios.get(`https://jsonplaceholder.typicode.com/posts/${postId}`);
+    console.log(`Post ${postId}:`, response.data);
+    return response.data;
+  } catch (error) {
+    console.error(`Error al obtener post ${postId}:`, error);
+    throw error; // Re-lanza el error para manejo posterior
+  }
+}
+
+getPost(1);
+```
+
+### 3.2. `POST` Request (Enviar Datos)
+
+```javascript
+import axios from 'axios';
+
+const newPost = {
+  title: 'Mi nuevo post',
+  body: 'Este es el contenido de mi nuevo post.',
+  userId: 1,
+};
+
+axios.post('https://jsonplaceholder.typicode.com/posts', newPost)
+  .then(response => {
+    console.log('Post creado:', response.data); // Incluye el ID asignado por el servidor
+    console.log('Status:', response.status); // 201 Created
+  })
+  .catch(error => {
+    console.error('Error al crear post:', error);
+  });
+```
+
+### 3.3. `PUT` Request (Actualizar Datos Completamente)
+
+```javascript
+import axios from 'axios';
+
+const updatedPost = {
+  id: 1, // ID del recurso a actualizar
+  title: 'Título de Post Actualizado',
+  body: 'Este post ha sido completamente actualizado.',
+  userId: 1,
+};
+
+axios.put('https://jsonplaceholder.typicode.com/posts/1', updatedPost)
+  .then(response => {
+    console.log('Post actualizado (PUT):', response.data);
+  })
+  .catch(error => {
+    console.error('Error al actualizar post (PUT):', error);
+  });
+```
+
+### 3.4. `PATCH` Request (Actualizar Datos Parcialmente)
+
+```javascript
+import axios from 'axios';
+
+const partialUpdate = {
+  title: 'Solo el título ha cambiado',
+};
+
+axios.patch('https://jsonplaceholder.typicode.com/posts/1', partialUpdate)
+  .then(response => {
+    console.log('Post actualizado (PATCH):', response.data);
+  })
+  .catch(error => {
+    console.error('Error al actualizar post (PATCH):', error);
+  });
+```
+
+### 3.5. `DELETE` Request (Eliminar Datos)
+
+```javascript
+import axios from 'axios';
+
+axios.delete('https://jsonplaceholder.typicode.com/posts/1')
+  .then(response => {
+    console.log('Post eliminado. Status:', response.status); // 200 OK o 204 No Content
+  })
+  .catch(error => {
+    console.error('Error al eliminar post:', error);
+  });
+```
+
+---
+
+## 4. ⚙️ Configuración de Peticiones
+
+Puedes pasar un objeto de configuración a cualquier método de Axios.
+
+```javascript
+import axios from 'axios';
+
+axios.get('https://api.example.com/data', {
+  params: {                 // Parámetros de la URL (query string)
+    id: 123,
+    category: 'electronics'
+  },
+  headers: {                // Encabezados HTTP
+    'Authorization': 'Bearer YOUR_TOKEN',
+    'Content-Type': 'application/json'
+  },
+  timeout: 5000,            // Tiempo máximo de espera para la respuesta (ms)
+  withCredentials: true,    // Enviar cookies de origen cruzado
+  responseType: 'json',     // Tipo de respuesta esperado ('json', 'arraybuffer', 'blob', 'document', 'text', 'stream')
+  maxContentLength: 2000,   // Límite de tamaño de la respuesta
+})
+.then(response => console.log(response.data))
+.catch(error => console.error(error));
+
+// Para POST/PUT/PATCH, los datos se pasan como segundo argumento, y la configuración como tercero:
+axios.post('/api/users', { name: 'Alice' }, {
+  headers: {
+    'X-Custom-Header': 'foobar'
+  }
+});
+```
+
+---
+
+## 5. 🏗️ Creación de Instancias de Axios (`axios.create()`)
+
+Para configurar una instancia de Axios con valores por defecto (ej. `baseURL`, encabezados). Muy útil para interactuar con diferentes APIs o tener configuraciones específicas.
+
+```javascript
+import axios from 'axios';
+
+const apiClient = axios.create({
+  baseURL: 'https://api.miempresa.com/v1', // URL base para todas las peticiones
+  timeout: 10000, // 10 segundos
+  headers: {
+    'Accept': 'application/json',
+    'X-Requested-With': 'XMLHttpRequest', // Común en muchas APIs
+  },
+});
+
+// Ahora puedes usar apiClient de la misma manera que axios, pero con los defaults configurados
+apiClient.get('/users/me')
+  .then(response => console.log('Perfil:', response.data))
+  .catch(error => console.error('Error de perfil:', error));
+
+apiClient.post('/products', { name: 'Laptop', price: 1200 });
+```
+
+---
+
+## 6. ❌ Manejo de Errores
+
+Axios maneja los errores HTTP (ej. 4xx, 5xx) como errores de promesa, que pueden ser capturados con `.catch()`.
+
+```javascript
+import axios from 'axios';
+
+async function fetchData() {
+  try {
+    const response = await axios.get('https://jsonplaceholder.typicode.com/non-existent-url');
+    console.log(response.data);
+  } catch (error) {
+    if (axios.isAxiosError(error)) {
+      // Error de Axios (ej. 404, 500, o de red)
+      if (error.response) {
+        // La solicitud fue hecha y el servidor respondió con un código de estado
+        // que cae fuera del rango de 2xx
+        console.error('Error de respuesta del servidor:', error.response.status);
+        console.error('Datos del error:', error.response.data);
+        console.error('Cabeceras del error:', error.response.headers);
+      } else if (error.request) {
+        // La solicitud fue hecha pero no se recibió respuesta
+        // `error.request` es una instancia de XMLHttpRequest en el navegador
+        // y de http.ClientRequest en node.js
+        console.error('No se recibió respuesta del servidor:', error.request);
+      } else {
+        // Algo pasó al configurar la solicitud que activó un Error
+        console.error('Error al configurar la solicitud:', error.message);
+      }
+      console.error('Configuración de la petición:', error.config);
+    } else {
+      // Error no relacionado con Axios
+      console.error('Error inesperado:', error.message);
+    }
+  }
+}
+
+fetchData();
+```
+
+---
+
+## 7. 🔗 Interceptores
+
+Los interceptores te permiten ejecutar código antes de que una petición sea enviada o antes de que una respuesta sea manejada por tu código.
+
+### 7.1. Request Interceptors (Peticiones)
+
+Útiles para añadir encabezados de autenticación, logs, etc.
+
+```javascript
+import axios from 'axios';
+
+// Añadir un interceptor a la instancia por defecto o a una creada
+axios.interceptors.request.use(
+  config => {
+    // Haz algo antes de que la petición sea enviada
+    const token = localStorage.getItem('authToken');
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+    console.log('Interceptando petición:', config.url);
+    return config; // Debes devolver la configuración
+  },
+  error => {
+    // Haz algo con el error de la petición
+    console.error('Error en interceptor de petición:', error);
+    return Promise.reject(error);
+  }
+);
+```
+
+### 7.2. Response Interceptors (Respuestas)
+
+Útiles para manejar errores globales, refrescar tokens, etc.
+
+```javascript
+import axios from 'axios';
+
+axios.interceptors.response.use(
+  response => {
+    // Cualquier código de estado que caiga dentro del rango de 2xx causará que esta función se active
+    // Haz algo con los datos de la respuesta
+    console.log('Interceptando respuesta:', response.status);
+    return response;
+  },
+  error => {
+    // Cualquier código de estado que caiga fuera del rango de 2xx causará que esta función se active
+    // Haz algo con el error de la respuesta
+    console.error('Error en interceptor de respuesta:', error.response ? error.response.status : error.message);
+
+    if (error.response && error.response.status === 401) {
+      // Redirigir a login, refrescar token, etc.
+      console.log('Token expirado o no autorizado. Redirigiendo a login...');
+      // window.location.href = '/login';
+    }
+    return Promise.reject(error); // Debes devolver una promesa rechazada
+  }
+);
+```
+
+---
+
+## 8. 🤝 Peticiones Concurrentes
+
+### `axios.all(iterable)` / `axios.spread(callback)`
+
+Ejecuta múltiples peticiones en paralelo y espera a que todas se completen.
+
+```javascript
+import axios from 'axios';
+
+const getUser = () => axios.get('https://jsonplaceholder.typicode.com/users/1');
+const getPosts = () => axios.get('https://jsonplaceholder.typicode.com/posts?userId=1');
+
+axios.all([getUser(), getPosts()])
+  .then(axios.spread((userResponse, postsResponse) => {
+    console.log('Usuario:', userResponse.data);
+    console.log('Posts del usuario:', postsResponse.data);
+  }))
+  .catch(error => {
+    console.error('Error en peticiones concurrentes:', error);
+  });
+
+// Usando async/await y Promise.all (más común y recomendado en JS moderno)
+async function getConcurrentData() {
+  try {
+    const [userResponse, postsResponse] = await Promise.all([
+      axios.get('https://jsonplaceholder.typicode.com/users/1'),
+      axios.get('https://jsonplaceholder.typicode.com/posts?userId=1'),
+    ]);
+    console.log('Usuario (async/await):', userResponse.data);
+    console.log('Posts del usuario (async/await):', postsResponse.data);
+  } catch (error) {
+    console.error('Error en peticiones concurrentes (async/await):', error);
+  }
+}
+
+getConcurrentData();
+```
+
+---
+
+## 9. 🚫 Cancelación de Peticiones (Con `AbortController`)
+
+El método preferido y moderno para cancelar peticiones.
+
+```javascript
+import axios from 'axios';
+
+let controller; // Para almacenar el controlador de la petición
+
+async function fetchDataWithCancellation() {
+  // Si hay una petición anterior pendiente, la cancelamos
+  if (controller) {
+    controller.abort();
+  }
+
+  controller = new AbortController();
+  const signal = controller.signal;
+
+  try {
+    console.log('Iniciando petición...');
+    const response = await axios.get('https://jsonplaceholder.typicode.com/posts/1', { signal });
+    console.log('Datos obtenidos:', response.data);
+  } catch (error) {
+    if (axios.isCancel(error)) {
+      console.log('Petición cancelada:', error.message);
+    } else {
+      console.error('Error al obtener datos:', error);
+    }
+  }
+}
+
+fetchDataWithCancellation(); // Inicia la petición
+// Simula una cancelación después de un tiempo
+setTimeout(() => {
+  if (controller) {
+    controller.abort('Petición cancelada manualmente por timeout.'); // Puedes pasar un mensaje
+    controller = null; // Limpia el controlador después de abortar
+  }
+}, 100);
+```
+
+---
+
+## 10. 🌍 Configuración Global por Defecto (`axios.defaults`)
+
+Puedes configurar opciones por defecto para *todas* las peticiones realizadas con la instancia global de Axios.
+
+```javascript
+import axios from 'axios';
+
+axios.defaults.baseURL = 'https://api.myglobalapp.com/v1';
+axios.defaults.headers.common['Authorization'] = 'AUTH_TOKEN';
+axios.defaults.headers.post['Content-Type'] = 'application/json';
+axios.defaults.timeout = 3000; // 3 segundos
+
+// Todas las peticiones ahora usarán estos defaults
+axios.get('/some-endpoint')
+  .then(response => console.log('Global config test:', response.data));
+```
+
+---
+
+## 11. 💡 Buenas Prácticas y Consejos
+
+* **Abstrae tus Llamadas a la API**: En lugar de llamar `axios.get` directamente en tus componentes, crea funciones de servicio o un módulo de API.
+  ```javascript
+  // apiService.js
+  import axios from 'axios';
+  const api = axios.create({ baseURL: '/api' }); // Usa una instancia
+
+  export const getUsers = () => api.get('/users');
+  export const createUser = (userData) => api.post('/users', userData);
+
+  // En tu componente:
+  import { getUsers } from './apiService';
+  // ... getUsers().then(...)
+  ```
+* **Manejo Centralizado de Errores**: Utiliza los interceptores de respuesta para manejar errores comunes (ej. 401 Unauthorized, 500 Internal Server Error) de forma global, en lugar de repetirlo en cada `.catch()`.
+* **Usa `async/await`**: Hace que el código asíncrono sea más legible y fácil de depurar que las cadenas `.then()`.
+* **Gestión de Cargas y Errores en UI**: Combina Axios con tu estado de React (ej. `useState`, `useReducer`, TanStack Query) para mostrar estados de carga, mensajes de error y datos.
+* **Nunca guardes datos sensibles en `localStorage` (tokens de auth)**: Usa `HttpOnly cookies` para tokens sensibles.
+* **Sé específico con la URL base**: Usa rutas relativas en tus llamadas a la API y configura un `baseURL` en tu instancia de Axios para facilitar los cambios de entorno.
+
+---
+
+Este cheatsheet te proporciona una referencia completa para trabajar con Axios, cubriendo desde lo básico hasta características avanzadas, y te ayuda a realizar peticiones HTTP de manera eficiente y robusta en tus aplicaciones.

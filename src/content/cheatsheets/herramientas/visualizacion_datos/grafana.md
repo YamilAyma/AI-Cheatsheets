@@ -1,0 +1,173 @@
+---
+title: "grafana"
+---
+
+
+---
+
+# 📈 Grafana Cheatsheet Completo 📈
+
+**Grafana** es una herramienta de código abierto para la visualización y analítica de series de tiempo, diseñada para consultar, visualizar, alertar y comprender tus métricas dondequiera que se almacenen. Es ampliamente utilizada para monitorear infraestructura, aplicaciones y logs.
+
+---
+
+## 1. 🌟 Conceptos Clave
+
+*   **Fuente de Datos (Data Source)**: Una conexión a un sistema de base de datos o API donde se almacenan tus métricas o logs (ej. Prometheus, Elasticsearch, InfluxDB, MySQL, PostgreSQL, Loki, Jaeger, CloudWatch).
+*   **Panel (Panel)**: Una única visualización en un dashboard (ej. un gráfico de líneas, un gráfico de barras, una tabla, un indicador).
+*   **Dashboard (Tablero de Control)**: Una colección de paneles organizados en una o más filas, que proporcionan una vista completa y unificada de tus datos.
+*   **Query (Consulta)**: El lenguaje específico del data source que se utiliza para recuperar datos para un panel (ej. PromQL para Prometheus, KQL para Elasticsearch).
+*   **Transform (Transformación)**: Operaciones que se aplican a los resultados de la consulta para modificar o procesar los datos antes de la visualización (ej. unir datos, calcular diferencias, ordenar).
+*   **Alerting (Alertas)**: Permite definir reglas sobre tus métricas que disparan notificaciones cuando se cumplen ciertas condiciones.
+*   **Variables (Variables)**: Permiten hacer los dashboards dinámicos, sustituyendo valores en las consultas o en el título de los paneles.
+*   **Annotations (Anotaciones)**: Eventos o marcas en el tiempo que se superponen a los gráficos para indicar sucesos importantes (ej. despliegues, incidentes).
+*   **Playlist (Lista de Reproducción)**: Permite rotar automáticamente a través de un conjunto de dashboards.
+
+---
+
+## 2. 🛠️ Instalación y Acceso
+
+### 2.1. Con Docker (Recomendado para Desarrollo/Pruebas)
+
+```bash
+docker run -d --name grafana -p 3000:3000 grafana/grafana:latest
+# Accede a http://localhost:3000
+# Usuario/Contraseña por defecto: admin/admin (te pedirá cambiarla al primer login)
+```
+
+### 2.2. Configuración (`conf/defaults.ini` o `conf/custom.ini`)
+
+*   **`[server]`**: `http_port`, `domain`, `root_url`.
+*   **`[database]`**: Configuración de la base de datos interna de Grafana (SQLite por defecto, puedes usar MySQL/PostgreSQL).
+*   **`[security]`**: `admin_user`, `admin_password`, `allow_sign_up`.
+*   **`[auth]`**: Integración con OAuth (GitHub, Google), LDAP.
+*   **`[paths]`**: Ubicaciones de los datos de Grafana.
+
+---
+
+## 3. 📊 Módulos Principales de la UI
+
+Grafana se organiza en una barra lateral izquierda con los siguientes iconos:
+
+*   **`Dashboard` (Icono de Cuadrícula)**:
+    *   **Home**: Tu dashboard predeterminado o la última vista.
+    *   **Browse**: Explora y busca dashboards.
+    *   **Manage**: Gestiona todos los dashboards, carpetas y listas de reproducción.
+    *   **New Dashboard**: Crea un nuevo dashboard.
+    *   **Import**: Importa dashboards (JSON).
+*   **`Explore` (Icono de Brújula)**:
+    *   **Propósito**: Un espacio de trabajo para la exploración de datos ad-hoc y la depuración de consultas.
+    *   Selecciona una fuente de datos y escribe consultas.
+    *   Útil para construir consultas antes de añadirlas a un panel.
+*   **`Alerting` (Icono de Campana)**:
+    *   Gestiona reglas de alerta, contactos (donde enviar alertas) y notificaciones.
+*   **`Connections` (Icono de Enchufe)**:
+    *   **Data sources**: Gestiona las conexiones a tus fuentes de datos.
+*   **`Administration` (Icono de Engranaje)**:
+    *   **Users**, **Teams**, **Roles**: Gestiona usuarios, equipos y control de acceso.
+    *   **Plugins**: Instala y gestiona plugins.
+    *   **Settings**: Configuración global de Grafana.
+
+---
+
+## 4. 📈 Creación de un Dashboard y Paneles
+
+### 4.1. Añadir una Fuente de Datos
+
+1.  Ve a `Connections` -> `Data sources` -> `Add data source`.
+2.  Selecciona el tipo (ej. `Prometheus`).
+3.  Configura los detalles de conexión (ej. URL de Prometheus: `http://localhost:9090`).
+4.  Haz clic en `Save & test`.
+
+### 4.2. Crear un Nuevo Dashboard
+
+1.  Haz clic en el icono `Dashboard` -> `New dashboard`.
+2.  Haz clic en `Add a new panel`.
+
+### 4.3. Configurar un Panel
+
+*   **Query (Pestaña `Query`)**:
+    1.  **Selecciona la Fuente de Datos**.
+    2.  **Escribe tu consulta**:
+        *   **Prometheus (PromQL)**: `rate(http_requests_total[5m])`
+        *   **Elasticsearch (KQL o Lucene)**: `http.method:POST AND http.status_code:[400 TO 599]`
+        *   **SQL (ej. PostgreSQL)**: `SELECT time_column, value_column FROM my_table WHERE $__timeFilter(time_column)` ( `$__timeFilter` es una macro de Grafana)
+    3.  **Añadir series**: Puedes añadir múltiples consultas (A, B, C...) para mostrar diferentes líneas en un gráfico.
+*   **Transform (Pestaña `Transform`)**:
+    *   Aplica transformaciones a los resultados de tus consultas.
+    *   `Join by field`: Unir datos de múltiples consultas.
+    *   `Filter by name`: Filtrar series por nombre.
+    *   `Group by`: Agrupar resultados.
+    *   `Add field from calculation`: Crear nuevos campos calculados.
+*   **Visualize (Pestaña `Viz`)**:
+    *   **Selecciona el Tipo de Visualización**: `Time series` (para líneas), `Bar chart`, `Stat`, `Gauge`, `Table`, `Heatmap`, `Logs` (para datos de logs).
+    *   **Configura los Ejes (Axis)**: Títulos, unidades, escalas.
+    *   **Configura Series**: Colores, leyendas, formas de punto.
+    *   **Overrides**: Personaliza propiedades de series individuales.
+    *   **Standard options**: Título del panel, descripción, unidades, enlaces.
+
+---
+
+## 5. 🧰 Variables (Templating)
+
+Permiten hacer tus dashboards dinámicos y reutilizables.
+
+1.  **Configurar Variable**:
+    *   En Dashboard Settings (icono de engranaje) -> `Variables` -> `Add variable`.
+    *   **`Name`**: Nombre de la variable (ej. `service`).
+    *   **`Type`**:
+        *   `Query`: Obtener valores de una consulta a la fuente de datos (ej. `label_values(up, job)` para jobs de Prometheus).
+        *   `Custom`: Valores definidos manualmente.
+        *   `Text box`: Permite al usuario escribir un valor.
+        *   `Constant`: Valor oculto.
+    *   **`Multi-value`**: Permitir seleccionar múltiples valores.
+    *   **`Include All option`**: Añadir una opción "All".
+2.  **Usar Variables en Consultas**:
+    *   **`$variable_name`**: Para una única selección.
+    *   **`${variable_name}`**: Para una única selección, donde se requiere interpolación completa.
+    *   **`${variable_name:pipe_variable_name}`**: Para múltiples selecciones (ej. `query_result(up{job=~"$service"}` o `query_result(up{job=~"${service:pipe_variable_name}"})`).
+    *   **Ejemplo**: `rate(http_requests_total{service_name="$service"}[5m])`
+
+---
+
+## 6. 🔔 Alerting (Alertas)
+
+Grafana Alerting te permite configurar reglas que monitorean tus métricas y envían notificaciones.
+
+1.  **Contact Points**: Define dónde se enviarán las notificaciones (Email, Slack, PagerDuty, Webhook).
+    *   `Alerting` -> `Contact points`.
+2.  **Notification Policies**: Define qué alertas van a qué Contact Points y cómo se agrupan.
+    *   `Alerting` -> `Notification policies`.
+3.  **Alert Rules**: Define la condición de la alerta.
+    *   `Alerting` -> `Alert rules` -> `Create alert rule`.
+    *   **`Alert name`**: Nombre de la alerta.
+    *   **`Datasource`**: Fuente de datos.
+    *   **`Query`**: Consulta para la alerta (ej. `sum(rate(errors_total[5m])) > 0`).
+    *   **`Condition`**: Condición para disparar la alerta.
+    *   **`Evaluate every`**: Frecuencia de evaluación.
+    *   **`For`**: Duración de la condición para que la alerta se considere activa.
+    *   **`Notification`**: A qué Contact Point enviar.
+
+---
+
+## 7. 💡 Buenas Prácticas y Consejos
+
+*   **Organiza Dashboards en Carpetas**: Para mantener el orden, especialmente en entornos con muchos dashboards.
+*   **Importar Dashboards Prediseñados**: Busca dashboards prefabricados para tus fuentes de datos (ej. para Node Exporter, JVM) en [grafana.com/grafana/dashboards](https://grafana.com/grafana/dashboards).
+*   **Utiliza KQL/PromQL Directamente**: Si tus datos están en Elasticsearch o Prometheus, aprende sus respectivos lenguajes de consulta. Grafana los integra perfectamente.
+*   **Variables para Flexibilidad**: Diseña dashboards reutilizables utilizando variables, permitiendo a los usuarios filtrar por servicio, entorno, etc.
+*   **Unidades y Formatos**: Configura correctamente las unidades (segundos, bytes, porcentaje) y el formato (decimales) en la pestaña `Viz` para una mejor legibilidad.
+*   **Annotations para Eventos**: Usa anotaciones para marcar eventos importantes (ej. despliegues de código, incidentes) en tus gráficos, facilitando el análisis de correlación.
+*   **Seguridad**:
+    *   Cambia la contraseña predeterminada de `admin`.
+    *   Configura la autenticación (OAuth, LDAP) en producción.
+    *   Define roles y permisos de usuario para controlar el acceso a fuentes de datos y dashboards.
+*   **Optimización del Rendimiento**:
+    *   Limita el número de paneles en un solo dashboard si se vuelve lento.
+    *   Optimiza tus consultas en el backend (Elasticsearch, Prometheus) para que sean lo más eficientes posible.
+    *   Ajusta los intervalos de tiempo y la resolución de los datos.
+*   **Plugins**: Explora el ecosistema de plugins de Grafana para añadir soporte a más fuentes de datos o visualizaciones personalizadas.
+
+---
+
+Este cheatsheet te proporciona una referencia completa de Grafana, cubriendo sus conceptos esenciales, cómo instalarlo y acceder a él, la creación de dashboards y paneles, el uso de variables, el sistema de alertas y las mejores prácticas para visualizar y analizar tus datos de manera efectiva.

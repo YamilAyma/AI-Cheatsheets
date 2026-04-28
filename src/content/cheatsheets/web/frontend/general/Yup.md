@@ -1,0 +1,407 @@
+---
+title: "Yup"
+---
+
+
+---
+
+# 🛡️ Yup Cheatsheet Completo 🛡️
+
+**Yup** es una librería de JavaScript para la validación de esquemas. Te permite definir la forma (estructura y reglas de validación) de tus datos y luego validar esos datos contra el esquema. Es comúnmente utilizada en aplicaciones web para la validación de formularios, pero puede usarse para cualquier tipo de validación de datos.
+
+---
+
+## 1. 🌟 Conceptos Clave
+
+* **Esquema (Schema)**: Un objeto Yup que define la estructura y las reglas de validación para un tipo de dato.
+* **Validación (Validation)**: El proceso de verificar si los datos cumplen con las reglas definidas en un esquema.
+* **Encadenamiento (Chaining)**: Los métodos de Yup se pueden encadenar (`.string().min(5).required()`) para construir reglas complejas de forma fluida.
+* **Inferencia de Tipos (TypeScript)**: Yup puede inferir tipos de TypeScript a partir de los esquemas definidos, lo que es muy útil en proyectos TS.
+* **Transformación**: Permite transformar los valores antes o después de la validación.
+
+---
+
+## 2. 🛠️ Configuración Inicial
+
+1. **Instalación:**
+   ```bash
+   npm install yup
+   # o
+   yarn add yup
+   ```
+2. **Importación:**
+   ```javascript
+   import * as yup from 'yup';
+   // O importaciones específicas si usas tree-shaking
+   // import { string, number, object, boolean } from 'yup';
+   ```
+
+---
+
+## 3. 🧩 Tipos de Esquemas Básicos
+
+Cada método en `yup` (ej. `yup.string()`, `yup.number()`) devuelve un objeto de esquema sobre el cual puedes encadenar reglas de validación.
+
+### 3.1. Primitivos
+
+* **`yup.string()`**: Para cadenas de texto.
+
+  ```javascript
+  const myString = yup.string();
+  ```
+
+  * **Métodos comunes para `string`**:
+    * `.required(message?)`: Obligatorio.
+    * `.min(length, message?)`: Longitud mínima.
+    * `.max(length, message?)`: Longitud máxima.
+    * `.length(length, message?)`: Longitud exacta.
+    * `.email(message?)`: Valida formato de email.
+    * `.url(message?)`: Valida formato de URL.
+    * `.uuid(message?)`: Valida formato UUID.
+    * `.matches(regex, message?)`: Valida con expresión regular.
+    * `.uppercase(message?)`: Valida si es todo mayúsculas.
+    * `.lowercase(message?)`: Valida si es todo minúsculas.
+    * `.trim(message?)`: Elimina espacios al inicio/final antes de validar.
+    * `.ensure()`: Coerción a string vacío si es null/undefined.
+    * `.default(value)`: Valor por defecto si es null/undefined.
+    * `.nullable()`: Permite `null` (por defecto, no lo permite si se usa `required`).
+    * `.oneOf(values, message?)`: Valor debe ser uno de una lista.
+    * `.notOneOf(values, message?)`: Valor no debe ser uno de una lista.
+* **`yup.number()`**: Para números.
+
+  ```javascript
+  const myNumber = yup.number();
+  ```
+
+  * **Métodos comunes para `number`**:
+    * `.required(message?)`: Obligatorio.
+    * `.min(value, message?)`: Valor mínimo.
+    * `.max(value, message?)`: Valor máximo.
+    * `.positive(message?)`: Mayor que 0.
+    * `.negative(message?)`: Menor que 0.
+    * `.integer(message?)`: Debe ser un entero.
+    * `.moreThan(value, message?)`: Mayor que (estricto).
+    * `.lessThan(value, message?)`: Menor que (estricto).
+    * `.defined()`: Valor debe estar presente (`!undefined`).
+    * `.nullable()`: Permite `null`.
+    * `.default(value)`: Valor por defecto.
+* **`yup.boolean()`**: Para booleanos.
+
+  ```javascript
+  const myBoolean = yup.boolean();
+  ```
+
+  * `.required(message?)`
+  * `.isTrue(message?)` / `.isFalse(message?)`
+  * `.default(value)`
+* **`yup.date()`**: Para objetos `Date`.
+
+  ```javascript
+  const myDate = yup.date();
+  ```
+
+  * `.min(date, message?)`: Fecha mínima.
+  * `.max(date, message?)`: Fecha máxima.
+  * `.required(message?)`, etc.
+
+---
+
+## 4. 📦 Tipos de Esquemas Compuestos
+
+### 4.1. `yup.object(shape)`
+
+Define la forma de un objeto, donde las claves son los nombres de las propiedades y los valores son otros esquemas Yup.
+
+```javascript
+const userSchema = yup.object({
+  id: yup.string().uuid().required(),
+  name: yup.string().min(3, "El nombre debe tener al menos 3 caracteres").required("El nombre es obligatorio"),
+  email: yup.string().email("Email inválido").nullable(), // Puede ser null o string
+  age: yup.number().integer("La edad debe ser un número entero").positive("La edad debe ser un número positivo").optional(), // Opcional (puede ser undefined)
+  isActive: yup.boolean().default(false),
+});
+```
+
+### 4.2. `yup.array(elementType)`
+
+Define un array de elementos que deben coincidir con el `elementType` esquema.
+
+```javascript
+const tagsSchema = yup.array(yup.string()).min(1, "Debe tener al menos un tag");
+
+const productSchema = yup.object({
+  name: yup.string().required(),
+  price: yup.number().positive().required(),
+  tags: tagsSchema, // Usando el esquema de array definido arriba
+  photos: yup.array(yup.object({ // Array de objetos
+    url: yup.string().url().required(),
+    caption: yup.string().optional(),
+  })).min(1, "Debe tener al menos una foto").required(),
+});
+```
+
+* **Métodos comunes para `array`**:
+  * `.required(message?)`
+  * `.min(length, message?)`
+  * `.max(length, message?)`
+  * `.length(length, message?)`
+  * `.nonNullable()`: Hace que el array no sea `null`.
+
+### 4.3. `yup.mixed()`
+
+Un esquema para un valor de tipo mixto (cualquier tipo).
+
+* **Métodos comunes para `mixed`**:
+  * `.required(message?)`
+  * `.defined()`: Asegura que el valor no es `undefined`.
+  * `.nullable()`: Permite `null`.
+  * `.oneOf(values, message?)`
+  * `.notOneOf(values, message?)`
+  * `.default(value)`
+  * `.when(keys, builder)`: Validación condicional.
+
+---
+
+## 5. 🚀 Validación (Parsing)
+
+### 5.1. `schema.validate(data, options)`
+
+* Valida los datos. Si la validación es exitosa, devuelve los datos validados.
+* Si falla, lanza un error `ValidationError`.
+* **Opciones**:
+  * `abortEarly: boolean` (por defecto `true`): Detiene la validación en el primer error. `false` valida todos los campos y devuelve todos los errores.
+  * `strict: boolean`: Desactiva la coerción de tipos.
+
+```javascript
+import * as yup from 'yup';
+
+const loginSchema = yup.object({
+  username: yup.string().required(),
+  password: yup.string().min(6).required(),
+});
+
+async function validateLoginForm(formData) {
+  try {
+    const validData = await loginSchema.validate(formData, { abortEarly: false }); // Captura todos los errores
+    console.log('Datos válidos:', validData);
+    return { success: true, data: validData };
+  } catch (error) {
+    if (error.name === 'ValidationError') {
+      console.error('Errores de validación:', error.errors); // Array de mensajes de error
+      // error.inner es un array de ValidationError con detalles por campo
+      const errors = error.inner.reduce((acc, currentError) => {
+        acc[currentError.path] = currentError.message;
+        return acc;
+      }, {});
+      return { success: false, errors };
+    }
+    console.error('Error inesperado:', error);
+    return { success: false, error: 'Unhandled error' };
+  }
+}
+
+// Ejemplo de uso
+validateLoginForm({ username: 'john_doe', password: '123' })
+  .then(result => console.log('Resultado de validación 1:', result));
+
+validateLoginForm({ username: 'short', password: '123' })
+  .then(result => console.log('Resultado de validación 2:', result));
+```
+
+### 5.2. `schema.isValid(data, options)`
+
+* Devuelve `true` si los datos son válidos, `false` si no. No lanza errores.
+* Útil para comprobaciones rápidas de validez sin necesidad de mensajes de error detallados.
+
+```javascript
+const isValid = await loginSchema.isValid({ username: 'test', password: 'password123' });
+console.log('¿Es válido?:', isValid); // true
+```
+
+### 5.3. `schema.validateSync(data, options)`
+
+* Versión síncrona de `validate()`. Lanza `ValidationError` si falla.
+
+### 5.4. `schema.isValidSync(data, options)`
+
+* Versión síncrona de `isValid()`.
+
+---
+
+## 6. ✍️ Validación Personalizada (`test`, `when`)
+
+### 6.1. `schema.test(name, message, testFn)`
+
+Define una regla de validación personalizada.
+
+* `name`: Nombre único del test (opcional).
+* `message`: Mensaje de error si falla.
+* `testFn`: Una función asíncrona o síncrona que recibe `value` (valor actual), `context` (objeto con acceso a `path`, `parent`, `createError`, `options`). Debe devolver `true` para pasar, `false` para fallar.
+
+```javascript
+const passwordSchema = yup.string()
+  .min(8, "La contraseña debe tener al menos 8 caracteres")
+  .test('has-uppercase', 'La contraseña debe contener al menos una mayúscula', function(value) {
+    return /[A-Z]/.test(value);
+  })
+  .test('has-digit', 'La contraseña debe contener al menos un número', (value) => {
+    return /[0-9]/.test(value);
+  });
+
+const confirmPasswordSchema = yup.string()
+  .required("Confirma tu contraseña")
+  .test('passwords-match', 'Las contraseñas no coinciden', function(value) {
+    // Accede al valor de 'password' usando `this.parent.password` o `this.path`
+    return value === this.parent.password;
+  });
+
+const signupSchema = yup.object({
+  password: passwordSchema,
+  confirmPassword: confirmPasswordSchema,
+});
+```
+
+### 6.2. `schema.when(keys, builder)` (Validación Condicional)
+
+Aplica reglas condicionalmente basándose en el valor de otros campos.
+
+* `keys`: Un string (nombre del campo) o un array de strings.
+* `builder`: Una función que recibe los valores de `keys` y el esquema actual.
+
+```javascript
+const shippingSchema = yup.object({
+  shippingMethod: yup.string().required().oneOf(['pickup', 'delivery']),
+  deliveryAddress: yup.string().when('shippingMethod', {
+    is: 'delivery',
+    then: (schema) => schema.required('La dirección de entrega es obligatoria para envíos a domicilio'),
+    otherwise: (schema) => schema.optional(),
+  }),
+  // También se puede usar `is: (val) => val === 'delivery'`
+  // Con múltiples campos: yup.string().when(['field1', 'field2'], ([field1, field2], schema) => {...})
+});
+```
+
+---
+
+## 7. ↔️ Transformaciones
+
+Los métodos de transformación (`.transform()`) modifican el valor del esquema durante el proceso de validación.
+
+* **`schema.transform(transformerFn)`**: Aplica una función a un valor antes de que se realicen las validaciones.
+
+```javascript
+const nameSchema = yup.string()
+  .trim() // Elimina espacios en blanco
+  .lowercase() // Convierte a minúsculas
+  .transform(value => value === '' ? null : value) // Convierte cadena vacía a null
+  .nullable()
+  .required('El nombre es requerido');
+
+const ageSchema = yup.number()
+  .transform(value => (isNaN(value) ? undefined : value)) // Coerce NaN a undefined
+  .required('La edad es requerida');
+
+const formSchema = yup.object({
+  name: nameSchema,
+  age: ageSchema,
+});
+```
+
+* **Nota**: Algunos métodos como `.trim()`, `.lowercase()`, `.uppercase()` son en realidad transformaciones integradas que se aplican antes de otras validaciones.
+
+---
+
+## 8. 🟦 Inferencia de Tipos (TypeScript)
+
+Yup tiene una excelente inferencia de tipos con TypeScript.
+
+```typescript
+import * as yup from 'yup';
+
+const userSchema = yup.object({
+  name: yup.string().required(),
+  age: yup.number().required(),
+  email: yup.string().email().optional(),
+});
+
+// Inferir el tipo de los datos validados
+type User = yup.InferType<typeof userSchema>;
+
+// User es ahora:
+// {
+//   name: string;
+//   age: number;
+//   email?: string | undefined;
+// }
+
+const data: User = {
+  name: 'Jane Doe',
+  age: 28,
+  // email: 'jane@example.com' // Opcional
+};
+```
+
+---
+
+## 9. 🚀 Integración con React Hook Form
+
+Yup es un resolver de validación muy común para React Hook Form.
+
+1. **Instalación**:
+   ```bash
+   npm install @hookform/resolvers yup
+   ```
+2. **Uso**:
+   ```jsx
+   import React from 'react';
+   import { useForm } from 'react-hook-form';
+   import { yupResolver } from '@hookform/resolvers/yup';
+   import * as yup from 'yup';
+
+   const schema = yup.object({
+     firstName: yup.string().required('El nombre es obligatorio'),
+     age: yup.number().positive('Debe ser positivo').integer('Debe ser un entero').required('La edad es obligatoria'),
+     email: yup.string().email('Email inválido').required('El email es obligatorio'),
+   }).required();
+
+   function MyForm() {
+     const { register, handleSubmit, formState: { errors } } = useForm({
+       resolver: yupResolver(schema) // Aquí se integra Yup
+     });
+
+     const onSubmit = data => console.log(data);
+
+     return (
+       <form onSubmit={handleSubmit(onSubmit)}>
+         <input {...register("firstName")} placeholder="Nombre" />
+         <p>{errors.firstName?.message}</p>
+
+         <input type="number" {...register("age")} placeholder="Edad" />
+         <p>{errors.age?.message}</p>
+
+         <input {...register("email")} placeholder="Email" />
+         <p>{errors.email?.message}</p>
+
+         <button type="submit">Enviar</button>
+       </form>
+     );
+   }
+   export default MyForm;
+   ```
+
+---
+
+## 10. 💡 Buenas Prácticas y Consejos
+
+* **Mensajes de Error Personalizados**: Siempre proporciona mensajes de error claros y concisos con cada regla de validación. Esto mejora la experiencia del usuario.
+* **`abortEarly: false`**: Para formularios, es útil usar `abortEarly: false` en `validate()` o en el `resolver` de React Hook Form para mostrar todos los errores a la vez, no solo el primero.
+* **Transformaciones Cuidadosas**: Usa `.transform()` para normalizar los datos de entrada (ej. recortar espacios, convertir a minúsculas) *antes* de aplicar las reglas de validación.
+* **Reutiliza Esquemas**: Define esquemas para objetos o arrays complejos por separado y reutilízalos en esquemas más grandes.
+* **Composición de Esquemas**: Utiliza `yup.object().shape({...})` y `yup.array().of(schema)` para construir esquemas complejos de forma modular.
+* **Validación Condicional (`when`)**: Útil para reglas que dependen de otros campos.
+* **Tipado con TypeScript**: Aprovecha `yup.InferType` para obtener tipos TypeScript precisos a partir de tus esquemas.
+* **Lazy Loading de Esquemas**: Para esquemas muy grandes en aplicaciones web, considera la carga perezosa (lazy loading) de los esquemas Yup para reducir el tamaño inicial del bundle.
+
+---
+
+Este cheatsheet te proporciona una referencia completa de Yup, cubriendo sus conceptos esenciales, la definición de esquemas para diferentes tipos de datos, técnicas de validación avanzada, transformaciones y la integración con React Hook Form, junto con buenas prácticas para un uso eficaz y robusto.

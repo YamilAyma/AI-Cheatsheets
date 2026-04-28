@@ -1,0 +1,358 @@
+---
+title: "micrometer-tracing"
+---
+
+
+
+---
+
+# 🔎 Micrometer Tracing Cheatsheet Completo 🔎
+
+**Micrometer Tracing** (parte de Spring Boot 3+ y Micrometer 1.10+) es un puente entre las aplicaciones Spring y las APIs de instrumentación de trazabilidad distribuida (principalmente OpenTelemetry). Permite instrumentar tus microservicios para recolectar información de traces y correlacionar solicitudes a través de diferentes servicios, facilitando la depuración, el monitoreo y el análisis de rendimiento en entornos distribuidos.
+
+---
+
+## 1. 🌟 Conceptos Clave de Trazabilidad Distribuida
+
+*   **Distributed Tracing (Trazabilidad Distribuida)**: Un mecanismo para rastrear el progreso de una solicitud a medida que viaja a través de múltiples servicios en una arquitectura de microservicios.
+*   **Trace (Traza)**: Representa el ciclo de vida completo de una única solicitud (o transacción) a través de un sistema distribuido. Tiene un **Trace ID** único.
+*   **Span (Tramo)**: Representa una única operación lógica dentro de una Trace. Cada Span tiene un **Span ID** único y un **Parent Span ID** que lo vincula a su operación "padre", creando así una jerarquía de Spans dentro de una Trace.
+*   **Context Propagation (Propagación de Contexto)**: El mecanismo mediante el cual los Trace ID y Span ID se pasan de un servicio a otro (ej. a través de encabezados HTTP) para mantener la continuidad de la Trace.
+*   **Sampler (Muestreador)**: Un componente que decide si una Trace debe ser recolectada o no. Esto es crucial para gestionar el volumen de datos de traza en producción.
+*   **Exporter (Exportador)**: Un componente que envía los Spans recolectados a un sistema de backend de trazabilidad (ej. Zipkin, Jaeger, Grafana Tempo).
+*   **Baggage**: Pares clave-valor que se propagan a través de Spans y entre servicios, permitiendo añadir metadatos personalizados que viajan con la traza.
+
+---
+
+## 2. 🛠️ Configuración Inicial (Spring Boot 3+)
+
+1.  **Añadir dependencias en `pom.xml` (Maven):**
+    *   Necesitarás `micrometer-tracing-bridge-otel` (el puente a OpenTelemetry) y el exportador para tu sistema de trazabilidad (ej. `opentelemetry-exporter-zipkin`).
+
+    ```xml
+    <dependencies>
+        <parent>...</parent> <!-- Tu parent de Spring Boot -->
+
+        <!-- Micrometer Tracing Bridge para OpenTelemetry -->
+        <dependency>
+            <groupId>io.micrometer</groupId>
+            <artifactId>micrometer-tracing-bridge-otel</artifactId>
+        </dependency>
+
+        <!-- Exporter para Zipkin (un sistema de trazabilidad popular) -->
+        <dependency>
+            <groupId>io.opentelemetry</groupId>
+            <artifactId>opentelemetry-exporter-zipkin</artifactId>
+        </dependency>
+        <!-- Para la API de OpenTelemetry (opcional, si necesitas instrumentación manual más allá del bridge) -->
+        <!-- <dependency>
+            <groupId>io.opentelemetry</groupId>
+            <artifactId>openteelmetry-api</artifactId>
+        </dependency> -->
+        <!-- Para pruebas -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+    ```
+
+2.  **Configurar `application.yml` (o `application.properties`):**
+    ```yaml
+    # src/main/resources/application.yml
+    spring:
+      application:
+        name: my-product-service # Nombre de la aplicación (aparecerá en la traza)
+      zipkin:
+        base-url: http://localhost:9411 # URL de tu servidor Zipkin
+      sleuth: # Propiedades legacy, aún usadas por el bridge OTel
+        sampler:
+          probability: 1.0 # Muestrear el 100% de las trazas (0.0 a 1.0)
+          # Para producción, un valor como 0.1 (10%) o 0.01 (1%) es más común para no saturar.
+        propagation:
+          type: W3C # Usar el formato de encabezado W3C Trace Context (traceparent, tracestate)
+          # Otros: B3 (para sistemas antiguos), B3_MULTI, B3_SINGLE
+
+    # Configuración explícita del exportador OTel (opcional si spring.zipkin.base-url es suficiente)
+    management:
+      tracing:
+        sampling:
+          probability: 1.0 # Equivalente a spring.sleuth.sampler.probability
+        propagation:
+          type: B3 # W3C es el estándar moderno, B3 es compatible con muchos sistemas heredados
+        exporters:
+          zipkin:
+            endpoint: http://localhost:9411/api/v2/spans # Endpoint V2 de Zipkin
+          logging:
+            enabled: true # Para ver las trazas en los logs de la consola (solo para desarrollo)
+    ```
+    *   **Levantar un Zipkin Server**: Puedes ejecutar un servidor Zipkin localmente con Docker:
+        ```bash
+        docker run -d -p 9411:9411 openzipkin/zipkin
+        ```
+        *   Luego, accede a la UI en `http://localhost:9411`.
+
+---
+
+## 3. 🚀 Instrumentación Automática
+
+Micrometer Tracing instrumenta automáticamente muchos componentes de Spring Boot.
+
+*   **Servidores Web**: Peticiones entrantes a controladores Spring MVC o WebFlux se instrumentan automáticamente.
+*   **Clientes HTTP**:
+    *   `RestTemplate` (si es bean).
+    *   `WebClient` (si es `WebClient.Builder` bean).
+    *   `FeignClient` (si es bean).
+*   **Bases de Datos**: Operaciones JDBC y R2DBC se instrumentan (si se usan los starters de Spring Data).
+*   **Mensajería**: Productores y consumidores de Spring for Apache Kafka y Spring AMQP (RabbitMQ).
+*   **Schedulers**: Tareas programadas con `@Scheduled`.
+
+### Ejemplo: Interacciones entre Microservicios
+
+Si tienes `Service A` llamando a `Service B` (ambos instrumentados con Micrometer Tracing), verás una única traza que abarca ambas llamadas en Zipkin.
+
+```java
+// Service A (Controller)
+@RestController
+@RequestMapping("/api/serviceA")
+public class ServiceAController {
+    private final WebClient.Builder webClientBuilder; // WebClient.Builder auto-instrumentado
+
+    public ServiceAController(@LoadBalanced WebClient.Builder webClientBuilder) {
+        this.webClientBuilder = webClientBuilder;
+    }
+
+    @GetMapping("/callServiceB")
+    public Mono<String> callServiceB() {
+        return webClientBuilder.build().get()
+                .uri("http://service-b/api/serviceB/data") // Llama a Service B por su nombre de Eureka
+                .retrieve()
+                .bodyToMono(String.class);
+    }
+}
+
+// Service B (Controller)
+@RestController
+@RequestMapping("/api/serviceB")
+public class ServiceBController {
+    @GetMapping("/data")
+    public String getData() {
+        // Esta llamada aparecerá como un span hijo de la llamada de Service A
+        System.out.println("Service B received request!");
+        return "Data from Service B";
+    }
+}
+```
+
+---
+
+## 4. 📝 Instrumentación Manual
+
+Cuando necesitas instrumentar código que no está cubierto automáticamente (ej. lógica de negocio interna, operaciones personalizadas).
+
+### 4.1. Inyectar `Tracer` y Crear Spans
+
+```java
+import io.micrometer.tracing.Span;
+import io.micrometer.tracing.Tracer;
+import org.springframework.stereotype.Service;
+
+@Service
+public class CustomBusinessService {
+
+    private final Tracer tracer; // Inyecta el Tracer
+
+    public CustomBusinessService(Tracer tracer) {
+        this.tracer = tracer;
+    }
+
+    public String performComplexOperation(String input) {
+        // 1. Iniciar un nuevo Span (o Span hijo si ya hay un contexto de Trace)
+        Span span = tracer.nextSpan()
+                          .name("complex-business-logic") // Nombre del Span
+                          .tag("input.length", String.valueOf(input.length())) // Añadir tags (atributos)
+                          .start(); // Iniciar el Span
+
+        // Try-finally para asegurar que el span se cierra
+        try (Tracer.SpanInScope ws = tracer.with='false'; // Activa el Span en el contexto de hilo actual
+            // Lógica de negocio compleja aquí
+            System.out.println("Executing complex operation with input: " + input);
+            Thread.sleep(100); // Simular trabajo
+            
+            span.event("data-processed"); // Añadir un evento (log) al Span
+
+            String result = input.toUpperCase() + "_PROCESSED";
+            span.tag("output.result", result); // Añadir más tags
+
+            return result;
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            span.tag("error", "true"); // Marcar el span como error
+            span.tag("error.message", e.getMessage());
+            throw new RuntimeException("Operation interrupted", e);
+        } finally {
+            // 2. Cerrar el Span
+            span.end();
+        }
+    }
+}
+```
+
+### 4.2. Usando `@NewSpan` (Spring AOP - más declarativo)
+
+*   Si usas `spring-boot-starter-aop` o habilitas AOP.
+
+```java
+import io.micrometer.tracing.annotation.NewSpan;
+import org.springframework.stereotype.Service;
+
+@Service
+public class AnnotatedBusinessService {
+
+    // Crea un nuevo Span con el nombre "my-annotated-method"
+    // Los argumentos del método se pueden añadir como tags automáticamente si se configura.
+    @NewSpan("my-annotated-method")
+    public String executeAnnotatedOperation(String data) {
+        System.out.println("Executing annotated operation: " + data);
+        return data.toLowerCase();
+    }
+}
+```
+
+### 4.3. Baggage (Propagación de Clave-Valor)
+
+*   Para propagar metadatos personalizados a través de la traza, incluso a través de los límites del servicio.
+*   Se inyecta `BaggageManager`.
+
+```java
+import io.micrometer.tracing.Baggage;
+import io.micrometer.tracing.BaggageManager;
+import io.micrometer.tracing.Tracer;
+import org.springframework.stereotype.Service;
+
+@Service
+public class BaggageService {
+
+    private final Tracer tracer;
+    private final BaggageManager baggageManager; // Inyecta BaggageManager
+
+    public BaggageService(Tracer tracer, BaggageManager baggageManager) {
+        this.tracer = tracer;
+        this.baggageManager = baggageManager;
+    }
+
+    public String processWithBaggage(String userSessionId) {
+        // 1. Crear un nuevo Span (o un Span hijo)
+        Span span = tracer.nextSpan().name("process-user-request").start();
+
+        try (Tracer.SpanInScope ws = tracer.withSpan(span)) {
+            // 2. Añadir Baggage al Span activo
+            // Si el Baggage ya existe en la traza (propagado desde upstream), este lo sobrescribe.
+            // Si no existe, lo añade.
+            Baggage sessionIdBaggage = baggageManager.createBaggage("user-session-id", userSessionId);
+            sessionIdBaggage.make    Current(); // Activa el baggage para el contexto actual del hilo
+
+            System.out.println("Processing with baggage for session: " + userSessionId);
+
+            // En un servicio downstream, se puede recuperar el baggage:
+            // Baggage propagatedSessionId = Baggage.fromCurrent().get("user-session-id");
+            // if (propagatedSessionId != null) {
+            //     System.out.println("Propagated Session ID: " + propagatedSessionId.get());
+            // }
+
+            return "Processed for session " + userSessionId;
+        } finally {
+            // 3. Cerrar el Span
+            span.end();
+        }
+    }
+}
+```
+*   **Nota**: Las claves de Baggage deben estar predefinidas en la configuración del servicio receptor si quieres acceder a ellas como variables de entorno o propiedades del sistema (esto puede variar según el exportador y el SDK de OTel).
+
+---
+
+## 5. 🧪 Testing
+
+Micrometer Tracing proporciona un `TestSpanHandler` para verificar los Spans generados en las pruebas.
+
+```java
+import io.micrometer.tracing.Span;
+import io.micrometer.tracing.Tracer;
+import io.micrometer.tracing.test.simple.SimpleTracer; // Importar SimpleTracer
+import io.micrometer.tracing.test.simple.SimpleSpan; // Importar SimpleSpan
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import static org.assertj.core.api.Assertions.assertThat; // AssertJ para aserciones
+
+class CustomBusinessServiceTest {
+
+    private SimpleTracer simpleTracer; // Implementación simple de Tracer para tests
+    private CustomBusinessService service;
+
+    @BeforeEach
+    void setUp() {
+        simpleTracer = new SimpleTracer();
+        service = new CustomBusinessService(simpleTracer);
+    }
+
+    @Test
+    void testPerformComplexOperationCreatesSpan() {
+        String input = "testdata";
+        service.performComplexOperation(input);
+
+        // Obtener los spans recolectados
+        assertThat(simpleTracer.get // Obtener los spans recolectados
+        assertThat(simpleTracer.get=AllSpans()).hasSize(1);
+        SimpleSpan span = simpleTracer.getOnlySpan();
+
+        assertThat(span.getName()).isEqualTo("complex-business-logic");
+        assertThat(span.getTag("input.length")).isEqualTo(String.valueOf(input.length()));
+        assertThat(span.getEvents()).hasSize(1);
+        assertThat(span.getEvents().get(0).getName()).isEqualTo("data-processed");
+        assertThat(span.hasEnded()).isTrue();
+    }
+
+    @Test
+    void testPerformComplexOperationHandlesError() {
+        // Simular un error (ej. haciendo que la lógica interna lance una excepción)
+        // Para este ejemplo, necesitaríamos modificar CustomBusinessService para simular el error
+        // O mockear dependencias que lancen errores si el servicio no es puro.
+
+        // Por simplicidad, aquí simulamos que el span se marcó como error
+        String input = "error_input";
+        try {
+            // Suponiendo que performComplexOperation lanza una excepción para este input
+            service.performComplexOperation(input);
+            fail("Expected exception not thrown");
+        } catch (RuntimeException e) {
+            assertThat(e).hasMessageContaining("Operation interrupted");
+        }
+
+        assertThat(simpleTracer.getAllSpans()).hasSize(1);
+        SimpleSpan span = simpleTracer.getOnlySpan();
+        assertThat(span.getName()).isEqualTo("complex-business-logic");
+        assertThat(span.isError()).isTrue(); // Verifica que el span fue marcado como error
+        assertThat(span.getTag("error.message")).isNotNull();
+    }
+}
+```
+
+---
+
+## 6. 💡 Buenas Prácticas y Consejos
+
+*   **No Sobreescribas la Instrumentación Automática**: Para la mayoría de los casos (controladores, clientes HTTP, BD), la instrumentación automática de Spring Boot es suficiente y preferible.
+*   **Instrumenta Manualmente Lógica de Negocio Clave**: Usa la inyección de `Tracer` o `@NewSpan` para operaciones de negocio significativas que abarcan múltiples llamadas internas o tareas asíncronas.
+*   **Nombres de Spans Significativos**: Dale a tus Spans nombres claros y concisos que identifiquen la operación que representan (ej. `user-service.create-user`, `payment-gateway.process-transaction`).
+*   **Añade Tags Relevantes**: Utiliza tags para añadir metadatos importantes a tus Spans (ej. IDs de usuario, códigos de error, nombres de microservicios). Esto es invaluable para buscar y filtrar trazas.
+*   **Muestreo (Sampling)**: En producción, no traces el 100% de las solicitudes. Configura una tasa de muestreo adecuada (`spring.sleuth.sampler.probability` o `management.tracing.sampling.probability`) para evitar sobrecargar tu sistema de trazabilidad.
+*   **Baggage con Moderación**: El Baggage se propaga a través de la red en los encabezados HTTP. Úsalo con moderación para datos críticos y pequeños, ya que puede aumentar el tamaño de los encabezados de solicitud.
+*   **Monitorea tu Sistema de Trazabilidad**: Asegúrate de que tu backend de trazabilidad (Zipkin, Jaeger, Tempo) esté sano y pueda manejar el volumen de Spans.
+*   **Consistencia de Formato de Propagación**: Asegúrate de que todos tus servicios (y tus Gateways/Proxies) usen el mismo formato de propagación (ej. `W3C` o `B3`).
+*   ** correlacionar con Métricas y Logs**: Idealmente, tus Logs deben incluir el `Trace ID` y `Span ID` para que puedas correlacionarlos con los Spans. Micrometer Tracing lo hace automáticamente con el patrón de logging por defecto de Spring Boot.
+
+---
+
+Este cheatsheet te proporciona una referencia completa de Micrometer Tracing, cubriendo sus conceptos esenciales, cómo configurarlo en Spring Boot, la instrumentación automática y manual, el uso de Baggage, las pruebas y las mejores prácticas para implementar una trazabilidad distribuida efectiva en tus aplicaciones Java.

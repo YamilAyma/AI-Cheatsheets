@@ -1,0 +1,154 @@
+---
+title: "agile"
+---
+
+
+---
+
+# 🚀 Metodología Ágil (Agile) Cheatsheet Completo 🚀
+
+La **Metodología Ágil** es un enfoque iterativo e incremental para la gestión de proyectos y el desarrollo de software. Se basa en los valores y principios del **Manifiesto Ágil**, priorizando la adaptabilidad al cambio, la entrega temprana y continua, y la colaboración con el cliente.
+
+---
+
+## 1. 🌟 Valores del Manifiesto Ágil
+
+Estos son los cuatro valores fundamentales que definen el corazón de Agile:
+
+* **Individuos e interacciones** sobre procesos y herramientas.
+  * La comunicación humana efectiva es más valiosa que seguir reglas rígidas o usar herramientas complejas.
+* **Software funcionando** sobre documentación exhaustiva.
+  * Entregar valor tangible y probado es más importante que tener una pila de documentos sin un producto funcional.
+* **Colaboración con el cliente** sobre negociación contractual.
+  * Trabajar estrechamente con el cliente de forma continua produce mejores resultados que adherirse estrictamente a un contrato inicial.
+* **Responder al cambio** sobre seguir un plan.
+  * La capacidad de adaptarse a nuevas necesidades y descubrimientos es más valiosa que un plan inicial inmutable.
+
+---
+
+## 2. 📝 Principios del Manifiesto Ágil (Resumen)
+
+El Manifiesto Ágil se apoya en 12 principios que detallan cómo aplicar los valores. Aquí se resumen los más influyentes:
+
+1. **Satisfacción del cliente** a través de la entrega temprana y continua de software valioso.
+2. **Aceptar los cambios** en los requisitos, incluso en etapas tardías del desarrollo.
+3. **Entregar software funcionando frecuentemente** (semanas, no meses).
+4. **Colaboración diaria** entre la gente de negocio y los desarrolladores.
+5. Construir proyectos alrededor de **individuos motivados y confiables**.
+6. La **conversación cara a cara** es el método más eficiente de transmitir información.
+7. El **software funcionando** es la medida principal del progreso.
+8. Los procesos ágiles promueven un **ritmo de desarrollo sostenible**.
+9. Atención continua a la **excelencia técnica** y al buen diseño.
+10. La **simplicidad** (el arte de maximizar el trabajo no realizado) es esencial.
+11. Los mejores arquitecturas, requisitos y diseños emergen de **equipos autoorganizados**.
+12. El equipo **reflexiona y ajusta** su comportamiento a intervalos regulares.
+
+---
+
+## 3. 🔑 Características Clave de Agile
+
+* **Iterativo e Incremental**: El desarrollo se realiza en ciclos cortos y repetitivos (iteraciones), y el producto se construye añadiendo piezas funcionales (incrementos) en cada ciclo.
+* **Adaptabilidad al Cambio**: Se valora la capacidad de modificar el curso del proyecto en cualquier momento, basándose en el feedback o nuevas necesidades.
+* **Centrado en el Cliente**: La colaboración constante y el feedback del cliente son esenciales para asegurar que el producto final satisfaga sus necesidades.
+* **Colaboración y Comunicación**: Fomenta la comunicación frecuente y abierta entre todos los miembros del equipo y con los stakeholders.
+* **Equipos Autoorganizados y Multifuncionales**: Los equipos tienen la autonomía para decidir cómo realizan su trabajo y poseen todas las habilidades necesarias para completar las tareas.
+* **Feedback Temprano y Continuo**: La entrega frecuente permite obtener feedback rápido, lo que reduce el riesgo y mejora la calidad.
+* **Mejora Continua (Inspección y Adaptación)**: Los equipos evalúan regularmente su rendimiento y procesos para encontrar formas de mejorar.
+
+---
+
+## 4. 🧩 Frameworks Ágiles Populares
+
+### 4.1. Scrum (El más común y estructurado)
+
+Un framework para que las personas aborden problemas complejos y adaptativos, mientras entregan productos de máximo valor de forma creativa y productiva. Se basa en ciclos cortos llamados **Sprints**.
+
+* **Los 3 Roles de Scrum:**
+  1. **Product Owner (PO)**: Representa los intereses del cliente y los stakeholders. Es responsable de maximizar el valor del producto y de gestionar el `Product Backlog`.
+  2. **Scrum Master (SM)**: Es el "líder de servicio" del equipo. Facilita las reuniones, elimina impedimentos, y asegura que el equipo siga los principios de Scrum.
+  3. **Development Team (Dev Team)**: El equipo autoorganizado y multifuncional que realiza el trabajo de construir el Incremento.
+* **Los 5 Eventos (Ceremonias) de Scrum:** (Cada uno tiene un "time-box" o duración máxima)
+  1. **Sprint Planning (Planificación del Sprint)**: Al inicio del Sprint. El equipo define qué se va a hacer en el Sprint y cómo. (Máx. 8 horas para un Sprint de 1 mes).
+  2. **Daily Scrum (Daily Stand-up)**: Diario. Sincronización del equipo, revisión del progreso hacia el Objetivo del Sprint y planificación del día. (Máx. 15 minutos).
+  3. **Sprint Review (Revisión del Sprint)**: Al final del Sprint. El equipo presenta el Incremento de trabajo a los stakeholders para obtener feedback. (Máx. 4 horas para un Sprint de 1 mes).
+  4. **Sprint Retrospective (Retrospectiva del Sprint)**: Al final del Sprint, después del Review. El equipo inspecciona su proceso de trabajo y planifica mejoras para el siguiente Sprint. (Máx. 3 horas para un Sprint de 1 mes).
+  5. **The Sprint (El Sprint)**: El contenedor de todos los demás eventos. Un ciclo de desarrollo de duración fija (normalmente 1-4 semanas).
+* **Los 3 Artefactos de Scrum:**
+  1. **Product Backlog**: Una lista priorizada de todas las funcionalidades, mejoras y correcciones que podrían ser necesarias en el producto. Mantenido por el Product Owner.
+  2. **Sprint Backlog**: El subconjunto de ítems del `Product Backlog` seleccionados para el Sprint actual, junto con el plan para entregarlos.
+  3. **Increment**: El producto funcional y potencialmente entregable resultante de un Sprint. Es la suma de todos los ítems del Sprint Backlog completados durante el Sprint y todos los Incrementos de Sprints anteriores.
+* **Conceptos Adicionales:**
+  * **Definition of Done (DoD)**: Un acuerdo formal sobre el conjunto de criterios de calidad que un elemento del Product Backlog debe satisfacer para ser considerado "Done" (completado).
+  * **Burndown Chart / Burnup Chart**: Gráficos visuales para rastrear el progreso de un Sprint o un proyecto.
+
+### 4.2. Kanban (Visualización y Flujo)
+
+Un método para gestionar el trabajo que se enfoca en la visualización del flujo, la limitación del trabajo en progreso (WIP) y la mejora continua.
+
+* **3 Principios Clave:**
+  1. **Comenzar con lo que haces ahora**: No requiere un cambio radical inmediato.
+  2. **Comprometerse a buscar e implementar cambios incrementales y evolutivos**: Favorece pequeñas mejoras continuas.
+  3. **Respetar los roles y responsabilidades actuales**: No exige nuevos roles por sí mismo.
+* **6 Prácticas Generales:**
+  1. **Visualizar el flujo de trabajo**: Usar un tablero Kanban (físico o digital) con columnas que representan etapas del flujo de trabajo.
+  2. **Limitar el trabajo en progreso (Limit WIP)**: Establecer un número máximo de elementos en cada columna del tablero para fomentar la finalización.
+  3. **Gestionar el flujo**: Medir y mejorar la fluidez con la que los elementos se mueven por el tablero.
+  4. **Hacer las políticas explícitas**: Definir claramente las reglas para mover ítems entre columnas.
+  5. **Implementar bucles de retroalimentación**: Reuniones periódicas para revisar el flujo, los impedimentos y las mejoras.
+  6. **Mejorar colaborativamente, evolucionar experimentalmente**: Fomentar la discusión y la adaptación basada en datos.
+* **Métricas Comunes:**
+  * **Lead Time**: Tiempo total desde que se solicita un ítem hasta que se entrega.
+  * **Cycle Time**: Tiempo desde que se empieza a trabajar en un ítem hasta que se completa.
+  * **Throughput**: Cantidad de ítems completados por unidad de tiempo.
+
+---
+
+## 5. 🧑‍💻 Roles Comunes en Equipos Ágiles (General)
+
+Más allá de los roles específicos de Scrum:
+
+* **Stakeholder**: Cualquier persona o grupo con interés en el proyecto o producto.
+* **Agile Coach**: Profesional que guía y asesora a los equipos y la organización en la adopción y mejora de prácticas ágiles.
+* **Business Analyst (Analista de Negocio)**: Trabaja con el Product Owner para refinar los requisitos y asegurar que se traduzcan en funcionalidades claras.
+* **DevOps Engineer**: Se enfoca en la automatización del despliegue, la infraestructura y la integración continua.
+* **QA / Tester**: Responsable de asegurar la calidad del software a través de pruebas continuas.
+
+---
+
+## 6. 📈 Beneficios de la Metodología Ágil
+
+* **Mayor Satisfacción del Cliente**: Gracias a la entrega frecuente y el feedback continuo.
+* **Mayor Adaptabilidad**: Capacidad de reaccionar rápidamente a los cambios del mercado o los requisitos.
+* **Mejor Calidad del Software**: El feedback temprano y las pruebas continuas ayudan a identificar y corregir defectos antes.
+* **Reducción de Riesgos**: Los ciclos cortos permiten identificar y mitigar riesgos más rápidamente.
+* **Mayor Visibilidad y Control**: Los stakeholders tienen una visión más clara del progreso del proyecto.
+* **Mejor Moral del Equipo**: Los equipos autoorganizados y la colaboración fomentan un ambiente de trabajo positivo.
+* **Tiempo de Comercialización Más Rápido (Time to Market)**: La entrega incremental permite lanzar funcionalidades antes.
+
+---
+
+## 7. ⚠️ Desafíos y Malentendidos Comunes
+
+* **No es "sin planificación"**: Agile promueve la planificación adaptativa, no la ausencia de planificación.
+* **No es una "bala de plata"**: No resuelve todos los problemas y requiere disciplina y compromiso.
+* **Cambio Cultural**: Requiere un cambio de mentalidad significativo en toda la organización, no solo en los equipos de desarrollo.
+* **Dependencia del Feedback**: Si el cliente o los stakeholders no proporcionan feedback consistente, Agile puede perder efectividad.
+* **"ScrumBut"**: La adopción incompleta o incorrecta de un framework (ej. Scrum) sin entender sus principios subyacentes.
+
+---
+
+## 8. 💡 Mejores Prácticas y Consejos
+
+* **Prioriza el Valor**: Siempre enfócate en entregar el mayor valor al cliente en cada iteración.
+* **Comunicación Constante**: Fomenta la comunicación abierta y transparente entre todos.
+* **Abraza el Feedback**: Busca activamente el feedback del cliente y utilízalo para adaptar el producto.
+* **Invierte en Retrospectivas**: Las retrospectivas son cruciales para la mejora continua del equipo y el proceso.
+* **Fomenta la Autoorganización**: Dale autonomía a los equipos para que decidan cómo logran sus objetivos.
+* **Mantén la Simplicidad**: Elimina el trabajo innecesario y enfócate en la esencia.
+* **Transparencia**: Haz visible el estado del trabajo, los impedimentos y el progreso.
+* **Invierte en Pruebas Automatizadas**: Es esencial para mantener la calidad con entregas frecuentes.
+* **Definition of Done (DoD)**: Asegúrate de que tu equipo tiene un DoD claro y que lo cumple rigurosamente.
+
+---
+
+Este cheatsheet te proporciona una referencia completa de la Metodología Ágil, cubriendo sus principios fundamentales, los frameworks más populares, los roles y eventos clave, los beneficios y las mejores prácticas para implementarla de manera efectiva.

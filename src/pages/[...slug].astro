@@ -1,0 +1,114 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import FloatingButtons from '../components/FloatingButtons.astro';
+import { getCollection, render } from 'astro:content';
+
+export async function getStaticPaths() {
+    const allCheatsheets = await getCollection('cheatsheets');
+    const paths = [];
+
+    // 1. Routes for actual content files
+    allCheatsheets.forEach(entry => {
+        const slug = entry.id.replace(/\.mdx?$/, '');
+        paths.push({
+            params: { slug },
+            props: { type: 'content', entry }
+        });
+    });
+
+    // 2. Routes for intermediate directories
+    const slugs = allCheatsheets.map(entry => entry.id.replace(/\.mdx?$/, ''));
+    const directoryPaths = new Set();
+
+    slugs.forEach(slug => {
+        const parts = slug.split('/');
+        for (let i = 1; i < parts.length; i++) {
+            directoryPaths.add(parts.slice(0, i).join('/'));
+        }
+    });
+
+    directoryPaths.forEach(dir => {
+        const subItems = allCheatsheets.map(e => ({...e, slug: e.id.replace(/\.mdx?$/, '')}))
+                                     .filter(e => e.slug.startsWith(dir + '/'));
+        
+        // Immediate children folders
+        const folders = [...new Set(
+            subItems
+                .map(e => e.slug.replace(dir + '/', '').split('/')[0])
+                .filter(part => subItems.some(e => e.slug.startsWith(`${dir}/${part}/`)))
+        )].sort();
+
+        // Immediate children files
+        const files = subItems
+            .filter(e => !e.slug.replace(dir + '/', '').includes('/'))
+            .sort((a, b) => (a.data.title || '').localeCompare(b.data.title || ''));
+
+        paths.push({
+            params: { slug: dir },
+            props: { type: 'directory', folders, files, currentDir: dir }
+        });
+    });
+
+    return paths;
+}
+
+const { slug } = Astro.params;
+const { type, entry, folders, files, currentDir } = Astro.props;
+
+let title = slug;
+let breadcrumbs = [{ name: 'Inicio', href: '/' }];
+const parts = slug.split('/');
+let currentPath = '';
+parts.forEach(part => {
+    currentPath += '/' + part;
+    breadcrumbs.push({ name: part, href: currentPath });
+});
+
+let Content;
+if (type === 'content') {
+    const rendered = await render(entry);
+    Content = rendered.Content;
+    title = entry.data.title || slug;
+} else {
+    title = `Explorando: ${slug}`;
+}
+
+const parentPath = parts.length > 1 ? '/' + parts.slice(0, -1).join('/') : '/';
+---
+
+<BaseLayout title={title} breadcrumbs={breadcrumbs}>
+    {type === 'content' ? (
+        <Content />
+        <FloatingButtons backHref={parentPath} slot="fab" />
+    ) : (
+        <>
+            <div class="search-container">
+                <input type="text" id="searchInput" placeholder="Buscar archivos y carpetas...">
+            </div>
+
+            <ul class="file-list">
+                {folders.map(folder => (
+                    <li><a href={`/${currentDir}/${folder}`} class="folder">{folder}</a></li>
+                ))}
+                {files.map(file => (
+                    <li><a href={`/${file.slug}`} class="file">{file.data.title}</a></li>
+                ))}
+            </ul>
+
+            <script is:inline>
+                const searchInput = document.getElementById('searchInput');
+                if (searchInput) {
+                    searchInput.addEventListener('keyup', () => {
+                        const filter = searchInput.value.toLowerCase();
+                        const items = document.querySelectorAll('.file-list li');
+                        items.forEach(li => {
+                            const text = li.textContent.toLowerCase();
+                            li.style.display = text.includes(filter) ? "" : "none";
+                        });
+                    });
+                }
+            </script>
+            <FloatingButtons backHref={parentPath} slot="fab" />
+        </>
+    )}
+</BaseLayout>

@@ -1,0 +1,234 @@
+---
+title: "flyway-with-spring-boot"
+---
+
+¡Claro que sí! Flyway de Redgate es una herramienta poderosa y sencilla para el control de versiones de bases de datos, lo que es crucial en el desarrollo moderno de aplicaciones. Aquí tienes un "cheatsheet" completo y bien estructurado de Flyway, optimizado para ser claro y conciso para una IA conversacional.
+
+---
+
+# 🚀 Flyway (by Redgate) Cheatsheet Completo 🚀
+
+Flyway es una herramienta de control de versiones de bases de datos de código abierto que facilita la evolución de tu esquema de base de datos de manera confiable y robusta. Sigue el principio de "migraciones simples". Simplemente escribe tus scripts de migración SQL (o Java) y Flyway se encarga de aplicarlos en el orden correcto.
+
+---
+
+## 1. 🌟 Conceptos Clave
+
+* **Migración**: Un script SQL o una clase Java que realiza cambios en la base de datos (ej. crear una tabla, añadir una columna, insertar datos iniciales).
+* **Versionamiento**: Cada migración tiene un número de versión único y un nombre. Flyway aplica las migraciones en orden numérico ascendente.
+* **Tabla de Historial (Schema History Table)**: Una tabla especial que Flyway crea en tu base de datos para registrar qué migraciones se han aplicado y cuándo. Por defecto, se llama `flyway_schema_history`.
+* **Base de Datos Actual**: El estado actual de tu esquema de base de datos después de aplicar todas las migraciones conocidas.
+* **"Convención sobre Configuración"**: Flyway espera que tus scripts de migración sigan una convención de nombrado específica y que estén en una ubicación predeterminada.
+
+---
+
+## 2. 🛠️ Configuración Inicial y Flujo de Trabajo
+
+Flyway puede usarse como una herramienta independiente (CLI), con Maven/Gradle, o integrado programáticamente en tu aplicación (ej. Spring Boot).
+
+### 2.1. Nombres de Archivo de Migración
+
+Las migraciones deben seguir un formato estricto:
+
+`V<VERSION>__<DESCRIPTION>.sql` (para migraciones SQL)
+`V<VERSION>__<DESCRIPTION>.java` (para migraciones Java)
+
+* **`V`**: Prefijo para migraciones versionadas (cambios de esquema). Siempre `V`.
+* **`<VERSION>`**: Número de versión (ej. `1`, `2_1`, `202301011200`). Usa guiones bajos para separación.
+* **`__` (Doble Guion Bajo)**: Separador entre la versión y la descripción.
+* **`<DESCRIPTION>`**: Descripción de la migración (ej. `create_user_table`).
+* **`.sql` / `.java`**: Extensión del archivo.
+
+**Ejemplos:**
+
+* `V1__create_users_table.sql`
+* `V1_1__add_email_to_users.sql`
+* `V2_0__create_products_table.sql`
+
+**Ubicación de los Archivos:**
+Por defecto, Flyway busca las migraciones en el directorio `classpath:db/migration`.
+
+### 2.2. Integración con Spring Boot (Recomendado)
+
+Spring Boot tiene soporte nativo para Flyway. Simplemente añade la dependencia:
+
+**Maven (`pom.xml`):**
+
+```xml
+<dependency>
+    <groupId>org.flywaydb</groupId>
+    <artifactId>flyway-core</artifactId>
+</dependency>
+<!-- Si usas PostgreSQL, añade también el driver correspondiente -->
+<dependency>
+    <groupId>org.postgresql</groupId>
+    <artifactId>postgresql</artifactId>
+    <scope>runtime</scope>
+</dependency>
+```
+
+**Gradle (`build.gradle`):**
+
+```gradle
+dependencies {
+    implementation 'org.flywaydb:flyway-core'
+    runtimeOnly 'org.postgresql:postgresql' // O tu driver de BD
+}
+```
+
+**Configuración en `application.properties` (o `application.yml`):**
+
+```properties
+# Configuración de la base de datos (requerido para Flyway)
+spring.datasource.url=jdbc:postgresql://localhost:5432/mydb
+spring.datasource.username=user
+spring.datasource.password=password
+
+# Configuración de Flyway (todas estas son opcionales y tienen valores por defecto)
+spring.flyway.enabled=true # Habilita/deshabilita Flyway (por defecto: true)
+spring.flyway.baseline-on-migrate=true # Si la base de datos no está vacía, crea la tabla de historial y registra 0
+spring.flyway.clean-disabled=true # Previene que `flyway:clean` se ejecute por error en producción
+spring.flyway.locations=classpath:db/migration # Ubicación de los scripts (por defecto)
+spring.flyway.table=flyway_schema_history # Nombre de la tabla de historial (por defecto)
+spring.flyway.sql-migration-prefix=V # Prefijo de los scripts versionados (por defecto)
+spring.flyway.sql-migration-separator=__ # Separador (por defecto)
+spring.flyway.sql-migration-suffix=.sql # Sufijo (por defecto)
+spring.flyway.validate-on-migrate=true # Valida el checksum de las migraciones existentes antes de migrar
+```
+
+**Flujo de Trabajo Básico con Spring Boot:**
+
+1. Añade la dependencia Flyway.
+2. Configura tu base de datos en `application.properties`.
+3. Crea un directorio `src/main/resources/db/migration`.
+4. Crea tus scripts SQL dentro de ese directorio siguiendo el formato `V<VERSION>__<DESCRIPTION>.sql`.
+5. Inicia tu aplicación Spring Boot. Flyway detectará automáticamente la base de datos y aplicará las migraciones pendientes.
+
+---
+
+## 3. 📝 Comandos Comunes de Flyway (CLI/Maven/Gradle)
+
+Aunque Spring Boot lo hace automáticamente, estos son los comandos que Flyway ejecuta o que puedes usar para control manual.
+
+* **`flyway:migrate`**: (Comando principal) Aplica todas las migraciones pendientes que no se han ejecutado en la base de datos.
+  * **Automático en Spring Boot al inicio.**
+* **`flyway:info`**: Muestra el estado de las migraciones (pendientes, aplicadas, fallidas, etc.).
+* **`flyway:clean`**: **¡CUIDADO!** Elimina **todos** los objetos de la base de datos asociados con el esquema configurado. **No usar en producción sin un propósito muy específico.**
+* **`flyway:validate`**: Comprueba si las migraciones aplicadas en la base de datos coinciden con los scripts locales (checksum).
+* **`flyway:baseline`**: Inicializa la tabla de historial de Flyway en una base de datos preexistente que ya contiene un esquema. Registra todas las migraciones previas como "aplicadas" sin ejecutarlas realmente. Útil cuando se integra Flyway en un proyecto existente.
+* **`flyway:repair`**: Repara la tabla de historial de esquema de Flyway. Útil si el checksum o la descripción de una migración aplicada han cambiado.
+
+**Ejemplo de uso con Maven:**
+
+```bash
+# Desde la raíz de tu proyecto Maven
+mvn flyway:info
+mvn flyway:migrate
+mvn flyway:clean # ¡Cuidado!
+```
+
+---
+
+## 4. 🗃️ Tipos de Migraciones
+
+### 4.1. Migraciones Versionadas (`V<VERSION>__...sql`)
+
+* Son las migraciones más comunes.
+* Se aplican en orden numérico ascendente y solo una vez.
+* Cada migración tiene un checksum que se registra en la tabla de historial. Si el script cambia después de aplicarse, la validación fallará.
+
+**Ejemplo: `V1__create_users_table.sql`**
+
+```sql
+CREATE TABLE users (
+    id SERIAL PRIMARY KEY,
+    username VARCHAR(50) NOT NULL UNIQUE,
+    email VARCHAR(100) NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+```
+
+### 4.2. Migraciones Repetibles (`R__<DESCRIPTION>.sql`)
+
+* Tienen el prefijo `R__`.
+* Siempre se aplican después de las migraciones versionadas.
+* Se re-aplican cada vez que su checksum cambia.
+* Útiles para crear/actualizar vistas, funciones, procedimientos almacenados, o cargar datos de referencia que pueden cambiar.
+
+**Ejemplo: `R__create_my_view.sql`**
+
+```sql
+CREATE OR REPLACE VIEW active_users_view AS
+SELECT id, username, email
+FROM users
+WHERE status = 'active';
+```
+
+### 4.3. Migraciones Undo (`U<VERSION>__<DESCRIPTION>.sql`) (Deprecated/Rara vez usado en favor de nuevas migraciones)
+
+* Permiten revertir una migración versionada específica.
+* **No recomendado para producción**. En su lugar, crea una nueva migración versionada que revierta los cambios si es necesario.
+* Requieren una licencia paga en Flyway Enterprise/Teams.
+
+### 4.4. Migraciones Java
+
+* Permiten realizar tareas de migración complejas que no son posibles con SQL puro (ej. lógica de transformación de datos compleja, llamadas a APIs externas).
+* Deben implementar la interfaz `org.flywaydb.core.api.migration.JavaMigration`.
+
+```java
+// src/main/java/db/migration/V3__UpdateUserEmails.java
+package db.migration; // Importante: el paquete debe coincidir con la ubicación configurada
+
+import org.flywaydb.core.api.migration.BaseJavaMigration; // O JavaMigration
+import org.flywaydb.core.api.callback.Callback; // Si usas callbacks
+import org.flywaydb.core.api.Context;
+import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.jdbc.datasource.SingleConnectionDataSource;
+
+public class V3__UpdateUserEmails extends BaseJavaMigration {
+
+    @Override
+    public void migrate(Context context) throws Exception {
+        // Usa JdbcTemplate para interactuar con la base de datos
+        JdbcTemplate jdbcTemplate = new JdbcTemplate(new SingleConnectionDataSource(context.getConnection(), true));
+        jdbcTemplate.update("UPDATE users SET email = CONCAT(username, '@example.com') WHERE email IS NULL");
+    }
+
+    // Si implementas JavaMigration directamente, también necesitarás:
+    // @Override public String getVersion() { return "3"; }
+    // @Override public String getDescription() { return "Update user emails"; }
+    // @Override public Integer getChecksum() { return null; } // Deja en null para que Flyway calcule
+    // @Override public boolean is
+}
+```
+
+---
+
+## 5. ⚠️ **Consideraciones Importantes** ⚠️
+
+* **No Modificar Migraciones Aplicadas**: Una vez que una migración versionada (`V__`) ha sido aplicada en un entorno, **¡nunca la modifiques!** Cambiar un script aplicado causará un error de checksum (`validate` fallará) y Flyway se negará a migrar. Si necesitas hacer un cambio, crea una **nueva migración** con una versión superior.
+* **`baseline` vs. `clean`**:
+  * `baseline`: Para bases de datos que ya tienen datos y estructura, pero que quieres empezar a gestionar con Flyway. Marca las migraciones existentes como ya aplicadas.
+  * `clean`: Borra la base de datos por completo. Muy útil en entornos de desarrollo/pruebas, **extremadamente peligroso en producción**. Siempre mantén `spring.flyway.clean-disabled=true` en producción.
+* **Checksums**: Flyway calcula un checksum para cada migración versionada. Esto asegura que los scripts aplicados no han sido alterados.
+* **Orden de Ejecución**: Las migraciones se ejecutan estrictamente en orden numérico ascendente. Asegúrate de que tus versiones reflejen el orden deseado.
+* **Rollbacks**: Flyway no tiene un mecanismo de "rollback" automático. Si una migración falla, debes revertir manualmente la base de datos a un estado anterior (ej. restaurar un backup) y luego corregir la migración y volver a intentarlo. Esto enfatiza la importancia de probar las migraciones exhaustivamente.
+* **Transacciones**: Flyway envuelve cada migración en una transacción (si el driver de la base de datos lo soporta). Si una parte de la migración falla, toda la transacción se revierte.
+
+---
+
+## 6. 💡 Buenas Prácticas y Consejos
+
+* **Migraciones pequeñas y atómicas**: Cada migración debe hacer una cosa y hacerla bien.
+* **Prueba tus migraciones**: Ejecuta tus migraciones en un entorno de desarrollo o staging antes de ir a producción.
+* **Scripts SQL vs. Migraciones Java**:
+  * Usa SQL para la mayoría de los cambios de esquema y datos. Son más legibles y fáciles de versionar.
+  * Usa migraciones Java solo para transformaciones de datos complejas o lógica que no se puede expresar fácilmente en SQL.
+* **Datos de Referencia**: Usa migraciones repetibles (`R__`) para datos que cambian con frecuencia (ej. listas de categorías) o para funciones y vistas.
+* **Mantén un backup**: Antes de ejecutar migraciones en producción, ¡siempre ten un backup de tu base de datos!
+* **Colaboración**: Si varios desarrolladores trabajan en la base de datos, deben coordinar los números de versión para evitar conflictos.
+* **`baselineOnMigrate`**: Útil en desarrollo si la BD ya tiene un esquema, pero puede ser arriesgado en producción si no se usa correctamente. Para producción, generalmente se prefiere que la base de datos esté vacía y Flyway cree todo desde cero.
+
+---
+
+Este cheatsheet te proporciona una base sólida para trabajar con Flyway, cubriendo sus conceptos esenciales, su uso con Spring Boot y las mejores prácticas para gestionar de forma eficiente la evolución del esquema de tu base de datos.

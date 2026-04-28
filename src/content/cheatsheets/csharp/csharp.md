@@ -1,0 +1,622 @@
+---
+title: "csharp"
+---
+
+
+---
+
+# 🔷 C# Cheatsheet Completo 🔷
+
+C# es un lenguaje de programación multiparadigma (orientado a objetos, funcional, genérico) que forma parte del ecosistema .NET. Ofrece una fuerte tipificación, recolección de basura, gestión de memoria automática y una rica biblioteca de clases (Framework Class Library - FCL).
+
+---
+
+## 1. 🌟 Conceptos Clave
+
+* **Tipado Fuerte (Strongly Typed)**: Las variables tienen un tipo definido en tiempo de compilación.
+* **Orientado a Objetos (OOP)**: Basado en clases, objetos, herencia, polimorfismo, encapsulación y abstracción.
+* **Gestión de Memoria Automática**: El recolector de basura (`Garbage Collector`) gestiona la memoria, liberando objetos no referenciados.
+* **LINQ (Language Integrated Query)**: Permite escribir consultas de datos directamente en el código C#.
+* **Asíncrono/Asíncrono (`async`/`await`)**: Soporte de primera clase para programación asíncrona no bloqueante.
+* **.NET Framework / .NET (Core)**: C# se ejecuta sobre un entorno de ejecución (.NET Runtime) que proporciona servicios de ejecución y una extensa biblioteca de clases.
+
+---
+
+## 2. 🛠️ Configuración Inicial
+
+1. **Instalar .NET SDK**: Descarga e instala el SDK desde [dotnet.microsoft.com/download](https://dotnet.microsoft.com/download).
+2. **Crear un Proyecto (CLI):**
+   ```bash
+   dotnet new console -n MyCSharpApp # Crea una aplicación de consola
+   cd MyCSharpApp
+   ```
+3. **Ejecutar la Aplicación:**
+   ```bash
+   dotnet run
+   ```
+4. **Compilar la Aplicación:**
+   ```bash
+   dotnet build
+   ```
+5. **Restaurar Paquetes NuGet:** (Normalmente automático con `build`/`run`)
+   ```bash
+   dotnet restore
+   ```
+
+---
+
+## 3. 📝 Sintaxis Básica
+
+### 3.1. Estructura de un Programa Simple
+
+```csharp
+using System; // Importa el namespace System para acceder a clases como Console
+
+namespace MyCSharpApp
+{
+    class Program // Definición de una clase
+    {
+        static void Main(string[] args) // Punto de entrada del programa
+        {
+            Console.WriteLine("¡Hola, C#!"); // Imprime texto en la consola
+        }
+    }
+}
+```
+
+* **`using`**: Importa namespaces.
+* **`namespace`**: Organiza las clases.
+* **`class`**: Define una clase.
+* **`Main` método**: Punto de entrada de la aplicación.
+* **`Console.WriteLine()`**: Imprime una línea en la consola.
+
+### 3.2. Comentarios
+
+```csharp
+// Este es un comentario de una sola línea
+
+/*
+Este es un comentario
+multilínea.
+*/
+
+/// <summary>
+/// Este es un comentario XML para documentación.
+/// Se usa para documentar clases, métodos, etc.
+/// </summary>
+```
+
+---
+
+## 4. 📊 Tipos de Datos Fundamentales
+
+C# es un lenguaje fuertemente tipado.
+
+### 4.1. Tipos de Valor (Value Types)
+
+Almacenan directamente sus valores en la memoria (Stack).
+
+* **Numéricos Enteros**: `byte`, `sbyte`, `short`, `ushort`, `int`, `uint`, `long`, `ulong`, `nint`, `nuint`.
+  * `int age = 30;`
+* **Numéricos Flotantes**: `float` (32-bit), `double` (64-bit, por defecto), `decimal` (alta precisión para finanzas).
+  * `double price = 19.99;`
+  * `decimal salary = 50000.50m;` (`m` o `M` al final para `decimal`)
+* **Booleanos**: `bool`.
+  * `bool isActive = true;`
+* **Caracteres**: `char`.
+  * `char initial = 'A';`
+* **Estructuras (Structs)**: Tipos definidos por el usuario que son Value Types.
+  * `public struct Point { public int X; public int Y; }`
+* **Enums**: Conjunto de constantes nombradas.
+  * `public enum Status { Active, Inactive, Pending }`
+
+### 4.2. Tipos de Referencia (Reference Types)
+
+Almacenan referencias a sus valores en la memoria (Heap).
+
+* **`string`**: Cadena de caracteres (inmutable).
+  * `string name = "Alice";`
+* **Clases (`class`)**: Tipos definidos por el usuario que son Reference Types.
+* **Interfaces (`interface`)**: Contratos que definen un conjunto de miembros.
+* **Delegados (`delegate`)**: Punteros a métodos.
+* **Arrays (`array`)**: Colecciones de un tipo específico.
+
+### 4.3. Tipado Implícito (`var`)
+
+El compilador infiere el tipo de la variable en tiempo de compilación. Solo para variables locales.
+
+```csharp
+var count = 10; // count es int
+var message = "Hello"; // message es string
+```
+
+### 4.4. Tipos Anulables (Nullable Types - C# 8+)
+
+Permite que los tipos de referencia y valor puedan ser `null`.
+
+```csharp
+string? optionalName = null; // Un string que puede ser null
+int? optionalAge = null;     // Un int que puede ser null
+```
+
+---
+
+## 5. 🧮 Operadores
+
+* **Aritméticos**: `+`, `-`, `*`, `/`, `%`.
+* **Comparación**: `==`, `!=`, `<`, `>`, `<=`, `>=`.
+* **Lógicos**: `&&` (AND), `||` (OR), `!` (NOT).
+* **Asignación**: `=`, `+=`, `-=`, `*=`, `/=`, `%=`.
+* **Incremento/Decremento**: `++`, `--`.
+* **Operador de Coalescencia Nula (`??`)**: Devuelve el operando izquierdo si no es nulo; de lo contrario, devuelve el operando derecho.
+  * `string userName = inputName ?? "Guest";`
+* **Operador de Acceso Condicional (`?.`)**: Accede a un miembro de forma segura solo si el objeto no es nulo.
+  * `int? length = myString?.Length;`
+* **Operador Ternario (`? :`)**: `condicion ? expresion_verdadera : expresion_falsa;`
+  * `string status = isActive ? "Activo" : "Inactivo";`
+
+---
+
+## 6. 🚦 Control de Flujo
+
+### 6.1. Condicionales (`if`, `else if`, `else`)
+
+```csharp
+int score = 85;
+if (score >= 90)
+{
+    Console.WriteLine("Excelente");
+}
+else if (score >= 70)
+{
+    Console.WriteLine("Bueno");
+}
+else
+{
+    Console.WriteLine("Necesita mejorar");
+}
+```
+
+### 6.2. Sentencia `switch` / Expresión `switch` (C# 8+)
+
+```csharp
+int day = 3;
+switch (day) // Sentencia switch tradicional
+{
+    case 1: Console.WriteLine("Lunes"); break;
+    case 2: Console.WriteLine("Martes"); break;
+    default: Console.WriteLine("Otro día"); break;
+}
+
+// Expresión switch (más concisa)
+string dayName = day switch // Expresión switch (C# 8+)
+{
+    1 => "Lunes",
+    2 => "Martes",
+    _ => "Otro día" // _ es el descarte, como default
+};
+Console.WriteLine(dayName);
+```
+
+### 6.3. Bucles (`for`, `foreach`, `while`, `do-while`)
+
+```csharp
+// for
+for (int i = 0; i < 5; i++)
+{
+    Console.WriteLine($"Iteración {i}");
+}
+
+// foreach (para colecciones)
+string[] names = { "Alice", "Bob", "Charlie" };
+foreach (string name in names)
+{
+    Console.WriteLine($"Nombre: {name}");
+}
+
+// while
+int count = 0;
+while (count < 3)
+{
+    Console.WriteLine($"Contador: {count}");
+    count++;
+}
+
+// do-while (ejecuta al menos una vez)
+int i = 0;
+do
+{
+    Console.WriteLine("Siempre me ejecuto una vez.");
+    i++;
+} while (i < 0);
+```
+
+### 6.4. Control de Bucle
+
+* `break`: Sale del bucle.
+* `continue`: Salta la iteración actual y pasa a la siguiente.
+
+---
+
+## 7. 📦 Arrays y Colecciones
+
+### 7.1. Arrays (tamaño fijo)
+
+```csharp
+int[] numbers = new int[5]; // Array de 5 enteros (0 a 4)
+numbers[0] = 10;
+int[] primes = { 2, 3, 5, 7, 11 }; // Inicialización con valores
+
+Console.WriteLine(primes.Length); // 5
+Console.WriteLine(primes[primes.Length - 1]); // 11
+
+int[,] matrix = new int[2, 3]; // Matriz 2x3
+matrix[0, 0] = 1;
+```
+
+### 7.2. Colecciones Genéricas (System.Collections.Generic)
+
+Más flexibles que los arrays.
+
+* **`List<T>`**: Colección dinámica de elementos del mismo tipo.
+  ```csharp
+  List<string> cities = new List<string>();
+  cities.Add("Madrid");
+  cities.Add("Barcelona");
+  cities.Insert(0, "Valencia"); // Inserta en el índice 0
+  cities.Remove("Barcelona");
+  Console.WriteLine(cities.Count); // 2
+  Console.WriteLine(cities[0]);    // Valencia
+  ```
+* **`Dictionary<TKey, TValue>`**: Colección de pares clave-valor.
+  ```csharp
+  Dictionary<string, int> ages = new Dictionary<string, int>();
+  ages.Add("Alice", 30);
+  ages["Bob"] = 25; // Añadir o actualizar
+  Console.WriteLine(ages["Alice"]); // 30
+  if (ages.ContainsKey("Charlie")) { /* ... */ }
+  ages.Remove("Bob");
+  ```
+* **`HashSet<T>`**: Colección de elementos únicos, sin orden.
+  ```csharp
+  HashSet<int> uniqueNumbers = new HashSet<int> { 1, 2, 3, 2, 4 };
+  Console.WriteLine(uniqueNumbers.Count); // 4 (el 2 duplicado se ignora)
+  ```
+* **`Queue<T>`**: Colección FIFO (First-In, First-Out). `Enqueue()`, `Dequeue()`.
+* **`Stack<T>`**: Colección LIFO (Last-In, First-Out). `Push()`, `Pop()`.
+
+---
+
+## 8. 📚 Clases y Objetos (OOP)
+
+```csharp
+public class Person // Definición de una clase
+{
+    // Campos (Fields) - datos internos (evitar acceso público directo)
+    private string _name;
+
+    // Propiedades (Properties) - acceso controlado a los campos
+    public int Age { get; set; } // Propiedad auto-implementada (get/set públicos)
+
+    public string Name // Propiedad completa
+    {
+        get { return _name; }
+        set
+        {
+            if (!string.IsNullOrWhiteSpace(value))
+            {
+                _name = value;
+            }
+            else
+            {
+                throw new ArgumentException("Name cannot be empty.");
+            }
+        }
+    }
+
+    // Constructor(es)
+    public Person(string name, int age) // Constructor con parámetros
+    {
+        Name = name; // Usa el setter de la propiedad
+        Age = age;
+    }
+
+    // Constructor sin parámetros (constructor por defecto)
+    public Person() : this("Unknown", 0) { } // Llama a otro constructor
+
+    // Métodos (Methods)
+    public void Greet()
+    {
+        Console.WriteLine($"Hello, my name is {Name} and I am {Age} years old.");
+    }
+
+    // Método estático (pertenece a la clase, no a la instancia)
+    public static void SayHelloToEveryone()
+    {
+        Console.WriteLine("Hello everyone from the Person class!");
+    }
+}
+
+// Creación de objetos (instancias de la clase)
+Person person1 = new Person("Alice", 30); // Usando constructor con parámetros
+person1.Greet(); // Hello, my name is Alice and I am 30 years old.
+
+Person person2 = new Person(); // Usando constructor por defecto
+person2.Name = "Bob"; // Usando el setter de la propiedad
+person2.Age = 25;
+person2.Greet(); // Hello, my name is Bob and I am 25 years old.
+
+Person.SayHelloToEveryone(); // Llamada a un método estático
+```
+
+### 8.1. Encapsulación (Modificadores de Acceso)
+
+* `public`: Accesible desde cualquier lugar.
+* `private`: Accesible solo dentro de la clase que lo define (por defecto para miembros de clase).
+* `protected`: Accesible dentro de la clase que lo define y por clases derivadas.
+* `internal`: Accesible solo dentro del mismo ensamblado.
+* `protected internal`: Accesible dentro del mismo ensamblado O por clases derivadas en otros ensamblados.
+* `private protected`: Accesible solo dentro de la misma clase Y por clases derivadas en el mismo ensamblado.
+
+### 8.2. Herencia
+
+```csharp
+public class Employee : Person // Employee hereda de Person
+{
+    public string EmployeeId { get; set; }
+
+    public Employee(string name, int age, string employeeId) : base(name, age) // Llama al constructor de la clase base
+    {
+        EmployeeId = employeeId;
+    }
+
+    // Polimorfismo: Sobrescribir un método de la base
+    public override void Greet() // Requiere que Greet() en Person sea 'virtual'
+    {
+        Console.WriteLine($"Hello, I'm employee {Name} (ID: {EmployeeId}).");
+    }
+}
+
+public class Manager : Employee
+{
+    public Manager(string name, int age, string employeeId) : base(name, age) { }
+
+    // Nuevo método para Manager
+    public void ManageTeam()
+    {
+        Console.WriteLine($"{Name} is managing a team.");
+    }
+}
+```
+
+### 8.3. Polimorfismo
+
+* **`virtual`**: Permite que un método sea sobrescrito en clases derivadas.
+* **`override`**: Sobrescribe un método virtual en una clase derivada.
+* **`abstract`**: Un método sin implementación en una clase base. La clase base debe ser `abstract`. Las clases derivadas DEBEN implementar los métodos abstractos.
+
+  ```csharp
+  public abstract class Shape
+  {
+      public abstract double GetArea(); // Método abstracto
+      public virtual void Draw() { Console.WriteLine("Drawing a shape."); } // Método virtual
+  }
+
+  public class Circle : Shape
+  {
+      public double Radius { get; set; }
+      public Circle(double radius) { Radius = radius; }
+      public override double GetArea() { return Math.PI * Radius * Radius; } // Implementa abstracto
+      public override void Draw() { Console.WriteLine("Drawing a circle."); } // Sobrescribe virtual
+  }
+  ```
+
+### 8.4. Interfaces
+
+Definen un contrato. Una clase que implementa una interfaz debe proporcionar implementaciones para todos sus miembros.
+
+```csharp
+public interface ILogger
+{
+    void LogInfo(string message);
+    void LogError(string message, Exception ex);
+}
+
+public class ConsoleLogger : ILogger
+{
+    public void LogInfo(string message)
+    {
+        Console.WriteLine($"[INFO] {message}");
+    }
+
+    public void LogError(string message, Exception ex)
+    {
+        Console.WriteLine($"[ERROR] {message} - Exception: {ex.Message}");
+    }
+}
+```
+
+### 8.5. Records (C# 9+)
+
+Tipos de referencia diseñados para encapsular datos. Inmutables por defecto, con sintaxis concisa para constructores, igualdad basada en valores y `ToString()`.
+
+```csharp
+public record PersonRecord(string FirstName, string LastName, int Age);
+
+// Uso
+PersonRecord p1 = new PersonRecord("Alice", "Smith", 30);
+PersonRecord p2 = new PersonRecord("Alice", "Smith", 30);
+Console.WriteLine(p1 == p2); // True (igualdad basada en valores)
+Console.WriteLine(p1); // PersonRecord { FirstName = Alice, LastName = Smith, Age = 30 }
+
+// Inmutabilidad y "with-expression"
+PersonRecord p3 = p1 with { Age = 31 }; // Crea una nueva instancia con Age modificado```
+
+---
+
+## 9. ⚡ Programación Asíncrona (`async`/`await`)
+
+Para operaciones que toman tiempo (I/O, red, etc.) sin bloquear el hilo principal.
+
+```csharp
+using System.Threading.Tasks;
+
+public class DataService
+{
+    public async Task<string> FetchDataAsync()
+    {
+        Console.WriteLine("Iniciando fetch de datos...");
+        await Task.Delay(2000); // Simula una operación asíncrona de 2 segundos
+        Console.WriteLine("Datos obtenidos.");
+        return "Datos del servidor";
+    }
+
+    public async Task ProcessAndDisplayData()
+    {
+        Console.WriteLine("Procesando datos...");
+        string data = await FetchDataAsync(); // Espera de forma no bloqueante
+        Console.WriteLine($"Datos recibidos: {data}");
+    }
+}
+
+// En Main
+// DataService service = new DataService();
+// service.ProcessAndDisplayData().Wait(); // .Wait() para bloquear Main hasta que termine
+// O mejor: await service.ProcessAndDisplayData(); si Main es async Task
+```
+
+---
+
+## 10. 🔎 LINQ (Language Integrated Query)
+
+Consulta colecciones de datos utilizando una sintaxis declarativa.
+
+```csharp
+using System.Linq; // Necesario para LINQ
+
+List<int> numbers = new List<int> { 1, 5, 8, 12, 15, 20 };
+
+// Sintaxis de consulta (Query Syntax)
+var evenNumbers = from num in numbers
+                  where num % 2 == 0
+                  orderby num descending
+                  select num;
+
+// Sintaxis de método (Method Syntax) - Preferida en la mayoría de los casos
+var oddNumbers = numbers.Where(num => num % 2 != 0)
+                        .OrderBy(num => num)
+                        .Select(num => num * 10);
+
+Console.WriteLine("Números pares:");
+foreach (var num in evenNumbers)
+{
+    Console.WriteLine(num); // 20, 12, 8
+}
+
+Console.WriteLine("Números impares x10:");
+foreach (var num in oddNumbers)
+{
+    Console.WriteLine(num); // 50, 150
+}
+
+// Otros operadores LINQ comunes
+int firstEven = numbers.FirstOrDefault(num => num % 2 == 0); // 8
+bool anyGreaterThanTen = numbers.Any(num => num > 10); // True
+int sum = numbers.Sum(); // 61
+double average = numbers.Average(); // 10.16...
+```
+
+---
+
+## 11. 🚨 Manejo de Excepciones (`try-catch-finally`)
+
+```csharp
+try
+{
+    int a = 10;
+    int b = 0;
+    int result = a / b; // Esto lanzará ZeroDivisionException
+    Console.WriteLine($"Resultado: {result}");
+}
+catch (DivideByZeroException ex) // Captura una excepción específica
+{
+    Console.WriteLine($"Error: No se puede dividir por cero. Mensaje: {ex.Message}");
+}
+catch (Exception ex) // Captura cualquier otra excepción
+{
+    Console.WriteLine($"Ocurrió un error inesperado: {ex.Message}");
+}
+finally // Se ejecuta siempre, haya o no excepción
+{
+    Console.WriteLine("Bloque finally ejecutado.");
+}
+```
+
+---
+
+## 12. 📂 Entrada/Salida de Archivos (`System.IO`)
+
+```csharp
+using System.IO;
+
+public class FileOperations
+{
+    public void WriteAndReadFile()
+    {
+        string filePath = "mydata.txt";
+        string content = "Hola mundo!\nEsta es una nueva línea.";
+
+        // Escribir en un archivo (sobrescribe si existe)
+        try
+        {
+            File.WriteAllText(filePath, content);
+            Console.WriteLine($"Contenido escrito en '{filePath}'.");
+
+            // Leer de un archivo
+            string readContent = File.ReadAllText(filePath);
+            Console.WriteLine($"Contenido leído de '{filePath}':\n{readContent}");
+
+            // Escribir línea por línea (usando using para cerrar automáticamente el StreamWriter)
+            using (StreamWriter sw = new StreamWriter("lines.txt"))
+            {
+                sw.WriteLine("Primera línea.");
+                sw.WriteLine("Segunda línea.");
+            }
+            Console.WriteLine("Archivo 'lines.txt' creado.");
+
+            // Leer línea por línea
+            using (StreamReader sr = new StreamReader("lines.txt"))
+            {
+                string line;
+                while ((line = sr.ReadLine()) != null)
+                {
+                    Console.WriteLine($"Línea: {line}");
+                }
+            }
+        }
+        catch (IOException ex)
+        {
+            Console.WriteLine($"Error de E/S: {ex.Message}");
+        }
+    }
+}
+```
+
+---
+
+## 13. 💡 Buenas Prácticas y Consejos
+
+* **Convenciones de Nomenclatura**: PascalCase para clases, propiedades, métodos. camelCase para parámetros y variables locales. kebab-case para nombres de archivos.
+* **Inmutabilidad**: Prefiere la inmutabilidad de objetos cuando sea posible (especialmente con `record`).
+* **Manejo de Nulos**: Utiliza los tipos anulables (`?`), el operador de coalescencia nula (`??`) y el operador de acceso condicional (`?.`) para escribir código más seguro y evitar `NullReferenceException`.
+* **`using` Statement**: Úsalo para objetos que implementan `IDisposable` (como `StreamWriter`, conexiones a bases de datos) para asegurar que los recursos se liberen correctamente.
+* **Patrones de Diseño**: Familiarízate con patrones de diseño comunes (ej. Inyección de Dependencias) que son fundamentales en frameworks como ASP.NET Core.
+* **LINQ**: Aprovecha LINQ para manipular colecciones de forma legible y eficiente.
+* **Asíncrono/Asíncrono**: Utiliza `async`/`await` para operaciones I/O intensivas para mantener la aplicación responsiva.
+* **NuGet**: Explora el ecosistema de paquetes NuGet para añadir funcionalidades a tu proyecto.
+* **Documentación**: Escribe comentarios XML (`///`) para documentar tu código, especialmente para miembros públicos.
+* **Pruebas Unitarias**: Implementa pruebas unitarias para tus clases y métodos para asegurar la calidad del código.
+
+---
+
+Este cheatsheet te proporciona una referencia completa y concisa de C#, cubriendo los fundamentos del lenguaje, sus características orientadas a objetos, programación asíncrona, LINQ y las mejores prácticas para construir aplicaciones robustas y eficientes.

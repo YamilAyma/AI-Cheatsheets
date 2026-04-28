@@ -1,0 +1,652 @@
+---
+title: "angular"
+---
+
+
+---
+
+# 🅰️ Angular (v17+) Cheatsheet Completo 🅰️
+
+Angular es un framework de desarrollo de aplicaciones web de código abierto, desarrollado por Google, para construir aplicaciones de una sola página (SPA) y aplicaciones móviles de alto rendimiento. Se enfoca en la arquitectura basada en componentes, el tipado estático (TypeScript) y la reactividad (RxJS).
+
+---
+
+## 1. 🌟 Conceptos Clave
+
+* **Componentes**: Los bloques de construcción fundamentales de una aplicación Angular. Combinan lógica (TypeScript), vista (HTML) y estilo (CSS).
+* **Módulos (NgModule)**: (Opcional en v17+, con Standalone Components) Organizan las aplicaciones en bloques coherentes de funcionalidad. Declaran componentes, directivas, pipes y exportan elementos que otros módulos pueden usar.
+* **Componentes Standalone (Standalone Components)**: (Introducido en v14, estable y por defecto en v17) Permiten crear componentes, directivas y pipes sin la necesidad de un `NgModule`, simplificando la estructura del proyecto y el tree-shaking. **Este es el enfoque preferido en Angular 17+**.
+* **Templates (Plantillas)**: HTML con sintaxis de Angular para definir la vista de un componente.
+* **Data Binding (Enlace de Datos)**: Mecanismo para sincronizar datos entre el modelo (componente) y la vista (template).
+* **Directivas**: Extienden el HTML con nueva sintaxis. Hay tres tipos:
+  * **Componentes**: Directivas con plantilla.
+  * **Directivas Estructurales**: Modifican la estructura del DOM (`*ngIf`, `*ngFor`).
+  * **Directivas de Atributo**: Cambian la apariencia o el comportamiento de un elemento (`ngClass`, `ngStyle`).
+* **Servicios**: Clases con lógica de negocio o datos compartidos, que se pueden inyectar en otros componentes o servicios (patrón Singleton por defecto).
+* **Inyección de Dependencias (DI)**: Un patrón de diseño central en Angular para proporcionar dependencias (servicios) a los componentes de forma declarativa y gestionada.
+* **Routing (Enrutamiento)**: Permite la navegación entre diferentes vistas de la aplicación.
+* **RxJS**: Librería para programación reactiva con JavaScript. Angular la utiliza para manejar eventos asíncronos y flujos de datos.
+* **TypeScript**: Lenguaje primario para escribir aplicaciones Angular, que ofrece tipado estático y características de ESNext.
+
+---
+
+## 2. 🛠️ Configuración Inicial (Angular CLI)
+
+Angular CLI (Command Line Interface) es la herramienta oficial para inicializar, desarrollar y mantener aplicaciones Angular.
+
+1. **Instalación Global de Angular CLI:**
+   ```bash
+   npm install -g @angular/cli
+   # o
+   yarn global add @angular/cli
+   ```2.  **Crear un Nuevo Proyecto Angular:**
+   ```bash
+   ng new my-angular-app --standalone --routing --style=scss # '--standalone' crea un proyecto con componentes standalone por defecto
+   # o
+   ng new my-angular-app # Si quieres un proyecto basado en NgModules (legacy)
+   cd my-angular-app
+   ```
+2. **Iniciar el Servidor de Desarrollo:**
+   ```bash
+   ng serve --open # Compila la app y la abre en el navegador (usualmente http://localhost:4200)
+   ```
+3. **Generar Componentes, Servicios, etc.:**
+   ```bash
+   ng generate component my-new-component # Crea un componente
+   ng g s my-new-service # Crea un servicio (shortcut)
+   ng g route my-feature # Genera un componente con una ruta configurada (standalone)
+   # y muchos más
+   ```
+4. **Construir para Producción:**
+   ```bash
+   ng build --configuration production # Compila la app para producción (optimizado)
+   ```
+
+---
+
+## 3. 🧩 Componentes (Standalone - Preferido en v17+)
+
+Un componente combina su lógica, su vista y sus estilos.
+
+```typescript
+// src/app/counter/counter.component.ts
+import { Component, Input, Output, EventEmitter, OnInit } from '@angular/core';
+import { CommonModule } from '@angular/common'; // Necesario para directivas comunes como *ngIf, *ngFor
+
+@Component({
+  selector: 'app-counter', // Etiqueta HTML para usar el componente
+  standalone: true, // ¡Importante para componentes standalone!
+  imports: [CommonModule], // Importa módulos/componentes/directivas que este componente usa
+  template: `
+    <div class="counter-card">
+      <h2>Contador: {{ count }}</h2>
+      <p *ngIf="count % 2 === 0" class="even">El número es par</p>
+      <button (click)="increment()">Incrementar</button>
+      <button (click)="decrement()">Decrementar</button>
+      <button (click)="reset.emit()">Resetear</button>
+    </div>
+  `,
+  styles: [`
+    .counter-card {
+      border: 1px solid #ccc;
+      padding: 20px;
+      margin: 10px;
+      text-align: center;
+    }
+    .even { color: green; }
+  `]
+})
+export class CounterComponent implements OnInit {
+  @Input() initialValue: number = 0; // Propiedad de entrada
+  @Output() reset = new EventEmitter<void>(); // Evento de salida
+
+  count: number = 0;
+
+  ngOnInit(): void {
+    this.count = this.initialValue;
+  }
+
+  increment(): void {
+    this.count++;
+  }
+
+  decrement(): void {
+    this.count--;
+  }
+}
+```
+
+**Uso de un Componente Standalone:**
+
+```typescript
+// src/app/app.component.ts
+import { Component } from '@angular/core';
+import { CounterComponent } from './counter/counter.component'; // Importa el componente
+
+@Component({
+  selector: 'app-root',
+  standalone: true,
+  imports: [CounterComponent], // Declara el componente que vas a usar en este template
+  template: `
+    <h1>Mi Aplicación Angular</h1>
+    <app-counter [initialValue]="10" (reset)="onResetCounter()"></app-counter>
+    <app-counter initialValue="5"></app-counter> {/* Si el input es un string */}
+  `,
+  styles: []
+})
+export class AppComponent {
+  onResetCounter(): void {
+    console.log('El contador ha sido reseteado!');
+  }
+}
+```
+
+---
+
+## 4. 🔗 Data Binding (Enlace de Datos)
+
+Angular soporta varias formas de enlazar datos:
+
+* **Interpolación (`{{ }}`)**: Muestra un valor de la lógica del componente en el template.
+  ```html
+  <p>Mensaje: {{ message }}</p>
+  ```
+* **Property Binding (`[property]="value"`)**: Pasa datos del componente al DOM/componente hijo.
+  ```html
+  <img [src]="imageUrl" [alt]="imageAltText">
+  <app-child [data]="parentData"></app-child>
+  ```
+* **Event Binding (`(event)="handler()"`)**: Escucha eventos del DOM/componente hijo y ejecuta un método en el componente.
+  ```html
+  <button (click)="submitForm()">Enviar</button>
+  <app-child (outputEvent)="handleChildEvent($event)"></app-child>
+  ```
+* **Two-Way Binding (`[(ngModel)]="value"`)**: Sincroniza datos en ambas direcciones (requiere `FormsModule` o `ReactiveFormsModule`).
+  ```html
+  <input [(ngModel)]="username">
+  <p>Hola, {{ username }}</p>
+  ```
+
+---
+
+## 5. 🏗️ Directivas Comunes
+
+### 5.1. Directivas Estructurales (Modifican el DOM)
+
+* **`*ngIf`**: Añade o remueve elementos del DOM basado en una condición.
+  ```html
+  <div *ngIf="isLoading; else loadingBlock">Cargando datos...</div>
+  <ng-template #loadingBlock>
+    <p>Datos cargados.</p>
+  </ng-template>
+  ```
+* **`*ngFor`**: Itera sobre una colección y renderiza un template para cada ítem.
+  ```html
+  <ul>
+    <li *ngFor="let item of items; let i = index; trackBy: trackById">
+      {{ i }}: {{ item.name }}
+    </li>
+  </ul>
+  ```
+
+  * `trackBy`: Función opcional para ayudar a Angular a optimizar el renderizado de listas al identificar elementos únicos.
+* **`*ngSwitch` / `*ngSwitchCase` / `*ngSwitchDefault`**: Renderizado condicional basado en un valor.
+  ```html
+  <div [ngSwitch]="status">
+    <div *ngSwitchCase="'active'">Activo</div>
+    <div *ngSwitchCase="'inactive'">Inactivo</div>
+    <div *ngSwitchDefault>Estado Desconocido</div>
+  </div>
+  ```
+
+### 5.2. Directivas de Atributo (Cambian Apariencia/Comportamiento)
+
+* **`[ngClass]`**: Añade/remueve clases CSS dinámicamente.
+  ```html
+  <div [ngClass]="{'active': isActive, 'highlight': hasError}"></div>
+  <div [ngClass]="['class1', 'class2']"></div>
+  <div [ngClass]="myClassesObject"></div>
+  ```
+* **`[ngStyle]`**: Añade/remueve estilos CSS en línea dinámicamente.
+  ```html
+  <div [ngStyle]="{'background-color': isRed ? 'red' : 'blue', 'font-size.px': fontSize}"></div>
+  <div [ngStyle]="myStylesObject"></div>
+  ```
+
+---
+
+## 6. 💉 Servicios e Inyección de Dependencias
+
+* **Servicios**: Clases con lógica reutilizable. Se marcan con `@Injectable()`.
+* **`@Injectable()`**: Hace que un servicio pueda ser inyectado y también pueda tener otras dependencias inyectadas.
+  * `providedIn: 'root'`: El servicio es un singleton disponible en toda la aplicación (preferido).
+  * `providedIn: 'platform'`, `'any'`, o un `NgModule` específico (menos común con Standalone Components).
+
+```typescript
+// src/app/user.service.ts
+import { Injectable } from '@angular/core';
+import { Observable, of } from 'rxjs'; // Ejemplo con RxJS
+
+@Injectable({
+  providedIn: 'root' // Servicio singleton global
+})
+export class UserService {
+  private users = [
+    { id: 1, name: 'Alice' },
+    { id: 2, name: 'Bob' }
+  ];
+
+  getUsers(): Observable<any[]> {
+    // Simula una llamada API
+    return of(this.users);
+  }
+
+  getUserById(id: number): Observable<any | undefined> {
+    return of(this.users.find(user => user.id === id));
+  }
+}
+```
+
+**Uso de un Servicio en un Componente:**
+
+```typescript
+// src/app/user-list/user-list.component.ts
+import { Component, OnInit } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { UserService } from '../user.service'; // Importa el servicio
+
+@Component({
+  selector: 'app-user-list',
+  standalone: true,
+  imports: [CommonModule],
+  template: `
+    <h3>Lista de Usuarios</h3>
+    <ul *ngIf="users.length > 0; else noUsers">
+      <li *ngFor="let user of users">{{ user.name }}</li>
+    </ul>
+    <ng-template #noUsers>
+      <p>No hay usuarios.</p>
+    </ng-template>
+  `
+})
+export class UserListComponent implements OnInit {
+  users: any[] = [];
+
+  constructor(private userService: UserService) { } // Inyección de dependencia por constructor
+
+  ngOnInit(): void {
+    this.userService.getUsers().subscribe(data => {
+      this.users = data;
+    });
+  }
+}
+```
+
+---
+
+## 7. 🗺️ Routing (Enrutamiento)
+
+Permite navegar entre diferentes "páginas" de tu SPA.
+
+```typescript
+// src/app/app.routes.ts (o app-routing.module.ts si no es standalone)
+import { Routes } from '@angular/router';
+import { HomeComponent } from './home/home.component';
+import { UserDetailComponent } from './user-detail/user-detail.component';
+import { NotFoundComponent } from './not-found/not-found.component';
+import { AuthGuard } from './auth.guard'; // Ejemplo de guard
+
+export const routes: Routes = [
+  { path: '', component: HomeComponent, title: 'Home Page' }, // Ruta raíz
+  { path: 'users/:id', component: UserDetailComponent, canActivate: [AuthGuard] }, // Ruta con parámetro y guard
+  { path: 'products', loadChildren: () => import('./products/products.routes').then(m => m.PRODUCT_ROUTES) }, // Lazy loading de rutas
+  { path: '**', component: NotFoundComponent }, // Ruta wildcard (404)
+];
+```
+
+**Configuración en `main.ts` (Standalone):**
+
+```typescript
+// src/main.ts
+import { bootstrapApplication } from '@angular/platform-browser';
+import { AppComponent } from './app/app.component';
+import { provideRouter } from '@angular/router';
+import { routes } from './app/app.routes'; // Importa tus rutas
+
+bootstrapApplication(AppComponent, {
+  providers: [
+    provideRouter(routes) // Provee el enrutamiento
+  ]
+}).catch(err => console.error(err));
+```
+
+**Navegación en el Template:**
+
+* **`routerLink`**: Directiva para navegación declarativa.
+  ```html
+  <a routerLink="/home">Home</a>
+  <a [routerLink]="['/users', userId]">Ver Usuario</a>
+  <a routerLink="/products" [queryParams]="{sort: 'name'}">Productos ordenados</a>
+  ```
+* **`routerLinkActive`**: Clase activa para enlaces cuando la ruta coincide.
+  ```html
+  <a routerLink="/home" routerLinkActive="active-link">Home</a>
+  ```
+* **`routerOutlet`**: Marcador de posición donde se renderizan los componentes de la ruta.
+  ```html
+  <router-outlet></router-outlet>
+  ```
+
+**Navegación Programática (en Componente):**
+
+```typescript
+import { Router, ActivatedRoute } from '@angular/router';
+
+constructor(private router: Router, private route: ActivatedRoute) { }
+
+goToHome(): void {
+  this.router.navigate(['/home']);
+}
+
+goToUserDetail(id: number): void {
+  this.router.navigate(['/users', id]);
+}
+
+// Para obtener parámetros de ruta:
+ngOnInit(): void {
+  this.route.paramMap.subscribe(params => {
+    const userId = params.get('id');
+    console.log('ID de usuario:', userId);
+  });
+  // Para query parameters:
+  this.route.queryParamMap.subscribe(params => {
+    const sort = params.get('sort');
+    console.log('Parámetro de ordenación:', sort);
+  });
+}
+```
+
+---
+
+## 8. 📝 Formularios
+
+Angular ofrece dos enfoques para formularios:
+
+### 8.1. Formularios Dirigidos por Plantillas (Template-Driven Forms)
+
+* Más simples para formularios básicos.
+* La lógica se define principalmente en el template con `ngModel`.
+* Requiere `FormsModule`.
+
+```typescript
+// Importar en tu componente standalone o NgModule
+// import { FormsModule } from '@angular/forms';
+// @Component({ standalone: true, imports: [FormsModule], ... })
+
+import { Component } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+
+@Component({
+  selector: 'app-template-form',
+  standalone: true,
+  imports: [CommonModule, FormsModule], // Importa FormsModule
+  template: `
+    <h3>Formulario Dirigido por Plantilla</h3>
+    <form #myForm="ngForm" (ngSubmit)="onSubmit(myForm.value)">
+      <label>Nombre:
+        <input type="text" name="name" [(ngModel)]="user.name" required minlength="3" #nameField="ngModel">
+        <div *ngIf="nameField.invalid && (nameField.dirty || nameField.touched)">
+          <div *ngIf="nameField.errors?.['required']">Nombre es requerido.</div>
+          <div *ngIf="nameField.errors?.['minlength']">Nombre debe tener al menos 3 caracteres.</div>
+        </div>
+      </label>
+      <br>
+      <label>Email:
+        <input type="email" name="email" [(ngModel)]="user.email" email>
+      </label>
+      <br>
+      <button type="submit" [disabled]="myForm.invalid">Enviar</button>
+    </form>
+    <p>Formulario válido: {{ myForm.valid }}</p>
+  `
+})
+export class TemplateFormComponent {
+  user = {
+    name: '',
+    email: ''
+  };
+
+  onSubmit(formValue: any): void {
+    console.log('Formulario enviado:', formValue);
+  }
+}
+```
+
+### 8.2. Formularios Reactivos (Reactive Forms)
+
+* Más potentes y escalables para formularios complejos.
+* La lógica se define explícitamente en el componente (TypeScript).
+* Requiere `ReactiveFormsModule`.
+
+```typescript
+// Importar en tu componente standalone o NgModule
+// import { ReactiveFormsModule } from '@angular/forms';
+// @Component({ standalone: true, imports: [ReactiveFormsModule], ... })
+
+import { Component, OnInit } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { FormGroup, FormControl, Validators, FormBuilder, ReactiveFormsModule } from '@angular/forms';
+
+@Component({
+  selector: 'app-reactive-form',
+  standalone: true,
+  imports: [CommonModule, ReactiveFormsModule], // Importa ReactiveFormsModule
+  template: `
+    <h3>Formulario Reactivo</h3>
+    <form [formGroup]="loginForm" (ngSubmit)="onSubmit()">
+      <label>Usuario:
+        <input type="text" formControlName="username">
+        <div *ngIf="usernameControl.invalid && usernameControl.touched">
+          <div *ngIf="usernameControl.errors?.['required']">Usuario es requerido.</div>
+          <div *ngIf="usernameControl.errors?.['minlength']">Mínimo 5 caracteres.</div>
+        </div>
+      </label>
+      <br>
+      <label>Contraseña:
+        <input type="password" formControlName="password">
+        <div *ngIf="passwordControl.invalid && passwordControl.touched">
+          <div *ngIf="passwordControl.errors?.['required']">Contraseña es requerida.</div>
+        </div>
+      </label>
+      <br>
+      <button type="submit" [disabled]="loginForm.invalid">Login</button>
+    </form>
+    <p>Formulario válido: {{ loginForm.valid }}</p>
+    <p>Valores: {{ loginForm.value | json }}</p>
+  `
+})
+export class ReactiveFormComponent implements OnInit {
+  loginForm!: FormGroup; // ! para asegurar que se inicializa en ngOnInit
+
+  constructor(private fb: FormBuilder) { } // FormBuilder es una utilidad para crear FormGroups/FormControls
+
+  ngOnInit(): void {
+    this.loginForm = this.fb.group({
+      username: new FormControl('', [Validators.required, Validators.minLength(5)]),
+      password: new FormControl('', Validators.required)
+    });
+  }
+
+  // Getter para facilitar el acceso a los controles en el template
+  get usernameControl() {
+    return this.loginForm.get('username') as FormControl;
+  }
+
+  get passwordControl() {
+    return this.loginForm.get('password') as FormControl;
+  }
+
+  onSubmit(): void {
+    if (this.loginForm.valid) {
+      console.log('Formulario de login enviado:', this.loginForm.value);
+    }
+  }
+}
+```
+
+---
+
+## 9. ♻️ Lifecycle Hooks (Ciclo de Vida del Componente)
+
+Métodos que Angular llama en diferentes etapas del ciclo de vida de un componente.
+
+* **`ngOnChanges(changes: SimpleChanges)`**: Se ejecuta cuando las propiedades de entrada (`@Input()`) cambian.
+* **`ngOnInit()`**: Se ejecuta una vez después de la inicialización del componente y de que se establezcan sus propiedades de entrada. Ideal para inicialización de datos.
+* **`ngDoCheck()`**: Se ejecuta durante cada ciclo de detección de cambios.
+* **`ngAfterContentInit()`**: Se ejecuta después de que Angular proyecta contenido externo en la vista del componente.
+* **`ngAfterContentChecked()`**: Se ejecuta después de cada chequeo del contenido proyectado.
+* **`ngAfterViewInit()`**: Se ejecuta después de que Angular inicializa las vistas del componente y las vistas de sus hijos. Acceso seguro a elementos del DOM.
+* **`ngAfterViewChecked()`**: Se ejecuta después de cada chequeo de las vistas del componente y las vistas de sus hijos.
+* **`ngOnDestroy()`**: Se ejecuta justo antes de que Angular destruya el componente. Ideal para liberar recursos (desuscripciones de observables).
+
+```typescript
+import { Component, OnInit, OnDestroy, Input, OnChanges, SimpleChanges } from '@angular/core';
+
+@Component({
+  selector: 'app-lifecycle',
+  standalone: true,
+  template: `<p>Componente de ciclo de vida</p>`
+})
+export class LifecycleComponent implements OnInit, OnDestroy, OnChanges {
+  @Input() data: string = '';
+
+  constructor() {
+    console.log('1. Constructor - Componente inicializado.');
+  }
+
+  ngOnChanges(changes: SimpleChanges): void {
+    if (changes['data']) {
+      console.log('2. ngOnChanges - Propiedad "data" ha cambiado:', changes['data'].currentValue);
+    }
+  }
+
+  ngOnInit(): void {
+    console.log('3. ngOnInit - Componente listo, propiedades de entrada establecidas.');
+    // Aquí se suele hacer la carga inicial de datos
+  }
+
+  ngOnDestroy(): void {
+    console.log('8. ngOnDestroy - Componente a punto de ser destruido. Liberar recursos aquí.');
+    // Desuscribirse de observables, limpiar timers, etc.
+  }
+
+  // Otros hooks (ngDoCheck, ngAfterContentInit, etc.)
+  // se ejecutan después de ngOnInit y antes de ngOnDestroy
+}
+```
+
+---
+
+## 10. ⚡ RxJS (Programación Reactiva)
+
+Angular utiliza RxJS para manejar eventos asíncronos y flujos de datos.
+
+* **`Observable`**: Representa una colección de valores futuros o eventos.
+* **`subscribe()`**: Para "escuchar" los valores emitidos por un Observable.
+* **`pipe()`**: Para encadenar operadores de RxJS que transforman, filtran o combinan Observables.
+
+```typescript
+import { Observable, from, of, map, filter, take, tap } from 'rxjs';
+
+// Crear un Observable
+const myObservable = new Observable<number>(subscriber => {
+  subscriber.next(1);
+  subscriber.next(2);
+  subscriber.next(3);
+  setTimeout(() => {
+    subscriber.next(4);
+    subscriber.complete(); // Indica que no hay más valores
+  }, 1000);
+});
+
+// Suscribirse a un Observable
+myObservable.subscribe({
+  next: value => console.log('RxJS Value:', value),
+  error: err => console.error('RxJS Error:', err),
+  complete: () => console.log('RxJS Completed!')
+});
+
+// Uso de operadores con pipe
+of(1, 2, 3, 4, 5) // Observable de 5 números
+  .pipe(
+    filter(num => num % 2 === 0), // Solo números pares
+    map(num => num * 10),       // Multiplicar por 10
+    take(1),                    // Tomar solo el primer resultado
+    tap(value => console.log('Tap (before subscribe):', value)) // Efecto secundario sin alterar el flujo
+  )
+  .subscribe(finalValue => console.log('Final Processed Value:', finalValue)); // 20
+```
+
+---
+
+## 11. 🧪 Testing
+
+Angular CLI viene con soporte para Karma (para pruebas de unidad) y Protractor (para pruebas E2E - ahora con Cypress/Playwright). Jest y Cypress son alternativas populares.
+
+* **Pruebas de Unidad (Componentes, Servicios, Pipes):**
+  ```typescript
+  // src/app/counter/counter.component.spec.ts (Generado por CLI)
+  import { ComponentFixture, TestBed } from '@angular/core/testing';
+  import { CounterComponent } from './counter.component';
+
+  describe('CounterComponent', () => {
+    let component: CounterComponent;
+    let fixture: ComponentFixture<CounterComponent>; // Para interactuar con el DOM del componente
+
+    beforeEach(async () => {
+      await TestBed.configureTestingModule({
+        imports: [CounterComponent] // Importa el componente standalone
+      }).compileComponents(); // Compila componentes
+      fixture = TestBed.createComponent(CounterComponent);
+      component = fixture.componentInstance;
+      fixture.detectChanges(); // Ejecuta ngOnInit y detección de cambios inicial
+    });
+
+    it('should create', () => {
+      expect(component).toBeTruthy();
+    });
+
+    it('should increment the count', () => {
+      const initialCount = component.count;
+      component.increment();
+      expect(component.count).toBe(initialCount + 1);
+    });
+
+    it('should display the initial value', () => {
+      component.initialValue = 20; // Cambia el input
+      fixture.detectChanges();     // Fuerza detección de cambios para aplicar input
+      const compiled = fixture.nativeElement as HTMLElement;
+      expect(compiled.querySelector('h2')?.textContent).toContain('Contador: 20');
+    });
+  });
+  ```
+
+---
+
+## 12. 💡 Buenas Prácticas y Consejos
+
+* **Usa Standalone Components**: Es el futuro y el presente de Angular, simplifica la organización y mejora el tree-shaking.
+* **Patrón de Contenedor/Presentación**: Divide los componentes en "inteligentes" (contenedor, con lógica de negocio/datos) y "tontos" (presentación, solo reciben `@Input` y emiten `@Output`).
+* **Inmutabilidad**: Al actualizar objetos o arrays, crea nuevas referencias para ayudar a la detección de cambios de Angular y evitar efectos secundarios.
+* **Desuscribe Observables**: Siempre desuscríbete de los `Observable`s en `ngOnDestroy()` para evitar fugas de memoria, especialmente aquellos que no son completados por sí mismos (ej. `HttpClient`, `Router` completan automáticamente). Usa `takeUntil`, `async` pipe, etc.
+* **Manejo de Errores**: Implementa estrategias robustas de manejo de errores, tanto para peticiones HTTP como para la lógica de la aplicación.
+* **Lazy Loading**: Carga módulos (o rutas) solo cuando son necesarios para mejorar los tiempos de carga inicial de la aplicación.
+* **Angular CLI**: Aprende y utiliza los comandos de la CLI; son tus mejores amigos para la productividad.
+* **RxJS Operators**: Familiarízate con los operadores comunes de RxJS (`map`, `filter`, `debounceTime`, `switchMap`, `combineLatest`) para manipular flujos de datos.
+* **Optimización de Rendimiento**: Considera `OnPush` change detection strategy, `trackBy` con `*ngFor`, y lazy loading.
+* **Documentación Oficial**: La documentación de Angular es exhaustiva y siempre está actualizada.
+
+---
+
+Este cheatsheet te proporciona una referencia completa de los aspectos más importantes de Angular (versión 17 y posterior), lo que te permitirá construir aplicaciones robustas, escalables y de alto rendimiento. ¡Las futuras versiones de Angular construirán sobre estos sólidos fundamentos!

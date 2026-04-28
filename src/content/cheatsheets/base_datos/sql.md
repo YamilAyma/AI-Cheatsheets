@@ -1,0 +1,430 @@
+---
+title: "sql"
+---
+
+
+---
+
+# 🗄️ SQL (Structured Query Language) Cheatsheet Completo 🗄️
+
+**SQL** es el lenguaje estándar utilizado para comunicarse con y gestionar bases de datos relacionales (RDBMS) como MySQL, PostgreSQL, Oracle, SQL Server, SQLite, entre otros. Permite almacenar, manipular, consultar y recuperar datos.
+
+---
+
+## 1. 🌟 Conceptos Clave
+
+* **Base de Datos (Database)**: Una colección organizada de datos.
+* **Tabla (Table)**: Estructura de datos que organiza la información en filas y columnas.
+* **Columna (Column / Field)**: Una categoría específica de datos dentro de una tabla (ej. `nombre`, `edad`). Define el tipo de dato.
+* **Fila (Row / Record)**: Una entrada individual de datos en una tabla.
+* **Clave Primaria (Primary Key - PK)**: Una columna (o conjunto de columnas) que identifica de forma única cada fila en una tabla. **¡No puede contener valores nulos y debe ser única!**
+* **Clave Foránea (Foreign Key - FK)**: Una columna (o conjunto de columnas) en una tabla que hace referencia a la Clave Primaria de otra tabla. Establece la relación entre tablas.
+* **Normalización**: Proceso de organizar las columnas y tablas de una base de datos para minimizar la redundancia y mejorar la integridad de los datos.
+* **Esquema (Schema)**: La estructura de una base de datos, incluyendo tablas, columnas, relaciones, índices, etc.
+
+---
+
+## 2. 🔤 Tipos de Datos Comunes
+
+Los tipos de datos pueden variar ligeramente entre diferentes sistemas de gestión de bases de datos relacionales (RDBMS), pero estos son los más comunes:
+
+* **Cadenas de Texto**:
+  * `VARCHAR(size)`: Cadena de longitud variable (ej. `VARCHAR(255)`).
+  * `CHAR(size)`: Cadena de longitud fija (ej. `CHAR(10)`).
+  * `TEXT` / `CLOB`: Cadena de longitud muy larga.
+* **Números**:
+  * `INT` / `INTEGER`: Enteros.
+  * `SMALLINT`, `BIGINT`: Enteros más pequeños/grandes.
+  * `DECIMAL(P, S)` / `NUMERIC(P, S)`: Número decimal exacto (P=precisión total, S=escala decimal).
+  * `FLOAT`, `DOUBLE`: Números de punto flotante (aproximados).
+* **Fecha y Hora**:
+  * `DATE`: Solo fecha (`YYYY-MM-DD`).
+  * `TIME`: Solo hora (`HH:MI:SS`).
+  * `DATETIME` / `TIMESTAMP`: Fecha y hora (`YYYY-MM-DD HH:MI:SS`).
+* **Booleanos**:
+  * `BOOLEAN` / `BOOL` (Algunos RDBMS usan `TINYINT(1)` o `BIT`).
+* **Binarios / LOBs**:
+  * `BLOB` / `BYTEA`: Datos binarios (imágenes, archivos).
+
+---
+
+## 3. 📝 DDL (Data Definition Language) - Definición de Estructura
+
+Comandos para definir, modificar y eliminar la estructura de la base de datos y sus objetos.
+
+### 3.1. `CREATE`
+
+* **`CREATE DATABASE`**: Crea una nueva base de datos.
+  ```sql
+  CREATE DATABASE mi_base_de_datos;
+  ```
+* **`CREATE TABLE`**: Crea una nueva tabla.
+  ```sql
+  CREATE TABLE Usuarios (
+      ID_Usuario INT PRIMARY KEY AUTO_INCREMENT, -- MySQL/SQLite
+      -- ID_Usuario INT PRIMARY KEY GENERATED ALWAYS AS IDENTITY, -- PostgreSQL
+      -- ID_Usuario INT PRIMARY KEY IDENTITY(1,1), -- SQL Server
+      Nombre VARCHAR(100) NOT NULL,
+      Email VARCHAR(255) UNIQUE,
+      FechaRegistro DATE DEFAULT CURRENT_DATE, -- O GETDATE() en SQL Server
+      EsActivo BOOLEAN DEFAULT TRUE,
+      CONSTRAINT CK_Edad CHECK (Edad >= 18) -- Constraint de verificación
+  );
+
+  CREATE TABLE Pedidos (
+      ID_Pedido INT PRIMARY KEY AUTO_INCREMENT,
+      ID_Usuario INT NOT NULL,
+      FechaPedido DATETIME DEFAULT CURRENT_TIMESTAMP,
+      Total DECIMAL(10, 2),
+      CONSTRAINT FK_UsuarioPedido FOREIGN KEY (ID_Usuario) REFERENCES Usuarios(ID_Usuario)
+          ON DELETE CASCADE -- Si el usuario se elimina, sus pedidos también
+          ON UPDATE NO ACTION -- No hacer nada si el ID de usuario se actualiza
+  );
+  ```
+
+### 3.2. `ALTER`
+
+* **`ALTER TABLE`**: Modifica la estructura de una tabla existente.
+  * Añadir una columna:
+    ```sql
+    ALTER TABLE Usuarios
+    ADD COLUMN Telefono VARCHAR(20);
+    ```
+  * Eliminar una columna:
+    ```sql
+    ALTER TABLE Usuarios
+    DROP COLUMN Telefono;
+    ```
+  * Modificar tipo de columna:
+    ```sql
+    ALTER TABLE Usuarios
+    MODIFY COLUMN Nombre VARCHAR(150); -- Sintaxis varía (ej. ALTER COLUMN en SQL Server)
+    ```
+  * Añadir una clave foránea (después de crear las tablas):
+    ```sql
+    ALTER TABLE Pedidos
+    ADD CONSTRAINT FK_Pedidos_Productos FOREIGN KEY (ID_Producto) REFERENCES Productos(ID_Producto);
+    ```
+
+### 3.3. `DROP`
+
+* **`DROP DATABASE`**: Elimina una base de datos. **¡CUIDADO!**
+  ```sql
+  DROP DATABASE mi_base_de_datos;
+  ```
+* **`DROP TABLE`**: Elimina una tabla. **¡CUIDADO!**
+  ```sql
+  DROP TABLE Pedidos;
+  ```
+
+### 3.4. `TRUNCATE`
+
+* **`TRUNCATE TABLE`**: Elimina todas las filas de una tabla, pero mantiene la estructura. Es más rápido que `DELETE` sin `WHERE` y a menudo reinicia los contadores de ID. **¡No es transaccional en algunos SGBD!**
+  ```sql
+  TRUNCATE TABLE Usuarios;
+  ```
+
+---
+
+## 4. 🗃️ DML (Data Manipulation Language) - Manipulación de Datos
+
+Comandos para manipular los datos dentro de las tablas.
+
+### 4.1. `INSERT`
+
+* **`INSERT INTO`**: Añade nuevas filas a una tabla.
+  * Valores específicos para todas las columnas:
+    ```sql
+    INSERT INTO Usuarios VALUES (1, 'Ana Pérez', 'ana@example.com', '2023-01-15', TRUE);
+    ```
+  * Columnas específicas:
+    ```sql
+    INSERT INTO Usuarios (Nombre, Email) VALUES ('Luis García', 'luis@example.com');
+    ```
+  * Múltiples filas (MySQL/PostgreSQL):
+    ```sql
+    INSERT INTO Productos (Nombre, Precio) VALUES
+    ('Laptop', 1200.00),
+    ('Mouse', 25.50),
+    ('Teclado', 75.00);
+    ```    *   `INSERT INTO ... SELECT`: Insertar datos desde otra tabla.
+    ```sql
+    INSERT INTO UsuariosAntiguos (ID_Usuario, Nombre)
+    SELECT ID_Usuario, Nombre FROM Usuarios WHERE FechaRegistro < '2022-01-01';
+    ```
+
+### 4.2. `UPDATE`
+
+* **`UPDATE ... SET ... WHERE`**: Modifica datos existentes en una o más filas. **¡Siempre usa `WHERE` o actualizarás todas las filas!**
+  ```sql
+  UPDATE Usuarios
+  SET Email = 'ana.perez@nuevo.com', EsActivo = FALSE
+  WHERE ID_Usuario = 1;
+
+  UPDATE Productos
+  SET Precio = Precio * 1.10 -- Aumenta el precio un 10%
+  WHERE Nombre LIKE '%Laptop%';
+  ```
+
+### 4.3. `DELETE`
+
+* **`DELETE FROM ... WHERE`**: Elimina filas de una tabla. **¡Siempre usa `WHERE` o eliminarás todas las filas!**
+  ```sql
+  DELETE FROM Usuarios
+  WHERE ID_Usuario = 2;
+
+  DELETE FROM Pedidos
+  WHERE FechaPedido < '2023-01-01';
+  ```
+
+---
+
+## 5. 🔍 DQL (Data Query Language) - Consulta de Datos
+
+Comandos para recuperar datos de la base de datos. **`SELECT` es el comando más utilizado.**
+
+### 5.1. `SELECT`
+
+* **Seleccionar todas las columnas (`*`)**:
+  ```sql
+  SELECT * FROM Usuarios;
+  ```
+* **Seleccionar columnas específicas**:
+  ```sql
+  SELECT Nombre, Email FROM Usuarios;
+  ```
+* **Alias de columna (`AS`)**:
+  ```sql
+  SELECT Nombre AS NombreCompleto, Email AS CorreoElectronico FROM Usuarios;
+  ```
+* **Valores Distintos (`DISTINCT`)**:
+  ```sql
+  SELECT DISTINCT Ciudad FROM Usuarios;
+  ```
+
+### 5.2. `WHERE` (Filtrado de Filas)
+
+* Filtra filas basándose en una condición.
+  ```sql
+  SELECT * FROM Productos WHERE Precio > 100 AND EsActivo = TRUE;
+  SELECT Nombre, Email FROM Usuarios WHERE Nombre LIKE 'A%' OR Nombre LIKE 'B%';
+  SELECT * FROM Pedidos WHERE Total BETWEEN 50 AND 100;
+  SELECT * FROM Usuarios WHERE ID_Usuario IN (1, 3, 5);
+  SELECT * FROM Usuarios WHERE Telefono IS NULL;
+  SELECT * FROM Usuarios WHERE Telefono IS NOT NULL;
+  ```
+
+### 5.3. `ORDER BY` (Ordenación de Resultados)
+
+* Ordena las filas del resultado. Por defecto es `ASC` (ascendente). Usa `DESC` para descendente.
+  ```sql
+  SELECT Nombre, Edad FROM Usuarios ORDER BY Edad DESC, Nombre ASC;
+  ```
+
+### 5.4. `LIMIT` / `OFFSET` (Paginación - MySQL/PostgreSQL/SQLite)
+
+* Limita el número de filas devueltas y/o especifica un desplazamiento.
+  ```sql
+  SELECT * FROM Productos LIMIT 10; -- Primeros 10 productos
+  SELECT * FROM Productos LIMIT 10 OFFSET 20; -- 10 productos a partir del 20 (páginas 3)
+  ```
+
+  * **SQL Server/Oracle**: Usa `TOP` (SQL Server) o `ROWNUM` (Oracle) o `FETCH NEXT ... ROWS ONLY` (SQL estándar).
+
+### 5.5. `GROUP BY` (Agrupación de Filas)
+
+* Agrupa filas que tienen los mismos valores en columnas especificadas.
+* Usado con funciones de agregación.
+  ```sql
+  SELECT Categoria, COUNT(*) AS TotalProductos, AVG(Precio) AS PrecioPromedio
+  FROM Productos
+  GROUP BY Categoria;
+  ```
+
+### 5.6. `HAVING` (Filtrado de Grupos)
+
+* Filtra los resultados de `GROUP BY` basándose en una condición de agregación. **`WHERE` filtra filas, `HAVING` filtra grupos.**
+  ```sql
+  SELECT Categoria, COUNT(*) AS TotalProductos
+  FROM Productos
+  GROUP BY Categoria
+  HAVING COUNT(*) > 5 AND AVG(Precio) < 500;
+  ```
+
+---
+
+## 6. 🧮 Operadores Comunes en `WHERE`
+
+* **Comparación**: `=`, `!=` (`<>`), `<`, `>`, `<=`, `>=`.
+* **Lógicos**: `AND`, `OR`, `NOT`.
+* **Patrones**: `LIKE` (con `_` para un carácter, `%` para cero o más caracteres).
+  * `'A%'`: Empieza por A.
+  * `'%man%'`: Contiene 'man'.
+  * `'_a%'`: Segunda letra es 'a'.
+* **Rangos**: `BETWEEN value1 AND value2`.
+* **Listas**: `IN (value1, value2, ...)` / `NOT IN (...)`.
+* **Nulos**: `IS NULL` / `IS NOT NULL`.
+
+---
+
+## 7. ➕ Funciones de Agregación
+
+Operan sobre un conjunto de filas y devuelven un único valor.
+
+* `COUNT(column)` / `COUNT(*)`: Número de filas.
+  * `COUNT(DISTINCT column)`: Número de valores únicos.
+* `SUM(column)`: Suma total de una columna numérica.
+* `AVG(column)`: Promedio de una columna numérica.
+* `MIN(column)`: Valor mínimo de una columna.
+* `MAX(column)`: Valor máximo de una columna.
+
+---
+
+## 8. 🔄 JOINS (Combinación de Tablas)
+
+Combina filas de dos o más tablas basándose en una columna relacionada.
+
+* **`INNER JOIN`**: Devuelve filas cuando hay al menos una coincidencia en ambas tablas. (La intersección).
+  ```sql
+  SELECT U.Nombre, P.FechaPedido, P.Total
+  FROM Usuarios U
+  INNER JOIN Pedidos P ON U.ID_Usuario = P.ID_Usuario;
+  ```
+* **`LEFT JOIN`** (o `LEFT OUTER JOIN`): Devuelve todas las filas de la tabla izquierda, y las filas coincidentes de la tabla derecha. Si no hay coincidencia, los valores de la derecha son `NULL`.
+  ```sql
+  SELECT U.Nombre, P.ID_Pedido
+  FROM Usuarios U
+  LEFT JOIN Pedidos P ON U.ID_Usuario = P.ID_Usuario; -- Muestra usuarios que no han hecho pedidos (ID_Pedido será NULL)
+  ```
+* **`RIGHT JOIN`** (o `RIGHT OUTER JOIN`): Similar a `LEFT JOIN`, pero devuelve todas las filas de la tabla derecha.
+* **`FULL JOIN`** (o `FULL OUTER JOIN` - no soportado en MySQL): Devuelve todas las filas cuando hay una coincidencia en cualquiera de las tablas (unión).
+* **`CROSS JOIN`**: Produce el producto cartesiano de las tablas (cada fila de la primera con cada fila de la segunda). **¡CUIDADO!**
+
+### 8.1. `UNION` / `UNION ALL`
+
+Combina los resultados de dos o más sentencias `SELECT`. Las columnas seleccionadas deben tener tipos de datos similares y el mismo orden.
+
+* **`UNION`**: Elimina filas duplicadas.
+* **`UNION ALL`**: Incluye todas las filas, incluso duplicadas.
+
+  ```sql
+  SELECT Nombre FROM Clientes
+  UNION
+  SELECT Nombre FROM Empleados;
+  ```
+
+---
+
+## 9. 🪆 Subconsultas (Subqueries / Nested Queries)
+
+Una consulta `SELECT` dentro de otra consulta.
+
+```sql
+-- Obtener usuarios que han realizado pedidos
+SELECT Nombre FROM Usuarios
+WHERE ID_Usuario IN (SELECT ID_Usuario FROM Pedidos);
+
+-- Obtener el producto más caro
+SELECT Nombre, Precio FROM Productos
+WHERE Precio = (SELECT MAX(Precio) FROM Productos);
+
+-- Subconsulta en el FROM (Derived Table / CTE)
+SELECT T.Nombre, T.TotalProductos
+FROM (
+    SELECT Categoria AS Nombre, COUNT(*) AS TotalProductos
+    FROM Productos GROUP BY Categoria
+) AS T
+WHERE T.TotalProductos > 5;
+```
+
+---
+
+## 10. 🔑 DCL (Data Control Language) - Control de Acceso
+
+Comandos para gestionar permisos de usuario.
+
+* **`GRANT`**: Otorga permisos a un usuario.
+  ```sql
+  GRANT SELECT, INSERT ON Usuarios TO 'dev_user'@'localhost';
+  GRANT ALL PRIVILEGES ON mi_base_de_datos.* TO 'admin_user'@'%';
+  ```
+* **`REVOKE`**: Revoca permisos a un usuario.
+  ```sql
+  REVOKE DELETE ON Usuarios FROM 'dev_user'@'localhost';
+  ```
+
+---
+
+## 11. 🔄 TCL (Transaction Control Language) - Control de Transacciones
+
+Comandos para gestionar transacciones de base de datos. Una transacción es una secuencia de operaciones que se ejecutan como una única unidad lógica.
+
+* **`START TRANSACTION`** / **`BEGIN TRANSACTION`**: Inicia una nueva transacción.
+* **`COMMIT`**: Guarda permanentemente los cambios realizados en la transacción.
+* **`ROLLBACK`**: Deshace todos los cambios realizados en la transacción desde el último `START TRANSACTION` o `COMMIT`.
+* **`SAVEPOINT`**: Establece un punto de guardado dentro de una transacción al que se puede revertir.
+
+  ```sql
+  START TRANSACTION;
+  INSERT INTO Cuentas (ID_Cuenta, Saldo) VALUES (1, 1000);
+  UPDATE Cuentas SET Saldo = Saldo - 100 WHERE ID_Cuenta = 1;
+  -- SAVEPOINT before_transfer;
+  -- UPDATE Cuentas SET Saldo = Saldo + 100 WHERE ID_Cuenta = 2;
+  -- ROLLBACK TO before_transfer;
+  COMMIT; -- Guarda los cambios de INSERT y UPDATE
+  ```
+
+  * **Propiedades ACID**: Las transacciones deben cumplir con **Atomicidad, Consistencia, Aislamiento y Durabilidad**.
+
+---
+
+## 12. ⚡ Índices (Indexes)
+
+Mejoran la velocidad de las operaciones de recuperación de datos en una base de datos.
+
+* **`CREATE INDEX`**: Crea un índice en una columna o columnas.
+  ```sql
+  CREATE INDEX idx_usuarios_email ON Usuarios (Email);
+  CREATE UNIQUE INDEX uidx_productos_nombre ON Productos (Nombre); -- Índice único
+  ```
+* **`DROP INDEX`**: Elimina un índice.
+  ```sql
+  DROP INDEX idx_usuarios_email ON Usuarios; -- Sintaxis puede variar
+  ```
+
+---
+
+## 13. 🖼️ Vistas (Views)
+
+Una tabla virtual basada en el conjunto de resultados de una consulta SQL.
+
+* **`CREATE VIEW`**: Crea una vista.
+  ```sql
+  CREATE VIEW ProductosActivos AS
+  SELECT ID_Producto, Nombre, Precio
+  FROM Productos
+  WHERE EsActivo = TRUE;
+  ```
+* **`DROP VIEW`**: Elimina una vista.
+  ```sql
+  DROP VIEW ProductosActivos;
+  ```
+* **Uso**: Se consulta como una tabla normal: `SELECT * FROM ProductosActivos;`
+
+---
+
+## 14. 💡 Buenas Prácticas y Consejos
+
+* **Siempre usa `WHERE`**: Al usar `UPDATE` o `DELETE`, asegúrate de incluir una cláusula `WHERE` para evitar afectar datos no deseados.
+* **Evita `SELECT *` en Producción**: Selecciona solo las columnas que realmente necesitas. Mejora el rendimiento y el uso de la red.
+* **Usa Alias**: Utiliza alias para nombres de tablas y columnas en consultas complejas para mejorar la legibilidad.
+* **Normalización de la Base de Datos**: Diseña tu base de datos de forma normalizada para reducir la redundancia y mejorar la integridad.
+* **Índices para Columnas Frecuentemente Consultadas**: Crea índices en las columnas utilizadas en las cláusulas `WHERE`, `JOIN` y `ORDER BY` para acelerar las consultas.
+* **Prepared Statements / Parámetros Vinculados**: Utiliza prepared statements en el código de tu aplicación para protegerte de la inyección SQL y mejorar el rendimiento de consultas repetidas.
+* **Transacciones para Operaciones Lógicas**: Agrupa múltiples operaciones de DML en una transacción para asegurar la atomicidad y consistencia.
+* **Manejo de Nulos**: Entiende cómo `NULL` funciona en SQL (no es lo mismo que 0 o una cadena vacía). Usa `IS NULL` o `IS NOT NULL`.
+* **Consistencia de Mayúsculas/Minúsculas**: Sé consistente con la capitalización de palabras clave SQL (ej. `SELECT` vs `select`), aunque muchos RDBMS no distinguen entre mayúsculas y minúsculas en palabras clave, es una buena práctica para la legibilidad.
+
+---
+
+Este cheatsheet te proporciona una referencia completa y concisa de SQL, cubriendo sus conceptos esenciales, comandos DDL/DML/DQL/DCL/TCL, operadores, funciones, tipos de JOINs, subconsultas, e importantes buenas prácticas para gestionar y consultar bases de datos relacionales de manera efectiva.

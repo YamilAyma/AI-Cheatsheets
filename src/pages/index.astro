@@ -1,0 +1,52 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import { getCollection } from 'astro:content';
+
+const allCheatsheets = await getCollection('cheatsheets');
+
+// Get root directories (first level folders)
+const rootCategories = [...new Set(allCheatsheets.map(post => {
+    const slug = post.id.replace(/\.mdx?$/, '');
+    return slug.split('/')[0];
+}).filter(part => part !== ""))].sort();
+
+// Files in the root
+const rootFiles = allCheatsheets
+    .map(post => ({ ...post, slug: post.id.replace(/\.mdx?$/, '') }))
+    .filter(post => !post.slug.includes('/'))
+    .sort((a, b) => (a.data.title || '').localeCompare(b.data.title || ''));
+---
+
+<BaseLayout title="Inicio">
+    <div class="hero">
+        <h2>Antes de aprender, explora estas guías rápidas</h2>
+        <p>Resúmenes e información servida para desarrolladores. Explora las categorías para empezar.</p>
+    </div>
+
+    <div class="search-container">
+        <input type="text" id="searchInput" placeholder="Buscar archivos y carpetas...">
+    </div>
+
+    <ul class="file-list">
+        {rootCategories.map(cat => (
+            <li><a href={`/${cat}`} class="folder">{cat}</a></li>
+        ))}
+        {rootFiles.map(file => (
+            <li><a href={`/${file.slug}`} class="file">{file.data.title}</a></li>
+        ))}
+    </ul>
+
+    <script is:inline>
+        const searchInput = document.getElementById('searchInput');
+        if (searchInput) {
+            searchInput.addEventListener('keyup', () => {
+                const filter = searchInput.value.toLowerCase();
+                const items = document.querySelectorAll('.file-list li');
+                items.forEach(li => {
+                    const text = li.textContent.toLowerCase();
+                    li.style.display = text.includes(filter) ? "" : "none";
+                });
+            });
+        }
+    </script>
+</BaseLayout>

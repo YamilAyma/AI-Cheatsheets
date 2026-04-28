@@ -1,0 +1,381 @@
+---
+title: "apache-poi"
+---
+
+
+---
+
+# 📊 Apache POI Cheatsheet Completo 📊
+
+Apache POI es la API Java de código abierto para manipular formatos de archivo basados en OLE2 (Excel 97-2003, Word 97-2003) y OOXML (Excel 2007+, Word 2007+, PowerPoint 2007+). Permite crear, leer y modificar documentos de Microsoft Office programáticamente.
+
+---
+
+## 1. 🌟 Conceptos Clave
+
+* **Formatos**:
+  * **HSSF (Horrible Spreadsheet Format)**: Para archivos Excel `*.xls` (Excel 97-2003).
+  * **XSSF (XML Spreadsheet Format)**: Para archivos Excel `*.xlsx` (Excel 2007+). Preferido para documentos modernos.
+  * **HWPF (Horrible Word Processor Format)**: Para archivos Word `*.doc`.
+  * **XWPF (XML Word Processing Format)**: Para archivos Word `*.docx`. Preferido.
+  * **HSLF (Horrible Slide Layouts Format)**: Para archivos PowerPoint `*.ppt`.
+  * **XSLF (XML Slide Layouts Format)**: Para archivos PowerPoint `*.pptx`. Preferido.
+* **Modelo de Objetos**: POI abstrae los documentos en un modelo de objetos Java que replica la estructura del documento.
+  * **Workbook (Libro de trabajo)**: `HSSFWorkbook` (xls) / `XSSFWorkbook` (xlsx). Representa el archivo Excel.
+  * **Sheet (Hoja)**: `HSSFSheet` / `XSSFSheet`. Representa una hoja dentro del libro de trabajo.
+  * **Row (Fila)**: `HSSFRow` / `XSSFRow`. Representa una fila dentro de una hoja.
+  * **Cell (Celda)**: `HSSFCell` / `XSSFCell`. Representa una celda dentro de una fila.
+* **`CellStyle`**: Permite definir estilos (fuente, color, bordes, alineación) para las celdas.
+* **`DataValidation`**: Para añadir reglas de validación de datos (ej. listas desplegables) a las celdas.
+
+---
+
+## 2. 🛠️ Configuración Inicial (Maven)
+
+Añade las dependencias necesarias en tu `pom.xml`. Necesitarás `poi` y `poi-ooxml` para manejar formatos antiguos y nuevos (OOXML).
+
+```xml
+<dependencies>
+    <!-- Para formatos de archivo Office antiguos (xls, doc, ppt) -->
+    <dependency>
+        <groupId>org.apache.poi</groupId>
+        <artifactId>poi</artifactId>
+        <version>5.2.5</version> <!-- Usar la versión más reciente y estable -->
+    </dependency>
+    <!-- Para formatos de archivo Office Open XML (xlsx, docx, pptx) -->
+    <dependency>
+        <groupId>org.apache.poi</groupId>
+        <artifactId>poi-ooxml</artifactId>
+        <version>5.2.5</version>
+    </dependency>
+    <!-- Opcional: Para el manejo de logging (ej. Log4j2 si se desea) -->
+    <dependency>
+        <groupId>org.apache.logging.log4j</groupId>
+        <artifactId>log4j-api</artifactId>
+        <version>2.20.0</version>
+    </dependency>
+    <dependency>
+        <groupId>org.apache.logging.log4j</groupId>
+        <artifactId>log4j-core</artifactId>
+        <version>2.20.0</version>
+    </dependency>
+</dependencies>
+```
+
+---
+
+## 3. 📝 Operaciones Básicas con Excel (XSSF - `.xlsx`)
+
+### 3.1. Crear un Nuevo Libro de Trabajo y Escribir Datos
+
+```java
+import org.apache.poi.ss.usermodel.*;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+
+import java.io.FileOutputStream;
+import java.io.IOException;
+
+public class CreateExcel {
+    public static void main(String[] args) throws IOException {
+        // 1. Crear un nuevo libro de trabajo (XSSFWorkbook para .xlsx)
+        Workbook workbook = new XSSFWorkbook();
+
+        // 2. Crear una nueva hoja
+        Sheet sheet = workbook.createSheet("Datos de Ejemplo");
+
+        // 3. Crear una fila (índice 0 para la primera fila)
+        Row headerRow = sheet.createRow(0);
+
+        // 4. Crear celdas y escribir datos
+        Cell cell1 = headerRow.createCell(0); // Celda A1
+        cell1.setCellValue("ID");
+
+        Cell cell2 = headerRow.createCell(1); // Celda B1
+        cell2.setCellValue("Nombre");
+
+        Cell cell3 = headerRow.createCell(2); // Celda C1
+        cell3.setCellValue("Edad");
+
+        // Datos de ejemplo
+        Object[][] data = {
+                {1, "Alice", 30},
+                {2, "Bob", 24},
+                {3, "Charlie", 35}
+        };
+
+        int rowNum = 1;
+        for (Object[] rowData : data) {
+            Row row = sheet.createRow(rowNum++);
+            int colNum = 0;
+            for (Object field : rowData) {
+                Cell cell = row.createCell(colNum++);
+                if (field instanceof String) {
+                    cell.setCellValue((String) field);
+                } else if (field instanceof Integer) {
+                    cell.setCellValue((Integer) field);
+                }
+            }
+        }
+
+        // Autoajustar el ancho de las columnas (después de escribir todos los datos)
+        for(int i = 0; i < headerRow.getLastCellNum(); i++) {
+            sheet.autoSizeColumn(i);
+        }
+
+        // 5. Guardar el libro de trabajo en un archivo
+        try (FileOutputStream outputStream = new FileOutputStream("ejemplo.xlsx")) {
+            workbook.write(outputStream);
+        }
+
+        // 6. Cerrar el libro de trabajo (¡importante para liberar recursos!)
+        workbook.close();
+        System.out.println("Archivo 'ejemplo.xlsx' creado exitosamente.");
+    }
+}
+```
+
+### 3.2. Leer Datos de un Libro de Trabajo Existente
+
+```java
+import org.apache.poi.ss.usermodel.*;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.util.Iterator;
+
+public class ReadExcel {
+    public static void main(String[] args) throws IOException {
+        File file = new File("ejemplo.xlsx"); // Asume que el archivo 'ejemplo.xlsx' existe
+        if (!file.exists()) {
+            System.out.println("Archivo 'ejemplo.xlsx' no encontrado. Por favor, créalo primero.");
+            return;
+        }
+
+        try (FileInputStream inputStream = new FileInputStream(file);
+             Workbook workbook = new XSSFWorkbook(inputStream)) { // O HSSFWorkbook para .xls
+
+            Sheet firstSheet = workbook.getSheetAt(0); // Obtener la primera hoja
+
+            Iterator<Row> rowIterator = firstSheet.iterator();
+
+            System.out.println("Leyendo datos del archivo Excel:");
+            while (rowIterator.hasNext()) {
+                Row currentRow = rowIterator.next();
+                Iterator<Cell> cellIterator = currentRow.iterator();
+
+                while (cellIterator.hasNext()) {
+                    Cell currentCell = cellIterator.next();
+
+                    // Determinar el tipo de celda y leer el valor
+                    switch (currentCell.getCellType()) {
+                        case STRING:
+                            System.out.print(currentCell.getStringCellValue() + "\t");
+                            break;
+                        case NUMERIC:
+                            if (DateUtil.isCellDateFormatted(currentCell)) {
+                                System.out.print(currentCell.getDateCellValue() + "\t");
+                            } else {
+                                System.out.print(currentCell.getNumericCellValue() + "\t");
+                            }
+                            break;
+                        case BOOLEAN:
+                            System.out.print(currentCell.getBooleanCellValue() + "\t");
+                            break;
+                        case FORMULA:
+                            // Es una fórmula, pero queremos el valor calculado
+                            // Dependiendo de la configuración, puede necesitar evaluarse
+                            System.out.print(currentCell.getNumericCellValue() + "\t"); // O getStringCellValue()
+                            break;
+                        case BLANK:
+                            System.out.print("[BLANK]\t");
+                            break;
+                        default:
+                            System.out.print("[UNKNOWN]\t");
+                    }
+                }
+                System.out.println(); // Nueva línea después de cada fila
+            }
+        }
+    }
+}
+```
+
+---
+
+## 4. 🎨 Estilización de Celdas (Cell Styling)
+
+```java
+import org.apache.poi.ss.usermodel.*;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+import org.apache.poi.xssf.usermodel.XSSFCellStyle;
+import org.apache.poi.xssf.usermodel.XSSFFont;
+
+import java.io.FileOutputStream;
+import java.io.IOException;
+
+public class ExcelStyling {
+    public static void main(String[] args) throws IOException {
+        Workbook workbook = new XSSFWorkbook();
+        Sheet sheet = workbook.createSheet("Estilos");
+
+        // Crear una fuente personalizada
+        Font headerFont = workbook.createFont();
+        headerFont.setBold(true);
+        headerFont.setFontHeightInPoints((short) 14);
+        headerFont.setColor(IndexedColors.BLUE.getIndex());
+
+        // Crear un estilo de celda
+        CellStyle headerStyle = workbook.createCellStyle();
+        headerStyle.setFont(headerFont); // Asignar la fuente
+        headerStyle.setFillForegroundColor(IndexedColors.PALE_BLUE.getIndex()); // Color de fondo
+        headerStyle.setFillPattern(FillPatternType.SOLID_FOREGROUND); // Patrón de relleno
+        headerStyle.setAlignment(HorizontalAlignment.CENTER); // Alineación horizontal
+        headerStyle.setVerticalAlignment(VerticalAlignment.CENTER); // Alineación vertical
+        headerStyle.setBorderBottom(BorderStyle.THIN); // Borde inferior
+        headerStyle.setBottomBorderColor(IndexedColors.BLACK.getIndex());
+
+        // Crear fila y celda con el estilo
+        Row row = sheet.createRow(0);
+        Cell cell = row.createCell(0);
+        cell.setCellValue("Cabecera con Estilo");
+        cell.setCellStyle(headerStyle);
+
+        // Otro estilo: Celda numérica con formato y color
+        CellStyle currencyStyle = workbook.createCellStyle();
+        CreationHelper createHelper = workbook.getCreationHelper();
+        currencyStyle.setDataFormat(createHelper.createDataFormat().getFormat("$#,##0.00"));
+        ((XSSFCellStyle) currencyStyle).setFillForegroundColor(IndexedColors.LIGHT_GREEN.getIndex());
+        currencyStyle.setFillPattern(FillPatternType.SOLID_FOREGROUND);
+
+        Cell amountCell = row.createCell(1);
+        amountCell.setCellValue(1234.567);
+        amountCell.setCellStyle(currencyStyle);
+
+        // Autoajustar columna
+        sheet.autoSizeColumn(0);
+        sheet.autoSizeColumn(1);
+
+        try (FileOutputStream outputStream = new FileOutputStream("estilos_excel.xlsx")) {
+            workbook.write(outputStream);
+        }
+        workbook.close();
+        System.out.println("Archivo 'estilos_excel.xlsx' creado con estilos.");
+    }
+}
+```
+
+---
+
+## 5. 📦 Operaciones de Hojas y Filas
+
+* **Crear hoja**: `workbook.createSheet("NombreHoja")`
+* **Obtener hoja**: `workbook.getSheetAt(index)` o `workbook.getSheet("NombreHoja")`
+* **Renombrar hoja**: `workbook.setSheetName(index, "NuevoNombre")`
+* **Eliminar hoja**: `workbook.removeSheetAt(index)`
+* **Crear fila**: `sheet.createRow(rowIndex)`
+* **Obtener fila**: `sheet.getRow(rowIndex)` (puede devolver `null` si no existe)
+* **Obtener número de primera/última fila**: `sheet.getFirstRowNum()`, `sheet.getLastRowNum()`
+* **Obtener número de primera/última celda**: `row.getFirstCellNum()`, `row.getLastCellNum()`
+
+---
+
+## 6. 📝 Operaciones Básicas con Word (XWPF - `.docx`)
+
+### 6.1. Crear un Nuevo Documento Word y Añadir Contenido
+
+```java
+import org.apache.poi.xwpf.usermodel.XWPFDocument;
+import org.apache.poi.xwpf.usermodel.XWPFParagraph;
+import org.apache.poi.xwpf.usermodel.XWPFRun;
+
+import java.io.FileOutputStream;
+import java.io.IOException;
+
+public class CreateWord {
+    public static void main(String[] args) throws IOException {
+        // 1. Crear un nuevo documento (XWPFDocument para .docx)
+        XWPFDocument document = new XWPFDocument();
+
+        // 2. Crear un párrafo
+        XWPFParagraph paragraph1 = document.createParagraph();
+        XWPFRun run1 = paragraph1.createRun(); // Un 'Run' contiene texto con el mismo formato
+        run1.setText("Este es un párrafo de ejemplo en Apache POI.");
+        run1.setFontSize(14);
+        run1.setBold(true);
+
+        // 3. Crear otro párrafo con diferente formato
+        XWPFParagraph paragraph2 = document.createParagraph();
+        XWPFRun run2 = paragraph2.createRun();
+        run2.setText("Y esta es una segunda línea de texto.");
+        run2.setFontFamily("Arial");
+        run2.setFontSize(12);
+        run2.setItalic(true);
+
+        // Añadir salto de línea
+        run2.addBreak();
+        run2.setText("Texto en una nueva línea dentro del mismo párrafo.");
+
+        // 4. Guardar el documento
+        try (FileOutputStream out = new FileOutputStream("ejemplo.docx")) {
+            document.write(out);
+        }
+
+        // 5. Cerrar el documento
+        document.close();
+        System.out.println("Archivo 'ejemplo.docx' creado exitosamente.");
+    }
+}
+```
+
+### 6.2. Leer Contenido de un Documento Word Existente
+
+```java
+import org.apache.poi.xwpf.usermodel.XWPFDocument;
+import org.apache.poi.xwpf.usermodel.XWPFParagraph;
+
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.util.List;
+
+public class ReadWord {
+    public static void main(String[] args) throws IOException {
+        File file = new File("ejemplo.docx");
+        if (!file.exists()) {
+            System.out.println("Archivo 'ejemplo.docx' no encontrado. Por favor, créalo primero.");
+            return;
+        }
+
+        try (FileInputStream fis = new FileInputStream(file);
+             XWPFDocument document = new XWPFDocument(fis)) { // O HWPFDocument para .doc
+
+            List<XWPFParagraph> paragraphs = document.getParagraphs();
+
+            System.out.println("Leyendo párrafos del archivo Word:");
+            for (XWPFParagraph para : paragraphs) {
+                System.out.println(para.getText()); // Obtiene el texto de cada párrafo
+            }
+            // También puedes iterar sobre tablas, imágenes, etc.
+        }
+    }
+}
+```
+
+---
+
+## 7. 💡 Buenas Prácticas y Consejos
+
+* **Cerrar recursos (`.close()`):** ¡CRÍTICO! Siempre asegúrate de cerrar el `Workbook` o `XWPFDocument` después de leer o escribir para liberar los recursos de memoria y archivos. Usa bloques `try-with-resources`.
+* **Manejo de `IOException`**: Las operaciones de archivo siempre deben manejar `IOException`.
+* **HSSF vs XSSF (o HWPF vs XWPF)**: Usa siempre las clases `X` (ej. `XSSFWorkbook`) para formatos OOXML (`.xlsx`, `.docx`) a menos que tengas un requisito específico para versiones antiguas de Office. Los formatos `X` son más modernos y eficientes.
+* **Celdas y Filas Nulas**: Cuando leas, `sheet.getRow(rowIndex)` o `row.getCell(colIndex)` pueden devolver `null` si la fila o celda no existen. Siempre realiza comprobaciones de `null`.
+* **Autoajuste de Columnas**: Llama a `sheet.autoSizeColumn(columnIndex)` *después* de haber escrito todos los datos en esa columna para que se ajuste correctamente.
+* **Estilos y Fuentes**: Crea `CellStyle` y `Font` una sola vez y reutilízalos para evitar duplicación y optimizar el uso de memoria, especialmente si aplicas el mismo estilo a muchas celdas.
+* **Iteración de Celdas**: Cuando leas celdas en una fila, no uses bucles fijos basados en un número máximo de columnas. Usa `row.getLastCellNum()` para saber hasta qué celda hay contenido o `row.iterator()` para iterar solo sobre las celdas existentes.
+* **Documentación oficial**: La documentación de Apache POI es muy completa y un recurso invaluable para funcionalidades más avanzadas (fórmulas, imágenes, gráficos, validación de datos, etc.).
+
+---
+
+Este cheatsheet te proporciona una referencia completa de Apache POI, cubriendo los conceptos esenciales y las operaciones más comunes para leer y escribir archivos Excel y Word en Java, junto con buenas prácticas para un uso eficiente y robusto.

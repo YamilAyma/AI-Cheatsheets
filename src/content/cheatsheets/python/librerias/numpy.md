@@ -1,0 +1,389 @@
+---
+title: "numpy"
+---
+
+
+
+# 🔢 NumPy Cheatsheet Completo 🔢
+
+NumPy es la librería esencial para la computación científica en Python. Ofrece un objeto de matriz multidimensional (`ndarray`) y funciones para operar con estas matrices de forma eficiente.
+
+---
+
+## 1. 🌟 Conceptos Clave
+
+* **`ndarray` (N-dimensional Array)**: El objeto principal de NumPy. Es una cuadrícula de valores del mismo tipo, indexada por una tupla de enteros no negativos. Puede ser 0-dimensional (escalar), 1-dimensional (vector), 2-dimensional (matriz), o de dimensiones superiores.
+* **Vectorización**: La capacidad de aplicar operaciones a un array completo de una sola vez, sin necesidad de bucles explícitos en Python. Esto se traduce en un código más conciso y mucho más rápido (escrito en C).
+* **Broadcasting**: Un mecanismo que permite a NumPy realizar operaciones en arrays de diferentes formas (shapes).
+* **Tipos de Datos (dtypes)**: NumPy permite especificar el tipo de datos de los elementos de un array (ej. `int32`, `float64`, `bool`).
+
+---
+
+## 2. 🛠️ Configuración Inicial
+
+1. **Instalación:**
+   ```bash
+   pip install numpy
+   # o
+   conda install numpy # Si usas Anaconda
+   ```
+2. **Importación:**
+   ```python
+   import numpy as np # La convención estándar
+   ```
+
+---
+
+## 3. 🚀 Creación de Arrays (ndarrays)
+
+### 3.1. Desde Listas de Python
+
+```python
+import numpy as np
+
+arr1d = np.array([1, 2, 3])                 # Array 1D
+arr2d = np.array([[1, 2, 3], [4, 5, 6]])   # Array 2D (Matriz)
+arr3d = np.array([[[1, 2], [3, 4]], [[5, 6], [7, 8]]]) # Array 3D
+```
+
+### 3.2. Arrays con Valores Iniciales Específicos
+
+* **`np.zeros(shape, dtype)`**: Array lleno de ceros.
+  ```python
+  zeros_1d = np.zeros(5)               # [0., 0., 0., 0., 0.]
+  zeros_2d = np.zeros((2, 3))          # [[0., 0., 0.], [0., 0., 0.]]
+  ```
+* **`np.ones(shape, dtype)`**: Array lleno de unos.
+  ```python
+  ones_2d = np.ones((2, 2))            # [[1., 1.], [1., 1.]]
+  ```
+* **`np.full(shape, fill_value, dtype)`**: Array lleno de un valor específico.
+  ```python
+  full_array = np.full((2, 2), 7)      # [[7, 7], [7, 7]]
+  ```
+* **`np.empty(shape, dtype)`**: Array con valores arbitrarios (depende de la memoria). Útil cuando el array se llenará inmediatamente.
+  ```python
+  empty_array = np.empty((2, 3))       # Contenido aleatorio
+  ```
+* **`np.identity(n, dtype)`**: Matriz identidad (cuadrada, diagonal de unos, el resto ceros).
+  ```python
+  identity_matrix = np.identity(3)     # [[1., 0., 0.], [0., 1., 0.], [0., 0., 1.]]
+  ```
+* **`np.eye(N, M=None, k=0, dtype)`**: Matriz con unos en una diagonal específica.
+  ```python
+  diag_ones = np.eye(3, 4, k=1)        # Matriz 3x4, unos en la diagonal 1 (arriba de la principal)
+  ```
+
+### 3.3. Arrays con Rangos de Valores
+
+* **`np.arange(start, stop, step, dtype)`**: Similar a `range()` de Python, pero devuelve un `ndarray`.
+  ```python
+  range_array = np.arange(0, 10, 2)    # [0, 2, 4, 6, 8]
+  ```
+* **`np.linspace(start, stop, num, endpoint=True, retstep=False, dtype)`**: Valores espaciados uniformemente en un intervalo.
+  ```python
+  linear_space = np.linspace(0, 1, 5)  # [0., 0.25, 0.5, 0.75, 1.]
+  ```
+
+---
+
+## 4. ℹ️ Atributos del Array
+
+```python
+arr = np.array([[1, 2, 3], [4, 5, 6]])
+
+print(arr.ndim)   # 2 (Número de dimensiones)
+print(arr.shape)  # (2, 3) (Tupla de dimensiones: filas, columnas)
+print(arr.size)   # 6 (Número total de elementos)
+print(arr.dtype)  # int64 (Tipo de datos de los elementos)
+print(arr.itemsize) # 8 (Tamaño en bytes de cada elemento)
+```
+
+---
+
+## 5. 🔎 Indexación y Slicing
+
+### 5.1. Indexación Básica (Acceso por Posición)
+
+* Similar a las listas de Python.
+* Para arrays 2D, se usa `[fila, columna]`.
+
+```python
+arr = np.array([10, 20, 30, 40, 50])
+print(arr[0])     # 10
+print(arr[-1])    # 50
+
+arr2d = np.array([[1, 2, 3], [4, 5, 6], [7, 8, 9]])
+print(arr2d[0, 0])  # 1 (fila 0, columna 0)
+print(arr2d[1, 2])  # 6 (fila 1, columna 2)
+```
+
+### 5.2. Slicing (Rebanado)
+
+* `[start:end:step]`
+
+```python
+arr = np.array([0, 1, 2, 3, 4, 5, 6, 7, 8, 9])
+print(arr[2:7])      # [2, 3, 4, 5, 6]
+print(arr[:5])       # [0, 1, 2, 3, 4]
+print(arr[7:])       # [7, 8, 9]
+print(arr[::2])      # [0, 2, 4, 6, 8] (cada 2 elementos)
+print(arr[::-1])     # [9, 8, 7, 6, 5, 4, 3, 2, 1, 0] (invertido)
+
+arr2d = np.array([[1, 2, 3], [4, 5, 6], [7, 8, 9]])
+print(arr2d[:, 1])   # [2, 5, 8] (todas las filas, columna 1)
+print(arr2d[0:2, :]) # [[1, 2, 3], [4, 5, 6]] (filas 0 y 1, todas las columnas)
+print(arr2d[::, ::-1]) # Todas las filas, columnas invertidas
+```
+
+### 5.3. Indexación Booleana
+
+* Selecciona elementos basados en una condición booleana.
+
+```python
+arr = np.array([1, 2, 3, 4, 5, 6])
+mask = (arr > 3) # [False, False, False, True, True, True]
+print(arr[mask]) # [4, 5, 6]
+print(arr[arr % 2 == 0]) # [2, 4, 6] (solo los pares)
+```
+
+### 5.4. Indexación "Fancy"
+
+* Selecciona elementos usando un array de índices.
+
+```python
+arr = np.array([10, 20, 30, 40, 50])
+indices = [0, 2, 4]
+print(arr[indices]) # [10, 30, 50]
+
+arr2d = np.array([[1, 2], [3, 4], [5, 6]])
+rows = np.array([0, 2])
+cols = np.array([1, 0])
+print(arr2d[rows, cols]) # [2, 5] (selecciona (0,1) y (2,0))
+```
+
+---
+
+## 6. ➕ Operaciones con Arrays
+
+### 6.1. Operaciones Aritméticas Elemento a Elemento
+
+* Suman, restan, multiplican, etc. arrays con la misma forma, o un array con un escalar (broadcasting).
+
+```python
+a = np.array([1, 2, 3])
+b = np.array([4, 5, 6])
+
+print(a + b)     # [5, 7, 9]
+print(a * 2)     # [2, 4, 6]
+print(a / b)     # [0.25, 0.4, 0.5]
+print(a ** 2)    # [1, 4, 9]
+```
+
+### 6.2. Funciones Universales (ufuncs)
+
+* Funciones que operan elemento a elemento en arrays (ej. `np.sqrt`, `np.exp`, `np.log`, `np.sin`).
+
+```python
+arr = np.array([1, 4, 9])
+print(np.sqrt(arr))  # [1., 2., 3.]
+print(np.exp(arr))   # [2.718..., 54.598..., 8103.08...]
+```
+
+### 6.3. Agregaciones (Funciones Reductoras)
+
+* Calculan un único valor a partir de los elementos de un array.
+* Pueden operar sobre todo el array o a lo largo de un eje (`axis`).
+
+```python
+arr = np.array([[1, 2, 3], [4, 5, 6]])
+
+print(np.sum(arr))       # 21 (suma de todos los elementos)
+print(arr.sum())         # 21 (método del array)
+print(arr.sum(axis=0))   # [5, 7, 9] (suma por columnas)
+print(arr.sum(axis=1))   # [6, 15] (suma por filas)
+
+print(np.min(arr))       # 1
+print(np.max(arr))       # 6
+print(np.mean(arr))      # 3.5 (promedio)
+print(np.std(arr))       # Desviación estándar
+print(np.argmin(arr))    # 0 (índice del mínimo global, aplanado)
+print(np.argmax(arr, axis=1)) # [2, 2] (índice del máximo por fila)
+```
+
+---
+
+## 7. 📏 Reshaping y Reorganización
+
+* **`reshape(shape)`**: Cambia la forma del array sin cambiar sus datos.
+  ```python
+  arr = np.arange(9) # [0, 1, 2, 3, 4, 5, 6, 7, 8]
+  reshaped = arr.reshape((3, 3)) # [[0, 1, 2], [3, 4, 5], [6, 7, 8]]
+  ```
+
+  * Puedes usar `-1` para que NumPy infiera una dimensión.
+    ```python
+    reshaped_auto = arr.reshape(3, -1) # [[0, 1, 2], [3, 4, 5], [6, 7, 8]] (3 filas, 3 columnas auto)
+    ```
+* **`ravel()` / `flatten()`**: Devuelven una copia aplanada (1D) del array. `flatten()` siempre devuelve una copia, `ravel()` puede devolver una vista.
+  ```python
+  print(reshaped.ravel()) # [0, 1, 2, 3, 4, 5, 6, 7, 8]
+  ```
+* **`T` (Transpuesta)**: Intercambia filas y columnas.
+  ```python
+  matrix = np.array([[1, 2], [3, 4]])
+  print(matrix.T) # [[1, 3], [2, 4]]
+  ```*   **`np.newaxis`**: Añade una nueva dimensión al array.
+  ```python
+  arr = np.array([1, 2, 3])
+  row_vector = arr[np.newaxis, :]  # [[1, 2, 3]] (1 fila, 3 columnas)
+  col_vector = arr[:, np.newaxis]  # [[1], [2], [3]] (3 filas, 1 columna)
+  ```
+
+---
+
+## 8. 📊 Combinación y División de Arrays
+
+### 8.1. Combinación (Concatenación)
+
+* **`np.concatenate((arr1, arr2), axis)`**: Une arrays a lo largo de un eje existente.
+  ```python
+  a = np.array([[1, 2], [3, 4]])
+  b = np.array([[5, 6], [7, 8]])
+  print(np.concatenate((a, b), axis=0)) # Unión vertical
+  # [[1, 2], [3, 4], [5, 6], [7, 8]]
+  print(np.concatenate((a, b), axis=1)) # Unión horizontal
+  # [[1, 2, 5, 6], [3, 4, 7, 8]]
+  ```
+* **`np.vstack((arr1, arr2))`**: Apila arrays verticalmente (por filas).
+  ```python
+  print(np.vstack((a, b))) # Igual que concatenate(axis=0)
+  ```
+* **`np.hstack((arr1, arr2))`**: Apila arrays horizontalmente (por columnas).
+  ```python
+  print(np.hstack((a, b))) # Igual que concatenate(axis=1)
+  ```
+
+### 8.2. División
+
+* **`np.split(arr, indices_or_sections, axis)`**: Divide un array en múltiples sub-arrays.
+  ```python
+  arr = np.arange(9)
+  split_arr = np.split(arr, 3) # Divide en 3 partes iguales
+  # [array([0, 1, 2]), array([3, 4, 5]), array([6, 7, 8])]
+
+  arr2d = np.array([[1, 2, 3], [4, 5, 6], [7, 8, 9]])
+  split_rows = np.split(arr2d, [1, 2], axis=0) # Divide por filas después de índice 1 y 2
+  # [array([[1, 2, 3]]), array([[4, 5, 6]]), array([[7, 8, 9]])]
+  ```
+* **`np.vsplit(arr, indices_or_sections)`**: Divide verticalmente.
+* **`np.hsplit(arr, indices_or_sections)`**: Divide horizontalmente.
+
+---
+
+## 9. 📐 Álgebra Lineal
+
+NumPy tiene un submódulo `linalg` para operaciones de álgebra lineal.
+
+```python
+a = np.array([[1, 2], [3, 4]])
+b = np.array([[5, 6], [7, 8]])
+
+# Producto punto de matrices (multiplicación matricial)
+print(a @ b)         # Python 3.5+
+print(np.dot(a, b))  # Equivalente
+# [[19, 22], [43, 50]]
+
+# Inversa de una matriz
+print(np.linalg.inv(a))
+# [[-2., 1.], [1.5, -0.5]]
+
+# Determinante de una matriz
+print(np.linalg.det(a)) # -2.0
+
+# Valores propios y vectores propios
+eigenvalues, eigenvectors = np.linalg.eig(a)
+print("Valores propios:", eigenvalues)
+print("Vectores propios:", eigenvectors)
+
+# Producto cruz (solo para 3D)
+v1 = np.array([1, 2, 3])
+v2 = np.array([4, 5, 6])
+print(np.cross(v1, v2)) # [-3, 6, -3]
+```
+
+---
+
+## 10. 🎲 Generación de Números Aleatorios
+
+El submódulo `np.random` es para esto.
+
+```python
+# Semilla para reproducibilidad
+np.random.seed(42)
+
+# Números flotantes uniformemente distribuidos entre 0.0 y 1.0
+print(np.random.rand(3))        # [0.374..., 0.950..., 0.731...] (1D)
+print(np.random.rand(2, 2))     # [[..., ...], [..., ...]] (2D)
+
+# Números flotantes de una distribución normal estándar (media 0, varianza 1)
+print(np.random.randn(3))       # [0.496..., -0.119..., 0.671...]
+
+# Enteros aleatorios en un rango [low, high)
+print(np.random.randint(low=0, high=10, size=5)) # 5 enteros entre 0 y 9
+
+# Selección aleatoria de elementos de un array
+elements = [1, 2, 3, 4, 5]
+print(np.random.choice(elements, size=3, replace=False)) # 3 elementos únicos
+```
+
+---
+
+## 11. 💾 Entrada/Salida (File I/O)
+
+### 11.1. Guardar y Cargar Arrays Binarios (`.npy`, `.npz`)
+
+* **`np.save(filename, arr)`**: Guarda un solo array en formato binario NumPy (`.npy`).
+* **`np.load(filename)`**: Carga un array desde un archivo `.npy`.
+* **`np.savez(filename, arr1=arr1, arr2=arr2)`**: Guarda múltiples arrays en un archivo comprimido (`.npz`).
+* **`np.load(filename)['arr1']`**: Carga un array específico de un archivo `.npz`.
+
+```python
+my_array = np.array([1, 2, 3, 4, 5])
+np.save('my_array.npy', my_array)
+loaded_array = np.load('my_array.npy')
+print(loaded_array)
+
+# Borrar archivos (para cleanup si es un script)
+# import os
+# os.remove('my_array.npy')
+```
+
+### 11.2. Guardar y Cargar desde Archivos de Texto (`.txt`, `.csv`)
+
+* **`np.savetxt(filename, arr, fmt='%.18e', delimiter=' ')`**: Guarda un array en un archivo de texto (CSV por defecto).
+  * `fmt`: Formato de escritura (ej. `'%d'` para enteros, `'%.2f'` para flotantes con 2 decimales).
+  * `delimiter`: Separador de columnas.
+* **`np.loadtxt(filename, dtype=float, delimiter=None)`**: Carga datos desde un archivo de texto.
+
+```python
+data = np.array([[1.1, 2.2], [3.3, 4.4]])
+np.savetxt('data.csv', data, delimiter=',', fmt='%.1f')
+loaded_data = np.loadtxt('data.csv', delimiter=',')
+print(loaded_data)
+```
+
+---
+
+## 12. 💡 Buenas Prácticas y Consejos
+
+* **Vectorización**: Siempre que sea posible, utiliza operaciones vectorizadas de NumPy en lugar de bucles de Python para un rendimiento superior.
+* **Dimensiones (Shape)**: Entender las dimensiones de tus arrays (`.shape`) es crucial para operaciones de broadcasting, concatenación y otras manipulaciones.
+* **In-place vs. Copy**: Muchas operaciones de NumPy devuelven una *nueva copia* del array. Otras (como `arr += 1`) modifican el array *in-place*. Tenlo en cuenta para evitar efectos secundarios no deseados.
+* **`dtype`**: Especificar el `dtype` adecuado puede ahorrar memoria y mejorar el rendimiento, especialmente con arrays grandes.
+* **Broadcasting**: Comprender cómo funciona el broadcasting te permite escribir código más conciso y eficiente. NumPy "estira" implícitamente arrays más pequeños para que coincidan con la forma de los arrays más grandes.
+* **Documentación**: La documentación oficial de NumPy es excelente y es tu mejor recurso para funciones y detalles específicos.
+
+---
+
+Este cheatsheet te proporciona una referencia completa y concisa de NumPy, cubriendo sus conceptos esenciales, la creación y manipulación de arrays, operaciones clave de álgebra lineal y generación de números aleatorios. Es una herramienta fundamental para cualquier trabajo con datos numéricos en Python.

@@ -1,0 +1,650 @@
+---
+title: "java"
+---
+
+
+---
+
+# ☕ Java Cheatsheet Completo ☕
+
+Java es un lenguaje de programación de propósito general, concurrente, basado en clases y orientado a objetos. Es una plataforma con un ecosistema maduro y extenso, utilizado para construir aplicaciones empresariales, móviles (Android), de escritorio, web, servicios en la nube y Big Data.
+
+---
+
+## 1. 🌟 Conceptos Clave
+
+* **JVM (Java Virtual Machine)**: Permite que el código Java sea multiplataforma ("Write Once, Run Anywhere" - WORA). El código compilado (`.class` bytecode) se ejecuta en la JVM.
+* **OOP (Object-Oriented Programming)**: Se basa en los principios de Clases, Objetos, Herencia, Polimorfismo, Abstracción y Encapsulación.
+* **Gestión de Memoria Automática**: El `Garbage Collector` (Recolector de Basura) libera automáticamente la memoria de objetos no referenciados.
+* **Concurrencia Integrada**: Soporte nativo para hilos (threads) para programación concurrente.
+* **Fuertemente Tipado**: Las variables tienen un tipo definido en tiempo de compilación.
+* **Amplia Biblioteca Estándar (API)**: Una rica colección de clases y paquetes para tareas comunes (E/S, red, colecciones, etc.).
+
+---
+
+## 2. 🛠️ Configuración Inicial
+
+1. **Descargar e Instalar JDK (Java Development Kit)**: Contiene el JRE (Java Runtime Environment) y las herramientas de desarrollo (`javac`, `java`). Descarga desde Oracle o OpenJDK.
+2. **Configurar la variable de entorno `PATH`**: Para que los comandos `javac` y `java` sean accesibles desde cualquier directorio.
+3. **Compilar un archivo Java:**
+   ```bash
+   javac MyProgram.java # Crea MyProgram.class
+   ```
+4. **Ejecutar un programa Java:**
+   ```bash
+   java MyProgram # Ejecuta el bytecode
+   ```
+
+---
+
+## 3. 📝 Sintaxis Básica
+
+### 3.1. Estructura de un Programa
+
+```java
+// MyProgram.java
+package com.example.app; // Declaración del paquete (opcional)
+
+import java.util.Scanner; // Importa una clase de otro paquete
+
+public class MyProgram { // Declaración de la clase (nombre del archivo)
+
+    // Método principal: punto de entrada del programa
+    public static void main(String[] args) {
+        // Imprimir en la consola
+        System.out.println("¡Hola, Java!");
+
+        // Declaración de variable
+        int numero = 10;
+        String mensaje = "Este es un mensaje.";
+
+        System.out.println("El número es: " + numero);
+    }
+}
+```
+
+### 3.2. Comentarios
+
+```java
+// Comentario de una sola línea
+
+/*
+Este es un comentario
+multilínea.
+*/
+
+/**
+ * Este es un comentario Javadoc.
+ * Se usa para generar documentación HTML de tu código.
+ * @param args Argumentos de la línea de comandos
+ */
+```
+
+---
+
+## 4. 📊 Tipos de Datos Fundamentales (Primitivos)
+
+* **`byte`**: Entero de 8 bits (-128 a 127).
+* **`short`**: Entero de 16 bits.
+* **`int`**: Entero de 32 bits (el más común).
+* **`long`**: Entero de 64 bits (añadir `L` al final: `100L`).
+* **`float`**: Punto flotante de 32 bits (añadir `f` al final: `3.14f`).
+* **`double`**: Punto flotante de 64 bits (por defecto para decimales).
+* **`boolean`**: `true` o `false`.
+* **`char`**: Carácter Unicode de 16 bits (entre comillas simples: `'A'`).
+
+### 4.1. Tipos de Referencia (Objetos)
+
+* **`String`**: Secuencia de caracteres (inmutable).
+* **Arrays**: Colecciones de elementos del mismo tipo.
+* **Clases e Interfaces**: Tipos definidos por el usuario.
+
+---
+
+## 5. 🧮 Operadores
+
+* **Aritméticos**: `+`, `-`, `*`, `/`, `%` (módulo).
+* **Comparación**: `==` (igual a), `!=` (diferente de), `>`, `<`, `>=`, `<=`.
+* **Lógicos**: `&&` (AND), `||` (OR), `!` (NOT).
+* **Asignación**: `=`, `+=`, `-=`, `*=`, `/=`, `%=`.
+* **Incremento/Decremento**: `++`, `--` (prefijo/postfijo).
+* **Concatenación de Cadenas**: `+`.
+
+---
+
+## 6. 🚦 Control de Flujo
+
+### 6.1. Condicionales (`if`, `else if`, `else`)
+
+```java
+int temperatura = 25;
+if (temperatura > 30) {
+    System.out.println("Hace mucho calor.");
+} else if (temperatura > 20) {
+    System.out.println("Temperatura agradable.");
+} else {
+    System.out.println("Hace frío.");
+}
+```
+
+### 6.2. Sentencia `switch`
+
+```java
+String dia = "Lunes";
+switch (dia) {
+    case "Lunes":
+    case "Martes":
+        System.out.println("Día de semana.");
+        break; // Importante para salir del switch
+    case "Sábado":
+    case "Domingo":
+        System.out.println("Fin de semana.");
+        break;
+    default:
+        System.out.println("Día desconocido.");
+}
+
+// Expresión Switch (Java 14+) - para asignar un valor
+String tipoDia = switch (dia) {
+    case "Lunes", "Martes" -> "Semana";
+    case "Sábado", "Domingo" -> "Fin de semana";
+    default -> "Otro";
+};
+System.out.println(tipoDia);
+```
+
+### 6.3. Bucles (`for`, `for-each`, `while`, `do-while`)
+
+```java
+// for (tradicional)
+for (int i = 0; i < 5; i++) {
+    System.out.println("Contador: " + i);
+}
+
+// for-each (mejor para iterar sobre colecciones o arrays)
+String[] frutas = {"Manzana", "Banana", "Cereza"};
+for (String fruta : frutas) {
+    System.out.println("Fruta: " + fruta);
+}
+
+// while
+int contador = 0;
+while (contador < 3) {
+    System.out.println("While: " + contador);
+    contador++;
+}
+
+// do-while (se ejecuta al menos una vez)
+int x = 0;
+do {
+    System.out.println("Do-While: " + x);
+    x++;
+} while (x < 0);
+```
+
+### 6.4. Control de Bucle
+
+* `break`: Sale del bucle.
+* `continue`: Salta la iteración actual y pasa a la siguiente.
+
+---
+
+## 7. ⚙️ Métodos (Funciones)
+
+Bloques de código reutilizables.
+
+```java
+public class Calculadora {
+    // Método estático (pertenece a la clase, no necesita objeto)
+    public static int sumar(int a, int b) { // Tipo de retorno 'int'
+        return a + b;
+    }
+
+    // Método que no devuelve nada (void)
+    public void imprimirMensaje(String msg) {
+        System.out.println(msg);
+    }
+
+    // Sobrecarga de métodos (mismo nombre, diferentes parámetros)
+    public static double sumar(double a, double b) {
+        return a + b;
+    }
+
+    public static void main(String[] args) {
+        int resultadoEntero = sumar(5, 3);
+        System.out.println("Suma entera: " + resultadoEntero);
+
+        double resultadoDecimal = sumar(5.5, 3.2);
+        System.out.println("Suma decimal: " + resultadoDecimal);
+
+        Calculadora calc = new Calculadora();
+        calc.imprimirMensaje("Hola desde un objeto.");
+    }
+}
+```
+
+---
+
+## 8. 📚 Clases y Objetos (Programación Orientada a Objetos)
+
+### 8.1. Definición de Clase y Objeto
+
+```java
+public class Coche {
+    // Atributos (Variables de instancia)
+    String marca;
+    String modelo;
+    int año;
+
+    // Constructor (método especial para inicializar objetos)
+    public Coche(String marca, String modelo, int año) {
+        this.marca = marca; // 'this' se refiere a la instancia actual
+        this.modelo = modelo;
+        this.año = año;
+    }
+
+    // Métodos (Comportamientos)
+    public void arrancar() {
+        System.out.println(marca + " " + modelo + " ha arrancado.");
+    }
+
+    public void mostrarInfo() {
+        System.out.println("Marca: " + marca + ", Modelo: " + modelo + ", Año: " + año);
+    }
+
+    public static void main(String[] args) {
+        // Creación de objetos (instancias de la clase Coche)
+        Coche miCoche = new Coche("Toyota", "Corolla", 2020);
+        miCoche.arrancar();
+        miCoche.mostrarInfo();
+
+        Coche otroCoche = new Coche("Honda", "Civic", 2022);
+        otroCoche.mostrarInfo();
+    }
+}
+```
+
+### 8.2. Encapsulación (Modificadores de Acceso)
+
+Controla la visibilidad de miembros de clase.
+
+* `public`: Accesible desde cualquier lugar.
+* `private`: Accesible solo dentro de la clase.
+* `protected`: Accesible dentro de la clase, clases del mismo paquete y subclases.
+* *(ninguno)* (package-private/default): Accesible solo dentro del mismo paquete.
+
+```java
+public class CuentaBancaria {
+    private double saldo; // Atributo privado
+
+    public CuentaBancaria(double saldoInicial) {
+        if (saldoInicial >= 0) {
+            this.saldo = saldoInicial;
+        } else {
+            this.saldo = 0;
+        }
+    }
+
+    public double getSaldo() { // Getter (acceso de lectura)
+        return saldo;
+    }
+
+    public void depositar(double cantidad) { // Método público para modificar
+        if (cantidad > 0) {
+            saldo += cantidad;
+        }
+    }
+}
+```
+
+### 8.3. Herencia (`extends`)
+
+Una clase puede heredar de otra, adquiriendo sus atributos y métodos.
+
+```java
+public class Animal { // Superclase
+    String nombre;
+    public Animal(String nombre) { this.nombre = nombre; }
+    public void comer() { System.out.println(nombre + " está comiendo."); }
+}
+
+public class Perro extends Animal { // Subclase
+    public Perro(String nombre) { super(nombre); } // Llama al constructor de la superclase
+    public void ladrar() { System.out.println(nombre + " está ladrando."); }
+}
+
+public class Gato extends Animal {
+    public Gato(String nombre) { super(nombre); }
+    public void maullar() { System.out.println(nombre + " está maullando."); }
+}
+
+// Uso
+// Perro miPerro = new Perro("Buddy");
+// miPerro.comer(); // Heredado de Animal
+// miPerro.ladrar();
+```
+
+### 8.4. Polimorfismo
+
+Objetos de diferentes clases pueden ser tratados como objetos de una clase común.
+
+* **Sobrescritura de Métodos (`@Override`)**: Una subclase proporciona su propia implementación de un método que ya está en su superclase. Requiere que el método en la superclase sea `virtual` (en C#) o no sea `final` (en Java).
+
+  ```java
+  public class Forma {
+      public void dibujar() { System.out.println("Dibujando una forma."); }
+  }
+
+  public class Circulo extends Forma {
+      @Override // Buena práctica: indica que se está sobrescribiendo
+      public void dibujar() { System.out.println("Dibujando un círculo."); }
+  }
+
+  // Uso
+  // Forma f1 = new Forma();
+  // Forma f2 = new Circulo(); // Polimorfismo
+  // f1.dibujar(); // Dibujando una forma.
+  // f2.dibujar(); // Dibujando un círculo. (comportamiento en tiempo de ejecución)
+  ```
+
+### 8.5. Abstracción (`abstract` clases y métodos)
+
+Define una plantilla para clases. No se pueden instanciar clases abstractas.
+
+```java
+public abstract class InstrumentoMusical {
+    String nombre;
+    public InstrumentoMusical(String nombre) { this.nombre = nombre; }
+    public abstract void tocar(); // Método abstracto: no tiene cuerpo, subclases DEBEN implementarlo
+    public void afinar() { System.out.println(nombre + " está siendo afinado."); } // Método concreto
+}
+
+public class Guitarra extends InstrumentoMusical {
+    public Guitarra(String nombre) { super(nombre); }
+    @Override
+    public void tocar() { System.out.println(nombre + " está sonando una melodía de guitarra."); }
+}
+```
+
+### 8.6. Interfaces (`interface`)
+
+Un contrato que define un conjunto de métodos que una clase debe implementar. Una clase puede implementar múltiples interfaces.
+
+```java
+public interface Volador {
+    void volar(); // Métodos públicos y abstractos por defecto
+    default void aterrizar() { // Métodos por defecto (Java 8+)
+        System.out.println("Aterrizando suavemente.");
+    }
+}
+
+public interface Nadador {
+    void nadar();
+}
+
+public class Pato implements Volador, Nadador { // Implementa ambas interfaces
+    @Override
+    public void volar() { System.out.println("Pato volando."); }
+    @Override
+    public void nadar() { System.out.println("Pato nadando."); }
+}
+```
+
+---
+
+## 9. 📦 Paquetes e Importaciones
+
+* **`package`**: Organiza las clases en grupos lógicos.
+* **`import`**: Permite usar clases de otros paquetes sin calificar su nombre completo.
+
+```java
+// Archivo: com/example/util/StringUtils.java
+package com.example.util;
+public class StringUtils {
+    public static String toUpper(String text) { return text.toUpperCase(); }
+}
+
+// Archivo: com/example/app/MainApp.java
+package com.example.app;
+import com.example.util.StringUtils; // Importa una clase específica
+// import com.example.util.*; // Importa todas las clases de un paquete
+
+public class MainApp {
+    public static void main(String[] args) {
+        String texto = StringUtils.toUpper("hola");
+        System.out.println(texto); // HOLA
+    }
+}
+```
+
+---
+
+## 10. 🧊 Colecciones (Java Collections Framework)
+
+Proporciona interfaces y clases para representar colecciones de objetos.
+
+* **`List<E>`**: Colección ordenada (por índice), permite duplicados.
+  * Implementaciones comunes: `ArrayList`, `LinkedList`.
+
+  ```java
+  import java.util.ArrayList;
+  import java.util.List;
+  List<String> nombres = new ArrayList<>();
+  nombres.add("Ana");
+  nombres.add("Juan");
+  System.out.println(nombres.get(0)); // Ana
+  nombres.remove("Juan");
+  ```
+* **`Set<E>`**: Colección que no permite duplicados, sin orden garantizado.
+  * Implementaciones comunes: `HashSet`, `LinkedHashSet`, `TreeSet`.
+
+  ```java
+  import java.util.HashSet;
+  import java.util.Set;
+  Set<Integer> edades = new HashSet<>();
+  edades.add(20);
+  edades.add(25);
+  edades.add(20); // Duplicado, no se añade
+  System.out.println(edades.size()); // 2
+  ```
+* **`Map<K, V>`**: Colección de pares clave-valor, claves únicas.
+  * Implementaciones comunes: `HashMap`, `LinkedHashMap`, `TreeMap`.
+
+  ```java
+  import java.util.HashMap;
+  import java.util.Map;
+  Map<String, String> capitales = new HashMap<>();
+  capitales.put("España", "Madrid");
+  capitales.put("Francia", "París");
+  System.out.println(capitales.get("España")); // Madrid
+  for (Map.Entry<String, String> entrada : capitales.entrySet()) {
+      System.out.println(entrada.getKey() + ": " + entrada.getValue());
+  }
+  ```
+* **`Queue<E>`**: Cola FIFO (First-In, First-Out).
+* **`Stack<E>`**: Pila LIFO (Last-In, First-Out).
+
+---
+
+## 11. ⚙️ Genéricos (`Generics`)
+
+Permiten escribir clases, interfaces y métodos que operan con tipos parametrizados.
+
+```java
+// Clase genérica
+public class Caja<T> { // T es un tipo genérico (Type parameter)
+    private T contenido;
+    public Caja(T contenido) { this.contenido = contenido; }
+    public T getContenido() { return contenido; }
+    public void setContenido(T contenido) { this.contenido = contenido; }
+}
+
+// Uso
+Caja<String> cajaDeTexto = new Caja<>("Hola mundo");
+String texto = cajaDeTexto.getContenido(); // No necesita casting
+
+Caja<Integer> cajaDeNumeros = new Caja<>(123);
+int numero = cajaDeNumeros.getContenido();
+```
+
+---
+
+## 12. 🚨 Manejo de Errores (Excepciones)
+
+Java utiliza excepciones para manejar errores en tiempo de ejecución.
+
+* **`try-catch`**: Bloque para intentar código que puede lanzar una excepción y capturarla.
+* **`finally`**: Bloque que se ejecuta siempre, haya o no excepción. Útil para liberar recursos.
+* **`throw`**: Lanza una excepción manualmente.
+* **`throws`**: Declara que un método puede lanzar una excepción (para excepciones comprobadas/checked).
+
+```java
+import java.io.FileReader;
+import java.io.IOException;
+
+public class ManejoExcepciones {
+    public static void main(String[] args) {
+        try {
+            int resultado = 10 / 0; // Provoca una ArithmeticException (unchecked)
+            System.out.println(resultado);
+        } catch (ArithmeticException e) {
+            System.err.println("Error: División por cero. " + e.getMessage());
+        }
+
+        FileReader fileReader = null;
+        try {
+            fileReader = new FileReader("archivo_no_existe.txt"); // Lanza FileNotFoundException (checked)
+            // ... leer archivo
+        } catch (IOException e) { // Captura IOException, incluyendo FileNotFoundException
+            System.err.println("Error de I/O: " + e.getMessage());
+        } finally {
+            if (fileReader != null) {
+                try {
+                    fileReader.close(); // Asegura que el recurso se cierre
+                    System.out.println("Archivo cerrado en finally.");
+                } catch (IOException e) {
+                    System.err.println("Error al cerrar archivo: " + e.getMessage());
+                }
+            }
+        }
+
+        // try-with-resources (Java 7+): Para recursos que implementan AutoCloseable
+        try (FileReader fr = new FileReader("otro_archivo.txt")) {
+            // Recursos se cierran automáticamente
+            System.out.println("Archivo abierto con try-with-resources.");
+        } catch (IOException e) {
+            System.err.println("Error con try-with-resources: " + e.getMessage());
+        }
+    }
+}
+```
+
+---
+
+## 13. 📂 Entrada/Salida (I/O)
+
+Clases en el paquete `java.io` y `java.nio`.
+
+* **Lectura de Entrada del Usuario**: `Scanner`.
+  ```java
+  import java.util.Scanner;
+  Scanner scanner = new Scanner(System.in);
+  System.out.print("Introduce tu nombre: ");
+  String nombre = scanner.nextLine();
+  System.out.print("Introduce tu edad: ");
+  int edad = scanner.nextInt();
+  scanner.close(); // Cerrar el scanner
+  ```
+* **Lectura/Escritura de Archivos (Texto)**: `FileReader`/`FileWriter`, `BufferedReader`/`BufferedWriter`.
+  ```java
+  import java.io.BufferedReader;
+  import java.io.BufferedWriter;
+  import java.io.FileReader;
+  import java.io.FileWriter;
+  import java.io.IOException;
+
+  // Escribir
+  try (BufferedWriter writer = new BufferedWriter(new FileWriter("salida.txt"))) {
+      writer.write("Primera línea.");
+      writer.newLine();
+      writer.write("Segunda línea.");
+  } catch (IOException e) { /* ... */ }
+
+  // Leer
+  try (BufferedReader reader = new BufferedReader(new FileReader("salida.txt"))) {
+      String linea;
+      while ((linea = reader.readLine()) != null) {
+          System.out.println("Leído: " + linea);
+      }
+  } catch (IOException e) { /* ... */ }
+  ```
+* **Lectura/Escritura de Archivos (Bytes)**: `FileInputStream`/`FileOutputStream`.
+
+---
+
+## 14. 🧵 Concurrencia (Threads)
+
+Permite ejecutar múltiples partes de un programa simultáneamente.
+
+* **Extendiendo `Thread`**:
+  ```java
+  class MiHilo extends Thread {
+      @Override
+      public void run() {
+          for (int i = 0; i < 3; i++) {
+              System.out.println("Hilo extendido: " + i);
+          }
+      }
+  }
+  // Uso: new MiHilo().start();
+  ```
+* **Implementando `Runnable` (preferido):**
+  ```java
+  class MiTarea implements Runnable {
+      @Override
+      public void run() {
+          for (int i = 0; i < 3; i++) {
+              System.out.println("Tarea Runnable: " + i);
+          }
+      }
+  }
+  // Uso: new Thread(new MiTarea()).start();
+  ```
+* **Sincronización**: `synchronized` palabra clave o `java.util.concurrent` (Lock, Semaphore, ExecutorService).
+  ```java
+  // Método sincronizado
+  public synchronized void incrementar() { /* ... */ }
+
+  // Bloque sincronizado
+  // synchronized (this) { /* ... */ }
+  ```
+* **`ExecutorService` (Java Concurrency API)**: La forma moderna y recomendada para gestionar hilos.
+  ```java
+  import java.util.concurrent.ExecutorService;
+  import java.util.concurrent.Executors;
+
+  // ExecutorService executor = Executors.newFixedThreadPool(5); // Pool de 5 hilos
+  // executor.submit(new MiTarea()); // Envía una tarea
+  // executor.shutdown(); // Apaga el pool
+  ```
+
+---
+
+## 15. 💡 Buenas Prácticas y Consejos
+
+* **Convenciones de Nomenclatura**: CamelCase para variables y métodos (`miVariable`), PascalCase para clases e interfaces (`MiClase`), ALL_CAPS para constantes (`MI_CONSTANTE`).
+* **Inmutabilidad**: Prefiere objetos inmutables cuando sea posible (ej. `String`).
+* **Usa el `try-with-resources`**: Para cerrar automáticamente recursos que implementan `AutoCloseable` (streams, conexiones a base de datos).
+* **`equals()` y `hashCode()`**: Si sobrescribes `equals()`, siempre sobrescribe también `hashCode()` para que tus objetos funcionen correctamente en colecciones basadas en hash (ej. `HashMap`, `HashSet`).
+* **`==` vs `equals()` para objetos**:
+  * `==`: Compara referencias de objetos (si apuntan a la misma dirección de memoria).
+  * `equals()`: Compara el *contenido* de los objetos. **¡CRÍTICO para `String`!**
+* **Manejo Robusto de Excepciones**: No captures `Exception` genéricas a menos que tengas un plan para manejarlas. Captura excepciones específicas.
+* **Programación Orientada a Interfaces**: Prefiere programar hacia interfaces (`List<String> myList = new ArrayList<>();`) en lugar de implementaciones (`ArrayList<String> myList = new ArrayList<>();`).
+* **Delegación vs Herencia**: Prefiere la composición (delegación) sobre la herencia cuando sea posible, para un diseño más flexible.
+* **Bibliotecas Estándar**: Familiarízate con la extensa biblioteca estándar de Java (ej. `java.time` para fechas, `java.util.Collections` para utilidades de colecciones).
+* **Pruebas Unitarias**: Utiliza frameworks como JUnit para escribir pruebas unitarias.
+
+---
+
+Este cheatsheet te proporciona una referencia completa y concisa de Java, cubriendo los fundamentos del lenguaje, sus principios de POO, concurrencia y las mejores prácticas para construir aplicaciones robustas y eficientes.

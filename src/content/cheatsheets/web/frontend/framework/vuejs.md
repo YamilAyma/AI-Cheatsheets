@@ -1,0 +1,620 @@
+---
+title: "vuejs"
+
+
+---# 💚 Vue.js Cheatsheet Completo 💚
+
+Vue.js es un framework progresivo para construir interfaces de usuario. Está diseñado para ser adoptado incrementalmente. La biblioteca principal se centra solo en la capa de vista, lo que lo hace fácil de integrar con otras bibliotecas o proyectos existentes. También es perfectamente capaz de impulsar sofisticadas aplicaciones de una sola página (SPA) cuando se utiliza en combinación con herramientas modernas y librerías de soporte.
+
+## 1. 🌟 Conceptos Clave
+
+* **Componentes**: Bloques de construcción reutilizables y autocontenidos que encapsulan lógica, vista y estilo.
+* **Template Syntax**: HTML extendido con directivas y sintaxis de enlace de Vue para renderizar datos dinámicamente y manejar eventos.
+* **Reactivity System**: Vue rastrea automáticamente los cambios en el estado de tu componente y actualiza el DOM de manera eficiente.
+* **Data Binding**: Sincronización de datos entre el modelo (estado) y la vista (DOM).
+* **Directivas**: Atributos especiales con el prefijo `v-` que aplican comportamiento reactivo al DOM (ej. `v-if`, `v-for`, `v-bind`, `v-on`, `v-model`).
+* **Props**: Datos que se pasan de un componente padre a un componente hijo.
+* **Emits (Eventos)**: Comunicación de un componente hijo a un componente padre.
+* **Composition API (Recomendado en Vue 3)**: Un conjunto de APIs que permiten organizar la lógica del componente por características, mejorando la reutilización y legibilidad del código.
+* **Options API (Legado/Alternativa)**: El enfoque tradicional para organizar la lógica del componente en objetos de opciones (`data`, `methods`, `computed`, `watch`, `lifecycle hooks`).
+
+---
+
+## 2. 🛠️ Configuración Inicial (Vite + Vue)
+
+La forma más recomendada para iniciar un proyecto Vue es con Vite.
+
+1. **Crear un Nuevo Proyecto Vue con Vite:**
+
+   ```bash
+   npm create vue@latest # Seguir las indicaciones (preferir Vue 3, TypeScript, Vue Router, Pinia)
+   # o
+   yarn create vue@latest
+   ```
+2. **Navegar al Directorio del Proyecto:**
+
+   ```bash
+   cd my-vue-app
+   ```
+3. **Instalar Dependencias:**
+
+   ```bash
+   npm install
+   # o
+   yarn
+   ```
+4. **Iniciar el Servidor de Desarrollo:**
+
+   ```bash
+   npm run dev
+   # o
+   yarn dev
+   ```
+
+   Visita `http://localhost:5173` (o el puerto indicado).
+
+---
+
+## 3. 🧩 Componentes (Vue 3 - `setup` Script)
+
+Los componentes de un solo archivo (`.vue`) encapsulan template, script y style. El `<script setup>` es el enfoque moderno para usar Composition API.
+
+```vue
+<!-- src/components/Counter.vue -->
+<script setup>
+import { ref, computed, onMounted, watch } from 'vue'; // Importa APIs de Vue
+
+// --- Estado Reactivo ---
+const count = ref(0); // Estado reactivo de tipo primitivo
+const message = ref('Hola Vue!');
+
+// --- Propiedades ---
+const props = defineProps({
+  initialValue: {
+    type: Number,
+    default: 0
+  },
+  title: String
+});
+
+// --- Eventos ---
+const emit = defineEmits(['reset']); // Declara eventos que este componente puede emitir
+
+// --- Propiedades Calculadas ---
+const isEven = computed(() => count.value % 2 === 0);
+const displayedTitle = computed(() => props.title || 'Contador por Defecto');
+
+// --- Métodos (Funciones) ---
+const increment = () => {
+  count.value++;
+};
+
+const decrement = () => {
+  count.value--;
+};
+
+const resetCounter = () => {
+  count.value = props.initialValue;
+  emit('reset'); // Emite el evento 'reset'
+};
+
+// --- Watchers ---
+watch(count, (newCount, oldCount) => {
+  console.log(`El contador cambió de ${oldCount} a ${newCount}`);
+});
+
+// --- Lifecycle Hooks ---
+onMounted(() => {
+  count.value = props.initialValue;
+  console.log('Componente Counter montado.');
+});
+</script>
+
+<template>
+  <div class="card">
+    <h3>{{ displayedTitle }}</h3>
+    <p>Contador: {{ count }}</p>
+    <p v-if="isEven" class="status">El número es par</p>
+    <p v-else class="status">El número es impar</p>
+    <button @click="increment">Incrementar</button>
+    <button @click="decrement">Decrementar</button>
+    <button @click="resetCounter">Resetear</button>
+    <p>{{ message }}</p>
+  </div>
+</template>
+
+<style scoped>
+.card {
+  border: 1px solid #ccc;
+  padding: 15px;
+  margin: 10px;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+.status {
+  font-weight: bold;
+}
+.status.even { color: green; }
+</style>
+```
+
+**Uso en otro Componente (ej. `App.vue`):**
+
+```vue
+<!-- src/App.vue -->
+<script setup>
+import Counter from './components/Counter.vue'; // Importa el componente
+</script>
+
+<template>
+  <h1>Mi Aplicación Vue</h1>
+  <Counter :initial-value="10" title="Contador Principal" @reset="handleReset" />
+  <Counter initial-value="5" title="Contador Secundario" />
+</template>
+
+<script>
+// Puedes combinar <script setup> con un script normal para opciones que no son reactivas
+export default {
+  methods: {
+    handleReset() {
+      console.log('Contador reseteado desde el padre!');
+      // Lógica adicional para manejar el evento reset
+    }
+  }
+}
+</script>
+```
+
+---
+
+## 4. 🔗 Template Syntax (Sintaxis de Plantillas)
+
+### 4.1. Interpolación de Texto (`{{ }}`)
+
+```html
+<p>Hola, {{ userName }}!</p>
+<p>Suma: {{ 10 + 5 }}</p>
+```
+
+### 4.2. Directivas (`v-`)
+
+* **`v-bind:` (o `:`)**: Enlaza un atributo HTML a una expresión de datos.
+
+  ```html
+  <img v-bind:src="imageUrl" :alt="imageAltText">
+  <button :disabled="isButtonDisabled">Click</button>
+  ```
+* **`v-on:` (o `@`)**: Escucha eventos DOM y ejecuta código JavaScript.
+
+  ```html
+  <button v-on:click="handleClick">Clickeame</button>
+  <input @input="handleInput" :value="inputValue">
+  ```
+
+  * **Modificadores de Eventos**: `@click.prevent` (preventDefault), `@click.stop` (stopPropagation), `@keyup.enter`, `@submit.once` (una vez).
+* **`v-model`**: Enlace de datos bidireccional en elementos de formulario.
+
+  ```html
+  <input type="text" v-model="username">
+  <textarea v-model="message"></textarea>
+  <input type="checkbox" v-model="agreed">
+  <select v-model="selectedOption">...</select>
+  ```
+
+  * **Modificadores de `v-model`**: `.lazy`, `.number`, `.trim`.
+    ```html
+    <input v-model.lazy="username"> <!-- Sincroniza en 'change' en lugar de 'input' -->
+    <input v-model.number="age" type="number">
+    <input v-model.trim="searchTerm">
+    ```
+* **`v-if` / `v-else-if` / `v-else`**: Renderizado condicional (elimina/recrea elementos del DOM).
+
+  ```html
+  <p v-if="loggedIn">Bienvenido!</p>
+  <p v-else-if="loading">Cargando...</p>
+  <p v-else>Por favor, inicia sesión.</p>
+  ```
+* **`v-show`**: Renderizado condicional (cambia `display` CSS, elemento siempre en el DOM).
+
+  ```html
+  <p v-show="showWarning">¡Advertencia!</p>
+  ```
+* **`v-for`**: Itera sobre una lista o un objeto.
+
+  ```html
+  <ul>
+    <li v-for="item in items" :key="item.id">{{ item.name }}</li>
+  </ul>
+  <!-- Con índice -->
+  <ul v-for="(item, index) in items" :key="item.id">
+    <li>{{ index }}: {{ item.name }}</li>
+  </ul>
+  <!-- Iterar sobre objeto -->
+  <div v-for="(value, key, index) in myObject" :key="key">
+    {{ index }}. {{ key }}: {{ value }}
+  </div>
+  ```
+
+  * **`key`**: ¡CRÍTICO! Necesario para ayudar a Vue a rastrear la identidad de los nodos y optimizar las actualizaciones de la lista.
+
+---
+
+## 5. ⚡ Reactividad (Composition API)
+
+### 5.1. `ref()` (Estado para Primitivos y Objetos Simples)
+
+Crea una referencia reactiva que contiene un valor. Se accede/modifica con `.value`.
+
+```javascript
+import { ref } from 'vue';
+const count = ref(0); // Tipo Number
+const userName = ref('Guest'); // Tipo String
+const isLoading = ref(true); // Tipo Boolean
+const user = ref({ id: 1, name: 'Alice' }); // Objeto completo reactivo
+
+count.value++; // Acceder/Modificar el valor
+userName.value = 'Bob';
+```
+
+### 5.2. `reactive()` (Estado para Objetos y Arrays)
+
+Crea un objeto reactivo que envuelve un objeto JavaScript. No se usa `.value`.
+
+```javascript
+import { reactive } from 'vue';
+const state = reactive({
+  user: { id: 1, name: 'Alice', email: 'a@example.com' },
+  products: [],
+  settings: { darkMode: false }
+});
+
+state.user.name = 'Bob'; // Acceder/Modificar directamente
+state.products.push({ id: 10, name: 'New Item' });
+```
+
+* **Nota**: `ref` es más flexible ya que puede contener cualquier tipo de valor. Para la mayoría de los casos, `ref` es suficiente y simplifica la lógica. Usa `reactive` para objetos complejos que siempre permanecerán como objetos.
+
+### 5.3. `computed()` (Propiedades Calculadas)
+
+Crea una propiedad reactiva que se calcula a partir de otras propiedades reactivas. Solo se recalcula cuando sus dependencias cambian.
+
+```javascript
+import { ref, computed } from 'vue';
+const firstName = ref('John');
+const lastName = ref('Doe');
+
+const fullName = computed(() => firstName.value + ' ' + lastName.value);
+
+// Con getter y setter (raro, pero posible)
+const customText = computed({
+  get: () => `Mi texto es: ${message.value}`,
+  set: (newValue) => { message.value = newValue.replace('Mi texto es: ', ''); }
+});
+```
+
+### 5.4. `watch()` (Observadores)
+
+Observa un dato reactivo y ejecuta un callback cuando cambia.
+
+```javascript
+import { ref, watch } from 'vue';
+const count = ref(0);
+
+watch(count, (newCount, oldCount) => {
+  console.log(`Contador cambió de ${oldCount} a ${newCount}`);
+});
+
+watch(() => count.value > 5, (isOverFive) => {
+  if (isOverFive) {
+    console.log('El contador ha superado 5!');
+  }
+});
+
+// Observar múltiples fuentes
+watch([count, message], ([newCount, newMessage], [oldCount, oldMessage]) => {
+  console.log(`Count: ${newCount}, Message: ${newMessage}`);
+});
+
+// Watch 'deep' en objetos reactivos (por defecto en ref de objetos y reactive)
+const user = reactive({ name: 'Alice', age: 30 });
+watch(user, (newUser, oldUser) => {
+  console.log('Objeto de usuario ha cambiado (profundo)');
+});
+```
+
+---
+
+## 6. ♻️ Ciclo de Vida del Componente (Composition API)
+
+Hooks para ejecutar código en diferentes etapas del ciclo de vida del componente.
+
+* `onMounted(() => { ... })`: Después de que el componente ha sido montado en el DOM.
+* `onUpdated(() => { ... })`: Después de que el componente ha actualizado su DOM debido a un cambio reactivo.
+* `onUnmounted(() => { ... })`: Justo antes de que un componente sea desmontado del DOM.
+* `onBeforeMount(() => { ... })`
+* `onBeforeUpdate(() => { ... })`
+* `onBeforeUnmount(() => { ... })`
+* `onErrorCaptured(() => { ... })`: Para capturar errores de componentes hijos.
+* `onRenderTracked(() => { ... })`
+* `onRenderTriggered(() => { ... })`
+
+```javascript
+import { onMounted, onUnmounted } from 'vue';
+
+onMounted(() => {
+  console.log('Componente montado!');
+  // Puedes añadir listeners de eventos globales aquí
+});
+
+onUnmounted(() => {
+  console.log('Componente desmontado!');
+  // Limpia timers, listeners, suscripciones
+});
+```
+
+---
+
+## 7. 📦 State Management (Pinia - Recomendado)
+
+Pinia es la solución de gestión de estado recomendada para Vue 3. Es ligera, modular y tiene un excelente soporte de TypeScript.
+
+1. **Instalación:**
+   ```bash
+   npm install pinia
+   ```
+2. **Configuración en `main.js` (o `main.ts`):**
+   ```javascript
+   import { createApp } from 'vue';
+   import { createPinia } from 'pinia';
+   import App from './App.vue';
+
+   const app = createApp(App);
+   app.use(createPinia()); // Inicializa Pinia
+   app.mount('#app');
+   ```
+3. **Definir un Store (`src/stores/counter.js`):**
+   ```javascript
+   import { defineStore } from 'pinia';
+   import { ref, computed } from 'vue';
+
+   export const useCounterStore = defineStore('counter', () => { // 'counter' es el ID único
+     const count = ref(0);
+     const doubleCount = computed(() => count.value * 2);
+
+     function increment() {
+       count.value++;
+     }
+     function decrement() {
+       count.value--;
+     }
+     // Puedes tener acciones asíncronas
+     async function fetchCount() {
+       // Simula una API call
+       const response = await new Promise(resolve => setTimeout(() => resolve(100), 1000));
+       count.value = response;
+     }
+
+     return { count, doubleCount, increment, decrement, fetchCount };
+   });
+   ```
+4. **Uso del Store en un Componente:**
+   ```vue
+   <!-- src/components/CounterDisplay.vue -->
+   <script setup>
+   import { useCounterStore } from '../stores/counter'; // Importa el store
+
+   const counterStore = useCounterStore(); // Usa el store
+   </script>
+
+   <template>
+     <div class="store-display">
+       <p>Contador del Store: {{ counterStore.count }}</p>
+       <p>Doble del Contador: {{ counterStore.doubleCount }}</p>
+       <button @click="counterStore.increment()">Incrementar Store</button>
+       <button @click="counterStore.fetchCount()">Cargar Contado</button>
+     </div>
+   </template>
+   ```
+
+---
+
+## 8. 🗺️ Routing (Vue Router - Recomendado)
+
+Vue Router es el enrutador oficial de Vue.js.
+
+1. **Instalación (si no la elegiste en `create vue`):**
+   ```bash
+   npm install vue-router@4
+   ```
+2. **Configuración en `router/index.js`:**
+   ```javascript
+   // src/router/index.js
+   import { createRouter, createWebHistory } from 'vue-router';
+   import HomeView from '../views/HomeView.vue';
+   import AboutView from '../views/AboutView.vue';
+   import UserProfile from '../views/UserProfile.vue';
+
+   const routes = [
+     {
+       path: '/',
+       name: 'home',
+       component: HomeView
+     },
+     {
+       path: '/about',
+       name: 'about',
+       component: AboutView
+     },
+     {
+       path: '/users/:id', // Ruta dinámica
+       name: 'user-profile',
+       component: UserProfile,
+       props: true, // Pasa los parámetros de ruta como props al componente
+       // Opcional: Meta fields para guardas de ruta
+       meta: { requiresAuth: true }
+     }
+   ];
+
+   const router = createRouter({
+     history: createWebHistory(), // Historial HTML5
+     routes
+   });
+
+   // --- Guardas de Navegación Globales ---
+   router.beforeEach((to, from) => {
+     // Ejemplo de guarda de autenticación
+     if (to.meta.requiresAuth && !localStorage.getItem('userToken')) {
+       // Redirige al login
+       return { name: 'login' };
+     }
+   });
+
+   export default router;
+   ```
+3. **Uso en `main.js`:**
+   ```javascript
+   import { createApp } from 'vue';
+   import App from './App.vue';
+   import router from './router'; // Importa el enrutador
+
+   const app = createApp(App);
+   app.use(router); // Usa Vue Router
+   app.mount('#app');
+   ```
+4. **Uso en Componentes (Template):**
+   * **`<router-link>`**: Para navegación declarativa.
+     ```html
+     <router-link to="/">Inicio</router-link> |
+     <router-link :to="{ name: 'about' }">Acerca</router-link> |
+     <router-link :to="{ name: 'user-profile', params: { id: 123 } }">Usuario 123</router-link>
+     ```
+   * **`<router-view>`**: Marcador de posición para el componente de la ruta activa.
+     ```html
+     <router-view></router-view>
+     ```
+5. **Uso en Componentes (Script - Navegación Programática):**
+   ```javascript
+   import { useRouter, useRoute } from 'vue-router';
+
+   // En <script setup>
+   const router = useRouter(); // Instancia del enrutador
+   const route = useRoute();   // Ruta actual
+
+   const goToHome = () => {
+     router.push('/'); // Navega a la ruta raíz
+   };
+
+   const goToUser = (id) => {
+     router.push({ name: 'user-profile', params: { id } });
+   };
+
+   // Acceder a parámetros de ruta
+   const userId = route.params.id;
+   const queryParam = route.query.sort;
+   ```
+
+---
+
+## 9. 🎨 Estilización en Componentes de un Solo Archivo
+
+* **`<style scoped>`**: Estilos específicos del componente (no afectan a otros componentes).
+* **`<style>` (sin `scoped`)**: Estilos globales.
+* **Preprocesadores**: Puedes usar Sass, Less, Stylus (configurar en `vite.config.js`).
+
+  ```vue
+  <style scoped>
+  .card {
+    background-color: #f9f9f9;
+    border: 1px solid #eee;
+  }
+  .card h3 {
+    color: #333;
+  }
+  </style>
+
+  <style>
+  /* Estilos globales */
+  body {
+    font-family: sans-serif;
+  }
+  </style>
+
+  <style lang="scss" scoped>
+  $primary-color: #42b983;
+  .button {
+    background-color: $primary-color;
+    &:hover {
+      background-color: darken($primary-color, 10%);
+    }
+  }
+  </style>
+  ```
+
+---
+
+## 10. 🔌 Proveer/Inyectar (Dependency Injection)
+
+Para compartir datos entre componentes sin prop-drilling, especialmente útil en árboles de componentes profundos.
+
+```javascript
+// ParentComponent.vue
+<script setup>
+import { provide, ref } from 'vue';
+import ChildComponent from './ChildComponent.vue';
+
+const message = ref('Mensaje desde el padre');
+const updateMessage = (newMessage) => {
+  message.value = newMessage;
+};
+
+// Provee un valor (puede ser reactivo o una función)
+provide('my-message', message);
+provide('update-message-func', updateMessage);
+</script>
+
+<template>
+  <div>
+    <h2>Padre: {{ message }}</h2>
+    <ChildComponent />
+  </div>
+</template>
+
+// ChildComponent.vue
+<script setup>
+import { inject } from 'vue';
+
+// Inyecta el valor provisto por el padre
+const message = inject('my-message');
+const updateMessage = inject('update-message-func');
+
+const changeMessage = () => {
+  updateMessage('Mensaje actualizado desde el hijo!');
+};
+</script>
+
+<template>
+  <div class="child">
+    <h3>Hijo: {{ message }}</h3>
+    <button @click="changeMessage">Actualizar Mensaje</button>
+  </div>
+</template>
+```
+
+---
+
+## 11. 💡 Buenas Prácticas y Consejos
+
+* **Usa `<script setup>`**: Es el enfoque moderno y preferido para la Composition API, hace que el código sea más conciso y legible.
+* **Reconocimiento de Props/Emits**: Usa `defineProps` y `defineEmits` para una tipificación correcta y para documentar las interfaces de tus componentes.
+* **`key` en `v-for`**: Siempre proporciona una `key` única y estable para los elementos en las listas `v-for`.
+* **Inmutabilidad del Estado**: Al actualizar arrays y objetos reactivos, considera crear nuevas copias si realizas transformaciones complejas para evitar efectos secundarios y asegurar la reactividad.
+* **Desuscribe Eventos/Timers**: En `onUnmounted`, asegúrate de limpiar cualquier listener de eventos globales, timers o suscripciones para evitar fugas de memoria.
+* **Organiza tu Store con Pinia**: Para la gestión de estado de la aplicación, Pinia es la solución recomendada para su simplicidad y modularidad.
+* **Validación de Props**: Define `type`, `default`, `required`, y funciones `validator` para tus props para componentes más robustos.
+* **Directivas Personalizadas / Plugins**: Extiende Vue con tus propias directivas o instala plugins para funcionalidades comunes (ej. validación de formularios).
+* **Vue DevTools**: Utiliza la extensión de navegador Vue DevTools. Es invaluable para inspeccionar el árbol de componentes, el estado, las props, los eventos y el rendimiento.
+* **TypeScript**: Considera usar TypeScript con Vue para una mayor seguridad de tipos y una mejor experiencia de desarrollo, especialmente en proyectos grandes.
+
+---
+
+Este cheatsheet te proporciona una referencia completa de Vue.js (Vue 3), cubriendo los conceptos esenciales, la Composition API, el enrutamiento, la gestión de estado y las mejores prácticas para construir aplicaciones web eficientes y escalables.

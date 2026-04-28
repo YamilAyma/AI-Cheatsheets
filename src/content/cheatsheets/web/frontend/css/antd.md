@@ -1,0 +1,345 @@
+---
+title: "antd"
+---
+
+¡Absolutamente! Ant Design es una biblioteca de componentes de UI de React de nivel empresarial, reconocida por su lenguaje de diseño elegante, su rica colección de componentes y su enfoque en la experiencia de usuario y la accesibilidad. Aquí tienes un "cheatsheet" completo y bien estructurado para Ant Design 5.0, optimizado para ser claro y conciso para una IA conversacional.
+
+---
+
+# antd 5.0 (Ant Design) Cheatsheet Completo
+
+Ant Design (antd) es una biblioteca de componentes de interfaz de usuario de React que sigue los principios de Ant Design para construir experiencias de usuario consistentes y agradables. La versión 5.0 trae cambios significativos en el tema (usando tokens y CSS-in-JS) y mejoras de rendimiento.
+
+---
+
+## 1. 🌟 Conceptos Clave
+
+* **Librería de Componentes**: Colección de componentes de UI de React de alta calidad, listos para usar (botones, formularios, tablas, etc.).
+* **Lenguaje de Diseño**: Sigue un conjunto de principios de diseño bien definidos que garantizan coherencia y usabilidad.
+* **Theming (Sistema de Tokens)**: En v5, la personalización del tema se realiza a través de "tokens de diseño" (variables CSS/JS), que permiten un control granular y dinámico del estilo (Colores, Espaciado, Tipografía, Bordes, etc.).
+* **CSS-in-JS**: Utiliza [@ant-design/cssinjs](https://ant.design/docs/react/css-in-js) internamente para la estilización, lo que mejora el rendimiento y la consistencia del tema.
+* **TypeScript-Friendly**: Construido con TypeScript, ofreciendo una excelente inferencia de tipos.
+* **Accesibilidad (A11y)**: Gran enfoque en la accesibilidad para usuarios con discapacidades.
+
+---
+
+## 2. 🛠️ Configuración Inicial
+
+1. **Instalación:**
+
+   ```bash
+   npm install antd
+   # o
+   yarn add antd
+   ```
+2. **Uso Básico en tu Aplicación React:**
+
+   * No necesitas importar archivos CSS directamente como en versiones anteriores. El CSS se inyecta automáticamente con CSS-in-JS.
+   * `ConfigProvider`: Esencial para configuración global, incluyendo el tema, internacionalización, prefijos de clase, etc.
+
+   ```jsx
+   // src/main.jsx o src/App.jsx
+   import React from 'react';
+   import ReactDOM from 'react-dom/client';
+   import App from './App.jsx';
+
+   // Importa el componente y los estilos de un componente individual
+   import { Button, ConfigProvider } from 'antd';
+   import es_ES from 'antd/locale/es_ES'; // Para internacionalización (opcional)
+   import 'dayjs/locale/es'; // Si usas DatePicker, Day.js necesita su locale
+
+   // Crea un tema personalizado (opcional)
+   const myCustomTheme = {
+     token: {
+       // Colores
+       colorPrimary: '#00b96b', // Verde vibrante como color primario
+       colorSuccess: '#52c41a',
+       colorWarning: '#faad14',
+       colorError: '#ff4d4f',
+       colorInfo: '#1677ff',
+       colorTextBase: '#333333',
+
+       // Espaciado
+       marginSM: 12,
+
+       // Bordes
+       borderRadius: 8,
+
+       // Otros tokens (tipografía, sombras, etc.)
+       fontSize: 14,
+       lineHeight: 1.6,
+     },
+     components: {
+       Button: {
+         // Tokens específicos para el componente Button
+         borderRadius: 4, // Botones con bordes menos redondeados que el global
+         controlHeight: 40, // Altura de los botones
+         primaryColor: '#ffffff', // Color del texto del botón primario
+       },
+       Layout: {
+         headerBg: '#f0f2f5', // Fondo del header del layout
+       },
+       // ... otros componentes
+     },
+     // Puedes añadir un algoritmo de tema si quieres, por ejemplo para modo oscuro
+     // algorithm: antd.theme.darkAlgorithm, // Si importas antd.theme
+   };
+
+   ReactDOM.createRoot(document.getElementById('root')).render(
+     <React.StrictMode>
+       <ConfigProvider
+         locale={es_ES} // Configuración global de idioma
+         theme={myCustomTheme} // Aplica el tema personalizado
+       >
+         <App />
+       </ConfigProvider>
+     </React.StrictMode>,
+   );
+   ```
+
+---
+
+## 3. 🧩 Componentes Comunes (Cheatsheet Rápido)
+
+### Layout
+
+* **`Layout`**: Contenedor principal para el diseño de la página.
+  * `Header`, `Content`, `Footer`, `Sider`: Subcomponentes de `Layout`.
+
+  ```jsx
+  import { Layout } from 'antd';
+  const { Header, Content, Footer, Sider } = Layout;
+  <Layout>
+    <Sider>...</Sider>
+    <Layout>
+      <Header>...</Header>
+      <Content>...</Content>
+      <Footer>...</Footer>
+    </Layout>
+  </Layout>
+  ```
+* **`Space`**: Para añadir espaciado entre elementos.
+  ```jsx
+  import { Space, Button } from 'antd';
+  <Space direction="horizontal" size="middle"> {/* 'vertical', 'small', 'large', number */}
+    <Button>Botón 1</Button>
+    <Button>Botón 2</Button>
+  </Space>
+  ```
+* **`Row` / `Col` (Grid)**: Sistema de cuadrícula responsivo (24 columnas).
+  ```jsx
+  import { Row, Col } from 'antd';
+  <Row gutter={[16, 16]}> {/* gutter para espaciado horizontal/vertical */}
+    <Col xs={24} sm={12} md={8}>Columna 1</Col>
+    <Col xs={24} sm={12} md={16}>Columna 2</Col>
+  </Row>
+  ```
+
+### Navegación
+
+* **`Menu`**: Barra de navegación (horizontal, vertical, inline).
+* **`Breadcrumb`**: Ruta de navegación.
+* **`Pagination`**: Componente de paginación.
+
+### Entrada de Datos (Forms)
+
+* **`Form`**: Contenedor para formularios, con manejo de estado y validación.
+  * `Form.Item`: Wrapper para cada campo de formulario, maneja validación, etiquetas, etc.
+  * `name`: Identificador único para el campo.
+  * `rules`: Reglas de validación (ej. `{ required: true, message: 'Campo requerido' }`).
+  * `label`: Etiqueta del campo.
+* **`Input`**: Campo de entrada de texto.
+  * `Input.Password`, `Input.Search`, `Input.TextArea`.
+* **`Button`**: Botones.
+  * `type`: `'primary'`, `'default'`, `'dashed'`, `'text'`, `'link'`.
+  * `danger`, `ghost`, `loading`, `disabled`.
+* **`Select`**: Menú desplegable.
+  * `mode`: `'multiple'`, `'tags'`.
+  * `options`: Array de `{ value, label }`.
+* **`DatePicker`**: Selector de fechas.
+  * `showTime`: Para seleccionar hora.
+  * `Picker`: `'date'`, `'week'`, `'month'`, `'quarter'`, `'year'`.
+* **`Checkbox` / `Checkbox.Group`**: Casillas de verificación.
+* **`Radio` / `Radio.Group`**: Botones de radio.
+* **`Switch`**: Interruptor (toggle).
+* **`Upload`**: Subida de archivos.
+
+```jsx
+import { Form, Input, Button, message } from 'antd';
+
+function LoginForm() {
+  const onFinish = (values) => {
+    console.log('Success:', values);
+    message.success('Formulario enviado!');
+  };
+
+  const onFinishFailed = (errorInfo) => {
+    console.log('Failed:', errorInfo);
+    message.error('Error de validación!');
+  };
+
+  return (
+    <Form
+      name="basic"
+      labelCol={{ span: 8 }}
+      wrapperCol={{ span: 16 }}
+      initialValues={{ remember: true }}
+      onFinish={onFinish}
+      onFinishFailed={onFinishFailed}
+      autoComplete="off"
+    >
+      <Form.Item
+        label="Nombre de usuario"
+        name="username"
+        rules={[{ required: true, message: 'Por favor ingresa tu nombre de usuario!' }]}
+      >
+        <Input />
+      </Form.Item>
+
+      <Form.Item
+        label="Contraseña"
+        name="password"
+        rules={[{ required: true, message: 'Por favor ingresa tu contraseña!' }]}
+      >
+        <Input.Password />
+      </Form.Item>
+
+      <Form.Item wrapperCol={{ offset: 8, span: 16 }}>
+        <Button type="primary" htmlType="submit">
+          Enviar
+        </Button>
+      </Form.Item>
+    </Form>
+  );
+}
+```
+
+### Visualización de Datos
+
+* **`Table`**: Tablas de datos.
+  * `columns`: Array de definiciones de columna.
+  * `dataSource`: Array de datos.
+  * `pagination`, `loading`, `rowSelection` (para selección de filas).
+* **`Card`**: Contenedor de contenido flexible.
+* **`Tag`**: Etiquetas pequeñas.
+* **`Typography`**: Para mostrar texto (ej. `Text`, `Title`, `Link`).
+* **`Descriptions`**: Lista de descripciones (clave-valor).
+* **`Image`**: Para mostrar imágenes con funcionalidades adicionales (vista previa).
+* **`Empty`**: Componente para estados vacíos.
+
+### Feedback
+
+* **`Message`**: Mensajes globales de feedback (éxito, error, advertencia).
+  * `message.success()`, `message.error()`, `message.warning()`, `message.info()`, `message.loading()`.
+* **`Notification`**: Notificaciones de esquina.
+  * `notification.success()`, `notification.error()`, etc.
+* **`Modal`**: Ventanas modales.
+  * `Modal.confirm()`, `Modal.info()`, `Modal.success()`, `Modal.error()`, `Modal.warning()`.
+* **`Spin`**: Indicadores de carga.
+* **`Alert`**: Mensajes de alerta estáticos.
+
+---
+
+## 4. 🎨 Theming y Personalización (Ant Design 5.0)
+
+El nuevo sistema de tema se basa en **tokens de diseño** y **CSS-in-JS**.
+
+* **Tokens de Diseño**: Son variables de estilo que controlan aspectos como colores, tipografía, espaciado, sombras, etc. Se dividen en:
+
+  * **Tokens Básicos**: Tokens globales (ej. `colorPrimary`, `fontSize`, `borderRadius`).
+  * **Tokens Semánticos**: Derivados de los básicos (ej. `colorText`, `colorBgContainer`).
+  * **Tokens de Componente**: Específicos de cada componente (ej. `Button.borderRadius`, `Input.activeBorderColor`).
+* **`ConfigProvider` (`theme` prop)**: El lugar principal para personalizar.
+
+  * **`token`**: Sobrescribe los tokens básicos y semánticos.
+  * **`components`**: Sobrescribe los tokens específicos de los componentes.
+  * **`algorithm`**: Aplica algoritmos de tema predefinidos (`defaultAlgorithm`, `darkAlgorithm`, `compactAlgorithm`) o personalizados.
+
+  ```jsx
+  // Ejemplo de tema en ConfigProvider
+  <ConfigProvider
+    theme={{
+      token: {
+        colorPrimary: '#1890ff', // Azul estándar
+        colorSuccess: '#52c41a',
+        borderRadius: 4, // Globalmente todos los bordes serán 4px
+      },
+      components: {
+        Button: {
+          colorPrimary: '#ff6347', // El botón primario tendrá este color, sobrescribiendo el token global
+          borderRadius: 2, // Botones con bordes de 2px
+        },
+        Input: {
+          activeBorderColor: '#ff6347',
+        },
+      },
+      algorithm: theme.darkAlgorithm, // Aplica el modo oscuro
+    }}
+  >
+    <App />
+  </ConfigProvider>
+  ```
+* **`useToken()` Hook**: Para acceder a los tokens de diseño y al algoritmo del tema dentro de tus componentes.
+
+  ```jsx
+  import { theme, Button } from 'antd';
+
+  function MyComponent() {
+    const { token } = theme.useToken(); // Obtiene los tokens actuales del tema
+    console.log(token.colorPrimary);
+    return <Button style={{ backgroundColor: token.colorPrimary }}>Mi Botón con Tema</Button>;
+  }
+  ```
+
+---
+
+## 5. 🖼️ Iconos
+
+Ant Design utiliza la librería `@ant-design/icons`.
+
+1. **Instalación**: `npm install @ant-design/icons`
+2. **Importación y Uso**:
+   ```jsx
+   import { HomeOutlined, DeleteOutlined } from '@ant-design/icons';
+   import { Button } from 'antd';
+
+   <HomeOutlined style={{ fontSize: '24px', color: '#08c' }} />
+   <Button type="primary" icon={<DeleteOutlined />}>Eliminar</Button>
+   ```
+
+---
+
+## 6. 🌍 Internacionalización (i18n)
+
+Se configura globalmente con la prop `locale` de `ConfigProvider`.
+
+```jsx
+import { ConfigProvider, DatePicker } from 'antd';
+import es_ES from 'antd/locale/es_ES'; // Importa el paquete de idioma
+import 'dayjs/locale/es'; // Si usas DatePicker, importa el locale para Day.js
+
+function MyApp() {
+  return (
+    <ConfigProvider locale={es_ES}>
+      <DatePicker />
+    </ConfigProvider>
+  );
+}
+```
+
+---
+
+## 7. 💡 Buenas Prácticas y Consejos
+
+* **Abstracción de componentes**: Encapsula la lógica compleja en componentes personalizados.
+* **Utiliza `Form` para formularios**: No solo proporciona estilos, sino también una potente validación y gestión de estado.
+* **`ConfigProvider` es tu amigo**: Centraliza la configuración global de tu tema, idioma y otras preferencias.
+* **Comprende el sistema de tokens**: En la v5, el entendimiento de los tokens es clave para la personalización eficiente.
+* **Importaciones modulares**: Ant Design soporta tree-shaking, así que importa solo los componentes que necesitas para reducir el tamaño final de tu bundle (ej. `import { Button, Table } from 'antd';`).
+* **Accesibilidad**: Sigue las directrices de accesibilidad y aprovecha las props ARIA de Ant Design.
+* **Usa `@ant-design/icons` para iconos**: Mantén la coherencia visual con los iconos del propio Ant Design.
+* **Documentación oficial**: La documentación de Ant Design es exhaustiva y un recurso invaluable.
+
+---
+
+Este cheatsheet te proporciona una base sólida para trabajar con Ant Design 5.0, cubriendo sus conceptos esenciales, componentes clave, y las nuevas formas de personalización que lo hacen aún más potente.

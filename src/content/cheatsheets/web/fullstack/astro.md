@@ -1,0 +1,416 @@
+---
+title: "astro"
+---
+
+
+---
+
+# 🚀 Astro Cheatsheet Completo 🚀
+
+Astro es un framework web de JavaScript todo-en-uno que te permite construir sitios web rápidos y centrados en el contenido con una experiencia de desarrollo moderna. Su principal diferenciador es que **envía cero JavaScript al cliente por defecto**, lo que resulta en tiempos de carga y métricas de rendimiento (Core Web Vitals) excepcionales. Utiliza una arquitectura de "Islas" para hidratar solo los componentes interactivos.
+
+---
+
+## 1. 🌟 Conceptos Clave
+
+* **HTML-first**: Astro genera HTML puro en el servidor, luego hidrata selectivamente solo las "islas" de interactividad.
+* **Isla de Interactividad**: Un componente de framework de UI (React, Vue, Svelte, etc.) que se carga y ejecuta en el cliente. El resto de la página es HTML estático.
+* **Zero JavaScript por defecto**: A menos que un componente tenga directivas `client:`, Astro no envía JavaScript de componentes al navegador.
+* **Agnóstico a frameworks de UI**: Puedes usar tus componentes de React, Vue, Svelte, Lit, Solid, Preact y Alpine.js (o mezclarlos en la misma página).
+* **Server-Side Rendering (SSR) / Static Site Generation (SSG)**: Astro es versátil. Puede generar sitios estáticos en tiempo de construcción o renderizar páginas dinámicamente en el servidor.
+* **Enrutamiento Basado en Archivos**: Las rutas se definen por la estructura de directorios y nombres de archivos.
+* **Colecciones de Contenido**: Un sistema integrado para gestionar contenido de forma tipada (Markdown, MDX, YAML, JSON).
+
+---
+
+## 2. 🛠️ Configuración Inicial
+
+1. **Crear un Nuevo Proyecto Astro:**
+   ```bash
+   npm create astro@latest # O `yarn create astro@latest` o `pnpm create astro@latest`
+   # Seguir las indicaciones (ej. proyecto vacío, instalar dependencias, inicializar git)
+   ```
+
+   * Esto crea:
+     * `src/pages/`: Directorio para tus páginas.
+     * `src/components/`: Directorio para tus componentes Astro/UI.
+     * `src/layouts/`: Directorio para tus layouts.
+     * `src/content/`: Directorio para colecciones de contenido (blogs, etc.).
+     * `public/`: Archivos estáticos (imágenes, favicons) servidos directamente.
+     * `astro.config.mjs`: Archivo de configuración principal.
+2. **Iniciar el Servidor de Desarrollo:**
+   ```bash
+   npm run dev
+   # Visita http://localhost:4321/
+   ```
+3. **Construir para Producción:**
+   ```bash
+   npm run build
+   # Genera una carpeta `dist/` con archivos optimizados.
+   ```
+4. **Previsualizar el Build de Producción:**
+   ```bash
+   npm run preview
+   ```
+
+---
+
+## 3. 🧩 Componentes Astro (`.astro`)
+
+Son el tipo de archivo principal en Astro. Combinan un "código de frontal" (frontmatter/script) para la lógica y un "template" para el HTML.
+
+### 3.1. Estructura de un Componente Astro
+
+```astro
+---
+// 1. Código de Frontal (Frontmatter / Script de Componente)
+// JavaScript/TypeScript que se ejecuta SÓLO en el servidor (en tiempo de build o de solicitud)
+import MyReactComponent from '../components/MyReactComponent.jsx'; // Importa componentes de UI
+import { format } from 'date-fns'; // Importa librerías Node.js
+import someData from '../data/mydata.json'; // Carga JSON/YAML/etc.
+
+// Definir y obtener props (se accede vía Astro.props)
+const { title, description, imageUrl, tags = [] } = Astro.props;
+
+// Variables y lógica que se usarán en el template
+const formattedDate = format(new Date(), 'yyyy-MM-dd');
+const isFeatured = tags.includes('featured');
+
+// Funciones o importaciones que no son para el cliente
+const serverSideFunction = () => { /* ... */ };
+---
+<!-- 2. Template (HTML + JSX-like) -->
+<!-- El HTML de este componente se renderiza en el servidor -->
+<div class="card">
+  <h2>{{ title }}</h2> {# Renderiza variables del script de componente #}
+  <img src="{{ imageUrl }}" alt="{{ title }}">
+  <p>{{ description }}</p>
+
+  <ul class="tags">
+    {# Bucles (v-for equivalente) #}
+    {% for tag in tags %}
+      <li>{{ tag }}</li>
+    {% endfor %}
+  </ul>
+
+  {# Renderizado condicional (v-if equivalente) #}
+  <div class="featured" astro:ignore-self v-if="isFeatured">Destacado!</div>
+  {# Astro permite lógica de JS directamente #}
+  {isFeatured && <p>¡Este artículo es especial!</p>}
+
+  <p>Fecha de publicación: {{ formattedDate }}</p>
+
+  <!-- Slots: para inyectar contenido desde el componente padre -->
+  <slot /> {# Slot por defecto #}
+  <slot name="footer" /> {# Slot con nombre #}
+
+  <!-- Importar componentes de otros frameworks de UI -->
+  <!-- Directivas client:* para hidratar componentes en el cliente -->
+  <MyReactComponent client:load message="¡Hola desde React!" />
+
+  <button class="button" onclick="alert('Hola!')">Clickeame (JS Vanilla)</button>
+</div>
+
+<style>
+/* Estilos CSS (scoped por defecto, como en Vue) */
+.card {
+  border: 1px solid #ccc;
+  padding: 1rem;
+  margin-bottom: 1rem;
+  border-radius: 8px;
+}
+h2 {
+  color: var(--astro-colors-primary); /* Acceso a variables CSS de Astro */
+}
+</style>
+```
+
+### 3.2. Props en Componentes Astro
+
+* Se declaran en el frontmatter (`const { propName } = Astro.props;`).
+* Se pasan como atributos HTML normales.
+
+  ```astro
+  <!-- src/components/MyCard.astro -->
+  ---
+  const { title, date } = Astro.props;
+  ---
+  <div>
+    <h3>{{ title }}</h3>
+    <p>{{ date }}</p>
+  </div>
+
+  <!-- Uso en src/pages/index.astro -->
+  <MyCard title="Mi primer post" date="2023-10-26" />
+  ```
+
+### 3.3. Slots
+
+Permiten que un componente padre inyecte contenido en un componente hijo.
+
+* **Slot por defecto**: `<slot />`
+* **Slots con nombre**: `<slot name="nombre_del_slot" />`
+
+  ```astro
+  <!-- src/components/Button.astro -->
+  <button>
+    <slot /> {# Aquí va el texto o icono del botón #}
+    <slot name="icon" /> {# Para un icono al final #}
+  </button>
+
+  <!-- Uso -->
+  <Button>
+    Click Aquí
+    <span slot="icon">⚡</span>
+  </Button>
+  ```
+
+---
+
+## 4. 🗺️ Enrutamiento (File-based Routing)
+
+Las páginas se definen en el directorio `src/pages/`.
+
+* **`src/pages/index.astro`**: La página raíz (`/`).
+* **`src/pages/about.astro`**: La página `/about`.
+* **`src/pages/blog/index.astro`**: La página `/blog`.
+* **Rutas Dinámicas**: Crea rutas con parámetros.
+  * `src/pages/blog/[slug].astro`: Genera una ruta para cada slug (ej. `/blog/mi-post-1`).
+  * Requiere la función `getStaticPaths()` para SSG.
+* **Rutas Catch-all**: Captura todos los segmentos de una ruta.
+  * `src/pages/[...slug].astro`: Captura rutas como `/a/b/c`.
+
+### 4.1. `getStaticPaths()` (Para Rutas Dinámicas SSG)
+
+Función necesaria en los archivos `[slug].astro` para generar rutas estáticamente en tiempo de construcción.
+
+```astro
+<!-- src/pages/blog/[slug].astro -->
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { getCollection } from 'astro:content'; // Para colecciones de contenido
+
+// getStaticPaths se ejecuta en tiempo de build
+export async function getStaticPaths() {
+  const blogPosts = await getCollection('blog'); // Obtiene todos los posts de la colección 'blog'
+
+  return blogPosts.map((post) => ({
+    params: { slug: post.slug }, // Define el parámetro dinámico de la URL
+    props: { post }, // Pasa el objeto post como prop al componente de página
+  }));
+}
+
+// Acceder a las props pasadas desde getStaticPaths
+const { post } = Astro.props; // `post` es el objeto de colección de contenido
+---
+<BaseLayout title={post.data.title}>
+  <h1>{{ post.data.title }}</h1>
+  <p>Publicado en: {{ post.data.pubDate.toLocaleDateString() }}</p>
+  <hr>
+  <div class="content">
+    <Content /> {# Componente Content para renderizar Markdown/MDX #}
+  </div>
+</BaseLayout>
+```
+
+---
+
+## 5. 🎨 Estilización
+
+* **Etiquetas `<style>` (Scoped por defecto)**: Similar a Vue, los estilos definidos en una etiqueta `<style>` dentro de un componente Astro (`.astro`) son automáticamente "scoped" a ese componente.
+  ```astro
+  <style>
+    .card { border: 1px solid blue; }
+  </style>
+  ```
+* **Estilos Globales**:
+  * Importa un archivo `.css` directamente en un layout base: `<link rel="stylesheet" href="/global.css">` o `<style is:global>@import '../styles/global.css';</style>`.
+  * Usa la directiva `is:global` en una etiqueta `<style>` para que sus estilos no estén scoped.
+    ```astro
+    <style is:global>
+      body { font-family: sans-serif; }
+    </style>
+    ```
+* **Preprocesadores**: Astro soporta Sass, Less, Stylus (instalar integración: `npm astro add sass`).
+* **Tailwind CSS**: Integración oficial con `npm astro add tailwind`.
+* **Variables CSS**: Puedes definir variables CSS globalmente y usarlas en tus componentes.
+
+---
+
+## 6. 🌐 Integraciones (UI Frameworks & Herramientas)
+
+Astro es extensible a través de "integraciones".
+
+1. **Añadir una Integración (CLI)**:
+
+   ```bash
+   npx astro add react # Añade soporte para React
+   npx astro add vue   # Añade soporte para Vue
+   # ... y muchas otras (solid, svelte, lit, preact, tailwind, mdx, etc.)
+   ```
+
+   * Esto actualiza tu `astro.config.mjs` automáticamente.
+2. **Uso de Componentes de UI Frameworks**:
+
+   * Simplemente impórtalos y úsalos en tus archivos `.astro`.
+   * **Directivas de cliente (`client:*`)**: **¡CRÍTICO!** Indican cuándo y cómo un componente de UI debe hidratarse (ejecutarse en el cliente). Si no se usa, el componente se renderiza en el servidor como HTML estático.
+     * **`client:load`**: Hidrata el componente tan pronto como la página carga y el JavaScript es accesible.
+     * **`client:idle`**: Hidrata el componente cuando el navegador está inactivo.
+     * **`client:visible`**: Hidrata el componente cuando entra en el viewport del usuario.
+     * **`client:media={query}`**: Hidrata cuando una media query CSS es verdadera (ej. `client:media="(max-width: 600px)"`).
+     * **`client:only={framework}`**: Hidrata solo en el cliente (no pre-renderiza en el servidor), útil para componentes que dependen de APIs del navegador. (ej. `<MyComponent client:only="react" />`)
+
+   ```astro
+   <!-- src/pages/index.astro -->
+   ---
+   import MyReactCounter from '../components/MyReactCounter.jsx';
+   import MyVueComponent from '../components/MyVueComponent.vue';
+   ---
+   <main>
+     <h1>Página con Islas</h1>
+     <MyReactCounter client:load initialCount={0} /> {# Se hidrata al cargar la página #}
+     <MyVueComponent client:visible message="Solo cuando sea visible" /> {# Se hidrata al scroll #}
+   </main>
+   ```
+
+---
+
+## 7. 📚 Colecciones de Contenido (`src/content/`)
+
+Para gestionar contenido estructurado (blogs, proyectos, autores) con tipado seguro.
+
+### 7.1. Definir un Esquema (`src/content/config.ts`)
+
+```typescript
+// src/content/config.ts
+import { defineCollection, z } from 'astro:content';
+
+const blogCollection = defineCollection({
+  type: 'content', // 'content' para Markdown/MDX, 'data' para JSON/YAML
+  schema: z.object({
+    title: z.string(),
+    description: z.string(),
+    pubDate: z.date(),
+    author: z.string().default('Anónimo'),
+    image: z.string().optional(),
+    tags: z.array(z.string()).default([]),
+  }),
+});
+
+// Exporta un objeto `collections` con tus colecciones
+export const collections = {
+  'blog': blogCollection,
+  // 'projects': projectCollection,
+};
+```
+
+### 7.2. Crear Contenido (`src/content/blog/my-first-post.md`)
+
+```markdown
+---
+title: Mi Primer Post en Astro
+description: Este es el contenido de mi primer post.
+pubDate: 2023-10-26T10:00:00Z
+author: Juan Pérez
+tags: ["tutorial", "astro"]
+---
+¡Hola a todos!
+
+Este es el contenido de mi post escrito en **Markdown**.
+
+Puedes usar:
+- Listas
+- **Negritas**
+- *Cursivas*
+```
+
+### 7.3. Consultar Contenido en Páginas/Componentes
+
+```astro
+<!-- src/pages/blog/index.astro -->
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { getCollection } from 'astro:content'; // Para consultar colecciones
+
+const allBlogPosts = await getCollection('blog'); // Obtiene todos los posts de la colección 'blog'
+---
+<BaseLayout title="Blog">
+  <h1>Nuestro Blog</h1>
+  <ul>
+    {% for post in allBlogPosts %}
+      <li>
+        <a href="/blog/{{ post.slug }}">
+          <h3>{{ post.data.title }}</h3>
+          <p>{{ post.data.description }}</p>
+          <small>{{ post.data.pubDate.toLocaleDateString() }} por {{ post.data.author }}</small>
+        </a>
+      </li>
+    {% endfor %}
+  </ul>
+</BaseLayout>
+```
+
+---
+
+## 8. 📁 API Routes (`src/pages/api/`)
+
+Permite construir endpoints API RESTful o GraphQL directamente en tu proyecto Astro.
+
+* **`src/pages/api/hello.ts`**:
+
+  ```typescript
+  // src/pages/api/hello.ts
+  import type { APIRoute } from 'astro';
+
+  export const GET: APIRoute = ({ request }) => {
+    return new Response(
+      JSON.stringify({
+        message: 'Hello from Astro API!',
+        timestamp: new Date().toISOString(),
+      }),
+      {
+        status: 200,
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      }
+    );
+  };
+
+  export const POST: APIRoute = async ({ request }) => {
+    const body = await request.json(); // Acceder al cuerpo de la solicitud (POST, PUT, etc.)
+    return new Response(
+      JSON.stringify({
+        received: body,
+        status: 'success',
+      }),
+      {
+        status: 200,
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      }
+    );
+  };
+  ```
+
+  * Accesible en `http://localhost:4321/api/hello`.
+
+---
+
+## 9. 💡 Buenas Prácticas y Consejos
+
+* **Diseño HTML-first**: Siempre que sea posible, construye la UI con componentes Astro (.astro) y HTML puro. Introduce componentes de UI framework (React, Vue, etc.) solo cuando la interactividad sea estrictamente necesaria.
+* **Minimiza el JS del cliente**: Usa las directivas `client:*` de forma estratégica. `client:visible` o `client:idle` son a menudo mejores que `client:load` para componentes que no son críticos de inmediato.
+* **Aprovecha las colecciones de contenido**: Para blogs, documentación, e-commerce, las colecciones ofrecen tipado seguro, consultas eficientes y un sistema de gestión estructurado.
+* **Utiliza Astro Integrations**: Simplifican la configuración de frameworks de UI, herramientas CSS (Tailwind), y otras funcionalidades (MDX, SEO).
+* **Server-Side Rendering (SSR) vs. Static Site Generation (SSG)**:
+  * **SSG (por defecto)**: Excelente para blogs, marketing, sitios de documentación (contenido que no cambia con frecuencia o no requiere personalización por usuario). Muy rápido, ideal para hosting de bajo coste.
+  * **SSR**: Útil para dashboards, sitios con login, e-commerce dinámico (contenido que cambia frecuentemente o depende del usuario). Requiere un adaptador de servidor (`@astrojs/node`, `@astrojs/vercel`, etc.).
+* **Optimización de Imágenes**: Considera usar herramientas externas o integraciones para optimizar imágenes para el rendimiento.
+* **Recursos Estáticos en `public/`**: Coloca los archivos como favicons, imágenes no procesadas o archivos `robots.txt` directamente en `public/`.
+* **Variables de Entorno**: Usa `import.meta.env` para acceder a variables de entorno (ej. `import.meta.env.PUBLIC_API_URL`).
+
+---
+
+Este cheatsheet te proporciona una referencia completa de Astro, cubriendo sus conceptos esenciales, estructura de componentes, enrutamiento, estilización, integraciones, colecciones de contenido y las mejores prácticas para construir sitios web de alto rendimiento.

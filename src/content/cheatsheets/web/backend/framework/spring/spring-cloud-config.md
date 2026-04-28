@@ -1,0 +1,294 @@
+---
+title: "spring-cloud-config"
+---
+
+
+
+---
+
+# ⚙️ Spring Cloud Config Cheatsheet Completo ⚙️
+
+**Spring Cloud Config** proporciona un servidor y clientes para una configuración externa y distribuida en arquitecturas de microservicios. Permite gestionar la configuración de todas las aplicaciones de forma centralizada y versionada, lo que simplifica la administración en entornos dinámicos.
+
+---
+
+## 1. 🌟 Conceptos Clave
+
+*   **Configuración Externa**: La configuración de una aplicación no está "empaquetada" dentro del código o JAR/WAR, sino que se carga desde una fuente externa en tiempo de ejecución.
+*   **Centralización**: Todas las configuraciones de los microservicios se almacenan en un único lugar (ej. un repositorio Git).
+*   **Versionado**: La configuración se gestiona con un sistema de control de versiones (Git por defecto), lo que permite rastrear cambios, revertir versiones y auditar.
+*   **Perfiles y Etiquetas (Profiles & Labels)**: Permite tener configuraciones específicas para diferentes entornos (ej. `dev`, `prod`, `qa`) y versiones (ej. `master`, `v1.0`).
+*   **Config Server (Servidor de Configuración)**: El microservicio que sirve la configuración a las aplicaciones cliente.
+*   **Config Client (Cliente de Configuración)**: Cualquier microservicio que obtiene su configuración del Config Server.
+*   **Actualización Dinámica**: Permite refrescar la configuración de los clientes en caliente, sin reiniciar la aplicación (requiere Spring Cloud Bus).
+
+---
+
+## 2. 🛠️ Configuración Inicial
+
+### 2.1. Config Server (Servidor de Configuración)
+
+1.  **Añadir dependencias en `pom.xml`:**
+    ```xml
+    <dependencies>
+        <parent>...</parent> <!-- Tu parent de Spring Boot -->
+
+        <dependency>
+            <groupId>org.springframework.cloud</groupId>
+            <artifactId>spring-cloud-config-server</artifactId>
+        </dependency>
+        <!-- Spring Cloud BOM -->
+        <dependencyManagement>
+            <dependencies>
+                <dependency>
+                    <groupId>org.springframework.cloud</groupId>
+                    <artifactId>spring-cloud-dependencies</artifactId>
+                    <version>2023.0.0</version> <!-- Usar la versión compatible con tu Spring Boot -->
+                    <type>pom</type>
+                    <scope>import</scope>
+                </dependency>
+            </dependencies>
+        </dependencyManagement>
+    </dependencies>
+    ```
+2.  **Habilitar Config Server en la clase principal:**
+    ```java
+    // src/main/java/com/example/configserver/ConfigServerApplication.java
+    package com.example.configserver;
+
+    import org.springframework.boot.SpringApplication;
+    import org.springframework.boot.autoconfigure.SpringBootApplication;
+    import org.springframework.cloud.config.server.EnableConfigServer; // Habilita el servidor
+
+    @SpringBootApplication
+    @EnableConfigServer // Anotación clave para habilitar el servidor de configuración
+    public class ConfigServerApplication {
+        public static void main(String[] args) {
+            SpringApplication.run(ConfigServerApplication.class, args);
+        }
+    }
+    ```
+3.  **Configurar `application.yml` (para el Config Server):**
+    ```yaml
+    # src/main/resources/application.yml
+    server:
+      port: 8888 # Puerto por defecto de Config Server
+
+    spring:
+      application:
+        name: config-server
+      cloud:
+        config:
+          server:
+            git: # Configurar el backend Git (repositorio donde están tus configuraciones)
+              uri: https://github.com/tu-usuario/mi-repo-config.git # URL de tu repositorio Git de configuraciones
+              search-paths: # Subdirectorios dentro del repo donde buscar configs
+                - 'configs' # Por ejemplo, si tus configs están en 'mi-repo-config/configs/'
+              default-label: main # Rama por defecto para buscar configs
+              # username: tu-usuario-git # Para repos privados, si no usas SSH
+              # password: tu-token-git   # Usar un Personal Access Token (PAT)
+              # strict-host-key-checking: false # Para SSH, no recomendado en prod
+            # native: # Alternativa: Usar el sistema de archivos local (para dev/testing)
+            #   search-locations: file:///C:/config-files, classpath:/config-files/
+    ```
+    *   **Repositorio de Configuración (Ejemplo Git)**: Crea un repositorio Git (ej. en GitHub) que contendrá tus archivos de configuración.
+        ```
+        # mi-repo-config.git/configs/
+        #   └─ my-service.yml        # Configuración por defecto para 'my-service'
+        #   └─ my-service-dev.yml    # Configuración para 'my-service' en perfil 'dev'
+        #   └─ my-service-prod.yml   # Configuración para 'my-service' en perfil 'prod'
+        #   └─ another-service.yml
+        ```
+    *   Iniciar la aplicación. El Config Server estará disponible en `http://localhost:8888`.
+
+### 2.2. Config Client (Microservicio Cliente)
+
+1.  **Añadir dependencias en `pom.xml` (en el microservicio):**
+    ```xml
+    <dependencies>
+        <parent>...</parent> <!-- Tu parent de Spring Boot -->
+
+        <dependency>
+            <groupId>org.springframework.cloud</groupId>
+            <artifactId>spring-cloud-starter-config</artifactId>
+        </dependency>
+        <!-- Spring Cloud BOM -->
+        <dependencyManagement>...</dependencyManagement>
+    </dependencies>
+    ```
+
+2.  **Configurar `bootstrap.yml` (o `bootstrap.properties`)**
+    *   El archivo `bootstrap.yml` se carga **antes** que `application.yml`. Es crucial para que el cliente se conecte al Config Server antes de cargar cualquier otra configuración.
+    ```yaml
+    # src/main/resources/bootstrap.yml
+    spring:
+      application:
+        name: my-service # ¡CRÍTICO! Nombre de la aplicación para buscar en el Config Server
+      cloud:
+        config:
+          uri: http://localhost:8888 # URL del Config Server
+          profile: ${spring.profiles.active:default} # Envía el perfil activo
+          label: main # Envía la etiqueta/rama de Git (default: main)
+    ```
+    *   Iniciar la aplicación. Debería intentar conectar con el Config Server.
+
+### 2.3. Acceso a la Configuración en el Cliente
+
+*   Las propiedades obtenidas del Config Server se inyectan en el entorno de Spring de tu aplicación cliente, como cualquier otra propiedad de `application.yml`.
+    ```java
+    import org.springframework.beans.factory.annotation.Value;
+    import org.springframework.web.bind.annotation.GetMapping;
+    import org.springframework.web.bind.annotation.RestController;
+
+    @RestController
+    public class MyServiceController {
+        @Value("${my.custom.property}") // Inyecta una propiedad desde la configuración
+        private String customProperty;
+
+        @Value("${server.port}") // También inyecta propiedades estándar de Spring
+        private String serverPort;
+
+        @GetMapping("/config")
+        public String getConfig() {
+            return "Propiedad personalizada: " + customProperty + ", Puerto: " + serverPort;
+        }
+    }
+    ```
+
+---
+
+## 3. 🌐 API del Config Server
+
+El Config Server expone un API REST para acceder a las configuraciones.
+
+*   **Endpoint Básico**: `http://localhost:8888/{application}/{profile}/{label}`
+    *   `{application}`: `spring.application.name` del cliente (ej. `my-service`).
+    *   `{profile}`: Perfil de Spring (ej. `dev`, `prod`, `default`).
+    *   `{label}`: Etiqueta/rama de Git (ej. `main`, `develop`, `v1.0`).
+*   **Ejemplos**:
+    *   `http://localhost:8888/my-service/default/main`
+    *   `http://localhost:8888/my-service/prod/main`
+    *   `http://localhost:8888/my-service/dev/feature-branch`
+    *   `http://localhost:8888/my-service-prod.yml` (accede directamente al archivo YAML)
+    *   `http://localhost:8888/my-service/default/main/my.custom.property` (para una propiedad específica)
+
+---
+
+## 4. 🔄 Actualización Dinámica (Hot Reload)
+
+Para que los clientes de configuración actualicen su configuración en caliente sin reiniciar la aplicación.
+
+### 4.1. Configurar Cliente para Refrescar
+
+1.  **Añadir dependencia:** `spring-boot-starter-actuator`
+    ```xml
+    <dependency>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-actuator</artifactId>
+    </dependency>
+    ```
+2.  **Habilitar el refresh endpoint en `application.yml`:**
+    ```yaml
+    # src/main/resources/application.yml (del cliente)
+    management:
+      endpoints:
+        web:
+          exposure:
+            include: refresh # Expone el endpoint /actuator/refresh
+    ```
+3.  **Anotar componentes con `@RefreshScope`:**
+    *   Cualquier bean de Spring que necesite refrescar sus propiedades cuando cambie la configuración debe estar anotado con `@RefreshScope`.
+    ```java
+    import org.springframework.beans.factory.annotation.Value;
+    import org.springframework.cloud.context.config.annotation.RefreshScope;
+    import org.springframework.web.bind.annotation.GetMapping;
+    import org.springframework.web.bind.annotation.RestController;
+
+    @RestController
+    @RefreshScope // Anotación clave para recargar bean al refrescar
+    public class DynamicConfigController {
+        @Value("${message.greeting:Hello World}")
+        private String greetingMessage;
+
+        @GetMapping("/greeting")
+        public String getGreeting() {
+            return greetingMessage;
+        }
+    }
+    ```
+4.  **Disparar el Refresh (después de cambiar la config en Git y hacer push):**
+    ```bash
+    curl -X POST http://localhost:8080/actuator/refresh # Llama al endpoint de refresh del cliente
+    ```
+
+### 4.2. Spring Cloud Bus (Automatización del Refresh)
+
+Spring Cloud Bus propaga los cambios de configuración a múltiples instancias de microservicios usando un Message Broker (Kafka, RabbitMQ).
+
+1.  **Añadir dependencia en `pom.xml` (en el Config Server Y en los Clientes):**
+    ```xml
+    <dependency>
+        <groupId>org.springframework.cloud</groupId>
+        <artifactId>spring-cloud-starter-bus-kafka</artifactId> <!-- O -bus-amqp para RabbitMQ -->
+    </dependency>
+    ```2.  **Configurar el Broker en `application.yml` (del Config Server y Clientes):**
+    ```yaml
+    # Para Kafka
+    spring.cloud.stream.kafka.binder.brokers=localhost:9092
+    spring.cloud.bus.trace.enabled=true # Para ver el rastro de la propagación
+    ```
+3.  **Disparar el Refresh (después de cambiar la config en Git y hacer push):**
+    *   Llama al endpoint `/actuator/bus-refresh` en el Config Server.
+    ```bash
+    curl -X POST http://localhost:8888/actuator/bus-refresh # Dispara el refresh global
+    # O para una app específica: http://localhost:8888/actuator/bus-refresh/my-service:8080
+    ```
+    *   El Config Server publicará un evento en el Message Broker.
+    *   Todos los clientes conectados al Bus recibirán el evento y activarán su propio `/actuator/refresh`.
+
+---
+
+## 5. 🔒 Seguridad
+
+*   **Config Server**:
+    *   Asegura el Config Server con Spring Security. Solo los clientes autorizados deben poder acceder a la configuración.
+    *   Usa autenticación HTTP Basic o OAuth2 para los endpoints del Config Server.
+    *   Configura SSL/TLS para el Config Server (`server.ssl.*`).
+*   **Repositorio Git**:
+    *   Para repositorios Git privados, el Config Server necesita credenciales (username/password, Personal Access Token o SSH).
+    *   Asegura el repositorio Git con los controles de acceso adecuados.
+*   **Cifrado de Propiedades**:
+    *   Cifra propiedades sensibles en los archivos de configuración (ej. contraseñas de bases de datos).
+    *   El Config Server puede descifrar propiedades que empiezan con `{cipher}`.
+    *   **Habilitar JCE Unlimited Strength Jurisdiction Policy Files**: Para cifrados más fuertes.
+    *   **Propiedades de Cifrado (`application.yml` en Config Server):**
+        ```yaml
+        encrypt:
+          key: mySecretEncryptionKey # Usar una clave de cifrado fuerte (¡preferiblemente variable de entorno!)
+          # key-store: classpath:/config/my_keystore.jks # O un KeyStore
+        ```
+    *   **Cifrar una propiedad (`/actuator/encrypt` en Config Server):**
+        ```bash
+        curl http://localhost:8888/actuator/encrypt -d 'my_secret_password'
+        # Salida: {cipher}AQBqM5/lQ...
+        # Luego, pon esto en tu archivo de configuración: my.db.password: '{cipher}AQBqM5/lQ...'
+        ```
+
+---
+
+## 6. 💡 Buenas Prácticas y Consejos
+
+*   **Centraliza y Versiona la Configuración**: Almacena todos los archivos de configuración en un repositorio Git dedicado para control de versiones y auditoría.
+*   **Usa `bootstrap.yml`**: Es crucial para que los clientes obtengan la URL del Config Server antes de que se cargue cualquier otra configuración.
+*   **Perfiles de Spring**: Aprovecha los perfiles de Spring para gestionar configuraciones específicas de entorno (dev, qa, prod).
+*   **Etiquetas de Git (`label`)**: Usa etiquetas de Git (branches o tags) para gestionar versiones de configuración, lo que permite rollbacks rápidos.
+*   **Seguridad Primero**: Asegura tu Config Server y cifra las propiedades sensibles. No expongas el Config Server directamente a Internet.
+*   **Actualización Dinámica con Bus**: Para entornos de microservicios con muchas instancias, usa Spring Cloud Bus para propagar los cambios de configuración de manera eficiente.
+*   **Refresca Solamente lo Necesario**: Anota solo los beans que realmente necesitan refrescarse con `@RefreshScope` para evitar recargas innecesarias y costosas.
+*   **No para Secretos de Alto Valor**: Para secretos críticos (claves de cifrado, certificados), considera una solución dedicada como HashiCorp Vault o AWS Secrets Manager, que pueden integrarse con Spring Cloud Config o usarse directamente.
+*   **Monitoreo**: Integra Actuator con Config Server y los clientes para monitorear el estado y la comunicación.
+*   **Alta Disponibilidad**: Ejecuta múltiples instancias de tu Config Server para evitar un Single Point of Failure (SPOF) y balancea la carga entre ellos.
+
+---
+
+Este cheatsheet te proporciona una referencia completa de Spring Cloud Config, cubriendo sus conceptos esenciales, cómo configurar el servidor y los clientes, la actualización dinámica, la seguridad y las mejores prácticas para una gestión centralizada y versionada de la configuración en arquitecturas de microservicios.

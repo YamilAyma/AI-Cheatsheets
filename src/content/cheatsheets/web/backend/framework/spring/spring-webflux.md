@@ -1,0 +1,550 @@
+---
+title: "spring-webflux"
+---
+
+
+---
+
+# 🌊 Spring WebFlux Cheatsheet Completo 🌊
+
+**Spring WebFlux** es un framework web reactivo y no bloqueante, parte de Spring 5, construido sobre Project Reactor. Ofrece una alternativa asíncrona a Spring MVC, ideal para construir aplicaciones web escalables y eficientes, especialmente APIs REST y microservicios que requieren una alta concurrencia con un uso eficiente de los recursos (menos hilos).
+
+---
+
+## 1. 🌟 Conceptos Clave
+
+*   **Programación Reactiva**: Un paradigma de programación asíncrona, no bloqueante y orientada a eventos, que se centra en el flujo de datos.
+*   **No Bloqueante (Non-Blocking)**: Las operaciones de I/O (entrada/salida) no bloquean el hilo principal. Cuando una operación de I/O está en curso, el hilo puede manejar otras solicitudes.
+*   **Project Reactor**: La librería que implementa las especificaciones de Reactive Streams y en la que se basa Spring WebFlux. Proporciona los tipos `Mono` y `Flux`.
+*   **Contrapresión (Backpressure)**: Mecanismo que permite a un consumidor señalar al productor que está listo para recibir más elementos, evitando la sobrecarga del consumidor.
+*   **Menos Hilos (Threads)**: WebFlux puede manejar un gran número de conexiones concurrentes con un número reducido de hilos, lo que reduce el consumo de memoria y el overhead de cambio de contexto.
+*   **Servidores Netty/Undertow/Jetty**: WebFlux puede ejecutarse en servidores no bloqueantes como Netty (por defecto en Spring Boot WebFlux), Undertow o Jetty, a diferencia de Spring MVC que usa el Servlet API (Tomcat, Jetty).
+
+---
+
+## 2. 🛠️ Configuración Inicial (Spring Boot)
+
+1.  **Añadir dependencia en `pom.xml` (Maven):**
+    ```xml
+    <dependencies>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-webflux</artifactId>
+        </dependency>
+        <!-- Para base de datos reactiva (ej. R2DBC para SQL) -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-data-r2dbc</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.r2dbc</groupId>
+            <artifactId>r2dbc-postgresql</artifactId> <!-- O tu driver R2DBC -->
+            <scope>runtime</scope>
+        </dependency>
+        <!-- Para base de datos reactiva (ej. MongoDB) -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-data-mongodb-reactive</artifactId>
+        </dependency>
+        <!-- Para pruebas -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+    ```
+
+2.  **Configuración de la Base de Datos (ej. R2DBC en `application.properties`):**
+    ```properties
+    spring.r2dbc.url=r2dbc:postgresql://localhost:5432/mydb
+    spring.r2dbc.username=user
+    spring.r2dbc.password=password
+
+    spring.jpa.hibernate.ddl-auto=update # Si aún usas JPA para entidades
+    spring.data.r2dbc.repositories.enabled=true
+    ```
+    *   **¡Importante!**: Si incluyes `spring-boot-starter-web` (Spring MVC) y `spring-boot-starter-webflux` en el mismo proyecto, Spring Boot elegirá WebFlux si estás en Reactive Stack, o MVC si estás en Servlet Stack. Lo mejor es usar **solo uno** de los starters web.
+
+---
+
+## 3. 🌊 Tipos Reactivos: `Mono` y `Flux` (Project Reactor)
+
+Son los bloques de construcción de la programación reactiva en WebFlux.
+
+*   **`Mono<T>`**: Representa 0 o 1 elemento.
+    *   **Cuándo usar**: Para operaciones que devuelven un solo resultado (ej. `findById`, `save`, `delete`, `void` operations).
+    *   **Creación**:
+        ```java
+        Mono<String> monoString = Mono.just("Hello");
+        Mono<Object> monoEmpty = Mono.empty(); // No emite nada
+        Mono<String> monoError = Mono.error(new RuntimeException("Error!"));
+        Mono<Long> monoDelayed = Mono.delay(Duration.ofSeconds(2)); // Retrasa la emisión
+        Mono<String> fromCallable = Mono.fromCallable(() -> "Computed Value"); // Ejecuta una tarea
+        ```
+*   **`Flux<T>`**: Representa 0 a N elementos.
+    *   **Cuándo usar**: Para operaciones que devuelven múltiples resultados (ej. `findAll`, `stream`, `events`).
+    *   **Creación**:
+        ```java
+        Flux<Integer> fluxNumbers = Flux.just(1, 2, 3);
+        Flux<String> fluxFromList = Flux.fromIterable(List.of("A", "B", "C"));
+        Flux<Long> fluxInterval = Flux.interval(Duration.ofSeconds(1)).take(5); // Emite cada segundo, hasta 5 veces
+        Flux<Object> fluxEmpty = Flux.empty();
+        Flux<Object> fluxError = Flux.error(new IllegalArgumentException("Invalid data!"));
+        ```
+
+---
+
+## 4. 🚀 Creación de APIs WebFlux
+
+### 4.1. Con Controladores Anotados (Annotation-based Controllers)
+
+*   Similar a Spring MVC, pero los métodos devuelven `Mono` o `Flux`.
+
+```java
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.web.bind.annotation.*;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
+
+import java.time.Duration;
+import java.util.UUID;
+
+// Modelo de ejemplo
+class Product {
+    private String id;
+    private String name;
+    private double price;
+    public Product(String id, String name, double price) { this.id = id; this.name = name; this.price = price; }
+    public String getId() { return id; } public void setId(String id) { this.id = id; }
+    public String getName() { return name; } public void setName(String name) { this.name = name; }
+    public double getPrice() { return price; } public void setPrice(double price) { this.price = price; }
+}
+
+@RestController // Indica que es un controlador REST
+@RequestMapping("/api/products")
+public class ProductController {
+
+    // Simula un servicio reactivo
+    private final List<Product> products = new ArrayList<>(Arrays.asList(
+        new Product(UUID.randomUUID().toString(), "Laptop", 1200.00),
+        new Product(UUID.randomUUID().toString(), "Mouse", 25.00),
+        new Product(UUID.randomUUID().toString(), "Keyboard", 75.00)
+    ));
+
+    @GetMapping // GET /api/products -> devuelve múltiples productos
+    public Flux<Product> getAllProducts() {
+        return Flux.fromIterable(products)
+                .delayElements(Duration.ofMillis(100)); // Simula latencia
+    }
+
+    @GetMapping("/{id}") // GET /api/products/{id} -> devuelve un solo producto
+    public Mono<Product> getProductById(@PathVariable String id) {
+        return Mono.justOrEmpty(products.stream()
+                .filter(p -> p.getId().equals(id))
+                .findFirst())
+                .switchIfEmpty(Mono.error(new ProductNotFoundException("Producto no encontrado con ID: " + id))); // Manejo de error específico
+    }
+
+    @PostMapping // POST /api/products -> crea un producto
+    @ResponseStatus(HttpStatus.CREATED) // Código de estado HTTP 201
+    public Mono<Product> createProduct(@RequestBody Product product) {
+        product.setId(UUID.randomUUID().toString());
+        products.add(product);
+        return Mono.just(product);
+    }
+
+    @PutMapping("/{id}") // PUT /api/products/{id} -> actualiza un producto
+    public Mono<Product> updateProduct(@PathVariable String id, @RequestBody Mono<Product> productMono) {
+        return productMono
+                .flatMap(updatedProduct -> getProductById(id) // Obtener el producto existente
+                        .map(existingProduct -> {
+                            existingProduct.setName(updatedProduct.getName());
+                            existingProduct.setPrice(updatedProduct.getPrice());
+                            return existingProduct;
+                        }));
+    }
+
+    @DeleteMapping("/{id}") // DELETE /api/products/{id} -> elimina un producto
+    @ResponseStatus(HttpStatus.NO_CONTENT) // Código de estado HTTP 204
+    public Mono<Void> deleteProduct(@PathVariable String id) {
+        boolean removed = products.removeIf(p -> p.getId().equals(id));
+        return removed ? Mono.empty() : Mono.error(new ProductNotFoundException("Producto no encontrado para eliminar con ID: " + id));
+    }
+
+    // Endpoint de flujo de eventos (Server-Sent Events)
+    @GetMapping(value = "/events", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+    public Flux<String> getEvents() {
+        return Flux.interval(Duration.ofSeconds(1)) // Emite un long cada segundo
+                .map(sequence -> "Event " + sequence + " at " + Instant.now().toString());
+    }
+
+    // Excepción personalizada de ejemplo
+    @ResponseStatus(HttpStatus.NOT_FOUND)
+    class ProductNotFoundException extends RuntimeException {
+        public ProductNotFoundException(String message) { super(message); }
+    }
+}
+```
+
+### 4.2. Con Endpoints Funcionales (Functional Endpoints)
+
+*   Un enfoque más funcional y menos basado en anotaciones. Consiste en `RouterFunctions` (que rutean solicitudes) y `HandlerFunctions` (que manejan solicitudes).
+
+```java
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.web.reactive.function.server.*; // Importar RouterFunction, RequestPredicates, etc.
+import reactor.core.publisher.Mono;
+
+import static org.springframework.web.reactive.function.server.RequestPredicates.*;
+import static org.springframework.web.reactive.function.server.RouterFunctions.route;
+
+@Configuration
+public class FunctionalRoutesConfig {
+
+    // HandlerFunction para manejar la lógica de la petición
+    @Bean
+    public ProductHandler productHandler() { // Clase ProductHandler (definida abajo)
+        return new ProductHandler();
+    }
+
+    // RouterFunction para definir las rutas funcionales
+    @Bean
+    public RouterFunction<ServerResponse> productRoutes(ProductHandler handler) {
+        return route(GET("/functional/products"), handler::getAllProducts) // GET /functional/products
+                .andRoute(GET("/functional/products/{id}"), handler::getProductById) // GET /functional/products/{id}
+                .andRoute(POST("/functional/products"), handler::createProduct); // POST /functional/products
+        // Puedes encadenar más .andRoute()
+    }
+}
+
+// ProductHandler.java (Clase que contiene la lógica de los handlers)
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.stereotype.Component;
+import org.springframework.web.reactive.function.server.ServerRequest;
+import org.springframework.web.reactive.function.server.ServerResponse;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.UUID;
+
+@Component // Para que Spring lo gestione
+public class ProductHandler {
+
+    private final List<Product> products = new ArrayList<>(Arrays.asList(
+            new Product(UUID.randomUUID().toString(), "Functional Laptop", 1500.00)
+    ));
+
+    public Mono<ServerResponse> getAllProducts(ServerRequest request) {
+        return ServerResponse.ok()
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(Flux.fromIterable(products), Product.class);
+    }
+
+    public Mono<ServerResponse> getProductById(ServerRequest request) {
+        String id = request.pathVariable("id");
+        return Mono.justOrEmpty(products.stream()
+                .filter(p -> p.getId().equals(id))
+                .findFirst())
+                .flatMap(product -> ServerResponse.ok().contentType(MediaType.APPLICATION_JSON).bodyValue(product))
+                .switchIfEmpty(ServerResponse.notFound().build());
+    }
+
+    public Mono<ServerResponse> createProduct(ServerRequest request) {
+        return request.bodyToMono(Product.class) // Obtiene el body como Mono<Product>
+                .doOnNext(product -> {
+                    product.setId(UUID.randomUUID().toString());
+                    products.add(product);
+                })
+                .flatMap(product -> ServerResponse.status(HttpStatus.CREATED).contentType(MediaType.APPLICATION_JSON).bodyValue(product));
+    }
+}
+```
+
+---
+
+## 5. 📞 WebClient (Cliente HTTP Reactivo)
+
+*   El cliente HTTP no bloqueante de Spring WebFlux. Preferible a `RestTemplate` en un contexto reactivo.
+
+```java
+import org.springframework.http.HttpStatus;
+import org.springframework.web.reactive.function.client.WebClient;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
+
+// Asume que tienes un Product.class y ProductNotFoundException como antes
+
+public class WebClientExample {
+
+    private final WebClient webClient;
+
+    public WebClientExample(WebClient.Builder webClientBuilder) {
+        // Constructor para inyectar WebClient.Builder (recomendado en Spring Boot)
+        this.webClient = webClientBuilder.baseUrl("http://localhost:8080/api").build();
+    }
+
+    // Opcional: Crear WebClient manualmente (no recomendado si se inyecta Builder)
+    public WebClientExample() {
+        this.webClient = WebClient.builder().baseUrl("http://localhost:8080/api").build();
+    }
+
+    public Flux<Product> getAllProductsFromApi() {
+        return webClient.get()
+                .uri("/products") // URI relativa a baseUrl
+                .retrieve() // Inicia la recuperación de la respuesta
+                .bodyToFlux(Product.class) // Convierte el cuerpo a un Flux de productos
+                .doOnError(e -> System.err.println("Error fetching products: " + e.getMessage()));
+    }
+
+    public Mono<Product> getProductFromApi(String id) {
+        return webClient.get()
+                .uri("/products/{id}", id) // Parámetros de URI
+                .retrieve()
+                .onStatus(HttpStatus.NOT_FOUND::equals,
+                          response -> Mono.error(new ProductNotFoundException("Producto no encontrado desde API"))) // Manejo de estados HTTP
+                .bodyToMono(Product.class) // Convierte el cuerpo a un Mono de producto
+                .doOnError(e -> System.err.println("Error fetching product " + id + ": " + e.getMessage()));
+    }
+
+    public Mono<Product> createProductInApi(Product newProduct) {
+        return webClient.post()
+                .uri("/products")
+                .bodyValue(newProduct) // Cuerpo de la solicitud
+                .retrieve()
+                .bodyToMono(Product.class)
+                .doOnError(e -> System.err.println("Error creating product: " + e.getMessage()));
+    }
+
+    public Mono<Void> deleteProductInApi(String id) {
+        return webClient.delete()
+                .uri("/products/{id}", id)
+                .retrieve()
+                .onStatus(HttpStatus.NOT_FOUND::equals,
+                          response -> Mono.error(new ProductNotFoundException("Producto no encontrado para eliminar en API")))
+                .toBodilessEntity() // Cuando no esperas un body
+                .then(); // Convierte a Mono<Void>
+    }
+}
+```
+
+---
+
+## 6. 🌿 Acceso a Datos Reactivo (R2DBC / Reactive Mongo)
+
+*   Spring Data proporciona repositorios reactivos para bases de datos no bloqueantes (R2DBC para SQL, Reactive MongoDB, Reactive Redis, etc.).
+
+```java
+import org.springframework.data.r2dbc.repository.Query;
+import org.springframework.data.repository.reactive.ReactiveCrudRepository;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
+
+// src/main/java/com/example/model/ProductEntity.java (Entidad para R2DBC)
+// @Table(name = "products")
+// public class ProductEntity { @Id Long id; String name; Double price; Boolean active; }
+
+// src/main/java/com/example/repository/ProductR2dbcRepository.java
+public interface ProductR2dbcRepository extends ReactiveCrudRepository<ProductEntity, Long> {
+
+    // Métodos derivados de consulta
+    Flux<ProductEntity> findByNameContaining(String name);
+    Mono<ProductEntity> findBySku(String sku); // Suponiendo que ProductEntity tiene un campo 'sku'
+
+    // Consultas personalizadas con @Query
+    @Query("SELECT * FROM products WHERE price > :minPrice")
+    Flux<ProductEntity> findByPriceGreaterThan(Double minPrice);
+
+    // DML
+    @Query("UPDATE products SET active = :active WHERE id = :id")
+    Mono<Integer> updateProductStatus(Long id, Boolean active); // Mono<Integer> para filas afectadas
+}
+```
+
+---
+
+## 7. ❌ Manejo de Errores
+
+### 7.1. En la Cadena Reactiva (con Operadores)
+
+*   **`onErrorResume(fallbackFn)`**: Recuperarse de un error proporcionando un Mono/Flux de respaldo.
+*   **`onErrorReturn(value)`**: Recuperarse de un error devolviendo un valor fijo.
+*   **`onErrorMap(errorType, errorMapperFn)`**: Transformar un tipo de error en otro.
+*   **`doOnError(consumer)`**: Realizar un efecto secundario (ej. logging) cuando ocurre un error, sin modificar el error.
+*   **`retry(numRetries)`**: Reintentar la secuencia si ocurre un error.
+*   **`retryWhen(retrySpec)`**: Reintentar basado en una lógica condicional.
+
+    ```java
+    public Mono<String> processData(Mono<String> input) {
+        return input
+            .map(s -> {
+                if (s.isEmpty()) throw new IllegalArgumentException("Input vacío");
+                return s.toUpperCase();
+            })
+            .onErrorResume(IllegalArgumentException.class, e -> { // Solo para IllegalArgumentException
+                System.err.println("Error de argumento: " + e.getMessage());
+                return Mono.just("DEFAULT_VALUE"); // Retorna un valor por defecto
+            })
+            .onErrorMap(e -> new CustomServiceException("Error procesando: " + e.getMessage(), e)) // Transforma a otra excepción
+            .doOnError(e -> System.err.println("Logging del error: " + e.getMessage())); // Efecto secundario
+    }
+    ```
+
+### 7.2. Manejo Global de Excepciones (`@ControllerAdvice`)
+
+*   Similar a Spring MVC.
+
+```java
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.ControllerAdvice;
+import org.springframework.web.bind.annotation.ExceptionHandler;
+
+@ControllerAdvice
+public class GlobalExceptionHandler {
+
+    @ExceptionHandler(ProductNotFoundException.class)
+    @ResponseStatus(HttpStatus.NOT_FOUND) // Establece el status 404
+    public ResponseEntity<String> handleProductNotFoundException(ProductNotFoundException ex) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(ex.getMessage());
+    }
+
+    @ExceptionHandler(IllegalArgumentException.class)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    public ResponseEntity<String> handleIllegalArgumentException(IllegalArgumentException ex) {
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ex.getMessage());
+    }
+
+    // Manejador genérico para cualquier otra excepción
+    @ExceptionHandler(Exception.class)
+    @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
+    public ResponseEntity<String> handleGenericException(Exception ex) {
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error interno del servidor.");
+    }
+}
+```
+
+---
+
+## 8. 🧪 Testing
+
+### 8.1. `WebTestClient` (Testing de Endpoints WebFlux)
+
+*   Para pruebas de integración de controladores WebFlux o Functional Endpoints.
+
+```java
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.reactive.WebFluxTest;
+import org.springframework.test.web.reactive.server.WebTestClient;
+import reactor.core.publisher.Mono;
+
+@WebFluxTest(ProductController.class) // Carga solo el contexto del controlador
+class ProductControllerWebTest {
+
+    @Autowired
+    private WebTestClient webTestClient; // Inyecta WebTestClient
+
+    @Test
+    void testGetAllProducts() {
+        webTestClient.get().uri("/api/products")
+                .exchange() // Realiza la petición
+                .expectStatus().isOk() // Espera status 200 OK
+                .expectHeader().contentType(MediaType.APPLICATION_JSON)
+                .expectBodyList(Product.class) // Espera una lista de Product
+                .hasSize(3); // Espera 3 productos
+    }
+
+    @Test
+    void testCreateProduct() {
+        Product newProduct = new Product(null, "New Gadget", 100.00);
+        webTestClient.post().uri("/api/products")
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(Mono.just(newProduct), Product.class) // Envía el body como Mono
+                .exchange()
+                .expectStatus().isCreated() // Espera status 201 Created
+                .expectBody(Product.class) // Espera un solo Product en el body
+                .consumeWith(response -> {
+                    Product createdProduct = response.getResponseBody();
+                    assertNotNull(createdProduct);
+                    assertNotNull(createdProduct.getId());
+                    assertEquals("New Gadget", createdProduct.getName());
+                });
+    }
+}
+```
+
+### 8.2. `StepVerifier` (Testing de Flujos Reactivos)
+
+*   Para probar flujos `Mono` y `Flux` en aislamiento.
+
+```java
+import org.junit.jupiter.api.Test;
+import reactor.core.publisher.Flux;
+import reactor.test.StepVerifier; // Importa StepVerifier
+
+import java.time.Duration;
+
+class ReactiveStreamTest {
+
+    @Test
+    void testFluxSequence() {
+        Flux<String> names = Flux.just("Alice", "Bob", "Charlie");
+
+        StepVerifier.create(names) // Crea un StepVerifier para el flujo
+                .expectNext("Alice")    // Espera un elemento
+                .expectNext("Bob")
+                .expectNext("Charlie")
+                .verifyComplete();      // Verifica que el flujo se ha completado
+    }
+
+    @Test
+    void testFluxWithError() {
+        Flux<Integer> errorFlux = Flux.just(1, 2)
+                                      .concatWith(Flux.error(new IllegalArgumentException("Error de prueba")));
+
+        StepVerifier.create(errorFlux)
+                .expectNext(1)
+                .expectNext(2)
+                .verifyError(IllegalArgumentException.class); // Verifica que se lanza una excepción
+    }
+
+    @Test
+    void testFluxWithDelay() {
+        Flux<Long> delayedFlux = Flux.interval(Duration.ofMillis(100)).take(3);
+
+        StepVerifier.create(delayedFlux)
+                .expectNext(0L)
+                .expectNext(1L)
+                .expectNext(2L)
+                .verifyComplete();
+                // .verifyComplete(Duration.ofSeconds(1)); // También puedes especificar un timeout
+    }
+}
+```
+
+---
+
+## 9. 💡 Buenas Prácticas y Consejos
+
+*   **Evita el Bloqueo**: **¡La regla de oro de WebFlux!** Nunca uses operaciones bloqueantes (`.block()`, `Thread.sleep()`, llamadas a JDBC tradicionales, I/O síncrona de archivos) dentro de las cadenas reactivas (es decir, en los métodos de tus controladores, servicios o repositorios reactivos). Si necesitas integrar código bloqueante, usa `Mono.fromCallable(blockingOp).subscribeOn(Schedulers.boundedElastic())`.
+*   **Entiende `map` vs `flatMap`**:
+    *   `map`: Para transformaciones síncronas de un elemento a otro. `Mono<A> -> Mono<B>`, `Flux<A> -> Flux<B>`.
+    *   `flatMap`: Para transformaciones asíncronas de un elemento a un nuevo `Mono`/`Flux`. Se usa cuando la función de mapeo devuelve un `Mono`/`Flux`. **Aplanar flujos.** `Mono<A> -> Mono<Mono<B>> -> Mono<B>`.
+*   **Propagación de Contexto**: Utiliza el `Context` de Reactor para propagar información a través de la cadena reactiva (ej. IDs de trazabilidad para logging).
+*   **Gestión de Schedulers**: Usa `publishOn()` para cambiar el `Scheduler` a partir de un punto en la cadena (afecta la ejecución aguas abajo). Usa `subscribeOn()` para influir en el `Scheduler` de la suscripción (afecta la ejecución de toda la cadena).
+*   **Manejo de Errores Explícito**: Siempre maneja los errores en tus flujos reactivos con operadores como `onErrorResume`, `onErrorMap`, etc. No dejes que los errores no controlados se propaguen.
+*   **Depuración**: La depuración de flujos reactivos puede ser compleja. Usa `doOnNext`, `doOnError`, `doFinally`, etc., para loggear eventos. Considera añadir el Reactor Debug Agent para mejorar las trazas de pila.
+*   **WebClient para Llamadas Externas**: Siempre usa `WebClient` para hacer llamadas HTTP a otros servicios desde una aplicación WebFlux.
+*   **Monitoreo**: Integra herramientas de monitoreo (ej. Actuator con Prometheus/Grafana) para observar el rendimiento y el comportamiento de tu aplicación WebFlux.
+*   **No para todo**: WebFlux es excelente para aplicaciones de I/O intensivas y alta concurrencia. No siempre es la mejor opción para aplicaciones CPU-bound o CRUD simples donde Spring MVC podría ser más fácil de entender y depurar.
+
+---
+
+Este cheatsheet te proporciona una referencia completa de Spring WebFlux, cubriendo sus conceptos esenciales, cómo configurarlo, los tipos reactivos, la creación de APIs (controladores y funcionales), el cliente HTTP, el acceso a datos, el manejo de errores y las mejores prácticas para construir aplicaciones web Java reactivas y eficientes.

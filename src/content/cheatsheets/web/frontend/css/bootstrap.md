@@ -1,0 +1,532 @@
+---
+title: "bootstrap"
+---
+
+¡Por supuesto! Bootstrap 5 es un marco de trabajo front-end muy popular y potente para desarrollar sitios web y aplicaciones responsivas y móviles primero. Aquí tienes un "cheatsheet" completo y bien estructurado, optimizado para ser claro y conciso para una IA conversacional.
+
+---
+
+# 🔰 Bootstrap 5 Cheatsheet Completo 🔰
+
+Bootstrap 5 es el último lanzamiento mayor del framework CSS más popular del mundo. Es un conjunto de herramientas de código abierto para desarrollar con HTML, CSS y JavaScript. Proporciona componentes pre-construidos y una potente cuadrícula responsiva para crear interfaces de usuario modernas de forma rápida.
+
+**Características Clave de Bootstrap 5:**
+
+* **Mobile-first**: Diseñado pensando en dispositivos móviles primero.
+* **Responsivo**: Se adapta a diferentes tamaños de pantalla.
+* **Sin jQuery**: Ahora utiliza JavaScript vanilla, lo que lo hace más ligero y rápido.
+* **CSS Variables**: Uso extensivo de variables CSS para facilitar la personalización.
+* **Clases de utilidad (Utility-first)**: Muchas clases CSS pequeñas y componibles para aplicar estilos rápidos.
+
+---
+
+## 1. 🛠️ Configuración Inicial
+
+### 1.1. CDN (Recomendado para inicio rápido)
+
+Simplemente añade estos enlaces en tu archivo HTML:
+
+```html
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mi Proyecto Bootstrap</title>
+  <!-- Enlace CSS de Bootstrap -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+</head>
+<body>
+
+  <h1>Hola, Bootstrap 5!</h1>
+
+  <!-- Enlace JS de Bootstrap (Bundle con Popper) -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+</body>
+</html>
+```
+
+### 1.2. NPM (Para proyectos de React, Vue, etc.)
+
+```bash
+npm install bootstrap@5.3.3 # O la versión más reciente
+# o
+yarn add bootstrap@5.3.3
+```
+
+Luego, importa en tu archivo JavaScript/CSS principal:
+
+```javascript
+// src/index.js o src/App.js
+import 'bootstrap/dist/css/bootstrap.min.css';
+import 'bootstrap/dist/js/bootstrap.bundle.min'; // O importa solo los componentes JS que necesites
+```
+
+---
+
+## 2. 📐 Layout y Cuadrícula (Grid)
+
+### 2.1. Contenedores
+
+Elementos esenciales para centrar y añadir padding al contenido.
+
+* **`.container`**: Contenedor de ancho fijo (se adapta a los breakpoints).
+  ```html
+  <div class="container">Contenido centrado y con padding.</div>
+  ```
+* **`.container-fluid`**: Contenedor de ancho completo (100% del viewport).
+  ```html
+  <div class="container-fluid">Contenido que ocupa todo el ancho.</div>
+  ```
+* **`.container-{breakpoint}`**: Ancho del 100% hasta el breakpoint especificado, luego fijo.
+  ```html
+  <div class="container-md">Ancho completo en XS/SM, fijo en MD/LG/XL.</div>
+  ```
+
+### 2.2. Sistema de Cuadrícula (Grid System)
+
+Basado en Flexbox, un sistema de 12 columnas.
+
+* **`.row`**: Contenedor para las columnas. Debe estar dentro de un `.container`.
+* **`.col`**: Una columna simple, ocupará el espacio disponible por igual.
+* **`.col-{breakpoint}`**: La columna tendrá un ancho automático desde ese breakpoint hacia arriba.
+* **`.col-{breakpoint}-{size}`**: La columna ocupará `size` de las 12 columnas desde ese breakpoint hacia arriba.
+  * **Breakpoints**: `xs` (extra small, <576px), `sm` (small, ≥576px), `md` (medium, ≥768px), `lg` (large, ≥992px), `xl` (extra large, ≥1200px), `xxl` (extra extra large, ≥1400px).
+
+```html
+<div class="container">
+  <div class="row">
+    <div class="col-12 col-md-6 col-lg-4">Columna 1</div>
+    <div class="col-12 col-md-6 col-lg-8">Columna 2</div>
+  </div>
+  <div class="row row-cols-1 row-cols-md-2 g-4"> {/* `row-cols` define cols por defecto, `g-4` define `gap` */}
+    <div class="col">Item de grilla</div>
+    <div class="col">Item de grilla</div>
+    <div class="col">Item de grilla</div>
+    <div class="col">Item de grilla</div>
+  </div>
+</div>
+```
+
+* **Offsetting (Desplazamiento)**:
+  ```html
+  <div class="row">
+    <div class="col-md-4 offset-md-4">Centrado en pantallas medianas y superiores</div>
+  </div>
+  ```
+
+---
+
+## 3. 📝 Contenido y Tipografía
+
+* **Encabezados**: `<h1>` a `<h6>` con estilos por defecto.
+  ```html
+  <h1>Título H1</h1>
+  <h3 class="display-4">Título Grande (Display)</h3>
+  ```
+* **Párrafos**:
+  ```html
+  <p>Párrafo normal.</p>
+  <p class="lead">Párrafo resaltado.</p>
+  ```
+* **Texto alineado**: `.text-start`, `.text-center`, `.text-end`, `.text-{breakpoint}-center`.
+* **Texto transformado**: `.text-lowercase`, `.text-uppercase`, `.text-capitalize`.
+* **Peso de fuente**: `.fw-bold`, `.fw-normal`, `.fw-light`.
+* **Itálica**: `.fst-italic`.
+* **Monospace**: `.font-monospace`.
+* **Listas sin estilo**: `.list-unstyled`.
+
+### Imágenes
+
+* **`img-fluid`**: Hace que la imagen sea responsiva (max-width: 100%; height: auto;).
+* **`rounded`**: Añade bordes redondeados.
+* **`rounded-circle`**: Hace la imagen circular.
+* **`img-thumbnail`**: Crea un borde de thumbnail redondeado.
+
+  ```html
+  <img src="..." class="img-fluid rounded" alt="Imagen responsiva">
+  ```
+
+### Tablas
+
+* **`table`**: Estilo base para tablas.
+* **`table-striped`**: Filas impares/pares con fondo diferente.
+* **`table-bordered`**: Añade bordes a todas las celdas.
+* **`table-hover`**: Resalta la fila al pasar el ratón.
+* **`table-dark`**: Tabla con fondo oscuro.
+* **`table-responsive`**: Hace la tabla desplazable horizontalmente en pantallas pequeñas.
+  ```html
+  <div class="table-responsive">
+    <table class="table table-striped table-hover">
+      <thead>
+        <tr><th>#</th><th>Nombre</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>1</td><td>Alice</td></tr>
+      </tbody>
+    </table>
+  </div>
+  ```
+
+---
+
+## 4. 🎛️ Formularios
+
+* **`form-control`**: Clase base para inputs, textareas y selects.
+* **`form-label`**: Etiqueta de formulario con estilos.
+* **`form-text`**: Para texto de ayuda debajo del input.
+* **Validación**:
+  * **Validación del navegador**: Añade `required`, `minlength`, etc.
+  * **Clases de validación**: `.is-valid`, `.is-invalid` (con `.valid-feedback` y `.invalid-feedback`).
+
+```html
+<form>
+  <div class="mb-3">
+    <label for="exampleInputEmail1" class="form-label">Dirección de Email</label>
+    <input type="email" class="form-control" id="exampleInputEmail1" aria-describedby="emailHelp">
+    <div id="emailHelp" class="form-text">Nunca compartiremos tu email con nadie más.</div>
+  </div>
+  <div class="mb-3">
+    <label for="exampleInputPassword1" class="form-label">Contraseña</label>
+    <input type="password" class="form-control is-invalid" id="exampleInputPassword1">
+    <div class="invalid-feedback">
+      Por favor, introduce una contraseña válida.
+    </div>
+  </div>
+  <div class="mb-3 form-check">
+    <input type="checkbox" class="form-check-input" id="exampleCheck1">
+    <label class="form-check-label" for="exampleCheck1">Recordarme</label>
+  </div>
+  <button type="submit" class="btn btn-primary">Enviar</button>
+</form>
+```
+
+* **Checkboxes y Radios**:
+  ```html
+  <div class="form-check">
+    <input class="form-check-input" type="checkbox" value="" id="flexCheckDefault">
+    <label class="form-check-label" for="flexCheckDefault">
+      Default checkbox
+    </label>
+  </div>
+  <div class="form-check">
+    <input class="form-check-input" type="radio" name="flexRadioDefault" id="flexRadioDefault1" checked>
+    <label class="form-check-label" for="flexRadioDefault1">
+      Default radio
+    </label>
+  </div>
+  ```
+* **Selects**:
+  ```html
+  <select class="form-select" aria-label="Default select example">
+    <option selected>Abrir este menú de selección</option>
+    <option value="1">Uno</option>
+    <option value="2">Dos</option>
+  </select>
+  ```
+
+---
+
+## 5. 🧩 Componentes
+
+### Botones
+
+* **`btn`**: Clase base.
+* **`btn-{color}`**: Colores predefinidos (`primary`, `secondary`, `success`, `danger`, `warning`, `info`, `light`, `dark`).
+* **`btn-outline-{color}`**: Botones con borde y texto de color.
+* **`btn-{size}`**: Tamaños (`sm`, `lg`).
+* **`btn-link`**: Botón que parece un enlace.
+* **`disabled`**: Atributo HTML para deshabilitar.
+
+```html
+<button type="button" class="btn btn-primary">Primario</button>
+<a href="#" class="btn btn-outline-success btn-lg">Grande y Exitoso</a>
+```
+
+### Alertas
+
+* **`alert`**: Clase base.
+* **`alert-{color}`**: Colores según el contexto.
+* **`alert-dismissible fade show`**: Para alertas que se pueden cerrar (requiere JS).
+* **`alert-heading`**: Para títulos en alertas.
+* **`alert-link`**: Para enlaces dentro de alertas.
+
+```html
+<div class="alert alert-success" role="alert">
+  ¡Esto es una alerta de éxito!
+</div>
+<div class="alert alert-danger alert-dismissible fade show" role="alert">
+  <strong>¡Oh no!</strong> Hubo un problema.
+  <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Cerrar"></button>
+</div>
+```
+
+### Badges (Insignias)
+
+* **`badge`**: Clase base.
+* **`bg-{color}`**: Color de fondo.
+* **`text-bg-{color}`**: Colores de fondo con texto claro (Bootstrap 5.1+).
+* **`rounded-pill`**: Para píldoras redondeadas.
+
+```html
+<h3>Ejemplo <span class="badge text-bg-secondary">Nuevo</span></h3>
+<button class="btn btn-primary">
+  Notificaciones <span class="badge text-bg-light rounded-pill">4</span>
+</button>
+```
+
+### Cards (Tarjetas)
+
+Contenedores flexibles para contenido.
+
+* **`card`**: Contenedor principal.
+* **`card-body`**: Contenido principal de la tarjeta.
+* **`card-header`**, **`card-footer`**: Cabecera y pie de tarjeta.
+* **`card-title`**, **`card-subtitle`**, **`card-text`**: Elementos de texto.
+* **`card-img-top`**, **`card-img-bottom`**: Imágenes en la parte superior/inferior.
+* **`card-img-overlay`**: Texto superpuesto en una imagen.
+
+```html
+<div class="card" style="width: 18rem;">
+  <img src="..." class="card-img-top" alt="...">
+  <div class="card-body">
+    <h5 class="card-title">Título de Tarjeta</h5>
+    <p class="card-text">Algún texto de ejemplo para construir sobre el título de la tarjeta y hacer la mayor parte del contenido de la tarjeta.</p>
+    <a href="#" class="btn btn-primary">Go somewhere</a>
+  </div>
+</div>
+```
+
+### Modals (Ventanas Modales)
+
+Ventanas emergentes interactivas.
+
+* **HTML**: `modal`, `modal-dialog`, `modal-content`, `modal-header`, `modal-body`, `modal-footer`.
+* **Activación**: Botón con `data-bs-toggle="modal"` y `data-bs-target="#modalId"`.
+
+```html
+<!-- Botón para activar el modal -->
+<button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#exampleModal">
+  Abrir Modal
+</button>
+
+<!-- El Modal en sí -->
+<div class="modal fade" id="exampleModal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="exampleModalLabel">Título del Modal</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        Contenido del modal...
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+        <button type="button" class="btn btn-primary">Guardar cambios</button>
+      </div>
+    </div>
+  </div>
+</div>
+```
+
+### Navbar (Barra de Navegación)
+
+Barra responsiva para la navegación superior.
+
+* **`navbar`**: Clase base.
+* **`navbar-expand-{breakpoint}`**: Define cuándo se expande la barra.
+* **`navbar-brand`**: Para el logo/nombre de la marca.
+* **`navbar-nav`**: Lista de elementos de navegación.
+* **`nav-item`**, **`nav-link`**: Para enlaces individuales.
+* **`collapse navbar-collapse`**: Para el menú colapsable en móviles.
+* **`navbar-toggler`**: Botón para colapsar/expandir en móviles.
+
+```html
+<nav class="navbar navbar-expand-lg bg-body-tertiary">
+  <div class="container-fluid">
+    <a class="navbar-brand" href="#">Mi Marca</a>
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+    <div class="collapse navbar-collapse" id="navbarNav">
+      <ul class="navbar-nav">
+        <li class="nav-item">
+          <a class="nav-link active" aria-current="page" href="#">Home</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="#">Características</a>
+        </li>
+      </ul>
+    </div>
+  </div>
+</nav>
+```
+
+### Dropdowns (Menús Desplegables)
+
+* **`dropdown`**: Contenedor principal.
+* **`dropdown-toggle`**: Botón que activa el dropdown.
+* **`dropdown-menu`**: Contenedor de los elementos del menú.
+* **`dropdown-item`**: Elemento individual del menú.
+
+```html
+<div class="dropdown">
+  <button class="btn btn-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+    Dropdown button
+  </button>
+  <ul class="dropdown-menu">
+    <li><a class="dropdown-item" href="#">Acción</a></li>
+    <li><a class="dropdown-item" href="#">Otra acción</a></li>
+  </ul>
+</div>
+```
+
+### Paginación
+
+* **`pagination`**: Contenedor principal.
+* **`page-item`**: Cada elemento de la página.
+* **`page-link`**: El enlace dentro del elemento.
+* **`active`**, **`disabled`**: Clases de estado.
+
+```html
+<nav aria-label="Page navigation example">
+  <ul class="pagination">
+    <li class="page-item disabled"><a class="page-link" href="#">Anterior</a></li>
+    <li class="page-item active"><a class="page-link" href="#">1</a></li>
+    <li class="page-item"><a class="page-link" href="#">2</a></li>
+    <li class="page-item"><a class="page-link" href="#">Siguiente</a></li>
+  </ul>
+</nav>
+```
+
+### Progress Bars (Barras de Progreso)
+
+* **`progress`**: Contenedor de la barra de progreso.
+* **`progress-bar`**: La barra de progreso en sí.
+* **`w-{percentage}`**: Ancho (ej. `w-75` para 75%).
+
+```html
+<div class="progress">
+  <div class="progress-bar" role="progressbar" style="width: 75%;" aria-valuenow="75" aria-valuemin="0" aria-valuemax="100">75%</div>
+</div>
+```
+
+### Spinners (Indicadores de Carga)
+
+* **`spinner-border`**: Spinner giratorio.
+* **`spinner-grow`**: Spinner que crece.
+* **`text-{color}`**: Color.
+* **`spinner-border-sm`**: Tamaño pequeño.
+
+```html
+<div class="spinner-border text-primary" role="status">
+  <span class="visually-hidden">Cargando...</span>
+</div>
+<div class="spinner-grow text-success" role="status">
+  <span class="visually-hidden">Cargando...</span>
+</div>
+```
+
+### Toasts (Notificaciones Temporales)
+
+Mensajes transitorios que aparecen en la esquina.
+
+```html
+<div class="toast show" role="alert" aria-live="assertive" aria-atomic="true">
+  <div class="toast-header">
+    <strong class="me-auto">Bootstrap</strong>
+    <small>Ahora</small>
+    <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
+  </div>
+  <div class="toast-body">
+    ¡Hola, mundo! Esto es un mensaje toast.
+  </div>
+</div>
+```
+
+### Tooltips y Popovers (Puntas de Herramienta y Ventanas Emergentes)
+
+Requieren inicialización con JavaScript.
+
+```html
+<!-- Tooltip -->
+<button type="button" class="btn btn-secondary" data-bs-toggle="tooltip" data-bs-placement="top" data-bs-title="Este es un Tooltip">
+  Tooltip en la parte superior
+</button>
+
+<!-- Popover -->
+<button type="button" class="btn btn-danger" data-bs-toggle="popover" data-bs-title="Título del Popover" data-bs-content="Contenido del popover.">
+  Click para ver Popover
+</button>
+
+<script>
+  // Inicialización de Tooltips/Popovers (se debe hacer una vez que el DOM esté listo)
+  const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]')
+  const tooltipList = [...tooltipTriggerList].map(tooltipTriggerEl => new bootstrap.Tooltip(tooltipTriggerEl))
+
+  const popoverTriggerList = document.querySelectorAll('[data-bs-toggle="popover"]')
+  const popoverList = [...popoverTriggerList].map(popoverTriggerEl => new bootstrap.Popover(popoverTriggerEl))
+</script>
+```
+
+---
+
+## 6. 🎨 Clases de Utilidad
+
+Pequeñas clases para aplicar estilos de forma rápida.
+
+* **Espaciado (Spacing)**: `m` (margin), `p` (padding), `t` (top), `b` (bottom), `s` (start/left), `e` (end/right), `x` (left/right), `y` (top/bottom), `auto` (para centrar horizontalmente). Tamaños `0` a `5`, `auto`.
+  * Ej: `mt-3` (margin-top: 1rem), `px-4` (padding-left/right: 1.5rem), `mx-auto` (margin-left/right: auto).
+* **Colores**: `text-{color}`, `bg-{color}`, `link-{color}`.
+  * Colores: `primary`, `secondary`, `success`, `danger`, `warning`, `info`, `light`, `dark`, `white`, `body`, `muted`.
+  * Ej: `<p class="text-primary">Texto primario</p>`, `<div class="bg-info">Fondo info</div>`.
+* **Display**: `d-{prop}` (flex, block, inline, none), `d-{breakpoint}-{prop}` para responsividad.
+  * Ej: `d-flex` (display: flex), `d-md-none` (ocultar en md y superior).
+* **Flexbox**: `d-flex`, `justify-content-{start|end|center|between|around|evenly}`, `align-items-{start|end|center|baseline|stretch}`, `flex-row`, `flex-column`, `gap-{size}`.
+  * Ej: `<div class="d-flex justify-content-center align-items-center gap-3">...</div>`
+* **Bordes**: `border`, `border-{color}`, `border-0`, `border-top-0`, `rounded`, `rounded-0`, `rounded-circle`, `rounded-pill`.
+  * Ej: `<div class="p-3 border border-primary rounded"></div>`
+* **Dimensiones**: `w-{25|50|75|100|auto}`, `h-{25|50|75|100|auto}`, `mw-100`, `mh-100`.
+  * Ej: `<div class="w-50 h-25 bg-secondary"></div>`
+* **Sombras**: `shadow`, `shadow-sm`, `shadow-lg`, `shadow-none`.
+  * Ej: `<div class="p-3 bg-white shadow-sm"></div>`
+* **Visibilidad**: `visible`, `invisible`.
+
+---
+
+## 7. 🎨 Personalización
+
+* **Variables CSS**: Bootstrap 5 utiliza variables CSS para muchos de sus estilos. Puedes sobrescribirlas fácilmente.
+  ```css
+  :root {
+    --bs-primary: #6f42c1; /* Nuevo color primario */
+    --bs-border-radius: 0.5rem; /* Bordes más redondeados globalmente */
+  }
+  .my-custom-element {
+    color: var(--bs-primary);
+  }
+  ```
+* **Sass**: Para una personalización más profunda, puedes importar el código fuente de Sass de Bootstrap y sobrescribir sus variables antes de compilar.
+  ```scss
+  // _custom_variables.scss
+  $primary: #ff6347; // Un tomate como color primario
+  $spacer: 1.25rem;  // Aumentar el espaciado base
+
+  // Importa Bootstrap después de tus variables personalizadas
+  @import "~bootstrap/scss/bootstrap";
+  ```
+
+---
+
+## 8. 💡 Buenas Prácticas y Consejos
+
+* **Mobile-First**: Siempre piensa en cómo se verá tu diseño en un dispositivo móvil primero, luego escala para pantallas más grandes.
+* **Usa clases de utilidad**: Para pequeños ajustes de estilo, las clases de utilidad son rápidas y eficientes.
+* **Evita sobrescribir CSS directamente**: Siempre que sea posible, personaliza a través de variables CSS o Sass. Si necesitas CSS personalizado, asegúrate de que cargue *después* del CSS de Bootstrap.
+* **No mezcles clases de `col` y `w-*`**: El sistema de cuadrícula ya maneja los anchos; usar `w-*` en una columna puede causar problemas.
+* **Mantén tu HTML limpio**: No abuses de las clases de utilidad si puedes encapsular un estilo común en un componente o una clase personalizada.
+
+---
+
+Este cheatsheet te proporciona una referencia completa de los aspectos más importantes de Bootstrap 5, lo que te permitirá construir interfaces de usuario responsivas y estéticamente agradables de manera eficiente.
