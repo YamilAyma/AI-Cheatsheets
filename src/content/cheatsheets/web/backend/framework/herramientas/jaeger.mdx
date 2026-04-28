@@ -82,23 +82,23 @@ Micrometer Tracing (parte de Spring Boot 3+ y Micrometer 1.10+) es el enfoque re
 1.  **Añadir dependencias en `pom.xml` (en tu microservicio):**
     ```xml
     <dependencies>
-        <!-- Micrometer Tracing Bridge para OpenTelemetry -->
+        &lt;!-- Micrometer Tracing Bridge para OpenTelemetry -->
         <dependency>
             <groupId>io.micrometer</groupId>
             <artifactId>micrometer-tracing-bridge-otel</artifactId>
         </dependency>
-        <!-- Exporter para Jaeger -->
+        &lt;!-- Exporter para Jaeger -->
         <dependency>
             <groupId>io.opentelemetry</groupId>
             <artifactId>opentelemetry-exporter-jaeger</artifactId>
         </dependency>
-        <!-- Para la API de OpenTelemetry (si necesitas instrumentación manual más allá del bridge) -->
+        &lt;!-- Para la API de OpenTelemetry (si necesitas instrumentación manual más allá del bridge) -->
         <dependency>
             <groupId>io.opentelemetry</groupId>
             <artifactId>opentelemetry-api</artifactId>
-            <version>1.34.1</version> <!-- Usar la versión compatible -->
+            <version>1.34.1</version> &lt;!-- Usar la versión compatible -->
         </dependency>
-        <!-- Spring Boot Actuator para exposición de métricas y health -->
+        &lt;!-- Spring Boot Actuator para exposición de métricas y health -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-actuator</artifactId>

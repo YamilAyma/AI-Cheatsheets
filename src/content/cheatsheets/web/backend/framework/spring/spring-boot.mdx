@@ -38,24 +38,24 @@ La forma más común de iniciar un proyecto Spring Boot es usando **Spring Initi
 **Dependencias Básicas Comunes (en `pom.xml` para Maven o `build.gradle` para Gradle):**
 
 ```xml
-<!-- Maven (pom.xml) -->
+&lt;!-- Maven (pom.xml) -->
 <dependencies>
     <dependency>
         <groupId>org.springframework.boot</groupId>
-        <artifactId>spring-boot-starter-web</artifactId> <!-- Para APIs REST, incluye Tomcat -->
+        <artifactId>spring-boot-starter-web</artifactId> &lt;!-- Para APIs REST, incluye Tomcat -->
     </dependency>
     <dependency>
         <groupId>org.springframework.boot</groupId>
-        <artifactId>spring-boot-starter-data-jpa</artifactId> <!-- Para persistencia con JPA -->
+        <artifactId>spring-boot-starter-data-jpa</artifactId> &lt;!-- Para persistencia con JPA -->
     </dependency>
     <dependency>
         <groupId>com.h2database</groupId>
-        <artifactId>h2</artifactId> <!-- Base de datos en memoria para desarrollo -->
+        <artifactId>h2</artifactId> &lt;!-- Base de datos en memoria para desarrollo -->
         <scope>runtime</scope>
     </dependency>
     <dependency>
         <groupId>org.springframework.boot</groupId>
-        <artifactId>spring-boot-starter-test</artifactId> <!-- Para pruebas -->
+        <artifactId>spring-boot-starter-test</artifactId> &lt;!-- Para pruebas -->
         <scope>test</scope>
     </dependency>
 </dependencies>
@@ -126,7 +126,7 @@ Las anotaciones son el corazón de Spring Boot para configurar y definir compone
 * **`@PutMapping("/users/{id}")`**: Mapea un método a una petición PUT.
 * **`@DeleteMapping("/users/{id}")`**: Mapea un método a una petición DELETE.
 * **`@PatchMapping("/users/{id}")`**: Mapea un método a una petición PATCH.
-* **`@PathVariable("id")`**: Extrae un valor de la URL (ej. `/users/123` -> `id=123`).
+* **`@PathVariable("id")`**: Extrae un valor de la URL (ej. `/users/123` -&gt; `id=123`).
 * **`@RequestParam("name")`**: Extrae un parámetro de la cadena de consulta (query parameter) (ej. `/users?name=John`).
 * **`@RequestBody`**: Mapea el cuerpo de la petición HTTP a un objeto Java (Spring Boot lo deserializa automáticamente desde JSON/XML).
 * **`@ResponseBody`**: Indica que el valor de retorno de un método debe serializarse directamente al cuerpo de la respuesta HTTP (implícito con `@RestController`).

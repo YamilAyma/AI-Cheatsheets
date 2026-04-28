@@ -97,7 +97,7 @@ const {
   // ...otras propiedades
 } = useQuery({
   queryKey: ['mi-query-key'], // **ARRAY OBLIGATORIO** para identificar la query
-  queryFn: async () => {       // **FUNCIÓN ASÍNCRONA OBLIGATORIA** que devuelve una Promise
+  queryFn: async () =&gt; {       // **FUNCIÓN ASÍNCRONA OBLIGATORIA** que devuelve una Promise
     const res = await fetch('/api/mis-datos');
     if (!res.ok) {
       throw new Error('Error al obtener datos');
@@ -113,7 +113,7 @@ const {
 ```jsx
 import { useQuery } from '@tanstack/react-query';
 
-const fetchTodos = async () => {
+const fetchTodos = async () =&gt; {
   const res = await fetch('/api/todos');
   if (!res.ok) throw new Error('Failed to fetch todos');
   return res.json();
@@ -130,7 +130,7 @@ function TodoList() {
 
   return (
     <ul>
-      {todos.map((todo) => (
+      {todos.map((todo) =&gt; (
         <li key={todo.id}>{todo.title}</li>
       ))}
     </ul>
@@ -162,19 +162,19 @@ function TodoList() {
   * `true` (por defecto): Reintentar 3 veces en caso de fallo.
   * `false`: No reintentar.
   * `number`: Número de reintentos.
-* **`select`**: `(data: TData) => TSelectData`
+* **`select`**: `(data: TData) =&gt; TSelectData`
   * Función para transformar o seleccionar una parte de los datos antes de que se devuelvan al componente.
   * ```javascript
     useQuery({
       queryKey: ['user', userId],
       queryFn: fetchUser,
-      select: (data) => data.profile.name, // Solo devuelve el nombre
+      select: (data) =&gt; data.profile.name, // Solo devuelve el nombre
     });
     ```
-* **`initialData`**: `TData | () => TData`
+* **`initialData`**: `TData | () =&gt; TData`
   * Provee los datos iniciales para una query. No se cachean y se reemplazan por los datos reales una vez que se completa el fetch.
   * Útil para datos disponibles en el servidor (SSR) o de un cache preexistente.
-* **`placeholderData`**: `TData | () => TData | KeepPreviousData`
+* **`placeholderData`**: `TData | () =&gt; TData | KeepPreviousData`
   * Similar a `initialData`, pero `placeholderData` *no* se almacena en el caché de la query.
   * Cuando la query está `loading` y no hay datos en caché, se mostrará este `placeholderData`.
   * Muy útil para UX al pre-renderizar con datos dummy.
@@ -202,7 +202,7 @@ const {
   status,        // 'idle', 'loading', 'error', 'success'
   // ...otras propiedades
 } = useMutation({
-  mutationFn: async (variables) => { // **FUNCIÓN ASÍNCRONA OBLIGATORIA**
+  mutationFn: async (variables) =&gt; { // **FUNCIÓN ASÍNCRONA OBLIGATORIA**
     const res = await fetch('/api/crear-item', {
       method: 'POST',
       body: JSON.stringify(variables),
@@ -212,19 +212,19 @@ const {
     return res.json();
   },
   // Callbacks para gestionar el estado
-  onSuccess: (data, variables, context) => {
+  onSuccess: (data, variables, context) =&gt; {
     // Se ejecuta al éxito de la mutación
     // `data`: resultado de la mutación
     // `variables`: variables pasadas a `mutate`
     // `context`: valor devuelto por `onMutate`
   },
-  onError: (error, variables, context) => {
+  onError: (error, variables, context) =&gt; {
     // Se ejecuta si la mutación falla
   },
-  onSettled: (data, error, variables, context) => {
+  onSettled: (data, error, variables, context) =&gt; {
     // Se ejecuta siempre, haya éxito o fallo
   },
-  onMutate: async (variables) => {
+  onMutate: async (variables) =&gt; {
     // Se ejecuta ANTES de que la mutación se envíe.
     // Útil para actualizaciones optimistas.
     // Debe devolver un 'context' que se pasa a onError/onSettled.
@@ -237,7 +237,7 @@ const {
 ```jsx
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 
-const addTodo = async (newTodo) => {
+const addTodo = async (newTodo) =&gt; {
   const res = await fetch('/api/todos', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -251,13 +251,13 @@ function AddTodoForm() {
   const queryClient = useQueryClient();
   const { mutate, isLoading } = useMutation({
     mutationFn: addTodo,
-    onSuccess: () => {
+    onSuccess: () =&gt; {
       // Invalida la query 'todos' para que se refetchee automáticamente
       queryClient.invalidateQueries({ queryKey: ['todos'] });
     },
   });
 
-  const handleSubmit = (e) => {
+  const handleSubmit = (e) =&gt; {
     e.preventDefault();
     const title = e.target.elements.title.value;
     mutate({ title, completed: false });
@@ -306,10 +306,10 @@ function MyComponent() {
   * Actualiza manualmente los datos de una query en el caché.
   * ```javascript
     // Añadir un nuevo todo al cache directamente
-    queryClient.setQueryData(['todos'], (oldTodos) => [...oldTodos, newTodo]);
+    queryClient.setQueryData(['todos'], (oldTodos) =&gt; [...oldTodos, newTodo]);
 
     // O actualizar un todo existente
-    queryClient.setQueryData(['todo', todoId], (oldTodo) => ({ ...oldTodo, completed: !oldTodo.completed }));
+    queryClient.setQueryData(['todo', todoId], (oldTodo) =&gt; ({ ...oldTodo, completed: !oldTodo.completed }));
     ```
 * **`queryClient.getQueryData(queryKey)`**:
   * Lee directamente los datos del caché para una `queryKey` dada. No activa refetch.
@@ -346,7 +346,7 @@ Una técnica UX poderosa donde se actualiza la UI **inmediatamente** después de
 ```jsx
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 
-const updateTodoStatus = async ({ id, completed }) => {
+const updateTodoStatus = async ({ id, completed }) =&gt; {
   const res = await fetch(`/api/todos/${id}`, {
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json' },
@@ -360,7 +360,7 @@ function TodoItem({ todo }) {
   const queryClient = useQueryClient();
   const { mutate } = useMutation({
     mutationFn: updateTodoStatus,
-    onMutate: async (newTodo) => {
+    onMutate: async (newTodo) =&gt; {
       // 1. Cancela cualquier refetch pendiente de la query de todos
       await queryClient.cancelQueries({ queryKey: ['todos'] });
 
@@ -368,18 +368,18 @@ function TodoItem({ todo }) {
       const previousTodos = queryClient.getQueryData(['todos']);
 
       // 3. Actualiza optimísticamente el caché
-      queryClient.setQueryData(['todos'], (old) =>
-        old ? old.map((t) => (t.id === newTodo.id ? { ...t, ...newTodo } : t)) : []
+      queryClient.setQueryData(['todos'], (old) =&gt;
+        old ? old.map((t) =&gt; (t.id === newTodo.id ? { ...t, ...newTodo } : t)) : []
       );
 
       return { previousTodos }; // Este 'context' se pasa a onError y onSettled
     },
-    onError: (err, newTodo, context) => {
+    onError: (err, newTodo, context) =&gt; {
       // 4. Si falla, revierte el caché a los datos anteriores
       queryClient.setQueryData(['todos'], context.previousTodos);
       alert('Error al actualizar: ' + err.message);
     },
-    onSettled: () => {
+    onSettled: () =&gt; {
       // 5. Siempre, refetchea la query para asegurar la consistencia del servidor
       queryClient.invalidateQueries({ queryKey: ['todos'] });
     },
@@ -388,7 +388,7 @@ function TodoItem({ todo }) {
   return (
     <li
       style={{ textDecoration: todo.completed ? 'line-through' : 'none' }}
-      onClick={() => mutate({ id: todo.id, completed: !todo.completed })}
+      onClick={() =&gt; mutate({ id: todo.id, completed: !todo.completed })}
     >
       {todo.title}
     </li>
@@ -411,11 +411,11 @@ const {
   // ...otras propiedades de useQuery
 } = useInfiniteQuery({
   queryKey: ['posts', 'infinite'],
-  queryFn: async ({ pageParam = 0 }) => { // pageParam es el valor devuelto por getNextPageParam
+  queryFn: async ({ pageParam = 0 }) =&gt; { // pageParam es el valor devuelto por getNextPageParam
     const res = await fetch(`/api/posts?cursor=${pageParam}`);
     return res.json();
   },
-  getNextPageParam: (lastPage, allPages) => {
+  getNextPageParam: (lastPage, allPages) =&gt; {
     // Retorna el cursor para la siguiente página
     // Retorna `undefined` si no hay más páginas
     return lastPage.nextCursor ?? undefined;
@@ -429,7 +429,7 @@ const {
 ```jsx
 import { useInfiniteQuery } from '@tanstack/react-query';
 
-const fetchPosts = async ({ pageParam = 0 }) => {
+const fetchPosts = async ({ pageParam = 0 }) =&gt; {
   const res = await fetch(`/api/posts?cursor=${pageParam}`);
   return res.json();
 };
@@ -446,7 +446,7 @@ function InfinitePostList() {
   } = useInfiniteQuery({
     queryKey: ['posts', 'infinite'],
     queryFn: fetchPosts,
-    getNextPageParam: (lastPage) => lastPage.nextCursor, // Asume que la API devuelve { posts: [], nextCursor: '...' }
+    getNextPageParam: (lastPage) =&gt; lastPage.nextCursor, // Asume que la API devuelve { posts: [], nextCursor: '...' }
     initialPageParam: 0,
   });
 
@@ -455,15 +455,15 @@ function InfinitePostList() {
 
   return (
     <div>
-      {data.pages.map((page, i) => (
+      {data.pages.map((page, i) =&gt; (
         <React.Fragment key={i}>
-          {page.posts.map((post) => (
+          {page.posts.map((post) =&gt; (
             <p key={post.id}>{post.title}</p>
           ))}
         </React.Fragment>
       ))}
       <button
-        onClick={() => fetchNextPage()}
+        onClick={() =&gt; fetchNextPage()}
         disabled={!hasNextPage || isFetchingNextPage}
       >
         {isFetchingNextPage
@@ -503,8 +503,8 @@ import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
 * **Abstrae tus `queryFn`s:** Separa la lógica de fetching de tus componentes.
   * ```javascript
     // api/todos.js
-    export const fetchTodos = async () => {...};
-    export const createTodo = async (newTodo) => {...};
+    export const fetchTodos = async () =&gt; {...};
+    export const createTodo = async (newTodo) =&gt; {...};
 
     // Componente
     import { fetchTodos } from './api/todos';

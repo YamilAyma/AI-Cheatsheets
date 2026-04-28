@@ -209,12 +209,12 @@ Para pasar valores dinámicos a las consultas. Protege contra la inyección SQL.
 
 *   **Parámetros Posicionales (`?n`)**:
     ```jpql
-    SELECT p FROM Product p WHERE p.name = ?1 AND p.price < ?2
+    SELECT p FROM Product p WHERE p.name = ?1 AND p.price &lt; ?2
     ```
     *   En Java: `query.setParameter(1, "Laptop"); query.setParameter(2, 1000.00);`
 *   **Parámetros con Nombre (`:name`)**: **¡Preferido por su legibilidad!**
     ```jpql
-    SELECT p FROM Product p WHERE p.name = :productName AND p.price < :maxPrice
+    SELECT p FROM Product p WHERE p.name = :productName AND p.price &lt; :maxPrice
     ```
     *   En Java: `query.setParameter("productName", "Laptop"); query.setParameter("maxPrice", 1000.00);`
 

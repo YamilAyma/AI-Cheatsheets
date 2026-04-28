@@ -58,7 +58,7 @@ const fruitOptions = [
 function SingleSelectExample() {
   const [selectedFruit, setSelectedFruit] = useState(null); // El estado guarda el objeto completo de la opción
 
-  const handleChange = (selectedOption) => {
+  const handleChange = (selectedOption) =&gt; {
     setSelectedFruit(selectedOption);
     console.log(`Opción seleccionada:`, selectedOption);
   };
@@ -101,7 +101,7 @@ const techOptions = [
 function MultiSelectExample() {
   const [selectedTechs, setSelectedTechs] = useState([]); // El estado guarda un array de objetos de opción
 
-  const handleChange = (selectedOptions) => {
+  const handleChange = (selectedOptions) =&gt; {
     setSelectedTechs(selectedOptions || []); // selectedOptions puede ser null al borrar todo
     console.log(`Opciones seleccionadas:`, selectedOptions);
   };
@@ -118,7 +118,7 @@ function MultiSelectExample() {
         closeMenuOnSelect={false} // Mantener el menú abierto después de seleccionar en multi
       />
       {selectedTechs.length > 0 && (
-        <p>Has seleccionado: {selectedTechs.map(tech => tech.label).join(', ')}</p>
+        <p>Has seleccionado: {selectedTechs.map(tech =&gt; tech.label).join(', ')}</p>
       )}
     </div>
   );
@@ -135,7 +135,7 @@ exportquire MultipleSelectExample;
 
 * **`options`**: `Array<object>` - Array de objetos de opciones `{ value: string|number, label: string }`.
 * **`value`**: `object | Array<object> | null` - El objeto(s) de opción seleccionado(s). **Controlado.**
-* **`onChange`**: `(newValue: any, actionMeta: ActionMeta) => void` - Función que se llama cuando el valor cambia. `newValue` es el objeto(s) de opción seleccionado(s).
+* **`onChange`**: `(newValue: any, actionMeta: ActionMeta) =&gt; void` - Función que se llama cuando el valor cambia. `newValue` es el objeto(s) de opción seleccionado(s).
 * **`isMulti`**: `boolean` - `true` para selección múltiple.
 * **`isClearable`**: `boolean` - `true` para mostrar un botón de "limpiar".
 * **`isDisabled`**: `boolean` - `true` para deshabilitar el selector.
@@ -149,12 +149,12 @@ exportquire MultipleSelectExample;
 * **`className`**: `string` - Clase CSS para el contenedor principal.
 * **`classNamePrefix`**: `string` - Prefijo para las clases generadas internamente por `react-select` (ej. `react-select-control`).
 * **`components`**: `object` - Permite reemplazar componentes internos de `react-select` (ej. `Control`, `Option`, `IndicatorSeparator`).
-* **`formatOptionLabel`**: `(option, { context }) => ReactNode` - Función para personalizar el renderizado de cada opción en el menú.
-* **`noOptionsMessage`**: `(obj: { inputValue: string }) => ReactNode` - Mensaje que se muestra cuando no hay opciones disponibles.
-* **`loadingMessage`**: `() => ReactNode` - Mensaje que se muestra cuando `isLoading` es `true`.
-* **`filterOption`**: `(option, rawInput) => boolean` - Función para personalizar la lógica de filtrado de la búsqueda.
-* **`getOptionValue`**: `(option) => string` - Función para extraer el valor único de una opción (por defecto `option.value`).
-* **`getOptionLabel`**: `(option) => string` - Función para extraer la etiqueta a mostrar de una opción (por defecto `option.label`).
+* **`formatOptionLabel`**: `(option, { context }) =&gt; ReactNode` - Función para personalizar el renderizado de cada opción en el menú.
+* **`noOptionsMessage`**: `(obj: { inputValue: string }) =&gt; ReactNode` - Mensaje que se muestra cuando no hay opciones disponibles.
+* **`loadingMessage`**: `() =&gt; ReactNode` - Mensaje que se muestra cuando `isLoading` es `true`.
+* **`filterOption`**: `(option, rawInput) =&gt; boolean` - Función para personalizar la lógica de filtrado de la búsqueda.
+* **`getOptionValue`**: `(option) =&gt; string` - Función para extraer el valor único de una opción (por defecto `option.value`).
+* **`getOptionLabel`**: `(option) =&gt; string` - Función para extraer la etiqueta a mostrar de una opción (por defecto `option.label`).
 
 ---
 
@@ -168,18 +168,18 @@ Para cargar opciones desde una API o una fuente de datos remota.
 import React, { useState } from 'react';
 import AsyncSelect from 'react-select/async'; // Importa AsyncSelect
 
-const loadUsers = async (inputValue) => {
+const loadUsers = async (inputValue) =&gt; {
   // Simula una API call
-  const response = await new Promise(resolve => setTimeout(() => {
+  const response = await new Promise(resolve =&gt; setTimeout(() =&gt; {
     const users = [
       { id: 1, name: 'Alice' },
       { id: 2, name: 'Bob' },
       { id: 3, name: 'Charlie' },
     ];
-    resolve(users.filter(user => user.name.toLowerCase().includes(inputValue.toLowerCase())));
+    resolve(users.filter(user =&gt; user.name.toLowerCase().includes(inputValue.toLowerCase())));
   }, 500));
 
-  return response.map(user => ({ value: user.id, label: user.name }));
+  return response.map(user =&gt; ({ value: user.id, label: user.name }));
 };
 
 function AsyncSelectExample() {
@@ -220,7 +220,7 @@ const colorOptions = [
 function CreatableSelectExample() {
   const [selectedColor, setSelectedColor] = useState(null);
 
-  const handleCreate = (inputValue) => {
+  const handleCreate = (inputValue) =&gt; {
     // Lógica para añadir la nueva opción a tu fuente de datos
     console.log(`Creando nueva opción: ${inputValue}`);
     const newOption = { value: inputValue.toLowerCase(), label: inputValue };
@@ -238,7 +238,7 @@ function CreatableSelectExample() {
         onCreateOption={handleCreate} // Función para crear nueva opción
         value={selectedColor}
         placeholder="Selecciona o crea un color..."
-        formatCreateLabel={(inputValue) => `Crear "${inputValue}"`} // Personaliza el texto de creación
+        formatCreateLabel={(inputValue) =&gt; `Crear "${inputValue}"`} // Personaliza el texto de creación
       />
     </div>
   );
@@ -282,7 +282,7 @@ Permite sobrescribir los estilos de los componentes internos.
 
 ```jsx
 const customStyles = {
-  control: (baseStyles, state) => ({ // Estilos para el contenedor principal
+  control: (baseStyles, state) =&gt; ({ // Estilos para el contenedor principal
     ...baseStyles,
     borderColor: state.isFocused ? 'blue' : '#ccc',
     boxShadow: state.isFocused ? '0 0 0 1px blue' : 'none',
@@ -292,7 +292,7 @@ const customStyles = {
     borderRadius: '8px',
     minHeight: '40px',
   }),
-  option: (baseStyles, state) => ({ // Estilos para cada opción del menú
+  option: (baseStyles, state) =&gt; ({ // Estilos para cada opción del menú
     ...baseStyles,
     backgroundColor: state.isFocused ? '#e0f2f7' : (state.isSelected ? '#b2e2f2' : 'white'),
     color: state.isSelected ? 'black' : 'inherit',
@@ -302,21 +302,21 @@ const customStyles = {
     },
     padding: '10px 12px',
   }),
-  singleValue: (baseStyles) => ({ // Estilos para el valor seleccionado en un single select
+  singleValue: (baseStyles) =&gt; ({ // Estilos para el valor seleccionado en un single select
     ...baseStyles,
     color: '#333',
     fontWeight: 'bold',
   }),
-  multiValue: (baseStyles) => ({ // Estilos para cada 'tag' en un multi-select
+  multiValue: (baseStyles) =&gt; ({ // Estilos para cada 'tag' en un multi-select
     ...baseStyles,
     backgroundColor: '#e0e0e0',
     borderRadius: '4px',
   }),
-  multiValueLabel: (baseStyles) => ({
+  multiValueLabel: (baseStyles) =&gt; ({
     ...baseStyles,
     color: '#333',
   }),
-  multiValueRemove: (baseStyles) => ({
+  multiValueRemove: (baseStyles) =&gt; ({
     ...baseStyles,
     color: '#999',
     '&:hover': {
@@ -324,21 +324,21 @@ const customStyles = {
       color: 'white',
     },
   }),
-  placeholder: (baseStyles) => ({
+  placeholder: (baseStyles) =&gt; ({
     ...baseStyles,
     color: '#aaa',
   }),
-  menu: (baseStyles) => ({ // Estilos para el menú desplegable
+  menu: (baseStyles) =&gt; ({ // Estilos para el menú desplegable
     ...baseStyles,
     borderRadius: '8px',
     boxShadow: '0 4px 8px rgba(0, 0, 0, 0.15)',
     zIndex: 9999, // Asegura que el menú esté por encima de otros elementos
   }),
-  indicatorSeparator: (baseStyles) => ({ // Ocultar el separador de indicadores
+  indicatorSeparator: (baseStyles) =&gt; ({ // Ocultar el separador de indicadores
     ...baseStyles,
     display: 'none',
   }),
-  dropdownIndicator: (baseStyles, state) => ({ // Estilos para el icono de flecha
+  dropdownIndicator: (baseStyles, state) =&gt; ({ // Estilos para el icono de flecha
     ...baseStyles,
     color: state.isFocused ? 'blue' : '#ccc',
     transition: 'transform 0.2s ease-in-out',
@@ -396,7 +396,7 @@ function FormWithReactSelect() {
     }
   });
 
-  const onSubmit = (data) => {
+  const onSubmit = (data) =&gt; {
     console.log('Datos del formulario:', data);
     // data.fruit contendrá el objeto de la opción seleccionada (o null)
   };
@@ -409,7 +409,7 @@ function FormWithReactSelect() {
           name="fruit" // Nombre del campo en el formulario
           control={control} // Instancia de control de React Hook Form
           rules={{ required: '¡Este campo es obligatorio!' }} // Reglas de validación
-          render={({ field }) => ( // 'field' contiene props { onChange, onBlur, value, name, ref }
+          render={({ field }) =&gt; ( // 'field' contiene props { onChange, onBlur, value, name, ref }
             <Select
               {...field} // Pasa todas las props de `field` (onChange, onBlur, value, etc.)
               options={options}

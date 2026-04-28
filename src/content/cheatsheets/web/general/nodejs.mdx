@@ -137,7 +137,7 @@ Node.js es un entorno de ejecución de JavaScript basado en el motor V8 de Chrom
 ```javascript
 const fs = require('fs');
 
-fs.readFile('file.txt', 'utf8', (err, data) => {
+fs.readFile('file.txt', 'utf8', (err, data) =&gt; {
   if (err) {
     console.error('Error al leer el archivo:', err);
     return;
@@ -153,10 +153,10 @@ console.log('Lectura de archivo iniciada (asíncrono)...'); // Se ejecuta antes 
 const fs = require('fs/promises'); // Usa la versión de promesas del módulo fs
 
 fs.readFile('file.txt', 'utf8')
-  .then(data => {
+  .then(data =&gt; {
     console.log('Contenido del archivo (Promise):', data);
   })
-  .catch(err => {
+  .catch(err =&gt; {
     console.error('Error al leer el archivo (Promise):', err);
   });
 ```
@@ -190,7 +190,7 @@ const EventEmitter = require('events');
 class MyEmitter extends EventEmitter {}
 
 const myEmitter = new MyEmitter();
-myEmitter.on('event', (data) => { // Escucha el evento 'event'
+myEmitter.on('event', (data) =&gt; { // Escucha el evento 'event'
   console.log('Un evento ha ocurrido:', data);
 });
 
@@ -210,24 +210,24 @@ const fs = require('fs'); // Versión con Callbacks
 // const fs = require('fs/promises'); // Versión con Promesas
 
 // Leer archivo
-fs.readFile('input.txt', 'utf8', (err, data) => { /* ... */ }); // Callback
+fs.readFile('input.txt', 'utf8', (err, data) =&gt; { /* ... */ }); // Callback
 // await fs.readFile('input.txt', 'utf8'); // Promise
 
 // Escribir archivo (crea o sobrescribe)
-fs.writeFile('output.txt', 'Hola desde Node.js', (err) => { /* ... */ });
+fs.writeFile('output.txt', 'Hola desde Node.js', (err) =&gt; { /* ... */ });
 // await fs.writeFile('output.txt', 'Hola desde Node.js');
 
 // Añadir a archivo
-fs.appendFile('log.txt', 'Nuevo log\n', (err) => { /* ... */ });
+fs.appendFile('log.txt', 'Nuevo log\n', (err) =&gt; { /* ... */ });
 
 // Crear directorio
-fs.mkdir('my_folder', (err) => { /* ... */ });
+fs.mkdir('my_folder', (err) =&gt; { /* ... */ });
 
 // Eliminar archivo
-fs.unlink('temp.txt', (err) => { /* ... */ });
+fs.unlink('temp.txt', (err) =&gt; { /* ... */ });
 
 // Comprobar si existe
-fs.access('file.txt', fs.constants.F_OK, (err) => {
+fs.access('file.txt', fs.constants.F_OK, (err) =&gt; {
   console.log(`${err ? 'no existe' : 'existe'} el archivo`);
 });
 ```
@@ -251,7 +251,7 @@ console.log(path.parse(filePath));    // Objeto con root, dir, base, ext, name
 ```javascript
 const http = require('http');
 
-const server = http.createServer((req, res) => {
+const server = http.createServer((req, res) =&gt; {
   if (req.url === '/') {
     res.writeHead(200, { 'Content-Type': 'text/html' });
     res.end('<h1>Página de Inicio</h1>');
@@ -265,7 +265,7 @@ const server = http.createServer((req, res) => {
 });
 
 const PORT = process.env.PORT || 3000;
-server.listen(PORT, () => console.log(`Servidor corriendo en http://localhost:${PORT}`));
+server.listen(PORT, () =&gt; console.log(`Servidor corriendo en http://localhost:${PORT}`));
 ```
 
 ### 6.4. `url` - Parsear URLs
@@ -293,7 +293,7 @@ console.log(process.env.NODE_ENV); // 'development', 'production', etc.
 
 // Argumentos de línea de comandos
 // node app.js arg1 arg2
-process.argv.forEach((val, index) => {
+process.argv.forEach((val, index) =&gt; {
   console.log(`${index}: ${val}`); // 0: node, 1: app.js, 2: arg1, 3: arg2
 });
 
@@ -323,29 +323,29 @@ Express.js es un framework web minimalista y flexible para Node.js que proporcio
    app.use(express.static('public'));
 
    // Ruta GET
-   app.get('/', (req, res) => {
+   app.get('/', (req, res) =&gt; {
      res.send('¡Hola desde Express!');
    });
 
    // Ruta con parámetro
-   app.get('/users/:id', (req, res) => {
+   app.get('/users/:id', (req, res) =&gt; {
      const userId = req.params.id;
      res.json({ message: `Obteniendo usuario con ID: ${userId}` });
    });
 
    // Ruta POST
-   app.post('/api/products', (req, res) => {
+   app.post('/api/products', (req, res) =&gt; {
      const product = req.body; // Acceder al cuerpo JSON
      console.log('Producto recibido:', product);
      res.status(201).json({ message: 'Producto creado', product });
    });
 
    // Ruta 404 (Middleware de manejo de errores al final)
-   app.use((req, res) => {
+   app.use((req, res) =&gt; {
      res.status(404).send('Ruta no encontrada');
    });
 
-   app.listen(port, () => {
+   app.listen(port, () =&gt; {
      console.log(`Express app listening at http://localhost:${port}`);
    });
    ```
@@ -360,7 +360,7 @@ Express.js es un framework web minimalista y flexible para Node.js que proporcio
 
   ```javascript
   // Express error handling middleware (último middleware en ser definido)
-  app.use((err, req, res, next) => {
+  app.use((err, req, res, next) =&gt; {
     console.error(err.stack); // Imprime el stack trace en la consola
     res.status(500).send('¡Algo salió mal!');
   });
@@ -368,13 +368,13 @@ Express.js es un framework web minimalista y flexible para Node.js que proporcio
 * **Errores No Capturados (Unhandled Rejection/Uncaught Exception)**:
 
   ```javascript
-  process.on('uncaughtException', (err) => {
+  process.on('uncaughtException', (err) =&gt; {
     console.error('Excepción no capturada:', err);
     // Realizar limpieza, logear y luego salir de forma segura
     process.exit(1); // Salir del proceso
   });
 
-  process.on('unhandledRejection', (reason, promise) => {
+  process.on('unhandledRejection', (reason, promise) =&gt; {
     console.error('Promesa no manejada:', reason, promise);
     // Loggear y manejar, pero no necesariamente salir
   });

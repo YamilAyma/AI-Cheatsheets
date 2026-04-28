@@ -94,7 +94,7 @@ La **Programación Funcional** es un paradigma de programación que construye so
     function aplicarOperacion(arr, operacion) { // HOF
       return arr.map(operacion);
     }
-    const duplicar = (x) => x * 2;
+    const duplicar = (x) =&gt; x * 2;
     const numeros = [1, 2, 3];
     const duplicados = aplicarOperacion(numeros, duplicar); // [2, 4, 6]
     ```
@@ -112,7 +112,7 @@ La **Programación Funcional** es un paradigma de programación que construye so
     resultado = sumarUno(duplicar(5)) // (5 * 2) + 1 = 11
 
     // Composición
-    compose(f, g) := x -> f(g(x))
+    compose(f, g) := x -&gt; f(g(x))
     duplicarYSumarUno = compose(sumarUno, duplicar)
     resultado = duplicarYSumarUno(5) // 11
     ```
@@ -135,10 +135,10 @@ La **Programación Funcional** es un paradigma de programación que construye so
   * *Ejemplo (JavaScript):*
     ```javascript
     // Función normal
-    const add = (a, b) => a + b; // add(2, 3)
+    const add = (a, b) =&gt; a + b; // add(2, 3)
 
     // Función currificada
-    const curriedAdd = (a) => (b) => a + b; // curriedAdd(2)(3)
+    const curriedAdd = (a) =&gt; (b) =&gt; a + b; // curriedAdd(2)(3)
 
     const addTwo = curriedAdd(2); // Retorna una nueva función
     console.log(addTwo(3)); // 5
@@ -149,14 +149,14 @@ La **Programación Funcional** es un paradigma de programación que construye so
   * Relacionado con Currying, pero no necesita que cada función devuelva una función que tome *solo* un argumento.
   * *Ejemplo (JavaScript - usando `bind` o closure):*
     ```javascript
-    const multiplicar = (a, b) => a * b;
+    const multiplicar = (a, b) =&gt; a * b;
 
     // Aplicación parcial para fijar el primer argumento
     const duplicar = multiplicar.bind(null, 2); // 'null' es el contexto 'this'
     console.log(duplicar(5)); // 10
 
     // Con closure
-    const crearMultiplicador = (a) => (b) => a * b;
+    const crearMultiplicador = (a) =&gt; (b) =&gt; a * b;
     const triplicar = crearMultiplicador(3);
     console.log(triplicar(4)); // 12
     ```
@@ -181,7 +181,7 @@ Estas funciones son omnipresentes en la programación funcional para operar sobr
   * *Ejemplo (JavaScript):*
     ```javascript
     const edades = [10, 20, 25, 30];
-    const adultos = edades.filter(edad => edad >= 18); // [20, 25, 30]
+    const adultos = edades.filter(edad =&gt; edad &gt;= 18); // [20, 25, 30]
     ```
 * **`Reduce` (Agregación / Plegado)**:
 

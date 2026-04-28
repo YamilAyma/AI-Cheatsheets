@@ -41,24 +41,24 @@ Compile-time weaving es la forma más potente de AspectJ, ya que modifica direct
 1.  **Añadir dependencias en `pom.xml`:**
     ```xml
     <dependencies>
-        <!-- AspectJ Runtime (para que el código compilado pueda ejecutar el aspecto) -->
+        &lt;!-- AspectJ Runtime (para que el código compilado pueda ejecutar el aspecto) -->
         <dependency>
             <groupId>org.aspectj</groupId>
             <artifactId>aspectjrt</artifactId>
-            <version>1.9.21</version> <!-- Usar la versión más reciente -->
+            <version>1.9.21</version> &lt;!-- Usar la versión más reciente -->
         </dependency>
-        <!-- AspectJ Weaver (necesario para compilar el código con AspectJ) -->
+        &lt;!-- AspectJ Weaver (necesario para compilar el código con AspectJ) -->
         <dependency>
             <groupId>org.aspectj</groupId>
             <artifactId>aspectjweaver</artifactId>
             <version>1.9.21</version>
-            <scope>runtime</scope> <!-- Solo necesario en tiempo de ejecución si usas LTW -->
+            <scope>runtime</scope> &lt;!-- Solo necesario en tiempo de ejecución si usas LTW -->
         </dependency>
     </dependencies>
 
     <build>
         <plugins>
-            <!-- Plugin para configurar el compilador Java -->
+            &lt;!-- Plugin para configurar el compilador Java -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
@@ -68,19 +68,19 @@ Compile-time weaving es la forma más potente de AspectJ, ya que modifica direct
                     <target>17</target>
                 </configuration>
             </plugin>
-            <!-- AspectJ Maven Plugin para Compile-Time Weaving -->
+            &lt;!-- AspectJ Maven Plugin para Compile-Time Weaving -->
             <plugin>
                 <groupId>org.codehaus.mojo</groupId>
                 <artifactId>aspectj-maven-plugin</artifactId>
                 <version>1.14.0</version>
                 <configuration>
-                    <complianceLevel>17</complianceLevel> <!-- Tu versión de Java -->
+                    <complianceLevel>17</complianceLevel> &lt;!-- Tu versión de Java -->
                     <Xlint>warning</Xlint>
-                    <showWeaveInfo>true</showWeaveInfo> <!-- Muestra información de weaving -->
+                    <showWeaveInfo>true</showWeaveInfo> &lt;!-- Muestra información de weaving -->
                     <verbose>true</verbose>
                     <aspectLibraries>
-                        <!-- Si tuvieras aspectos en librerías externas -->
-                        <!-- <aspectLibrary>
+                        &lt;!-- Si tuvieras aspectos en librerías externas -->
+                        &lt;!-- <aspectLibrary>
                             <groupId>com.example</groupId>
                             <artifactId>my-logging-aspect</artifactId>
                         </aspectLibrary> -->
@@ -89,13 +89,13 @@ Compile-time weaving es la forma más potente de AspectJ, ya que modifica direct
                 <executions>
                     <execution>
                         <goals>
-                            <goal>compile</goal>    <!-- Para compilar AspectJ -->
-                            <goal>test-compile</goal> <!-- Para compilar tests con AspectJ -->
+                            <goal>compile</goal>    &lt;!-- Para compilar AspectJ -->
+                            <goal>test-compile</goal> &lt;!-- Para compilar tests con AspectJ -->
                         </goals>
                     </execution>
                 </executions>
                 <dependencies>
-                    <dependency> <!-- Importante: la misma versión que aspectjweaver -->
+                    <dependency> &lt;!-- Importante: la misma versión que aspectjweaver -->
                         <groupId>org.aspectj</groupId>
                         <artifactId>aspectjtools</artifactId>
                         <version>1.9.21</version>
@@ -288,16 +288,16 @@ Alternativa a Compile-Time Weaving, útil cuando no puedes modificar el proceso 
 1.  **Dependencias**: `aspectjweaver` con `scope=runtime`.
 2.  **`META-INF/aop.xml`**: Archivo de configuración que especifica qué aspectos tejer.
     ```xml
-    <!-- src/main/resources/META-INF/aop.xml -->
+    &lt;!-- src/main/resources/META-INF/aop.xml -->
     <aspectj>
         <aspects>
-            <!-- Define tu aspecto aquí -->
+            &lt;!-- Define tu aspecto aquí -->
             <aspect name="com.example.myapp.logging.LoggingAspect"/>
-            <!-- O si es un aspecto basado en anotaciones -->
-            <!-- <aspect name="com.example.myapp.logging.AnnotatedLoggingAspect"/> -->
+            &lt;!-- O si es un aspecto basado en anotaciones -->
+            &lt;!-- <aspect name="com.example.myapp.logging.AnnotatedLoggingAspect"/> -->
         </aspects>
         <weaver options="-verbose">
-            <!-- Incluir/excluir clases para tejer -->
+            &lt;!-- Incluir/excluir clases para tejer -->
             <include within="com.example.myapp..*"/>
         </weaver>
     </aspectj>

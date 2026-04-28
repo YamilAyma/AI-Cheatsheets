@@ -56,18 +56,18 @@ Un store de Zustand es simplemente una función que devuelve un objeto con el es
 import { create } from 'zustand';
 
 // 'create' recibe una función que tiene 'set' (para modificar estado) y 'get' (para leer estado)
-const useBearStore = create((set, get) => ({
+const useBearStore = create((set, get) =&gt; ({
   // 1. Estado inicial
   bears: 0,
   fish: 0,
   location: 'forest',
 
   // 2. Acciones (funciones para modificar el estado)
-  increasePopulation: () => set((state) => ({ bears: state.bears + 1 })), // Incrementa 'bears'
-  removeAllBears: () => set({ bears: 0 }), // Establece 'bears' a 0
-  addFish: (amount) => set((state) => ({ fish: state.fish + amount })),
+  increasePopulation: () =&gt; set((state) =&gt; ({ bears: state.bears + 1 })), // Incrementa 'bears'
+  removeAllBears: () =&gt; set({ bears: 0 }), // Establece 'bears' a 0
+  addFish: (amount) =&gt; set((state) =&gt; ({ fish: state.fish + amount })),
   // Ejemplo de acción que usa 'get' para leer el estado actual
-  resetAll: () => {
+  resetAll: () =&gt; {
     // get() permite acceder al estado actual
     const currentBears = get().bears;
     console.log(`Reseteando ${currentBears} osos.`);
@@ -90,12 +90,12 @@ import useBearStore from '../stores/bearStore'; // Importa tu store
 
 function BearCounter() {
   // 1. Acceder a un valor específico del estado
-  const bears = useBearStore((state) => state.bears); // Este componente solo se re-renderiza si 'bears' cambia
+  const bears = useBearStore((state) =&gt; state.bears); // Este componente solo se re-renderiza si 'bears' cambia
 
   // 2. Acceder a una acción
-  const increasePopulation = useBearStore((state) => state.increasePopulation);
-  const removeAllBears = useBearStore((state) => state.removeAllBears);
-  const resetAll = useBearStore((state) => state.resetAll);
+  const increasePopulation = useBearStore((state) =&gt; state.increasePopulation);
+  const removeAllBears = useBearStore((state) =&gt; state.removeAllBears);
+  const resetAll = useBearStore((state) =&gt; state.resetAll);
 
   return (
     <div>
@@ -109,14 +109,14 @@ function BearCounter() {
 
 function FishCounter() {
   // 3. Acceder a múltiples partes del estado o acciones
-  const fish = useBearStore((state) => state.fish);
-  const addFish = useBearStore((state) => state.addFish);
+  const fish = useBearStore((state) =&gt; state.fish);
+  const addFish = useBearStore((state) =&gt; state.addFish);
 
   return (
     <div>
       <h3>Contador de Peces: {fish}</h3>
-      <button onClick={() => addFish(1)}>Añadir Pez</button>
-      <button onClick={() => addFish(5)}>Añadir 5 Peces</button>
+      <button onClick={() =&gt; addFish(1)}>Añadir Pez</button>
+      <button onClick={() =&gt; addFish(5)}>Añadir 5 Peces</button>
     </div>
   );
 }
@@ -145,12 +145,12 @@ Maneja llamadas a APIs o cualquier operación asíncrona directamente dentro de 
 // src/stores/userStore.js
 import { create } from 'zustand';
 
-const useUserStore = create((set) => ({
+const useUserStore = create((set) =&gt; ({
   user: null,
   isLoading: false,
   error: null,
 
-  fetchUser: async (userId) => {
+  fetchUser: async (userId) =&gt; {
     set({ isLoading: true, error: null }); // Establece estado de carga
 
     try {
@@ -176,14 +176,14 @@ import React, { useEffect } from 'react';
 import useUserStore from '../stores/userStore';
 
 function UserProfile({ userId }) {
-  const { user, isLoading, error, fetchUser } = useUserStore((state) => ({
+  const { user, isLoading, error, fetchUser } = useUserStore((state) =&gt; ({
     user: state.user,
     isLoading: state.isLoading,
     error: state.error,
     fetchUser: state.fetchUser,
   }));
 
-  useEffect(() => {
+  useEffect(() =&gt; {
     fetchUser(userId); // Dispara la acción asíncrona al montar o cambiar userId
   }, [userId, fetchUser]);
 
@@ -211,12 +211,12 @@ Para evitar re-renders innecesarios, selecciona solo las partes del estado que t
 
 *   **Selección Simple**: El componente solo re-renderiza si `state.bears` cambia.
     ```jsx
-    const bears = useBearStore((state) => state.bears);
+    const bears = useBearStore((state) =&gt; state.bears);
     ```
 *   **Selección de Múltiples Propiedades**: Si seleccionas múltiples propiedades en un objeto (o desestructuras), el componente re-renderizará si *cualquiera* de esas propiedades cambia.
     ```jsx
     // Este componente re-renderiza si bears O location cambian
-    const { bears, location } = useBearStore((state) => ({
+    const { bears, location } = useBearStore((state) =&gt; ({
       bears: state.bears,
       location: state.location,
     }));
@@ -227,7 +227,7 @@ Para evitar re-renders innecesarios, selecciona solo las partes del estado que t
 
     // Este componente re-renderiza solo si 'bears' o 'location' cambian sus valores
     const { bears, location } = useBearStore(
-      (state) => ({
+      (state) =&gt; ({
         bears: state.bears,
         location: state.location,
       }),
@@ -249,16 +249,16 @@ import { persist } from 'zustand/middleware'; // Importa el middleware
 
 const usePersistedStore = create(
   persist(
-    (set, get) => ({
+    (set, get) =&gt; ({
       count: 0,
       lastUpdated: Date.now(),
-      increment: () => set((state) => ({ count: state.count + 1, lastUpdated: Date.now() })),
-      reset: () => set({ count: 0, lastUpdated: Date.now() }),
+      increment: () =&gt; set((state) =&gt; ({ count: state.count + 1, lastUpdated: Date.now() })),
+      reset: () =&gt; set({ count: 0, lastUpdated: Date.now() }),
     }),
     {
       name: 'my-app-storage', // Nombre clave en el almacenamiento local
-      getStorage: () => localStorage, // O sessionStorage, o un almacenamiento personalizado
-      // opcional: partialize: (state) => Object.fromEntries(Object.entries(state).filter(([key]) => !['nonPersistedKey'].includes(key))), // Guardar solo ciertas partes
+      getStorage: () =&gt; localStorage, // O sessionStorage, o un almacenamiento personalizado
+      // opcional: partialize: (state) =&gt; Object.fromEntries(Object.entries(state).filter(([key]) =&gt; !['nonPersistedKey'].includes(key))), // Guardar solo ciertas partes
       // opcional: blacklist: ['nonPersistedKey'], // No guardar estas claves
       // opcional: whitelist: ['persistedKey'], // Solo guardar estas claves
       // opcional: version: 1, // Para migraciones de esquema
@@ -284,9 +284,9 @@ Zustand soporta middlewares para extender la funcionalidad del store. Se aplican
 
     const useDevToolsStore = create(
       devtools(
-        (set) => ({
+        (set) =&gt; ({
           clicks: 0,
-          increment: () => set((state) => ({ clicks: state.clicks + 1 })),
+          increment: () =&gt; set((state) =&gt; ({ clicks: state.clicks + 1 })),
         }),
         { name: 'MyDevToolsStore' } // Nombre que aparece en DevTools
       )
@@ -298,10 +298,10 @@ Zustand soporta middlewares para extender la funcionalidad del store. Se aplican
     import { immer } from 'zustand/middleware/immer';
 
     const useImmerStore = create(
-      immer((set) => ({
+      immer((set) =&gt; ({
         user: { name: 'Alice', age: 30, address: { city: 'NY' } },
-        updateCity: (newCity) =>
-          set((state) => {
+        updateCity: (newCity) =&gt;
+          set((state) =&gt; {
             state.user.address.city = newCity; // "Mutación" segura gracias a Immer
           }),
       }))
@@ -320,8 +320,8 @@ Zustand soporta middlewares para extender la funcionalidad del store. Se aplican
 *   **TypeScript**: Zustand tiene un excelente soporte de TypeScript. Define las interfaces para tu estado y para la función del store para una experiencia de desarrollo tipo-segura.
     ```typescript
     // type State = { bears: number; };
-    // type Actions = { increasePopulation: () => void; };
-    // const useBearStore = create<State & Actions>((set) => ({ ... }));
+    // type Actions = { increasePopulation: () =&gt; void; };
+    // const useBearStore = create<State & Actions>((set) =&gt; ({ ... }));
     ```
 *   **DevTools**: Siempre usa el middleware `devtools` en desarrollo. Es invaluable para la depuración.
 *   **Persistencia Cuidadosa**: Decide qué partes del estado realmente necesitan persistir. Usa `whitelist` o `blacklist` si no quieres guardar todo el estado.

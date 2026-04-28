@@ -65,7 +65,7 @@ El `spring-boot-maven-plugin` gestiona el proceso.
     </plugins>
 </build>
 
-<!-- Perfil Maven para la compilación nativa -->
+&lt;!-- Perfil Maven para la compilación nativa -->
 <profiles>
     <profile>
         <id>native</id>
@@ -74,7 +74,7 @@ El `spring-boot-maven-plugin` gestiona el proceso.
                 <plugin>
                     <groupId>org.graalvm.buildtools</groupId>
                     <artifactId>native-maven-plugin</artifactId>
-                    <version>0.10.1</version> <!-- Usar la versión compatible -->
+                    <version>0.10.1</version> &lt;!-- Usar la versión compatible -->
                     <extensions>true</extensions>
                     <executions>
                         <execution>
@@ -86,8 +86,8 @@ El `spring-boot-maven-plugin` gestiona el proceso.
                         </execution>
                     </executions>
                     <configuration>
-                        <!-- Opciones de compilación de Native Image (opcional) -->
-                        <!-- <buildArgs>
+                        &lt;!-- Opciones de compilación de Native Image (opcional) -->
+                        &lt;!-- <buildArgs>
                             --enable-url-protocols=http
                         </buildArgs> -->
                     </configuration>
@@ -154,7 +154,7 @@ public class MyCustomRuntimeHints implements RuntimeHintsRegistrar {
         hints.reflection()
              .registerType(
                  TypeReference.of("com.example.myapp.MyDynamicClass"),
-                 hint -> hint.withPublicFields().withPublicMethods());
+                 hint -&gt; hint.withPublicFields().withPublicMethods());
 
         // Ejemplo 2: Registrar un proxy dinámico para una interfaz
         hints.proxies()

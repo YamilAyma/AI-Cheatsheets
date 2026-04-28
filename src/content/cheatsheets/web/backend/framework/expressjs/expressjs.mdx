@@ -45,12 +45,12 @@ Express.js es un framework web rápido, sin opiniones (unopinionated) y minimali
    const PORT = process.env.PORT || 3000; // Define el puerto
 
    // Define una ruta GET para la URL raíz '/'
-   app.get('/', (req, res) => {
+   app.get('/', (req, res) =&gt; {
      res.send('¡Hola, Mundo desde Express!'); // Envía una respuesta de texto
    });
 
    // Inicia el servidor
-   app.listen(PORT, () => {
+   app.listen(PORT, () =&gt; {
      console.log(`Servidor Express corriendo en http://localhost:${PORT}`);
    });
    ```
@@ -78,23 +78,23 @@ Define cómo la aplicación responde a las solicitudes HTTP.
 
 ```javascript
 // app.js
-app.get('/users', (req, res) => {
+app.get('/users', (req, res) =&gt; {
   res.send('Obteniendo todos los usuarios');
 });
 
-app.post('/users', (req, res) => {
+app.post('/users', (req, res) =&gt; {
   res.status(201).send('Creando un nuevo usuario');
 });
 
-app.put('/products/:id', (req, res) => {
+app.put('/products/:id', (req, res) =&gt; {
   res.send(`Actualizando producto con ID: ${req.params.id}`);
 });
 
-app.delete('/items/:id', (req, res) => {
+app.delete('/items/:id', (req, res) =&gt; {
   res.status(204).send('Eliminando ítem');
 });
 
-app.all('/secret', (req, res) => {
+app.all('/secret', (req, res) =&gt; {
   res.send('Puedes acceder a esta ruta con cualquier método HTTP (GET, POST, etc.)');
 });
 ```
@@ -104,12 +104,12 @@ app.all('/secret', (req, res) => {
 * Define segmentos variables en la URL. Accesibles a través de `req.params`.
 
 ```javascript
-app.get('/products/:productId', (req, res) => {
+app.get('/products/:productId', (req, res) =&gt; {
   const productId = req.params.productId;
   res.send(`Detalle del producto con ID: ${productId}`);
 });
 
-app.get('/users/:userId/posts/:postId', (req, res) => {
+app.get('/users/:userId/posts/:postId', (req, res) =&gt; {
   const userId = req.params.userId;
   const postId = req.params.postId;
   res.send(`Posts del usuario ${userId}, Post ID: ${postId}`);
@@ -121,7 +121,7 @@ app.get('/users/:userId/posts/:postId', (req, res) => {
 * Para patrones de URL más complejos.
 
 ```javascript
-app.get(/a/, (req, res) => { // Coincide con cualquier URL que contenga 'a'
+app.get(/a/, (req, res) =&gt; { // Coincide con cualquier URL que contenga 'a'
   res.send('Ruta que contiene "a"');
 });
 ```
@@ -134,7 +134,7 @@ app.get(/a/, (req, res) => { // Coincide con cualquier URL que contenga 'a'
 * **`req.query`**: Objeto que contiene los parámetros de la cadena de consulta (query string).
   ```javascript
   // URL: /search?q=nodejs&category=web
-  app.get('/search', (req, res) => {
+  app.get('/search', (req, res) =&gt; {
     const searchTerm = req.query.q;
     const category = req.query.category;
     res.send(`Buscando: "${searchTerm}" en categoría: "${category}"`);
@@ -153,36 +153,36 @@ app.get(/a/, (req, res) => { // Coincide con cualquier URL que contenga 'a'
 * **`res.send(body)`**: Envía una respuesta HTTP. El tipo de contenido se establece automáticamente.
 * **`res.json(body)`**: Envía una respuesta JSON.
   ```javascript
-  app.get('/api/data', (req, res) => {
+  app.get('/api/data', (req, res) =&gt; {
     res.json({ message: 'Datos de la API', version: '1.0' });
   });
   ```
 * **`res.status(code)`**: Establece el código de estado HTTP para la respuesta.
   ```javascript
-  app.post('/new-resource', (req, res) => {
+  app.post('/new-resource', (req, res) =&gt; {
     res.status(201).send('Recurso creado exitosamente.'); // 201 Created
   });
-  app.get('/not-found', (req, res) => {
+  app.get('/not-found', (req, res) =&gt; {
     res.status(404).send('Página no encontrada.'); // 404 Not Found
   });
   ```
 * **`res.end()`**: Finaliza el proceso de respuesta sin datos.
 * **`res.redirect([status,] path)`**: Redirige una solicitud.
   ```javascript
-  app.get('/old-path', (req, res) => {
+  app.get('/old-path', (req, res) =&gt; {
     res.redirect(301, '/new-path'); // Redirección permanente
   });
   ```
 * **`res.sendFile(path [, options] [, callback])`**: Transfiere el archivo en la ruta dada.
   ```javascript
-  app.get('/download', (req, res) => {
+  app.get('/download', (req, res) =&gt; {
     res.sendFile(__dirname + '/public/report.pdf');
   });
   ```
 * **`res.download(path [, filename] [, options] [, callback])`**: Fuerza la descarga de un archivo.
 * **`res.set(field, value)` / `res.header(field, value)`**: Establece encabezados de respuesta HTTP.
   ```javascript
-  app.get('/custom-header', (req, res) => {
+  app.get('/custom-header', (req, res) =&gt; {
     res.set('X-Custom-Header', 'MyValue');
     res.send('Respuesta con encabezado personalizado');
   });
@@ -206,7 +206,7 @@ Funciones que se ejecutan entre la solicitud y la respuesta.
   const app = express();
 
   // 1. Middleware para logging (ej. morgan, o custom)
-  app.use((req, res, next) => {
+  app.use((req, res, next) =&gt; {
     console.log(`[${new Date().toISOString()}] ${req.method} ${req.url}`);
     next(); // Pasa el control al siguiente middleware/ruta
   });
@@ -218,11 +218,11 @@ Funciones que se ejecutan entre la solicitud y la respuesta.
   // 3. Servir archivos estáticos (ej. CSS, JS, imágenes)
   app.use(express.static('public')); // Sirve archivos desde la carpeta 'public'
 
-  app.get('/', (req, res) => {
+  app.get('/', (req, res) =&gt; {
     res.send('Página principal');
   });
 
-  app.post('/data', (req, res) => {
+  app.post('/data', (req, res) =&gt; {
     console.log('Datos recibidos:', req.body);
     res.json({ message: 'Datos procesados', received: req.body });
   });
@@ -243,7 +243,7 @@ function authMiddleware(req, res, next) {
   }
 }
 
-app.get('/protected', authMiddleware, (req, res) => {
+app.get('/protected', authMiddleware, (req, res) =&gt; {
   res.send('Bienvenido al área protegida!');
 });
 ```
@@ -254,17 +254,17 @@ app.get('/protected', authMiddleware, (req, res) => {
 
 ```javascript
 // app.js (al final de todas las rutas y otros middlewares)
-app.use((err, req, res, next) => {
+app.use((err, req, res, next) =&gt; {
   console.error(err.stack); // Imprime el stack trace en la consola
   res.status(500).send('¡Algo salió mal en el servidor!');
 });
 
 // Para probarlo:
-app.get('/error-test', (req, res, next) => {
+app.get('/error-test', (req, res, next) =&gt; {
   throw new Error('Este es un error de prueba!'); // Error síncrono
 });
 
-app.get('/async-error-test', async (req, res, next) => {
+app.get('/async-error-test', async (req, res, next) =&gt; {
   try {
     // Simular un error en una operación asíncrona
     await Promise.reject(new Error('Este es un error asíncrono de prueba!'));
@@ -286,16 +286,16 @@ const express = require('express');
 const router = express.Router(); // Crea una nueva instancia de Router
 
 // Middleware específico para este router
-router.use((req, res, next) => {
+router.use((req, res, next) =&gt; {
   console.log('Middleware del router API');
   next();
 });
 
-router.get('/', (req, res) => {
+router.get('/', (req, res) =&gt; {
   res.json({ message: 'Bienvenido a la API!' });
 });
 
-router.get('/products', (req, res) => {
+router.get('/products', (req, res) =&gt; {
   res.json([{ id: 1, name: 'Laptop' }, { id: 2, name: 'Mouse' }]);
 });
 
@@ -308,7 +308,7 @@ const apiRouter = require('./routes/api'); // Importa tu router
 
 app.use('/api', apiRouter); // Monta el router en el prefijo '/api'
 
-app.listen(3000, () => console.log('Servidor en 3000'));
+app.listen(3000, () =&gt; console.log('Servidor en 3000'));
 ```
 
 ---
@@ -325,7 +325,7 @@ app.listen(3000, () => console.log('Servidor en 3000'));
 * **Renderizar una Plantilla**:
   ```javascript
   // app.js
-  app.get('/template-page', (req, res) => {
+  app.get('/template-page', (req, res) =&gt; {
     res.render('index', { title: 'Mi Página', message: 'Hola desde Pug!' });
   });
   ```

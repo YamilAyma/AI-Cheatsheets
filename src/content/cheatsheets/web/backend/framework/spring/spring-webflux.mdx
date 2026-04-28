@@ -36,22 +36,22 @@ icon: "📄"
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-webflux</artifactId>
         </dependency>
-        <!-- Para base de datos reactiva (ej. R2DBC para SQL) -->
+        &lt;!-- Para base de datos reactiva (ej. R2DBC para SQL) -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-data-r2dbc</artifactId>
         </dependency>
         <dependency>
             <groupId>io.r2dbc</groupId>
-            <artifactId>r2dbc-postgresql</artifactId> <!-- O tu driver R2DBC -->
+            <artifactId>r2dbc-postgresql</artifactId> &lt;!-- O tu driver R2DBC -->
             <scope>runtime</scope>
         </dependency>
-        <!-- Para base de datos reactiva (ej. MongoDB) -->
+        &lt;!-- Para base de datos reactiva (ej. MongoDB) -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-data-mongodb-reactive</artifactId>
         </dependency>
-        <!-- Para pruebas -->
+        &lt;!-- Para pruebas -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-test</artifactId>
@@ -85,7 +85,7 @@ Son los bloques de construcción de la programación reactiva en WebFlux.
         Mono<Object> monoEmpty = Mono.empty(); // No emite nada
         Mono<String> monoError = Mono.error(new RuntimeException("Error!"));
         Mono<Long> monoDelayed = Mono.delay(Duration.ofSeconds(2)); // Retrasa la emisión
-        Mono<String> fromCallable = Mono.fromCallable(() -> "Computed Value"); // Ejecuta una tarea
+        Mono<String> fromCallable = Mono.fromCallable(() -&gt; "Computed Value"); // Ejecuta una tarea
         ```
 *   **`Flux<T>`**: Representa 0 a N elementos.
     *   **Cuándo usar**: Para operaciones que devuelven múltiples resultados (ej. `findAll`, `stream`, `events`).
@@ -132,27 +132,27 @@ class Product {
 public class ProductController {
 
     // Simula un servicio reactivo
-    private final List<Product> products = new ArrayList<>(Arrays.asList(
+    private final List<Product> products = new ArrayList&lt;>(Arrays.asList(
         new Product(UUID.randomUUID().toString(), "Laptop", 1200.00),
         new Product(UUID.randomUUID().toString(), "Mouse", 25.00),
         new Product(UUID.randomUUID().toString(), "Keyboard", 75.00)
     ));
 
-    @GetMapping // GET /api/products -> devuelve múltiples productos
+    @GetMapping // GET /api/products -&gt; devuelve múltiples productos
     public Flux<Product> getAllProducts() {
         return Flux.fromIterable(products)
                 .delayElements(Duration.ofMillis(100)); // Simula latencia
     }
 
-    @GetMapping("/{id}") // GET /api/products/{id} -> devuelve un solo producto
+    @GetMapping("/{id}") // GET /api/products/{id} -&gt; devuelve un solo producto
     public Mono<Product> getProductById(@PathVariable String id) {
         return Mono.justOrEmpty(products.stream()
-                .filter(p -> p.getId().equals(id))
+                .filter(p -&gt; p.getId().equals(id))
                 .findFirst())
                 .switchIfEmpty(Mono.error(new ProductNotFoundException("Producto no encontrado con ID: " + id))); // Manejo de error específico
     }
 
-    @PostMapping // POST /api/products -> crea un producto
+    @PostMapping // POST /api/products -&gt; crea un producto
     @ResponseStatus(HttpStatus.CREATED) // Código de estado HTTP 201
     public Mono<Product> createProduct(@RequestBody Product product) {
         product.setId(UUID.randomUUID().toString());
@@ -160,21 +160,21 @@ public class ProductController {
         return Mono.just(product);
     }
 
-    @PutMapping("/{id}") // PUT /api/products/{id} -> actualiza un producto
+    @PutMapping("/{id}") // PUT /api/products/{id} -&gt; actualiza un producto
     public Mono<Product> updateProduct(@PathVariable String id, @RequestBody Mono<Product> productMono) {
         return productMono
-                .flatMap(updatedProduct -> getProductById(id) // Obtener el producto existente
-                        .map(existingProduct -> {
+                .flatMap(updatedProduct -&gt; getProductById(id) // Obtener el producto existente
+                        .map(existingProduct -&gt; {
                             existingProduct.setName(updatedProduct.getName());
                             existingProduct.setPrice(updatedProduct.getPrice());
                             return existingProduct;
                         }));
     }
 
-    @DeleteMapping("/{id}") // DELETE /api/products/{id} -> elimina un producto
+    @DeleteMapping("/{id}") // DELETE /api/products/{id} -&gt; elimina un producto
     @ResponseStatus(HttpStatus.NO_CONTENT) // Código de estado HTTP 204
     public Mono<Void> deleteProduct(@PathVariable String id) {
-        boolean removed = products.removeIf(p -> p.getId().equals(id));
+        boolean removed = products.removeIf(p -&gt; p.getId().equals(id));
         return removed ? Mono.empty() : Mono.error(new ProductNotFoundException("Producto no encontrado para eliminar con ID: " + id));
     }
 
@@ -182,7 +182,7 @@ public class ProductController {
     @GetMapping(value = "/events", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
     public Flux<String> getEvents() {
         return Flux.interval(Duration.ofSeconds(1)) // Emite un long cada segundo
-                .map(sequence -> "Event " + sequence + " at " + Instant.now().toString());
+                .map(sequence -&gt; "Event " + sequence + " at " + Instant.now().toString());
     }
 
     // Excepción personalizada de ejemplo
@@ -242,7 +242,7 @@ import java.util.UUID;
 @Component // Para que Spring lo gestione
 public class ProductHandler {
 
-    private final List<Product> products = new ArrayList<>(Arrays.asList(
+    private final List<Product> products = new ArrayList&lt;>(Arrays.asList(
             new Product(UUID.randomUUID().toString(), "Functional Laptop", 1500.00)
     ));
 
@@ -255,19 +255,19 @@ public class ProductHandler {
     public Mono<ServerResponse> getProductById(ServerRequest request) {
         String id = request.pathVariable("id");
         return Mono.justOrEmpty(products.stream()
-                .filter(p -> p.getId().equals(id))
+                .filter(p -&gt; p.getId().equals(id))
                 .findFirst())
-                .flatMap(product -> ServerResponse.ok().contentType(MediaType.APPLICATION_JSON).bodyValue(product))
+                .flatMap(product -&gt; ServerResponse.ok().contentType(MediaType.APPLICATION_JSON).bodyValue(product))
                 .switchIfEmpty(ServerResponse.notFound().build());
     }
 
     public Mono<ServerResponse> createProduct(ServerRequest request) {
         return request.bodyToMono(Product.class) // Obtiene el body como Mono<Product>
-                .doOnNext(product -> {
+                .doOnNext(product -&gt; {
                     product.setId(UUID.randomUUID().toString());
                     products.add(product);
                 })
-                .flatMap(product -> ServerResponse.status(HttpStatus.CREATED).contentType(MediaType.APPLICATION_JSON).bodyValue(product));
+                .flatMap(product -&gt; ServerResponse.status(HttpStatus.CREATED).contentType(MediaType.APPLICATION_JSON).bodyValue(product));
     }
 }
 ```
@@ -305,7 +305,7 @@ public class WebClientExample {
                 .uri("/products") // URI relativa a baseUrl
                 .retrieve() // Inicia la recuperación de la respuesta
                 .bodyToFlux(Product.class) // Convierte el cuerpo a un Flux de productos
-                .doOnError(e -> System.err.println("Error fetching products: " + e.getMessage()));
+                .doOnError(e -&gt; System.err.println("Error fetching products: " + e.getMessage()));
     }
 
     public Mono<Product> getProductFromApi(String id) {
@@ -313,9 +313,9 @@ public class WebClientExample {
                 .uri("/products/{id}", id) // Parámetros de URI
                 .retrieve()
                 .onStatus(HttpStatus.NOT_FOUND::equals,
-                          response -> Mono.error(new ProductNotFoundException("Producto no encontrado desde API"))) // Manejo de estados HTTP
+                          response -&gt; Mono.error(new ProductNotFoundException("Producto no encontrado desde API"))) // Manejo de estados HTTP
                 .bodyToMono(Product.class) // Convierte el cuerpo a un Mono de producto
-                .doOnError(e -> System.err.println("Error fetching product " + id + ": " + e.getMessage()));
+                .doOnError(e -&gt; System.err.println("Error fetching product " + id + ": " + e.getMessage()));
     }
 
     public Mono<Product> createProductInApi(Product newProduct) {
@@ -324,7 +324,7 @@ public class WebClientExample {
                 .bodyValue(newProduct) // Cuerpo de la solicitud
                 .retrieve()
                 .bodyToMono(Product.class)
-                .doOnError(e -> System.err.println("Error creating product: " + e.getMessage()));
+                .doOnError(e -&gt; System.err.println("Error creating product: " + e.getMessage()));
     }
 
     public Mono<Void> deleteProductInApi(String id) {
@@ -332,7 +332,7 @@ public class WebClientExample {
                 .uri("/products/{id}", id)
                 .retrieve()
                 .onStatus(HttpStatus.NOT_FOUND::equals,
-                          response -> Mono.error(new ProductNotFoundException("Producto no encontrado para eliminar en API")))
+                          response -&gt; Mono.error(new ProductNotFoundException("Producto no encontrado para eliminar en API")))
                 .toBodilessEntity() // Cuando no esperas un body
                 .then(); // Convierte a Mono<Void>
     }
@@ -388,16 +388,16 @@ public interface ProductR2dbcRepository extends ReactiveCrudRepository<ProductEn
     ```java
     public Mono<String> processData(Mono<String> input) {
         return input
-            .map(s -> {
+            .map(s -&gt; {
                 if (s.isEmpty()) throw new IllegalArgumentException("Input vacío");
                 return s.toUpperCase();
             })
-            .onErrorResume(IllegalArgumentException.class, e -> { // Solo para IllegalArgumentException
+            .onErrorResume(IllegalArgumentException.class, e -&gt; { // Solo para IllegalArgumentException
                 System.err.println("Error de argumento: " + e.getMessage());
                 return Mono.just("DEFAULT_VALUE"); // Retorna un valor por defecto
             })
-            .onErrorMap(e -> new CustomServiceException("Error procesando: " + e.getMessage(), e)) // Transforma a otra excepción
-            .doOnError(e -> System.err.println("Logging del error: " + e.getMessage())); // Efecto secundario
+            .onErrorMap(e -&gt; new CustomServiceException("Error procesando: " + e.getMessage(), e)) // Transforma a otra excepción
+            .doOnError(e -&gt; System.err.println("Logging del error: " + e.getMessage())); // Efecto secundario
     }
     ```
 
@@ -475,7 +475,7 @@ class ProductControllerWebTest {
                 .exchange()
                 .expectStatus().isCreated() // Espera status 201 Created
                 .expectBody(Product.class) // Espera un solo Product en el body
-                .consumeWith(response -> {
+                .consumeWith(response -&gt; {
                     Product createdProduct = response.getResponseBody();
                     assertNotNull(createdProduct);
                     assertNotNull(createdProduct.getId());
@@ -540,8 +540,8 @@ class ReactiveStreamTest {
 
 *   **Evita el Bloqueo**: **¡La regla de oro de WebFlux!** Nunca uses operaciones bloqueantes (`.block()`, `Thread.sleep()`, llamadas a JDBC tradicionales, I/O síncrona de archivos) dentro de las cadenas reactivas (es decir, en los métodos de tus controladores, servicios o repositorios reactivos). Si necesitas integrar código bloqueante, usa `Mono.fromCallable(blockingOp).subscribeOn(Schedulers.boundedElastic())`.
 *   **Entiende `map` vs `flatMap`**:
-    *   `map`: Para transformaciones síncronas de un elemento a otro. `Mono<A> -> Mono<B>`, `Flux<A> -> Flux<B>`.
-    *   `flatMap`: Para transformaciones asíncronas de un elemento a un nuevo `Mono`/`Flux`. Se usa cuando la función de mapeo devuelve un `Mono`/`Flux`. **Aplanar flujos.** `Mono<A> -> Mono<Mono<B>> -> Mono<B>`.
+    *   `map`: Para transformaciones síncronas de un elemento a otro. `Mono<A> -&gt; Mono<B>`, `Flux<A> -&gt; Flux<B>`.
+    *   `flatMap`: Para transformaciones asíncronas de un elemento a un nuevo `Mono`/`Flux`. Se usa cuando la función de mapeo devuelve un `Mono`/`Flux`. **Aplanar flujos.** `Mono<A> -&gt; Mono<Mono<B>> -&gt; Mono<B>`.
 *   **Propagación de Contexto**: Utiliza el `Context` de Reactor para propagar información a través de la cadena reactiva (ej. IDs de trazabilidad para logging).
 *   **Gestión de Schedulers**: Usa `publishOn()` para cambiar el `Scheduler` a partir de un punto en la cadena (afecta la ejecución aguas abajo). Usa `subscribeOn()` para influir en el `Scheduler` de la suscripción (afecta la ejecución de toda la cadena).
 *   **Manejo de Errores Explícito**: Siempre maneja los errores en tus flujos reactivos con operadores como `onErrorResume`, `onErrorMap`, etc. No dejes que los errores no controlados se propaguen.

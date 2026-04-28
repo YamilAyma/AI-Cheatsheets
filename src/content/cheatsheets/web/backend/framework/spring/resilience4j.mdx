@@ -36,16 +36,16 @@ icon: "📄"
     *   Necesitarás el starter de Spring Boot para Resilience4j y las dependencias de los módulos específicos de resiliencia que quieras usar.
     ```xml
     <dependencies>
-        <parent>...</parent> <!-- Tu parent de Spring Boot -->
+        <parent>...</parent> &lt;!-- Tu parent de Spring Boot -->
 
-        <!-- Starter principal de Resilience4j para Spring Boot -->
+        &lt;!-- Starter principal de Resilience4j para Spring Boot -->
         <dependency>
             <groupId>io.github.resilience4j</groupId>
-            <artifactId>resilience4j-spring-boot3</artifactId> <!-- Para Spring Boot 3+ -->
-            <!-- Para Spring Boot 2.x, usa resilience4j-spring-boot2 -->
-            <version>2.2.0</version> <!-- Usar la versión más reciente -->
+            <artifactId>resilience4j-spring-boot3</artifactId> &lt;!-- Para Spring Boot 3+ -->
+            &lt;!-- Para Spring Boot 2.x, usa resilience4j-spring-boot2 -->
+            <version>2.2.0</version> &lt;!-- Usar la versión más reciente -->
         </dependency>
-        <!-- Módulos individuales (se incluyen por defecto en spring-boot-starter, pero puedes ser explícito) -->
+        &lt;!-- Módulos individuales (se incluyen por defecto en spring-boot-starter, pero puedes ser explícito) -->
         <dependency>
             <groupId>io.github.resilience4j</groupId>
             <artifactId>resilience4j-circuitbreaker</artifactId>
@@ -72,7 +72,7 @@ icon: "📄"
             <version>2.2.0</version>
         </dependency>
 
-        <!-- Para métricas (Actuator y Prometheus/Grafana) -->
+        &lt;!-- Para métricas (Actuator y Prometheus/Grafana) -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-actuator</artifactId>
@@ -247,7 +247,7 @@ public class ExternalApiService {
     // Para Thread Pool Bulkhead, el método debe devolver CompletableFuture o CompletionStage
     @Bulkhead(name = "myThreadPoolHeavyService", type = Bulkhead.Type.THREADPOOL, fallbackMethod = "heavyServiceFallback")
     public CompletionStage<String> callHeavyServiceAsync() {
-        return CompletableFuture.supplyAsync(() -> {
+        return CompletableFuture.supplyAsync(() -&gt; {
             System.out.println("Ejecutando tarea pesada en pool de hilos...");
             try {
                 Thread.sleep(2000); // Tarea que tarda 2 segundos
@@ -266,7 +266,7 @@ public class ExternalApiService {
     @Retry(name = "longRunningTask")
     @TimeLimiter(name = "longRunningTask", fallbackMethod = "timeLimitAndCircuitBreakerFallback")
     public CompletionStage<String> callLongRunningTask() {
-        return CompletableFuture.supplyAsync(() -> {
+        return CompletableFuture.supplyAsync(() -&gt; {
             System.out.println("Iniciando tarea de larga duración...");
             try {
                 Thread.sleep(3000); // Simula una tarea que excede el timeout de 2s
@@ -306,10 +306,10 @@ public class FunctionalDecoratorsExample {
     public String callProductService() {
         CheckedFunction0<String> decoratedSupplier = CircuitBreaker.decorateCheckedSupplier(
             circuitBreaker,
-            () -> {
+            () -&gt; {
                 // Lógica original del servicio
                 System.out.println("Calling product service via functional decorator.");
-                if (Math.random() < 0.5) { throw new ExternalServiceException("Simulated failure."); }
+                if (Math.random() &lt; 0.5) { throw new ExternalServiceException("Simulated failure."); }
                 return "Product list (functional)";
             });
 
@@ -324,9 +324,9 @@ public class FunctionalDecoratorsExample {
     public String callDbOperationWithRetry() {
         CheckedFunction0<String> retryableSupplier = Retry.decorateCheckedSupplier(
             retry,
-            () -> {
+            () -&gt; {
                 System.out.println("Calling DB operation via functional decorator.");
-                if (Math.random() < 0.8) { throw new IOException("Simulated DB transient failure."); }
+                if (Math.random() &lt; 0.8) { throw new IOException("Simulated DB transient failure."); }
                 return "DB operation success (functional)";
             });
         try {

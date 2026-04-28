@@ -19,7 +19,7 @@ icon: "📄"
 ## 1. 🌟 Conceptos Clave
 
 *   **Colector de Datos Unificado**: Fluentd centraliza el proceso de recopilación de logs de diferentes fuentes y los normaliza en un formato estructurado (JSON).
-*   **Pipeline de Procesamiento de Datos**: Los datos fluyen a través de una serie de pasos: **Input (Entrada) -> Parser (Analizador) -> Filter (Filtro) -> Output (Salida)**.
+*   **Pipeline de Procesamiento de Datos**: Los datos fluyen a través de una serie de pasos: **Input (Entrada) -&gt; Parser (Analizador) -&gt; Filter (Filtro) -&gt; Output (Salida)**.
 *   **Plugins**: El corazón de la flexibilidad de Fluentd. Prácticamente todas las funcionalidades (entradas, salidas, filtros, parsers) son plugins, lo que permite conectar Fluentd a casi cualquier sistema.
 *   **Tags (Etiquetas)**: Un identificador clave para cada evento de log. Los plugins de entrada asignan tags, y los filtros/salidas los utilizan para enrutar o procesar eventos.
 *   **Time (Timestamp)**: Cada evento de log tiene una marca de tiempo.

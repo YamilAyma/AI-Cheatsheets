@@ -36,25 +36,25 @@ icon: "📄"
 
     ```xml
     <dependencies>
-        <parent>...</parent> <!-- Tu parent de Spring Boot -->
+        <parent>...</parent> &lt;!-- Tu parent de Spring Boot -->
 
-        <!-- Micrometer Tracing Bridge para OpenTelemetry -->
+        &lt;!-- Micrometer Tracing Bridge para OpenTelemetry -->
         <dependency>
             <groupId>io.micrometer</groupId>
             <artifactId>micrometer-tracing-bridge-otel</artifactId>
         </dependency>
 
-        <!-- Exporter para Zipkin (un sistema de trazabilidad popular) -->
+        &lt;!-- Exporter para Zipkin (un sistema de trazabilidad popular) -->
         <dependency>
             <groupId>io.opentelemetry</groupId>
             <artifactId>opentelemetry-exporter-zipkin</artifactId>
         </dependency>
-        <!-- Para la API de OpenTelemetry (opcional, si necesitas instrumentación manual más allá del bridge) -->
-        <!-- <dependency>
+        &lt;!-- Para la API de OpenTelemetry (opcional, si necesitas instrumentación manual más allá del bridge) -->
+        &lt;!-- <dependency>
             <groupId>io.opentelemetry</groupId>
             <artifactId>openteelmetry-api</artifactId>
         </dependency> -->
-        <!-- Para pruebas -->
+        &lt;!-- Para pruebas -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-test</artifactId>

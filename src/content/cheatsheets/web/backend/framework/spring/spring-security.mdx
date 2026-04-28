@@ -41,7 +41,7 @@ Spring Security es un framework potente y altamente personalizable para autentic
        <groupId>org.springframework.boot</groupId>
        <artifactId>spring-boot-starter-security</artifactId>
    </dependency>
-   <!-- Para JPA/Base de datos, si no la tienes ya -->
+   &lt;!-- Para JPA/Base de datos, si no la tienes ya -->
    <dependency>
        <groupId>org.springframework.boot</groupId>
        <artifactId>spring-boot-starter-data-jpa</artifactId>
@@ -80,11 +80,11 @@ Spring Security es un framework potente y altamente personalizable para autentic
        public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
            http
                // Deshabilita CSRF para APIs REST (considera CSRF para aplicaciones web con formularios)
-               .csrf(csrf -> csrf.disable())
+               .csrf(csrf -&gt; csrf.disable())
                // O: .csrf(Customizer.withDefaults()) // CSRF habilitado por defecto y configurado
 
                // Configuración de autorización de peticiones HTTP
-               .authorizeHttpRequests(authorize -> authorize
+               .authorizeHttpRequests(authorize -&gt; authorize
                    // Permitir acceso a recursos públicos (login, registro)
                    .requestMatchers("/public/**", "/auth/**", "/h2-console/**").permitAll()
                    // Requerir rol ADMIN para /admin/**
@@ -95,14 +95,14 @@ Spring Security es un framework potente y altamente personalizable para autentic
                    .anyRequest().authenticated()
                )
                // Configuración de formulario de login
-               .formLogin(form -> form
+               .formLogin(form -&gt; form
                    .loginPage("/login")        // URL de la página de login personalizada
                    .permitAll()                // Permitir acceso a la página de login
                    .defaultSuccessUrl("/dashboard", true) // Redirigir después de login exitoso
                    .failureUrl("/login?error") // Redirigir si falla el login
                )
                // Configuración de logout
-               .logout(logout -> logout
+               .logout(logout -&gt; logout
                    .logoutRequestMatcher(new AntPathRequestMatcher("/logout")) // URL para el logout
                    .logoutSuccessUrl("/login?logout") // Redirigir después de logout exitoso
                    .invalidateHttpSession(true) // Invalidar sesión HTTP
@@ -111,7 +111,7 @@ Spring Security es un framework potente y altamente personalizable para autentic
                );
 
            // Importante para H2 Console si CSRF está deshabilitado:
-           http.headers(headers -> headers.frameOptions(frameOptions -> frameOptions.sameOrigin()));
+           http.headers(headers -&gt; headers.frameOptions(frameOptions -&gt; frameOptions.sameOrigin()));
 
            return http.build();
        }
@@ -120,7 +120,7 @@ Spring Security es un framework potente y altamente personalizable para autentic
        // Si no se hace aquí, el filterChain principal también las procesará
        @Bean
        public WebSecurityCustomizer webSecurityCustomizer() {
-           return (web) -> web.ignoring()
+           return (web) -&gt; web.ignoring()
                .requestMatchers(
                    "/images/**",
                    "/js/**",
@@ -186,7 +186,7 @@ Spring Security es un framework potente y altamente personalizable para autentic
       public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
           // Asume que UserEntity tiene propiedades como username, password, y roles
           com.example.myapp.model.UserEntity userEntity = userRepository.findByUsername(username)
-              .orElseThrow(() -> new UsernameNotFoundException("Usuario no encontrado: " + username));
+              .orElseThrow(() -&gt; new UsernameNotFoundException("Usuario no encontrado: " + username));
 
           // Convierte tu UserEntity a UserDetails de Spring Security
           return User.builder()
@@ -261,7 +261,7 @@ Spring Security es un framework potente y altamente personalizable para autentic
   Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
   String currentPrincipalName = authentication.getName(); // Username
   Object details = authentication.getPrincipal(); // Objeto UserDetails
-  Collection<? extends GrantedAuthority> authorities = authentication.getAuthorities();
+  Collection&lt;? extends GrantedAuthority> authorities = authentication.getAuthorities();
   ```
 * **`@AuthenticationPrincipal`**: Inyecta directamente el objeto `UserDetails` (o tu tipo personalizado de principal si lo usas) en un controlador o método.
   ```java
@@ -283,7 +283,7 @@ Spring Security es un framework potente y altamente personalizable para autentic
 
 ## 6. 🌐 Características Comunes de Seguridad Web
 
-* **CSRF Protection**: Habilitado por defecto para peticiones POST/PUT/DELETE. Para APIs REST sin sesiones, a menudo se deshabilita (`.csrf(csrf -> csrf.disable())`), pero con precaución. Para aplicaciones web con formularios, es crucial.
+* **CSRF Protection**: Habilitado por defecto para peticiones POST/PUT/DELETE. Para APIs REST sin sesiones, a menudo se deshabilita (`.csrf(csrf -&gt; csrf.disable())`), pero con precaución. Para aplicaciones web con formularios, es crucial.
 * **CORS Configuration**: Habilita la comunicación de origen cruzado.
   ```java
   import org.springframework.context.annotation.Bean;
@@ -306,7 +306,7 @@ Spring Security es un framework potente y altamente personalizable para autentic
 * **Session Management**: Controla cómo se gestionan las sesiones.
   ```java
   // En filterChain
-  .sessionManagement(session -> session
+  .sessionManagement(session -&gt; session
       .sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED) // STATELESS para APIs sin sesión
       .maximumSessions(1) // Máximo de sesiones por usuario
       .maxSessionsPreventsLogin(true) // Si se excede, previene nuevo login

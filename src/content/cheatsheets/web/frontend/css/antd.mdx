@@ -173,12 +173,12 @@ Ant Design (antd) es una biblioteca de componentes de interfaz de usuario de Rea
 import { Form, Input, Button, message } from 'antd';
 
 function LoginForm() {
-  const onFinish = (values) => {
+  const onFinish = (values) =&gt; {
     console.log('Success:', values);
     message.success('Formulario enviado!');
   };
 
-  const onFinishFailed = (errorInfo) => {
+  const onFinishFailed = (errorInfo) =&gt; {
     console.log('Failed:', errorInfo);
     message.error('Error de validación!');
   };

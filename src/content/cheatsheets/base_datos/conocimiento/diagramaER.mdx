@@ -38,7 +38,7 @@ Existen varias notaciones para los DER, siendo las más comunes la **Notación d
 | **Línea de Conexión**   | **Relación**      | Conecta entidades.                                                                                                                                             | `-----`              |
 | **Círculo abierto**      | **Cero (0)**       | Participación opcional.                                                                                                                                       | `O----`              |
 | **Línea vertical**       | **Uno (1)**        | Participación obligatoria/mínimo uno.                                                                                                                        | `                      |
-| **Pata de Cuervo**        | **Muchos (N)**     | Mínimo cero o uno, hasta muchos.                                                                                                                              | `<----`              |
+| **Pata de Cuervo**        | **Muchos (N)**     | Mínimo cero o uno, hasta muchos.                                                                                                                              | `&lt;----`              |
 | **Línea discontinua**    | **Atributo/Campo** | Propiedad de la entidad (se lista dentro del rectángulo).                                                                                                     | (Dentro de la entidad) |
 | **`PK`** (`_Nombre_`) | **Clave Primaria** | Atributo/s que identifican de forma única una instancia de entidad. (Subrayado o `PK`).                                                                     | `PK: _ID_`           |
 | **`FK`** (`Nombre`)   | **Clave Foránea** | Atributo/s que actúan como PK de otra tabla, creando el vínculo. (No siempre se dibuja explícitamente en el ERD, pero es una consecuencia de la relación). | `FK: ID_Cliente`     |
@@ -95,11 +95,11 @@ Define el número de instancias de una entidad que están asociadas con el núme
   * *Ej:* `Persona` `tiene` `Pasaporte` (una persona tiene un pasaporte, un pasaporte pertenece a una persona).
 * **Uno a Muchos (1:N)**: Una instancia de Entidad A se relaciona con *muchas* instancias de Entidad B, pero una instancia de Entidad B se relaciona con *exactamente una* instancia de Entidad A.
 
-  * *Notación Crow's Foot:* `|----<` (una línea vertical en el lado "uno", pata de cuervo en el lado "muchos")
+  * *Notación Crow's Foot:* `|----&lt;` (una línea vertical en el lado "uno", pata de cuervo en el lado "muchos")
   * *Ej:* `Departamento` `tiene` `Empleados` (un departamento tiene muchos empleados, un empleado pertenece a un solo departamento).
 * **Muchos a Muchos (M:N)**: Una instancia de Entidad A se relaciona con *muchas* instancias de Entidad B, y una instancia de Entidad B se relaciona con *muchas* instancias de Entidad A.
 
-  * *Notación Crow's Foot:* `<----<` (pata de cuervo en ambos extremos)
+  * *Notación Crow's Foot:* `&lt;----&lt;` (pata de cuervo en ambos extremos)
   * *Ej:* `Estudiante` `se inscribe en` `Cursos` (un estudiante se inscribe en muchos cursos, un curso tiene muchos estudiantes).
   * **Resolución**: En bases de datos relacionales, las relaciones M:N se resuelven mediante una **tabla de unión (junction table)** que contiene las Claves Foráneas de ambas entidades y, a menudo, atributos propios (ej. `Inscripción` podría tener `FechaInscripción`, `Calificación`).
 
@@ -122,8 +122,8 @@ Los símbolos en cada extremo de la línea de relación se combinan para mostrar
 
 * `O|----|`: Cero o uno (Mínimo: 0, Máximo: 1)
 * `||----|`: Uno o uno (Mínimo: 1, Máximo: 1)
-* `O----<`: Cero o muchos (Mínimo: 0, Máximo: N)
-* `|----<`: Uno o muchos (Mínimo: 1, Máximo: N)
+* `O----&lt;`: Cero o muchos (Mínimo: 0, Máximo: N)
+* `|----&lt;`: Uno o muchos (Mínimo: 1, Máximo: N)
 
 ---
 

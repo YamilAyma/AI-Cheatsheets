@@ -80,14 +80,14 @@ Los operadores son el corazón de la programación reactiva. Se encadenan utiliz
 * **`timer(initialDelay, period)`**: Emite un valor después de `initialDelay`, y luego valores secuenciales cada `period` milisegundos.
 * **`empty()`**: Crea un Observable que no emite nada y se completa inmediatamente.
 * **`throwError(error)`**: Crea un Observable que no emite nada y solo emite un error.
-* **`defer(() => Observable)`**: Crea el Observable solo cuando se suscribe.
+* **`defer(() =&gt; Observable)`**: Crea el Observable solo cuando se suscribe.
 
 ### 3.2. Operadores de Transformación
 
 * **`map(projectionFn)`**: Aplica una función a cada valor emitido y emite el resultado.
   ```javascript
   // RxJS
-  of(1, 2, 3).pipe(map(x => x * 10)).subscribe(...) // Emite 10, 20, 30
+  of(1, 2, 3).pipe(map(x =&gt; x * 10)).subscribe(...) // Emite 10, 20, 30
   ```
 * **`pluck(propertyName)`**: Extrae una propiedad específica de los objetos emitidos.
   ```javascript
@@ -97,7 +97,7 @@ Los operadores son el corazón de la programación reactiva. Se encadenan utiliz
 * **`scan(accumulator, initialValue)`**: Similar a `reduce`, mantiene un acumulador y emite cada estado intermedio.
   ```javascript
   // RxJS
-  of(1, 2, 3).pipe(scan((acc, val) => acc + val, 0)).subscribe(...) // Emite 1, 3, 6
+  of(1, 2, 3).pipe(scan((acc, val) =&gt; acc + val, 0)).subscribe(...) // Emite 1, 3, 6
   ```
 * **`buffer(closingNotifier)`**: Acumula valores hasta que el `closingNotifier` emite, luego emite la lista acumulada.
 * **`bufferTime(interval)`**: Acumula valores durante un `intervalo` de tiempo, luego emite la lista.
@@ -112,7 +112,7 @@ Los operadores son el corazón de la programación reactiva. Se encadenan utiliz
 * **`filter(predicateFn)`**: Emite solo los valores que cumplen una condición.
   ```javascript
   // RxJS
-  of(1, 2, 3, 4).pipe(filter(x => x % 2 === 0)).subscribe(...) // Emite 2, 4
+  of(1, 2, 3, 4).pipe(filter(x =&gt; x % 2 === 0)).subscribe(...) // Emite 2, 4
   ```
 * **`take(count)`**: Emite solo los primeros `count` valores y luego completa.
 * **`skip(count)`**: Omite los primeros `count` valores.

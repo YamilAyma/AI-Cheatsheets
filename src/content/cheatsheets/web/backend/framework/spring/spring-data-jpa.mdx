@@ -33,24 +33,24 @@ icon: "📄"
 1.  **Añadir dependencias en `pom.xml` (Maven):**
     ```xml
     <dependencies>
-        <!-- Spring Boot Starter Data JPA (incluye Hibernate y H2 por defecto) -->
+        &lt;!-- Spring Boot Starter Data JPA (incluye Hibernate y H2 por defecto) -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-data-jpa</artifactId>
         </dependency>
-        <!-- Driver de base de datos (ej. PostgreSQL) -->
+        &lt;!-- Driver de base de datos (ej. PostgreSQL) -->
         <dependency>
             <groupId>org.postgresql</groupId>
             <artifactId>postgresql</artifactId>
             <scope>runtime</scope>
         </dependency>
-        <!-- Para usar Jakarta EE Persistence API (Spring Boot 3+ usa Jakarta) -->
+        &lt;!-- Para usar Jakarta EE Persistence API (Spring Boot 3+ usa Jakarta) -->
         <dependency>
             <groupId>jakarta.persistence</groupId>
             <artifactId>jakarta.persistence-api</artifactId>
-            <version>3.1.0</version> <!-- Usar la versión compatible con tu Spring Boot -->
+            <version>3.1.0</version> &lt;!-- Usar la versión compatible con tu Spring Boot -->
         </dependency>
-        <!-- JUnit 5 y Mockito para pruebas -->
+        &lt;!-- JUnit 5 y Mockito para pruebas -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-test</artifactId>
@@ -291,7 +291,7 @@ public class ProductService {
     @Transactional(readOnly = true) // Método de solo lectura
     public Product getProductDetails(Long id) {
         return productRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Producto no encontrado"));
+                .orElseThrow(() -&gt; new IllegalArgumentException("Producto no encontrado"));
     }
 
     @Transactional // Método de escritura, transaccional
@@ -305,11 +305,11 @@ public class ProductService {
     @Transactional
     public void transferStock(Long fromProductId, Long toProductId, int quantity) {
         Product fromProduct = productRepository.findById(fromProductId)
-            .orElseThrow(() -> new IllegalArgumentException("Producto origen no encontrado"));
+            .orElseThrow(() -&gt; new IllegalArgumentException("Producto origen no encontrado"));
         Product toProduct = productRepository.findById(toProductId)
-            .orElseThrow(() -> new IllegalArgumentException("Producto destino no encontrado"));
+            .orElseThrow(() -&gt; new IllegalArgumentException("Producto destino no encontrado"));
 
-        if (fromProduct.getStock() < quantity) { // Suponiendo un campo 'stock'
+        if (fromProduct.getStock() &lt; quantity) { // Suponiendo un campo 'stock'
             throw new IllegalArgumentException("Stock insuficiente");
         }
 
@@ -330,7 +330,7 @@ public class ProductService {
 *   **`Optional<T>`**: `findById()` devuelve `Optional`, lo que fomenta el manejo explícito de la ausencia de un recurso, evitando `NullPointerExceptions`.
     ```java
     Product product = productRepository.findById(id)
-        .orElse(null); // O .orElseThrow(() -> new EntityNotFoundException("..."));
+        .orElse(null); // O .orElseThrow(() -&gt; new EntityNotFoundException("..."));
     ```
 *   **`EntityNotFoundException`**: Lanzada por `EntityManager.getReferenceById()` (antes `getById()`) si la entidad no existe. `findById()` retorna `Optional.empty()`.
 *   **`DataIntegrityViolationException`**: Lanzada por Spring por problemas de integridad de datos (ej. intentar insertar una clave duplicada en una columna `UNIQUE`, o violar un `NOT NULL`).

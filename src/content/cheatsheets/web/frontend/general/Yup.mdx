@@ -194,7 +194,7 @@ async function validateLoginForm(formData) {
     if (error.name === 'ValidationError') {
       console.error('Errores de validación:', error.errors); // Array de mensajes de error
       // error.inner es un array de ValidationError con detalles por campo
-      const errors = error.inner.reduce((acc, currentError) => {
+      const errors = error.inner.reduce((acc, currentError) =&gt; {
         acc[currentError.path] = currentError.message;
         return acc;
       }, {});
@@ -207,10 +207,10 @@ async function validateLoginForm(formData) {
 
 // Ejemplo de uso
 validateLoginForm({ username: 'john_doe', password: '123' })
-  .then(result => console.log('Resultado de validación 1:', result));
+  .then(result =&gt; console.log('Resultado de validación 1:', result));
 
 validateLoginForm({ username: 'short', password: '123' })
-  .then(result => console.log('Resultado de validación 2:', result));
+  .then(result =&gt; console.log('Resultado de validación 2:', result));
 ```
 
 ### 5.2. `schema.isValid(data, options)`
@@ -249,7 +249,7 @@ const passwordSchema = yup.string()
   .test('has-uppercase', 'La contraseña debe contener al menos una mayúscula', function(value) {
     return /[A-Z]/.test(value);
   })
-  .test('has-digit', 'La contraseña debe contener al menos un número', (value) => {
+  .test('has-digit', 'La contraseña debe contener al menos un número', (value) =&gt; {
     return /[0-9]/.test(value);
   });
 
@@ -278,11 +278,11 @@ const shippingSchema = yup.object({
   shippingMethod: yup.string().required().oneOf(['pickup', 'delivery']),
   deliveryAddress: yup.string().when('shippingMethod', {
     is: 'delivery',
-    then: (schema) => schema.required('La dirección de entrega es obligatoria para envíos a domicilio'),
-    otherwise: (schema) => schema.optional(),
+    then: (schema) =&gt; schema.required('La dirección de entrega es obligatoria para envíos a domicilio'),
+    otherwise: (schema) =&gt; schema.optional(),
   }),
-  // También se puede usar `is: (val) => val === 'delivery'`
-  // Con múltiples campos: yup.string().when(['field1', 'field2'], ([field1, field2], schema) => {...})
+  // También se puede usar `is: (val) =&gt; val === 'delivery'`
+  // Con múltiples campos: yup.string().when(['field1', 'field2'], ([field1, field2], schema) =&gt; {...})
 });
 ```
 
@@ -298,12 +298,12 @@ Los métodos de transformación (`.transform()`) modifican el valor del esquema 
 const nameSchema = yup.string()
   .trim() // Elimina espacios en blanco
   .lowercase() // Convierte a minúsculas
-  .transform(value => value === '' ? null : value) // Convierte cadena vacía a null
+  .transform(value =&gt; value === '' ? null : value) // Convierte cadena vacía a null
   .nullable()
   .required('El nombre es requerido');
 
 const ageSchema = yup.number()
-  .transform(value => (isNaN(value) ? undefined : value)) // Coerce NaN a undefined
+  .transform(value =&gt; (isNaN(value) ? undefined : value)) // Coerce NaN a undefined
   .required('La edad es requerida');
 
 const formSchema = yup.object({
@@ -374,7 +374,7 @@ Yup es un resolver de validación muy común para React Hook Form.
        resolver: yupResolver(schema) // Aquí se integra Yup
      });
 
-     const onSubmit = data => console.log(data);
+     const onSubmit = data =&gt; console.log(data);
 
      return (
        <form onSubmit={handleSubmit(onSubmit)}>

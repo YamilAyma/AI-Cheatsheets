@@ -82,10 +82,10 @@ const formattedDate = format(new Date(), 'yyyy-MM-dd');
 const isFeatured = tags.includes('featured');
 
 // Funciones o importaciones que no son para el cliente
-const serverSideFunction = () => { /* ... */ };
+const serverSideFunction = () =&gt; { /* ... */ };
 ---
-<!-- 2. Template (HTML + JSX-like) -->
-<!-- El HTML de este componente se renderiza en el servidor -->
+&lt;!-- 2. Template (HTML + JSX-like) -->
+&lt;!-- El HTML de este componente se renderiza en el servidor -->
 <div class="card">
   <h2>{{ title }}</h2> {# Renderiza variables del script de componente #}
   <img src="{{ imageUrl }}" alt="{{ title }}">
@@ -105,12 +105,12 @@ const serverSideFunction = () => { /* ... */ };
 
   <p>Fecha de publicación: {{ formattedDate }}</p>
 
-  <!-- Slots: para inyectar contenido desde el componente padre -->
+  &lt;!-- Slots: para inyectar contenido desde el componente padre -->
   <slot /> {# Slot por defecto #}
   <slot name="footer" /> {# Slot con nombre #}
 
-  <!-- Importar componentes de otros frameworks de UI -->
-  <!-- Directivas client:* para hidratar componentes en el cliente -->
+  &lt;!-- Importar componentes de otros frameworks de UI -->
+  &lt;!-- Directivas client:* para hidratar componentes en el cliente -->
   <MyReactComponent client:load message="¡Hola desde React!" />
 
   <button class="button" onclick="alert('Hola!')">Clickeame (JS Vanilla)</button>
@@ -136,7 +136,7 @@ h2 {
 * Se pasan como atributos HTML normales.
 
   ```astro
-  <!-- src/components/MyCard.astro -->
+  &lt;!-- src/components/MyCard.astro -->
   ---
   const { title, date } = Astro.props;
   ---
@@ -145,7 +145,7 @@ h2 {
     <p>{{ date }}</p>
   </div>
 
-  <!-- Uso en src/pages/index.astro -->
+  &lt;!-- Uso en src/pages/index.astro -->
   <MyCard title="Mi primer post" date="2023-10-26" />
   ```
 
@@ -157,13 +157,13 @@ Permiten que un componente padre inyecte contenido en un componente hijo.
 * **Slots con nombre**: `<slot name="nombre_del_slot" />`
 
   ```astro
-  <!-- src/components/Button.astro -->
+  &lt;!-- src/components/Button.astro -->
   <button>
     <slot /> {# Aquí va el texto o icono del botón #}
     <slot name="icon" /> {# Para un icono al final #}
   </button>
 
-  <!-- Uso -->
+  &lt;!-- Uso -->
   <Button>
     Click Aquí
     <span slot="icon">⚡</span>
@@ -190,7 +190,7 @@ Las páginas se definen en el directorio `src/pages/`.
 Función necesaria en los archivos `[slug].astro` para generar rutas estáticamente en tiempo de construcción.
 
 ```astro
-<!-- src/pages/blog/[slug].astro -->
+&lt;!-- src/pages/blog/[slug].astro -->
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import { getCollection } from 'astro:content'; // Para colecciones de contenido
@@ -199,7 +199,7 @@ import { getCollection } from 'astro:content'; // Para colecciones de contenido
 export async function getStaticPaths() {
   const blogPosts = await getCollection('blog'); // Obtiene todos los posts de la colección 'blog'
 
-  return blogPosts.map((post) => ({
+  return blogPosts.map((post) =&gt; ({
     params: { slug: post.slug }, // Define el parámetro dinámico de la URL
     props: { post }, // Pasa el objeto post como prop al componente de página
   }));
@@ -266,7 +266,7 @@ Astro es extensible a través de "integraciones".
      * **`client:only={framework}`**: Hidrata solo en el cliente (no pre-renderiza en el servidor), útil para componentes que dependen de APIs del navegador. (ej. `<MyComponent client:only="react" />`)
 
    ```astro
-   <!-- src/pages/index.astro -->
+   &lt;!-- src/pages/index.astro -->
    ---
    import MyReactCounter from '../components/MyReactCounter.jsx';
    import MyVueComponent from '../components/MyVueComponent.vue';
@@ -332,7 +332,7 @@ Puedes usar:
 ### 7.3. Consultar Contenido en Páginas/Componentes
 
 ```astro
-<!-- src/pages/blog/index.astro -->
+&lt;!-- src/pages/blog/index.astro -->
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import { getCollection } from 'astro:content'; // Para consultar colecciones
@@ -367,7 +367,7 @@ Permite construir endpoints API RESTful o GraphQL directamente en tu proyecto As
   // src/pages/api/hello.ts
   import type { APIRoute } from 'astro';
 
-  export const GET: APIRoute = ({ request }) => {
+  export const GET: APIRoute = ({ request }) =&gt; {
     return new Response(
       JSON.stringify({
         message: 'Hello from Astro API!',
@@ -382,7 +382,7 @@ Permite construir endpoints API RESTful o GraphQL directamente en tu proyecto As
     );
   };
 
-  export const POST: APIRoute = async ({ request }) => {
+  export const POST: APIRoute = async ({ request }) =&gt; {
     const body = await request.json(); // Acceder al cuerpo de la solicitud (POST, PUT, etc.)
     return new Response(
       JSON.stringify({

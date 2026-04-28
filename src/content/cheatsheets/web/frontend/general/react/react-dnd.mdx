@@ -77,16 +77,16 @@ Hace que un componente sea arrastrable.
 
 *   **Objeto `spec` para `useDrag`:**
     *   **`type: string | symbol`**: **(Obligatorio)** El tipo de item que se está arrastrando. Debe coincidir con `accept` en el `useDrop` target.
-    *   **`item: object | (monitor) => object`**: **(Obligatorio)** Los datos que se pasan al "Drop Target" cuando se suelta el "Item".
+    *   **`item: object | (monitor) =&gt; object`**: **(Obligatorio)** Los datos que se pasan al "Drop Target" cuando se suelta el "Item".
         *   Puede ser un objeto plano o una función que devuelve un objeto. Si es una función, recibe el `monitor`.
         *   `{ id: '123', name: 'My draggable item' }`
-    *   **`collect?(monitor: DragSourceMonitor) => object`**: Una función que devuelve un objeto de props que se inyectan en tu componente. Se vuelve a ejecutar cuando el estado de arrastrar/soltar cambia.
+    *   **`collect?(monitor: DragSourceMonitor) =&gt; object`**: Una función que devuelve un objeto de props que se inyectan en tu componente. Se vuelve a ejecutar cuando el estado de arrastrar/soltar cambia.
         *   `monitor.isDragging()`: `true` si el item actual está siendo arrastrado.
         *   `monitor.getItem()`: El objeto `item` que se está arrastrando actualmente.
         *   `monitor.getItemType()`: El `type` del item que se está arrastrando.
-    *   **`canDrag?(monitor: DragSourceMonitor) => boolean`**: Opcional. Devuelve `true` si el item es arrastrable, `false` en caso contrario.
-    *   **`isDragging?(monitor: DragSourceMonitor) => boolean`**: Opcional. Predicado personalizado para determinar si un item está siendo arrastrado. Útil para arrastrar un item y que otro componente represente que está siendo arrastrado.
-    *   **`end?(item: object, monitor: DragSourceMonitor) => void`**: Opcional. Se llama cuando la operación de arrastrar termina (después de soltar). Útil para limpiar el estado o disparar acciones.
+    *   **`canDrag?(monitor: DragSourceMonitor) =&gt; boolean`**: Opcional. Devuelve `true` si el item es arrastrable, `false` en caso contrario.
+    *   **`isDragging?(monitor: DragSourceMonitor) =&gt; boolean`**: Opcional. Predicado personalizado para determinar si un item está siendo arrastrado. Útil para arrastrar un item y que otro componente represente que está siendo arrastrado.
+    *   **`end?(item: object, monitor: DragSourceMonitor) =&gt; void`**: Opcional. Se llama cuando la operación de arrastrar termina (después de soltar). Útil para limpiar el estado o disparar acciones.
         *   `monitor.didDrop()`: `true` si el item fue soltado en un target válido.
         *   `monitor.getDropResult()`: El valor retornado por el método `drop` del "Drop Target".
 
@@ -102,15 +102,15 @@ Hace que un componente sea un objetivo de soltar.
 
 *   **Objeto `spec` para `useDrop`:**
     *   **`accept: string | symbol | Array<string | symbol>`**: **(Obligatorio)** El `type`(s) de los items que este target puede aceptar.
-    *   **`collect?(monitor: DropTargetMonitor) => object`**: Una función que devuelve un objeto de props que se inyectan en tu componente. Se vuelve a ejecutar cuando el estado de arrastrar/soltar cambia.
+    *   **`collect?(monitor: DropTargetMonitor) =&gt; object`**: Una función que devuelve un objeto de props que se inyectan en tu componente. Se vuelve a ejecutar cuando el estado de arrastrar/soltar cambia.
         *   `monitor.isOver()`: `true` si un item está siendo arrastrado sobre este target.
         *   `monitor.canDrop()`: `true` si el item arrastrado puede ser soltado en este target.
         *   `monitor.getItem()`: El objeto `item` que se está arrastrando actualmente.
         *   `monitor.getItemType()`: El `type` del item que se está arrastrando.
         *   `monitor.getDropResult()`: El valor retornado por el método `drop` de otro target si el item fue soltado en él.
-    *   **`canDrop?(item: object, monitor: DropTargetMonitor) => boolean`**: Opcional. Devuelve `true` si el item puede ser soltado en este target.
-    *   **`hover?(item: object, monitor: DropTargetMonitor) => void`**: Opcional. Se llama repetidamente mientras un item arrastrado está sobre este target. Útil para reordenar elementos en tiempo real.
-    *   **`drop?(item: object, monitor: DropTargetMonitor) => object | void`**: Opcional. Se llama cuando un item se suelta en este target. Los datos del item están disponibles. Puedes devolver un objeto como resultado de la operación.
+    *   **`canDrop?(item: object, monitor: DropTargetMonitor) =&gt; boolean`**: Opcional. Devuelve `true` si el item puede ser soltado en este target.
+    *   **`hover?(item: object, monitor: DropTargetMonitor) =&gt; void`**: Opcional. Se llama repetidamente mientras un item arrastrado está sobre este target. Útil para reordenar elementos en tiempo real.
+    *   **`drop?(item: object, monitor: DropTargetMonitor) =&gt; object | void`**: Opcional. Se llama cuando un item se suelta en este target. Los datos del item están disponibles. Puedes devolver un objeto como resultado de la operación.
 
 ---
 
@@ -126,10 +126,10 @@ const ItemTypes = {
 };
 
 function Box({ id, name }) {
-  const [{ isDragging }, dragRef] = useDrag(() => ({
+  const [{ isDragging }, dragRef] = useDrag(() =&gt; ({
     type: ItemTypes.BOX,
     item: { id, name }, // Datos que se envían al soltar
-    collect: (monitor) => ({
+    collect: (monitor) =&gt; ({
       isDragging: monitor.isDragging(), // True si este box está siendo arrastrado
     }),
   }));
@@ -160,13 +160,13 @@ const ItemTypes = {
 };
 
 function Dustbin() {
-  const [{ canDrop, isOver }, dropRef] = useDrop(() => ({
+  const [{ canDrop, isOver }, dropRef] = useDrop(() =&gt; ({
     accept: ItemTypes.BOX, // Acepta items de tipo BOX
-    collect: (monitor) => ({
+    collect: (monitor) =&gt; ({
       isOver: monitor.isOver(),   // True si un item está sobre la papelera
       canDrop: monitor.canDrop(), // True si el item actual puede ser soltado
     }),
-    drop: (item, monitor) => { // Se llama al soltar
+    drop: (item, monitor) =&gt; { // Se llama al soltar
       console.log('Item soltado en la papelera:', item);
       alert(`¡"${item.name}" eliminado!`);
       // Aquí puedes dispatch una acción para eliminar el item del estado global
@@ -236,26 +236,26 @@ import React, { useEffect } from 'react';
 import { useDrag, DragPreviewImage } from 'react-dnd';
 
 function CustomDragPreviewBox({ id, name, imageUrl }) {
-  const [{ isDragging }, dragRef, preview] = useDrag(() => ({
+  const [{ isDragging }, dragRef, preview] = useDrag(() =&gt; ({
     type: 'CUSTOM_BOX',
     item: { id, name },
-    collect: (monitor) => ({
+    collect: (monitor) =&gt; ({
       isDragging: monitor.isDragging(),
     }),
   }));
 
   // Usa useEffect para vincular la imagen de vista previa
   // preview es la función que se pasa como segundo elemento del array de retorno de useDrag
-  useEffect(() => {
+  useEffect(() =&gt; {
     if (preview) {
       const img = new Image();
       img.src = imageUrl;
-      img.onload = () => preview(img); // Registra la imagen como vista previa
+      img.onload = () =&gt; preview(img); // Registra la imagen como vista previa
     }
   }, [preview, imageUrl]);
 
   return (
-    <>
+    &lt;>
       {/* Opcional: <DragPreviewImage connect={preview} src={imageUrl} /> (más simple para una imagen directa) */}
       <div ref={dragRef} style={{ opacity: isDragging ? 0.5 : 1 }}>
         {name} (Arrastrarme con imagen)
@@ -288,18 +288,18 @@ function DraggableCard({ id, text, index, moveCard }) {
   const ref = useRef(null);
 
   // useDrag: para hacer la tarjeta arrastrable
-  const [{ isDragging }, drag] = useDrag(() => ({
+  const [{ isDragging }, drag] = useDrag(() =&gt; ({
     type: ItemTypes.CARD,
     item: { id, index },
-    collect: (monitor) => ({
+    collect: (monitor) =&gt; ({
       isDragging: monitor.isDragging(),
     }),
   }));
 
   // useDrop: para hacer la tarjeta un objetivo donde soltar
-  const [, drop] = useDrop(() => ({
+  const [, drop] = useDrop(() =&gt; ({
     accept: ItemTypes.CARD,
-    hover: (draggedItem, monitor) => { // Se ejecuta cuando un item está sobre este
+    hover: (draggedItem, monitor) =&gt; { // Se ejecuta cuando un item está sobre este
       if (!ref.current) return;
       if (draggedItem.id === id) return; // No mover si es el mismo item
 
@@ -309,7 +309,7 @@ function DraggableCard({ id, text, index, moveCard }) {
       const hoverClientY = clientOffset.y - hoverBoundingRect.top;
 
       // Solo mover si el item arrastrado ha pasado el "punto medio" del item hovereado
-      if (draggedItem.index < index && hoverClientY < hoverMiddleY) return;
+      if (draggedItem.index &lt; index && hoverClientY &lt; hoverMiddleY) return;
       if (draggedItem.index > index && hoverClientY > hoverMiddleY) return;
 
       moveCard(draggedItem.id, id); // Llama a la función del padre para reordenar
@@ -351,9 +351,9 @@ function CardList() {
   ]);
 
   // Función para reordenar las tarjetas
-  const moveCard = useCallback((draggedId, targetId) => {
-    const draggedIndex = cards.findIndex(card => card.id === draggedId);
-    const targetIndex = cards.findIndex(card => card.id === targetId);
+  const moveCard = useCallback((draggedId, targetId) =&gt; {
+    const draggedIndex = cards.findIndex(card =&gt; card.id === draggedId);
+    const targetIndex = cards.findIndex(card =&gt; card.id === targetId);
     const draggedCard = cards[draggedIndex];
 
     setCards(
@@ -369,7 +369,7 @@ function CardList() {
   return (
     <div style={{ width: '300px', border: '1px dashed lightgray', padding: '10px' }}>
       <h3>Lista Reordenable</h3>
-      {cards.map((card, index) => (
+      {cards.map((card, index) =&gt; (
         <DraggableCard
           key={card.id}
           id={card.id}

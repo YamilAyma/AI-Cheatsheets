@@ -138,7 +138,7 @@ Material UI (ahora parte de MUI) es una biblioteca de componentes de React que i
 * **`Button`**: Botones interactivos.
   ```jsx
   import { Button } from '@mui/material';
-  <Button variant="contained" color="primary" onClick={() => alert('Clicked!')}>
+  <Button variant="contained" color="primary" onClick={() =&gt; alert('Clicked!')}>
     Click Me
   </Button>
   <Button variant="outlined" startIcon={<DeleteIcon />}>
@@ -234,11 +234,11 @@ Material UI (ahora parte de MUI) es una biblioteca de componentes de React que i
 
   function MySnackbar() {
     const [open, setOpen] = React.useState(false);
-    const handleClose = () => setOpen(false);
+    const handleClose = () =&gt; setOpen(false);
 
     return (
-      <>
-        <Button onClick={() => setOpen(true)}>Mostrar Mensaje</Button>
+      &lt;>
+        <Button onClick={() =&gt; setOpen(true)}>Mostrar Mensaje</Button>
         <Snackbar open={open} autoHideDuration={6000} onClose={handleClose}>
           <Alert onClose={handleClose} severity="success" sx={{ width: '100%' }}>
             ¡Operación exitosa!
@@ -290,9 +290,9 @@ Material UI (ahora parte de MUI) es una biblioteca de componentes de React que i
   function MyDrawer() {
     const [open, setOpen] = React.useState(false);
     return (
-      <>
-        <Button onClick={() => setOpen(true)}>Abrir Menú</Button>
-        <Drawer anchor="left" open={open} onClose={() => setOpen(false)}>
+      &lt;>
+        <Button onClick={() =&gt; setOpen(true)}>Abrir Menú</Button>
+        <Drawer anchor="left" open={open} onClose={() =&gt; setOpen(false)}>
           <List>
             <ListItem button><ListItemText primary="Home" /></ListItem>
             <ListItem button><ListItemText primary="Acerca" /></ListItem>
@@ -311,7 +311,7 @@ Material UI (ahora parte de MUI) es una biblioteca de componentes de React que i
     const [value, setValue] = React.useState(0);
     return (
       <Box sx={{ width: '100%' }}>
-        <Tabs value={value} onChange={(e, newValue) => setValue(newValue)}>
+        <Tabs value={value} onChange={(e, newValue) =&gt; setValue(newValue)}>
           <Tab label="Ítem Uno" />
           <Tab label="Ítem Dos" />
         </Tabs>
@@ -332,16 +332,16 @@ Material UI (ahora parte de MUI) es una biblioteca de componentes de React que i
   function MyDialog() {
     const [open, setOpen] = React.useState(false);
     return (
-      <>
-        <Button onClick={() => setOpen(true)}>Abrir Diálogo</Button>
-        <Dialog open={open} onClose={() => setOpen(false)}>
+      &lt;>
+        <Button onClick={() =&gt; setOpen(true)}>Abrir Diálogo</Button>
+        <Dialog open={open} onClose={() =&gt; setOpen(false)}>
           <DialogTitle>Título del Diálogo</DialogTitle>
           <DialogContent>
             <Typography>Contenido del diálogo aquí.</Typography>
           </DialogContent>
           <DialogActions>
-            <Button onClick={() => setOpen(false)}>Cancelar</Button>
-            <Button onClick={() => setOpen(false)} autoFocus>Aceptar</Button>
+            <Button onClick={() =&gt; setOpen(false)}>Cancelar</Button>
+            <Button onClick={() =&gt; setOpen(false)} autoFocus>Aceptar</Button>
           </DialogActions>
         </Dialog>
       </>
@@ -356,8 +356,8 @@ Material UI (ahora parte de MUI) es una biblioteca de componentes de React que i
   function MyMenu() {
     const [anchorEl, setAnchorEl] = React.useState(null);
     const open = Boolean(anchorEl);
-    const handleClick = (event) => setAnchorEl(event.currentTarget);
-    const handleClose = () => setAnchorEl(null);
+    const handleClick = (event) =&gt; setAnchorEl(event.currentTarget);
+    const handleClose = () =&gt; setAnchorEl(null);
 
     return (
       <div>
@@ -412,7 +412,7 @@ Material UI ofrece varias formas de estilizar tus componentes.
   import { styled } from '@mui/material/styles';
   import Button from '@mui/material/Button';
 
-  const MyStyledButton = styled(Button)(({ theme }) => ({
+  const MyStyledButton = styled(Button)(({ theme }) =&gt; ({
     backgroundColor: theme.palette.secondary.main,
     color: theme.palette.secondary.contrastText,
     padding: theme.spacing(1, 4),

@@ -147,7 +147,7 @@ function add(a: number, b: number): number {
   return a + b;
 }
 
-const greet = (name: string): string => `Hello, ${name}`;
+const greet = (name: string): string =&gt; `Hello, ${name}`;
 
 function log(message: string): void {
   console.log(message);
@@ -213,18 +213,18 @@ Combina múltiples tipos en uno solo, un valor debe ser de *todos* los tipos.
 
 ```typescript
 type Draggable = {
-  drag: () => void;
+  drag: () =&gt; void;
 };
 
 type Resizable = {
-  resize: () => void;
+  resize: () =&gt; void;
 };
 
 type UIWidget = Draggable & Resizable; // Debe tener ambos métodos
 
 let widget: UIWidget = {
-  drag: () => console.log("Dragging"),
-  resize: () => console.log("Resizing"),
+  drag: () =&gt; console.log("Dragging"),
+  resize: () =&gt; console.log("Resizing"),
 };
 ```
 
@@ -404,10 +404,10 @@ function makeSound(animal: Cat | Dog) {
 
 // Guarda de Tipo Personalizada
 interface Bird {
-  fly: () => void;
+  fly: () =&gt; void;
 }
 interface Fish {
-  swim: () => void;
+  swim: () =&gt; void;
 }
 
 function isBird(pet: Bird | Fish): pet is Bird { // Predicado de tipo
@@ -492,11 +492,11 @@ Funciones genéricas que transforman tipos.
   ```
 * **`Exclude<UnionType, ExcludedMembers>`**: Excluye de `UnionType` todos los miembros que son asignables a `ExcludedMembers`.
   ```typescript
-  type T0 = Exclude<"a" | "b" | "c", "a">; // "b" | "c"
+  type T0 = Exclude&lt;"a" | "b" | "c", "a">; // "b" | "c"
   ```
 * **`Extract<Type, Union>`**: Extrae de `Type` todos los miembros que son asignables a `Union`.
   ```typescript
-  type T0 = Extract<"a" | "b" | "c", "a" | "f">; // "a"
+  type T0 = Extract&lt;"a" | "b" | "c", "a" | "f">; // "a"
   ```
 * **`NonNullable<T>`**: Excluye `null` y `undefined` de `T`.
   ```typescript

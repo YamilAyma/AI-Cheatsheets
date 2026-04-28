@@ -38,15 +38,15 @@ Añade la dependencia principal en tu `pom.xml`:
     <dependency>
         <groupId>org.apache.pdfbox</groupId>
         <artifactId>pdfbox</artifactId>
-        <version>2.0.30</version> <!-- Usar la versión más reciente y estable -->
+        <version>2.0.30</version> &lt;!-- Usar la versión más reciente y estable -->
     </dependency>
-    <!-- Opcional: Para el módulo de pre-vuelo (validación PDF/A) -->
+    &lt;!-- Opcional: Para el módulo de pre-vuelo (validación PDF/A) -->
     <dependency>
         <groupId>org.apache.pdfbox</groupId>
         <artifactId>pdfbox-tools</artifactId>
         <version>2.0.30</version>
     </dependency>
-    <!-- Opcional: Para renderizar PDFs a imágenes (requiere Ghostscript en algunos casos) -->
+    &lt;!-- Opcional: Para renderizar PDFs a imágenes (requiere Ghostscript en algunos casos) -->
     <dependency>
         <groupId>org.apache.pdfbox</groupId>
         <artifactId>pdfbox-app</artifactId>
@@ -183,7 +183,7 @@ public class ExtractImages {
         }
 
         try (PDDocument document = PDDocument.load(file)) {
-            for (int i = 0; i < document.getNumberOfPages(); i++) {
+            for (int i = 0; i &lt; document.getNumberOfPages(); i++) {
                 PDPage page = document.getPage(i);
                 PDResources resources = page.getResources();
                 if (resources != null) {

@@ -33,11 +33,11 @@ Añade las dependencias necesarias en tu `pom.xml`.
 
 ```xml
 <dependencies>
-    <!-- MapStruct Core API -->
+    &lt;!-- MapStruct Core API -->
     <dependency>
         <groupId>org.mapstruct</groupId>
         <artifactId>mapstruct</artifactId>
-        <version>1.5.5.Final</version> <!-- Usar la versión más reciente -->
+        <version>1.5.5.Final</version> &lt;!-- Usar la versión más reciente -->
     </dependency>
 </dependencies>
 
@@ -48,17 +48,17 @@ Añade las dependencias necesarias en tu `pom.xml`.
             <artifactId>maven-compiler-plugin</artifactId>
             <version>3.11.0</version>
             <configuration>
-                <source>17</source> <!-- Tu versión de Java -->
+                <source>17</source> &lt;!-- Tu versión de Java -->
                 <target>17</target>
                 <annotationProcessorPaths>
-                    <!-- MapStruct Processor: Genera las implementaciones de los mappers -->
+                    &lt;!-- MapStruct Processor: Genera las implementaciones de los mappers -->
                     <path>
                         <groupId>org.mapstruct</groupId>
                         <artifactId>mapstruct-processor</artifactId>
                         <version>1.5.5.Final</version>
                     </path>
-                    <!-- Opcional: Si usas Lombok, para que el procesador de Lombok se ejecute antes -->
-                    <!-- <path>
+                    &lt;!-- Opcional: Si usas Lombok, para que el procesador de Lombok se ejecute antes -->
+                    &lt;!-- <path>
                         <groupId>org.projectlombok</groupId>
                         <artifactId>lombok</artifactId>
                         <version>1.18.30</version>

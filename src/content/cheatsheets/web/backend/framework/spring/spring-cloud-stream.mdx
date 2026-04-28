@@ -34,40 +34,40 @@ icon: "☁️"
     *   Necesitas el starter principal de Spring Cloud Stream y el starter para el binder específico que vas a usar (ej. Kafka, RabbitMQ).
     ```xml
     <dependencies>
-        <!-- Spring Boot Parent (si no está ya) -->
+        &lt;!-- Spring Boot Parent (si no está ya) -->
         <parent>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-parent</artifactId>
-            <version>3.2.0</version> <!-- Usar la versión de Spring Boot que uses -->
+            <version>3.2.0</version> &lt;!-- Usar la versión de Spring Boot que uses -->
             <relativePath/>
         </parent>
 
-        <!-- Spring Cloud Dependencies (BOM) para gestionar versiones de Spring Cloud -->
+        &lt;!-- Spring Cloud Dependencies (BOM) para gestionar versiones de Spring Cloud -->
         <dependency>
             <groupId>org.springframework.cloud</groupId>
             <artifactId>spring-cloud-dependencies</artifactId>
-            <version>2023.0.0</version> <!-- Usar la versión compatible con tu Spring Boot -->
+            <version>2023.0.0</version> &lt;!-- Usar la versión compatible con tu Spring Boot -->
             <type>pom</type>
             <scope>import</scope>
         </dependency>
 
-        <!-- Spring Cloud Stream Starter principal -->
+        &lt;!-- Spring Cloud Stream Starter principal -->
         <dependency>
             <groupId>org.springframework.cloud</groupId>
-            <artifactId>spring-cloud-starter-stream-kafka</artifactId> <!-- O -stream-rabbit, etc. -->
+            <artifactId>spring-cloud-starter-stream-kafka</artifactId> &lt;!-- O -stream-rabbit, etc. -->
         </dependency>
-        <!-- Opcional: Spring Cloud Function si usas el estilo funcional -->
+        &lt;!-- Opcional: Spring Cloud Function si usas el estilo funcional -->
         <dependency>
             <groupId>org.springframework.cloud</groupId>
             <artifactId>spring-cloud-starter-function-web</artifactId>
         </dependency>
-        <!-- Opcional: Spring Cloud Bus si quieres actualizar la configuración dinámicamente -->
+        &lt;!-- Opcional: Spring Cloud Bus si quieres actualizar la configuración dinámicamente -->
         <dependency>
             <groupId>org.springframework.cloud</groupId>
             <artifactId>spring-cloud-starter-bus-kafka</artifactId>
         </dependency>
 
-        <!-- Spring Boot Test -->
+        &lt;!-- Spring Boot Test -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-test</artifactId>
@@ -119,9 +119,9 @@ public class MessageProducer {
     // El nombre del bean ('eventSupplier') se usa en la configuración de bindings
     @Bean
     public Supplier<Flux<Message<MyEvent>>> eventSupplier() {
-        return () -> sink.asFlux()
-                         .doOnNext(m -> System.out.println("Enviando evento: " + m.getPayload()))
-                         .doOnError(e -> System.err.println("Error en el stream de salida: " + e.getMessage()));
+        return () -&gt; sink.asFlux()
+                         .doOnNext(m -&gt; System.out.println("Enviando evento: " + m.getPayload()))
+                         .doOnError(e -&gt; System.err.println("Error en el stream de salida: " + e.getMessage()));
     }
 
     // 2. Método para emitir mensajes (llamado desde un Controller, Service, etc.)
@@ -203,7 +203,7 @@ public class MessageConsumer {
     // El nombre del bean ('eventConsumer') se usa en la configuración de bindings
     @Bean
     public Consumer<MyEvent> eventConsumer() {
-        return event -> { // Recibe el payload directamente
+        return event -&gt; { // Recibe el payload directamente
             System.out.println("Consumiendo evento: " + event.getId() + " - " + event.getData());
             // Lógica de negocio para procesar el evento
             if (event.getData().contains("error")) {
@@ -215,7 +215,7 @@ public class MessageConsumer {
     // Si necesitas acceso a los headers del mensaje, puedes recibir Message<T>
     @Bean
     public Consumer<Message<MyEvent>> eventConsumerWithHeaders() {
-        return message -> {
+        return message -&gt; {
             MyEvent event = message.getPayload();
             String messageId = (String) message.getHeaders().get("id");
             System.out.println("Consumiendo evento (con headers): " + event.getId() + " - " + event.getData() + " (Message ID: " + messageId + ")");
@@ -263,13 +263,13 @@ public class MessageProcessor {
     // El nombre del bean ('eventProcessor') se usa en la configuración de bindings
     @Bean
     public Function<Flux<MyEvent>, Flux<MyTransformedEvent>> eventProcessor() {
-        return input -> input
-                .map(event -> {
+        return input -&gt; input
+                .map(event -&gt; {
                     System.out.println("Procesando evento: " + event.getId());
                     // Lógica de transformación
                     return new MyTransformedEvent(event.getId(), event.getData().toUpperCase());
                 })
-                .doOnError(e -> System.err.println("Error en el stream de procesamiento: " + e.getMessage()));
+                .doOnError(e -&gt; System.err.println("Error en el stream de procesamiento: " + e.getMessage()));
     }
 }
 ```

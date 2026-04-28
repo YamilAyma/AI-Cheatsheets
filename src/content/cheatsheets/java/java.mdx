@@ -109,7 +109,7 @@ multilínea.
 ## 5. 🧮 Operadores
 
 * **Aritméticos**: `+`, `-`, `*`, `/`, `%` (módulo).
-* **Comparación**: `==` (igual a), `!=` (diferente de), `>`, `<`, `>=`, `<=`.
+* **Comparación**: `==` (igual a), `!=` (diferente de), `>`, `&lt;`, `&gt;=`, `&lt;=`.
 * **Lógicos**: `&&` (AND), `||` (OR), `!` (NOT).
 * **Asignación**: `=`, `+=`, `-=`, `*=`, `/=`, `%=`.
 * **Incremento/Decremento**: `++`, `--` (prefijo/postfijo).
@@ -151,9 +151,9 @@ switch (dia) {
 
 // Expresión Switch (Java 14+) - para asignar un valor
 String tipoDia = switch (dia) {
-    case "Lunes", "Martes" -> "Semana";
-    case "Sábado", "Domingo" -> "Fin de semana";
-    default -> "Otro";
+    case "Lunes", "Martes" -&gt; "Semana";
+    case "Sábado", "Domingo" -&gt; "Fin de semana";
+    default -&gt; "Otro";
 };
 System.out.println(tipoDia);
 ```
@@ -162,7 +162,7 @@ System.out.println(tipoDia);
 
 ```java
 // for (tradicional)
-for (int i = 0; i < 5; i++) {
+for (int i = 0; i &lt; 5; i++) {
     System.out.println("Contador: " + i);
 }
 
@@ -174,7 +174,7 @@ for (String fruta : frutas) {
 
 // while
 int contador = 0;
-while (contador < 3) {
+while (contador &lt; 3) {
     System.out.println("While: " + contador);
     contador++;
 }
@@ -184,7 +184,7 @@ int x = 0;
 do {
     System.out.println("Do-While: " + x);
     x++;
-} while (x < 0);
+} while (x &lt; 0);
 ```
 
 ### 6.4. Control de Bucle
@@ -283,7 +283,7 @@ public class CuentaBancaria {
     private double saldo; // Atributo privado
 
     public CuentaBancaria(double saldoInicial) {
-        if (saldoInicial >= 0) {
+        if (saldoInicial &gt;= 0) {
             this.saldo = saldoInicial;
         } else {
             this.saldo = 0;
@@ -434,7 +434,7 @@ Proporciona interfaces y clases para representar colecciones de objetos.
   ```java
   import java.util.ArrayList;
   import java.util.List;
-  List<String> nombres = new ArrayList<>();
+  List<String> nombres = new ArrayList&lt;>();
   nombres.add("Ana");
   nombres.add("Juan");
   System.out.println(nombres.get(0)); // Ana
@@ -446,7 +446,7 @@ Proporciona interfaces y clases para representar colecciones de objetos.
   ```java
   import java.util.HashSet;
   import java.util.Set;
-  Set<Integer> edades = new HashSet<>();
+  Set<Integer> edades = new HashSet&lt;>();
   edades.add(20);
   edades.add(25);
   edades.add(20); // Duplicado, no se añade
@@ -458,7 +458,7 @@ Proporciona interfaces y clases para representar colecciones de objetos.
   ```java
   import java.util.HashMap;
   import java.util.Map;
-  Map<String, String> capitales = new HashMap<>();
+  Map<String, String> capitales = new HashMap&lt;>();
   capitales.put("España", "Madrid");
   capitales.put("Francia", "París");
   System.out.println(capitales.get("España")); // Madrid
@@ -485,10 +485,10 @@ public class Caja<T> { // T es un tipo genérico (Type parameter)
 }
 
 // Uso
-Caja<String> cajaDeTexto = new Caja<>("Hola mundo");
+Caja<String> cajaDeTexto = new Caja&lt;>("Hola mundo");
 String texto = cajaDeTexto.getContenido(); // No necesita casting
 
-Caja<Integer> cajaDeNumeros = new Caja<>(123);
+Caja<Integer> cajaDeNumeros = new Caja&lt;>(123);
 int numero = cajaDeNumeros.getContenido();
 ```
 
@@ -596,7 +596,7 @@ Permite ejecutar múltiples partes de un programa simultáneamente.
   class MiHilo extends Thread {
       @Override
       public void run() {
-          for (int i = 0; i < 3; i++) {
+          for (int i = 0; i &lt; 3; i++) {
               System.out.println("Hilo extendido: " + i);
           }
       }
@@ -608,7 +608,7 @@ Permite ejecutar múltiples partes de un programa simultáneamente.
   class MiTarea implements Runnable {
       @Override
       public void run() {
-          for (int i = 0; i < 3; i++) {
+          for (int i = 0; i &lt; 3; i++) {
               System.out.println("Tarea Runnable: " + i);
           }
       }
@@ -645,7 +645,7 @@ Permite ejecutar múltiples partes de un programa simultáneamente.
   * `==`: Compara referencias de objetos (si apuntan a la misma dirección de memoria).
   * `equals()`: Compara el *contenido* de los objetos. **¡CRÍTICO para `String`!**
 * **Manejo Robusto de Excepciones**: No captures `Exception` genéricas a menos que tengas un plan para manejarlas. Captura excepciones específicas.
-* **Programación Orientada a Interfaces**: Prefiere programar hacia interfaces (`List<String> myList = new ArrayList<>();`) en lugar de implementaciones (`ArrayList<String> myList = new ArrayList<>();`).
+* **Programación Orientada a Interfaces**: Prefiere programar hacia interfaces (`List<String> myList = new ArrayList&lt;>();`) en lugar de implementaciones (`ArrayList<String> myList = new ArrayList&lt;>();`).
 * **Delegación vs Herencia**: Prefiere la composición (delegación) sobre la herencia cuando sea posible, para un diseño más flexible.
 * **Bibliotecas Estándar**: Familiarízate con la extensa biblioteca estándar de Java (ej. `java.time` para fechas, `java.util.Collections` para utilidades de colecciones).
 * **Pruebas Unitarias**: Utiliza frameworks como JUnit para escribir pruebas unitarias.

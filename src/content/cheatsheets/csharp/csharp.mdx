@@ -149,7 +149,7 @@ int? optionalAge = null;     // Un int que puede ser null
 ## 5. 🧮 Operadores
 
 * **Aritméticos**: `+`, `-`, `*`, `/`, `%`.
-* **Comparación**: `==`, `!=`, `<`, `>`, `<=`, `>=`.
+* **Comparación**: `==`, `!=`, `&lt;`, `>`, `&lt;=`, `&gt;=`.
 * **Lógicos**: `&&` (AND), `||` (OR), `!` (NOT).
 * **Asignación**: `=`, `+=`, `-=`, `*=`, `/=`, `%=`.
 * **Incremento/Decremento**: `++`, `--`.
@@ -168,11 +168,11 @@ int? optionalAge = null;     // Un int que puede ser null
 
 ```csharp
 int score = 85;
-if (score >= 90)
+if (score &gt;= 90)
 {
     Console.WriteLine("Excelente");
 }
-else if (score >= 70)
+else if (score &gt;= 70)
 {
     Console.WriteLine("Bueno");
 }
@@ -196,9 +196,9 @@ switch (day) // Sentencia switch tradicional
 // Expresión switch (más concisa)
 string dayName = day switch // Expresión switch (C# 8+)
 {
-    1 => "Lunes",
-    2 => "Martes",
-    _ => "Otro día" // _ es el descarte, como default
+    1 =&gt; "Lunes",
+    2 =&gt; "Martes",
+    _ =&gt; "Otro día" // _ es el descarte, como default
 };
 Console.WriteLine(dayName);
 ```
@@ -207,7 +207,7 @@ Console.WriteLine(dayName);
 
 ```csharp
 // for
-for (int i = 0; i < 5; i++)
+for (int i = 0; i &lt; 5; i++)
 {
     Console.WriteLine($"Iteración {i}");
 }
@@ -221,7 +221,7 @@ foreach (string name in names)
 
 // while
 int count = 0;
-while (count < 3)
+while (count &lt; 3)
 {
     Console.WriteLine($"Contador: {count}");
     count++;
@@ -233,7 +233,7 @@ do
 {
     Console.WriteLine("Siempre me ejecuto una vez.");
     i++;
-} while (i < 0);
+} while (i &lt; 0);
 ```
 
 ### 6.4. Control de Bucle
@@ -508,9 +508,9 @@ var evenNumbers = from num in numbers
                   select num;
 
 // Sintaxis de método (Method Syntax) - Preferida en la mayoría de los casos
-var oddNumbers = numbers.Where(num => num % 2 != 0)
-                        .OrderBy(num => num)
-                        .Select(num => num * 10);
+var oddNumbers = numbers.Where(num =&gt; num % 2 != 0)
+                        .OrderBy(num =&gt; num)
+                        .Select(num =&gt; num * 10);
 
 Console.WriteLine("Números pares:");
 foreach (var num in evenNumbers)
@@ -525,8 +525,8 @@ foreach (var num in oddNumbers)
 }
 
 // Otros operadores LINQ comunes
-int firstEven = numbers.FirstOrDefault(num => num % 2 == 0); // 8
-bool anyGreaterThanTen = numbers.Any(num => num > 10); // True
+int firstEven = numbers.FirstOrDefault(num =&gt; num % 2 == 0); // 8
+bool anyGreaterThanTen = numbers.Any(num =&gt; num > 10); // True
 int sum = numbers.Sum(); // 61
 double average = numbers.Average(); // 10.16...
 ```

@@ -85,23 +85,23 @@ Micrometer Tracing (el sucesor de Spring Cloud Sleuth) es la forma recomendada d
 1.  **Añadir dependencias en `pom.xml` (en tu microservicio):**
     ```xml
     <dependencies>
-        <!-- Micrometer Tracing Bridge para OpenTelemetry -->
+        &lt;!-- Micrometer Tracing Bridge para OpenTelemetry -->
         <dependency>
             <groupId>io.micrometer</groupId>
             <artifactId>micrometer-tracing-bridge-otel</artifactId>
         </dependency>
-        <!-- Exporter para Zipkin -->
+        &lt;!-- Exporter para Zipkin -->
         <dependency>
             <groupId>io.opentelemetry</groupId>
             <artifactId>opentelemetry-exporter-zipkin</artifactId>
         </dependency>
-        <!-- Para la API de OpenTelemetry (si necesitas instrumentación manual) -->
+        &lt;!-- Para la API de OpenTelemetry (si necesitas instrumentación manual) -->
         <dependency>
             <groupId>io.opentelemetry</groupId>
             <artifactId>opentelemetry-api</artifactId>
-            <version>1.34.1</version> <!-- Usar la versión compatible -->
+            <version>1.34.1</version> &lt;!-- Usar la versión compatible -->
         </dependency>
-        <!-- Spring Boot Actuator para exposición de métricas y health -->
+        &lt;!-- Spring Boot Actuator para exposición de métricas y health -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-actuator</artifactId>

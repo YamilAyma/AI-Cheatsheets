@@ -48,7 +48,7 @@ icon: "📄"
             <groupId>org.springframework.cloud</groupId>
             <artifactId>spring-cloud-starter-netflix-eureka-server</artifactId>
         </dependency>
-        <!-- Spring Cloud BOM (para gestionar versiones de Spring Cloud) -->
+        &lt;!-- Spring Cloud BOM (para gestionar versiones de Spring Cloud) -->
         <dependencyManagement>
             <dependencies>
                 <dependency>
@@ -103,13 +103,13 @@ icon: "📄"
 1.  **Añadir dependencias en `pom.xml` (en el microservicio):**
     ```xml
     <dependencies>
-        <parent>...</parent> <!-- Tu parent de Spring Boot -->
+        <parent>...</parent> &lt;!-- Tu parent de Spring Boot -->
 
         <dependency>
             <groupId>org.springframework.cloud</groupId>
             <artifactId>spring-cloud-starter-netflix-eureka-client</artifactId>
         </dependency>
-        <!-- Spring Cloud BOM -->
+        &lt;!-- Spring Cloud BOM -->
         <dependencyManagement>...</dependencyManagement>
     </dependencies>
     ```

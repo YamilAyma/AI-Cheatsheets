@@ -64,7 +64,7 @@ La forma más recomendada para iniciar un proyecto Vue es con Vite.
 Los componentes de un solo archivo (`.vue`) encapsulan template, script y style. El `<script setup>` es el enfoque moderno para usar Composition API.
 
 ```vue
-<!-- src/components/Counter.vue -->
+&lt;!-- src/components/Counter.vue -->
 <script setup>
 import { ref, computed, onMounted, watch } from 'vue'; // Importa APIs de Vue
 
@@ -85,30 +85,30 @@ const props = defineProps({
 const emit = defineEmits(['reset']); // Declara eventos que este componente puede emitir
 
 // --- Propiedades Calculadas ---
-const isEven = computed(() => count.value % 2 === 0);
-const displayedTitle = computed(() => props.title || 'Contador por Defecto');
+const isEven = computed(() =&gt; count.value % 2 === 0);
+const displayedTitle = computed(() =&gt; props.title || 'Contador por Defecto');
 
 // --- Métodos (Funciones) ---
-const increment = () => {
+const increment = () =&gt; {
   count.value++;
 };
 
-const decrement = () => {
+const decrement = () =&gt; {
   count.value--;
 };
 
-const resetCounter = () => {
+const resetCounter = () =&gt; {
   count.value = props.initialValue;
   emit('reset'); // Emite el evento 'reset'
 };
 
 // --- Watchers ---
-watch(count, (newCount, oldCount) => {
+watch(count, (newCount, oldCount) =&gt; {
   console.log(`El contador cambió de ${oldCount} a ${newCount}`);
 });
 
 // --- Lifecycle Hooks ---
-onMounted(() => {
+onMounted(() =&gt; {
   count.value = props.initialValue;
   console.log('Componente Counter montado.');
 });
@@ -145,7 +145,7 @@ onMounted(() => {
 **Uso en otro Componente (ej. `App.vue`):**
 
 ```vue
-<!-- src/App.vue -->
+&lt;!-- src/App.vue -->
 <script setup>
 import Counter from './components/Counter.vue'; // Importa el componente
 </script>
@@ -207,7 +207,7 @@ export default {
 
   * **Modificadores de `v-model`**: `.lazy`, `.number`, `.trim`.
     ```html
-    <input v-model.lazy="username"> <!-- Sincroniza en 'change' en lugar de 'input' -->
+    <input v-model.lazy="username"> &lt;!-- Sincroniza en 'change' en lugar de 'input' -->
     <input v-model.number="age" type="number">
     <input v-model.trim="searchTerm">
     ```
@@ -229,11 +229,11 @@ export default {
   <ul>
     <li v-for="item in items" :key="item.id">{{ item.name }}</li>
   </ul>
-  <!-- Con índice -->
+  &lt;!-- Con índice -->
   <ul v-for="(item, index) in items" :key="item.id">
     <li>{{ index }}: {{ item.name }}</li>
   </ul>
-  <!-- Iterar sobre objeto -->
+  &lt;!-- Iterar sobre objeto -->
   <div v-for="(value, key, index) in myObject" :key="key">
     {{ index }}. {{ key }}: {{ value }}
   </div>
@@ -287,12 +287,12 @@ import { ref, computed } from 'vue';
 const firstName = ref('John');
 const lastName = ref('Doe');
 
-const fullName = computed(() => firstName.value + ' ' + lastName.value);
+const fullName = computed(() =&gt; firstName.value + ' ' + lastName.value);
 
 // Con getter y setter (raro, pero posible)
 const customText = computed({
-  get: () => `Mi texto es: ${message.value}`,
-  set: (newValue) => { message.value = newValue.replace('Mi texto es: ', ''); }
+  get: () =&gt; `Mi texto es: ${message.value}`,
+  set: (newValue) =&gt; { message.value = newValue.replace('Mi texto es: ', ''); }
 });
 ```
 
@@ -304,24 +304,24 @@ Observa un dato reactivo y ejecuta un callback cuando cambia.
 import { ref, watch } from 'vue';
 const count = ref(0);
 
-watch(count, (newCount, oldCount) => {
+watch(count, (newCount, oldCount) =&gt; {
   console.log(`Contador cambió de ${oldCount} a ${newCount}`);
 });
 
-watch(() => count.value > 5, (isOverFive) => {
+watch(() =&gt; count.value > 5, (isOverFive) =&gt; {
   if (isOverFive) {
     console.log('El contador ha superado 5!');
   }
 });
 
 // Observar múltiples fuentes
-watch([count, message], ([newCount, newMessage], [oldCount, oldMessage]) => {
+watch([count, message], ([newCount, newMessage], [oldCount, oldMessage]) =&gt; {
   console.log(`Count: ${newCount}, Message: ${newMessage}`);
 });
 
 // Watch 'deep' en objetos reactivos (por defecto en ref de objetos y reactive)
 const user = reactive({ name: 'Alice', age: 30 });
-watch(user, (newUser, oldUser) => {
+watch(user, (newUser, oldUser) =&gt; {
   console.log('Objeto de usuario ha cambiado (profundo)');
 });
 ```
@@ -332,25 +332,25 @@ watch(user, (newUser, oldUser) => {
 
 Hooks para ejecutar código en diferentes etapas del ciclo de vida del componente.
 
-* `onMounted(() => { ... })`: Después de que el componente ha sido montado en el DOM.
-* `onUpdated(() => { ... })`: Después de que el componente ha actualizado su DOM debido a un cambio reactivo.
-* `onUnmounted(() => { ... })`: Justo antes de que un componente sea desmontado del DOM.
-* `onBeforeMount(() => { ... })`
-* `onBeforeUpdate(() => { ... })`
-* `onBeforeUnmount(() => { ... })`
-* `onErrorCaptured(() => { ... })`: Para capturar errores de componentes hijos.
-* `onRenderTracked(() => { ... })`
-* `onRenderTriggered(() => { ... })`
+* `onMounted(() =&gt; { ... })`: Después de que el componente ha sido montado en el DOM.
+* `onUpdated(() =&gt; { ... })`: Después de que el componente ha actualizado su DOM debido a un cambio reactivo.
+* `onUnmounted(() =&gt; { ... })`: Justo antes de que un componente sea desmontado del DOM.
+* `onBeforeMount(() =&gt; { ... })`
+* `onBeforeUpdate(() =&gt; { ... })`
+* `onBeforeUnmount(() =&gt; { ... })`
+* `onErrorCaptured(() =&gt; { ... })`: Para capturar errores de componentes hijos.
+* `onRenderTracked(() =&gt; { ... })`
+* `onRenderTriggered(() =&gt; { ... })`
 
 ```javascript
 import { onMounted, onUnmounted } from 'vue';
 
-onMounted(() => {
+onMounted(() =&gt; {
   console.log('Componente montado!');
   // Puedes añadir listeners de eventos globales aquí
 });
 
-onUnmounted(() => {
+onUnmounted(() =&gt; {
   console.log('Componente desmontado!');
   // Limpia timers, listeners, suscripciones
 });
@@ -381,9 +381,9 @@ Pinia es la solución de gestión de estado recomendada para Vue 3. Es ligera, m
    import { defineStore } from 'pinia';
    import { ref, computed } from 'vue';
 
-   export const useCounterStore = defineStore('counter', () => { // 'counter' es el ID único
+   export const useCounterStore = defineStore('counter', () =&gt; { // 'counter' es el ID único
      const count = ref(0);
-     const doubleCount = computed(() => count.value * 2);
+     const doubleCount = computed(() =&gt; count.value * 2);
 
      function increment() {
        count.value++;
@@ -394,7 +394,7 @@ Pinia es la solución de gestión de estado recomendada para Vue 3. Es ligera, m
      // Puedes tener acciones asíncronas
      async function fetchCount() {
        // Simula una API call
-       const response = await new Promise(resolve => setTimeout(() => resolve(100), 1000));
+       const response = await new Promise(resolve =&gt; setTimeout(() =&gt; resolve(100), 1000));
        count.value = response;
      }
 
@@ -403,7 +403,7 @@ Pinia es la solución de gestión de estado recomendada para Vue 3. Es ligera, m
    ```
 4. **Uso del Store en un Componente:**
    ```vue
-   <!-- src/components/CounterDisplay.vue -->
+   &lt;!-- src/components/CounterDisplay.vue -->
    <script setup>
    import { useCounterStore } from '../stores/counter'; // Importa el store
 
@@ -465,7 +465,7 @@ Vue Router es el enrutador oficial de Vue.js.
    });
 
    // --- Guardas de Navegación Globales ---
-   router.beforeEach((to, from) => {
+   router.beforeEach((to, from) =&gt; {
      // Ejemplo de guarda de autenticación
      if (to.meta.requiresAuth && !localStorage.getItem('userToken')) {
        // Redirige al login
@@ -504,11 +504,11 @@ Vue Router es el enrutador oficial de Vue.js.
    const router = useRouter(); // Instancia del enrutador
    const route = useRoute();   // Ruta actual
 
-   const goToHome = () => {
+   const goToHome = () =&gt; {
      router.push('/'); // Navega a la ruta raíz
    };
 
-   const goToUser = (id) => {
+   const goToUser = (id) =&gt; {
      router.push({ name: 'user-profile', params: { id } });
    };
 
@@ -567,7 +567,7 @@ import { provide, ref } from 'vue';
 import ChildComponent from './ChildComponent.vue';
 
 const message = ref('Mensaje desde el padre');
-const updateMessage = (newMessage) => {
+const updateMessage = (newMessage) =&gt; {
   message.value = newMessage;
 };
 
@@ -591,7 +591,7 @@ import { inject } from 'vue';
 const message = inject('my-message');
 const updateMessage = inject('update-message-func');
 
-const changeMessage = () => {
+const changeMessage = () =&gt; {
   updateMessage('Mensaje actualizado desde el hijo!');
 };
 </script>

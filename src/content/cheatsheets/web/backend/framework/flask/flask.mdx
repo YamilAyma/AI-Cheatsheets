@@ -241,7 +241,7 @@ Flask usa Jinja2 para renderizar plantillas HTML dinámicas.
 * **Sintaxis Jinja2 (`templates/index.html`)**:
 
   ```html
-  <!DOCTYPE html>
+  &lt;!DOCTYPE html>
   <html lang="es">
   <head>
       <meta charset="UTF-8">
@@ -272,7 +272,7 @@ Flask usa Jinja2 para renderizar plantillas HTML dinámicas.
 * **`templates/messages.html` (para mensajes flash):**
 
   ```html
-  <!DOCTYPE html>
+  &lt;!DOCTYPE html>
   <html lang="es">
   <head>
       <title>Mensajes</title>
@@ -300,7 +300,7 @@ Flask usa Jinja2 para renderizar plantillas HTML dinámicas.
 * Usa `url_for('static', filename='path/to/file')` para generar sus URLs.
 
   ```html
-  <!-- templates/index.html -->
+  &lt;!-- templates/index.html -->
   <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
   <img src="{{ url_for('static', filename='images/logo.png') }}" alt="Logo">
   <script src="{{ url_for('static', filename='js/script.js') }}"></script>

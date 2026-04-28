@@ -247,7 +247,7 @@ export class UserService {
   }
 
   getUserById(id: number): Observable<any | undefined> {
-    return of(this.users.find(user => user.id === id));
+    return of(this.users.find(user =&gt; user.id === id));
   }
 }
 ```
@@ -280,7 +280,7 @@ export class UserListComponent implements OnInit {
   constructor(private userService: UserService) { } // Inyección de dependencia por constructor
 
   ngOnInit(): void {
-    this.userService.getUsers().subscribe(data => {
+    this.userService.getUsers().subscribe(data =&gt; {
       this.users = data;
     });
   }
@@ -304,7 +304,7 @@ import { AuthGuard } from './auth.guard'; // Ejemplo de guard
 export const routes: Routes = [
   { path: '', component: HomeComponent, title: 'Home Page' }, // Ruta raíz
   { path: 'users/:id', component: UserDetailComponent, canActivate: [AuthGuard] }, // Ruta con parámetro y guard
-  { path: 'products', loadChildren: () => import('./products/products.routes').then(m => m.PRODUCT_ROUTES) }, // Lazy loading de rutas
+  { path: 'products', loadChildren: () =&gt; import('./products/products.routes').then(m =&gt; m.PRODUCT_ROUTES) }, // Lazy loading de rutas
   { path: '**', component: NotFoundComponent }, // Ruta wildcard (404)
 ];
 ```
@@ -322,7 +322,7 @@ bootstrapApplication(AppComponent, {
   providers: [
     provideRouter(routes) // Provee el enrutamiento
   ]
-}).catch(err => console.error(err));
+}).catch(err =&gt; console.error(err));
 ```
 
 **Navegación en el Template:**
@@ -359,12 +359,12 @@ goToUserDetail(id: number): void {
 
 // Para obtener parámetros de ruta:
 ngOnInit(): void {
-  this.route.paramMap.subscribe(params => {
+  this.route.paramMap.subscribe(params =&gt; {
     const userId = params.get('id');
     console.log('ID de usuario:', userId);
   });
   // Para query parameters:
-  this.route.queryParamMap.subscribe(params => {
+  this.route.queryParamMap.subscribe(params =&gt; {
     const sort = params.get('sort');
     console.log('Parámetro de ordenación:', sort);
   });
@@ -565,11 +565,11 @@ Angular utiliza RxJS para manejar eventos asíncronos y flujos de datos.
 import { Observable, from, of, map, filter, take, tap } from 'rxjs';
 
 // Crear un Observable
-const myObservable = new Observable<number>(subscriber => {
+const myObservable = new Observable<number>(subscriber =&gt; {
   subscriber.next(1);
   subscriber.next(2);
   subscriber.next(3);
-  setTimeout(() => {
+  setTimeout(() =&gt; {
     subscriber.next(4);
     subscriber.complete(); // Indica que no hay más valores
   }, 1000);
@@ -577,20 +577,20 @@ const myObservable = new Observable<number>(subscriber => {
 
 // Suscribirse a un Observable
 myObservable.subscribe({
-  next: value => console.log('RxJS Value:', value),
-  error: err => console.error('RxJS Error:', err),
-  complete: () => console.log('RxJS Completed!')
+  next: value =&gt; console.log('RxJS Value:', value),
+  error: err =&gt; console.error('RxJS Error:', err),
+  complete: () =&gt; console.log('RxJS Completed!')
 });
 
 // Uso de operadores con pipe
 of(1, 2, 3, 4, 5) // Observable de 5 números
   .pipe(
-    filter(num => num % 2 === 0), // Solo números pares
-    map(num => num * 10),       // Multiplicar por 10
+    filter(num =&gt; num % 2 === 0), // Solo números pares
+    map(num =&gt; num * 10),       // Multiplicar por 10
     take(1),                    // Tomar solo el primer resultado
-    tap(value => console.log('Tap (before subscribe):', value)) // Efecto secundario sin alterar el flujo
+    tap(value =&gt; console.log('Tap (before subscribe):', value)) // Efecto secundario sin alterar el flujo
   )
-  .subscribe(finalValue => console.log('Final Processed Value:', finalValue)); // 20
+  .subscribe(finalValue =&gt; console.log('Final Processed Value:', finalValue)); // 20
 ```
 
 ---
@@ -605,11 +605,11 @@ Angular CLI viene con soporte para Karma (para pruebas de unidad) y Protractor (
   import { ComponentFixture, TestBed } from '@angular/core/testing';
   import { CounterComponent } from './counter.component';
 
-  describe('CounterComponent', () => {
+  describe('CounterComponent', () =&gt; {
     let component: CounterComponent;
     let fixture: ComponentFixture<CounterComponent>; // Para interactuar con el DOM del componente
 
-    beforeEach(async () => {
+    beforeEach(async () =&gt; {
       await TestBed.configureTestingModule({
         imports: [CounterComponent] // Importa el componente standalone
       }).compileComponents(); // Compila componentes
@@ -618,17 +618,17 @@ Angular CLI viene con soporte para Karma (para pruebas de unidad) y Protractor (
       fixture.detectChanges(); // Ejecuta ngOnInit y detección de cambios inicial
     });
 
-    it('should create', () => {
+    it('should create', () =&gt; {
       expect(component).toBeTruthy();
     });
 
-    it('should increment the count', () => {
+    it('should increment the count', () =&gt; {
       const initialCount = component.count;
       component.increment();
       expect(component.count).toBe(initialCount + 1);
     });
 
-    it('should display the initial value', () => {
+    it('should display the initial value', () =&gt; {
       component.initialValue = 20; // Cambia el input
       fixture.detectChanges();     // Fuerza detección de cambios para aplicar input
       const compiled = fixture.nativeElement as HTMLElement;

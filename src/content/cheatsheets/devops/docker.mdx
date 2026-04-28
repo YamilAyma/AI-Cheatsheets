@@ -74,7 +74,7 @@ CMD ["npm", "start"]
 
 # Opcional: ENTRYPOINT: Define el comando principal que se ejecutará.
 # ENTRYPOINT ["node", "server.js"]
-# Combinado con CMD: ENTRYPOINT ["npm"], CMD ["start"] -> ejecuta `npm start`
+# Combinado con CMD: ENTRYPOINT ["npm"], CMD ["start"] -&gt; ejecuta `npm start`
 ```
 
 ### Instrucciones Comunes de Dockerfile
@@ -87,7 +87,7 @@ CMD ["npm", "start"]
 * **`CMD ["executable", "param1", "param2"]`**: Proporciona valores predeterminados para un contenedor en ejecución. Puede ser sobrescrito al ejecutar `docker run`.
 * **`ENTRYPOINT ["executable", "param1", "param2"]`**: Configura un contenedor para que se ejecute como un ejecutable. Los argumentos de `CMD` se pasan como parámetros a `ENTRYPOINT`.
 * **`EXPOSE <port> [<port>...]`**: Documenta los puertos que el contenedor escucha en tiempo de ejecución. No publica los puertos automáticamente.
-* **`ENV <key>=<value>`**: Establece variables de entorno.
+* **`ENV <key&gt;=<value>`**: Establece variables de entorno.
 * **`ARG <name>[=<default value>]`**: Define variables de construcción que pueden ser pasadas con `--build-arg` durante `docker build`.
 * **`USER <user>[:<group>]`**: Establece el usuario por defecto para las instrucciones `RUN`, `CMD`, `ENTRYPOINT`.
 * **`VOLUME ["/data"]`**: Crea un punto de montaje para un volumen.
@@ -158,7 +158,7 @@ Dockerfile
     ```
   * `-v <volume-name>:<container-path>` / `--mount type=volume,source=<vol_name>,target=<container>`: Monta un volumen con nombre (Docker gestiona el almacenamiento).
   * `--rm`: Elimina el contenedor automáticamente cuando se detiene.
-  * `--env <key>=<value>` / `-e`: Establece variables de entorno dentro del contenedor.
+  * `--env <key&gt;=<value>` / `-e`: Establece variables de entorno dentro del contenedor.
   * `--network <network-name>`: Conecta el contenedor a una red definida por el usuario.
 * **`docker ps` / `docker container ls`**: Lista los contenedores en ejecución.
   * `-a` / `--all`: Lista todos los contenedores (ejecución y detenidos).

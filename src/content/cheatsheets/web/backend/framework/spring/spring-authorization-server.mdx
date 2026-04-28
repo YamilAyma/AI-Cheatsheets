@@ -45,27 +45,27 @@ icon: "📄"
         <parent>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-parent</artifactId>
-            <version>3.2.0</version> <!-- Usar la versión estable actual -->
+            <version>3.2.0</version> &lt;!-- Usar la versión estable actual -->
             <relativePath/>
         </parent>
 
-        <!-- Spring Boot Starter Security (fundamental) -->
+        &lt;!-- Spring Boot Starter Security (fundamental) -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-security</artifactId>
         </dependency>
-        <!-- Spring Boot Starter Web (para endpoints HTTP) -->
+        &lt;!-- Spring Boot Starter Web (para endpoints HTTP) -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-web</artifactId>
         </dependency>
-        <!-- Spring Authorization Server -->
+        &lt;!-- Spring Authorization Server -->
         <dependency>
             <groupId>org.springframework.security</groupId>
             <artifactId>spring-security-oauth2-authorization-server</artifactId>
-            <version>1.2.0</version> <!-- Usar la versión compatible con tu Spring Boot -->
+            <version>1.2.0</version> &lt;!-- Usar la versión compatible con tu Spring Boot -->
         </dependency>
-        <!-- Para el almacenamiento persistente de clientes y autorizaciones (ej. JPA para H2) -->
+        &lt;!-- Para el almacenamiento persistente de clientes y autorizaciones (ej. JPA para H2) -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-data-jpa</artifactId>
@@ -75,7 +75,7 @@ icon: "📄"
             <artifactId>h2</artifactId>
             <scope>runtime</scope>
         </dependency>
-        <!-- Para pruebas -->
+        &lt;!-- Para pruebas -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-test</artifactId>
@@ -165,11 +165,11 @@ public class AuthorizationServerConfig {
 
         http
             // Redirige a la página de login si la autenticación falla en los endpoints de OAuth 2.0/OIDC
-            .exceptionHandling(exceptions -> exceptions
+            .exceptionHandling(exceptions -&gt; exceptions
                 .authenticationEntryPoint(new LoginUrlAuthenticationEntryPoint("/login"))
             )
             // Para permitir la configuración de recursos de Resource Server que acepte JWT (Access Tokens)
-            .oauth2ResourceServer(oauth2ResourceServer -> oauth2ResourceServer.jwt(Customizer.withDefaults()));
+            .oauth2ResourceServer(oauth2ResourceServer -&gt; oauth2ResourceServer.jwt(Customizer.withDefaults()));
 
         return http.build();
     }
@@ -179,7 +179,7 @@ public class AuthorizationServerConfig {
     @Order(2) // Se aplica después de la cadena de SAS
     public SecurityFilterChain defaultSecurityFilterChain(HttpSecurity http) throws Exception {
         http
-            .authorizeHttpRequests(authorize -> authorize
+            .authorizeHttpRequests(authorize -&gt; authorize
                 .anyRequest().authenticated() // Todas las demás solicitudes requieren autenticación
             )
             .formLogin(Customizer.withDefaults()); // Habilita el formulario de login por defecto
@@ -267,7 +267,7 @@ public class AuthorizationServerConfig {
             .keyID(UUID.randomUUID().toString()) // ID único para la clave
             .build();
         JWKSet jwkSet = new JWKSet(rsaKey);
-        return new ImmutableJWKSet<>(jwkSet);
+        return new ImmutableJWKSet&lt;>(jwkSet);
     }
 
     private static KeyPair generateRsaKey() {
@@ -410,11 +410,11 @@ Para que otra aplicación Spring Boot actúe como Cliente de OAuth2 e inicie ses
         @Bean
         public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
             http
-                .authorizeHttpRequests(authorize -> authorize
+                .authorizeHttpRequests(authorize -&gt; authorize
                     .anyRequest().authenticated()
                 )
                 .oauth2Login(Customizer.withDefaults()) // Habilita OAuth2 Login
-                .logout(logout -> logout.logoutSuccessUrl("/")); // Configura logout
+                .logout(logout -&gt; logout.logoutSuccessUrl("/")); // Configura logout
             return http.build();
         }
     }

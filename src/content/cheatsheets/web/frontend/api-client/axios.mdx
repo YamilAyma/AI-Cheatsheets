@@ -55,11 +55,11 @@ import axios from 'axios';
 
 // Obtener todos los posts
 axios.get('https://jsonplaceholder.typicode.com/posts')
-  .then(response => {
+  .then(response =&gt; {
     console.log('Datos obtenidos:', response.data); // Los datos están en response.data
     console.log('Status:', response.status); // 200 OK
   })
-  .catch(error => {
+  .catch(error =&gt; {
     console.error('Error al obtener posts:', error);
   });
 
@@ -90,11 +90,11 @@ const newPost = {
 };
 
 axios.post('https://jsonplaceholder.typicode.com/posts', newPost)
-  .then(response => {
+  .then(response =&gt; {
     console.log('Post creado:', response.data); // Incluye el ID asignado por el servidor
     console.log('Status:', response.status); // 201 Created
   })
-  .catch(error => {
+  .catch(error =&gt; {
     console.error('Error al crear post:', error);
   });
 ```
@@ -112,10 +112,10 @@ const updatedPost = {
 };
 
 axios.put('https://jsonplaceholder.typicode.com/posts/1', updatedPost)
-  .then(response => {
+  .then(response =&gt; {
     console.log('Post actualizado (PUT):', response.data);
   })
-  .catch(error => {
+  .catch(error =&gt; {
     console.error('Error al actualizar post (PUT):', error);
   });
 ```
@@ -130,10 +130,10 @@ const partialUpdate = {
 };
 
 axios.patch('https://jsonplaceholder.typicode.com/posts/1', partialUpdate)
-  .then(response => {
+  .then(response =&gt; {
     console.log('Post actualizado (PATCH):', response.data);
   })
-  .catch(error => {
+  .catch(error =&gt; {
     console.error('Error al actualizar post (PATCH):', error);
   });
 ```
@@ -144,10 +144,10 @@ axios.patch('https://jsonplaceholder.typicode.com/posts/1', partialUpdate)
 import axios from 'axios';
 
 axios.delete('https://jsonplaceholder.typicode.com/posts/1')
-  .then(response => {
+  .then(response =&gt; {
     console.log('Post eliminado. Status:', response.status); // 200 OK o 204 No Content
   })
-  .catch(error => {
+  .catch(error =&gt; {
     console.error('Error al eliminar post:', error);
   });
 ```
@@ -175,8 +175,8 @@ axios.get('https://api.example.com/data', {
   responseType: 'json',     // Tipo de respuesta esperado ('json', 'arraybuffer', 'blob', 'document', 'text', 'stream')
   maxContentLength: 2000,   // Límite de tamaño de la respuesta
 })
-.then(response => console.log(response.data))
-.catch(error => console.error(error));
+.then(response =&gt; console.log(response.data))
+.catch(error =&gt; console.error(error));
 
 // Para POST/PUT/PATCH, los datos se pasan como segundo argumento, y la configuración como tercero:
 axios.post('/api/users', { name: 'Alice' }, {
@@ -206,8 +206,8 @@ const apiClient = axios.create({
 
 // Ahora puedes usar apiClient de la misma manera que axios, pero con los defaults configurados
 apiClient.get('/users/me')
-  .then(response => console.log('Perfil:', response.data))
-  .catch(error => console.error('Error de perfil:', error));
+  .then(response =&gt; console.log('Perfil:', response.data))
+  .catch(error =&gt; console.error('Error de perfil:', error));
 
 apiClient.post('/products', { name: 'Laptop', price: 1200 });
 ```
@@ -269,7 +269,7 @@ import axios from 'axios';
 
 // Añadir un interceptor a la instancia por defecto o a una creada
 axios.interceptors.request.use(
-  config => {
+  config =&gt; {
     // Haz algo antes de que la petición sea enviada
     const token = localStorage.getItem('authToken');
     if (token) {
@@ -278,7 +278,7 @@ axios.interceptors.request.use(
     console.log('Interceptando petición:', config.url);
     return config; // Debes devolver la configuración
   },
-  error => {
+  error =&gt; {
     // Haz algo con el error de la petición
     console.error('Error en interceptor de petición:', error);
     return Promise.reject(error);
@@ -294,13 +294,13 @@ axios.interceptors.request.use(
 import axios from 'axios';
 
 axios.interceptors.response.use(
-  response => {
+  response =&gt; {
     // Cualquier código de estado que caiga dentro del rango de 2xx causará que esta función se active
     // Haz algo con los datos de la respuesta
     console.log('Interceptando respuesta:', response.status);
     return response;
   },
-  error => {
+  error =&gt; {
     // Cualquier código de estado que caiga fuera del rango de 2xx causará que esta función se active
     // Haz algo con el error de la respuesta
     console.error('Error en interceptor de respuesta:', error.response ? error.response.status : error.message);
@@ -326,15 +326,15 @@ Ejecuta múltiples peticiones en paralelo y espera a que todas se completen.
 ```javascript
 import axios from 'axios';
 
-const getUser = () => axios.get('https://jsonplaceholder.typicode.com/users/1');
-const getPosts = () => axios.get('https://jsonplaceholder.typicode.com/posts?userId=1');
+const getUser = () =&gt; axios.get('https://jsonplaceholder.typicode.com/users/1');
+const getPosts = () =&gt; axios.get('https://jsonplaceholder.typicode.com/posts?userId=1');
 
 axios.all([getUser(), getPosts()])
-  .then(axios.spread((userResponse, postsResponse) => {
+  .then(axios.spread((userResponse, postsResponse) =&gt; {
     console.log('Usuario:', userResponse.data);
     console.log('Posts del usuario:', postsResponse.data);
   }))
-  .catch(error => {
+  .catch(error =&gt; {
     console.error('Error en peticiones concurrentes:', error);
   });
 
@@ -390,7 +390,7 @@ async function fetchDataWithCancellation() {
 
 fetchDataWithCancellation(); // Inicia la petición
 // Simula una cancelación después de un tiempo
-setTimeout(() => {
+setTimeout(() =&gt; {
   if (controller) {
     controller.abort('Petición cancelada manualmente por timeout.'); // Puedes pasar un mensaje
     controller = null; // Limpia el controlador después de abortar
@@ -414,7 +414,7 @@ axios.defaults.timeout = 3000; // 3 segundos
 
 // Todas las peticiones ahora usarán estos defaults
 axios.get('/some-endpoint')
-  .then(response => console.log('Global config test:', response.data));
+  .then(response =&gt; console.log('Global config test:', response.data));
 ```
 
 ---
@@ -427,8 +427,8 @@ axios.get('/some-endpoint')
   import axios from 'axios';
   const api = axios.create({ baseURL: '/api' }); // Usa una instancia
 
-  export const getUsers = () => api.get('/users');
-  export const createUser = (userData) => api.post('/users', userData);
+  export const getUsers = () =&gt; api.get('/users');
+  export const createUser = (userData) =&gt; api.post('/users', userData);
 
   // En tu componente:
   import { getUsers } from './apiService';

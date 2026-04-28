@@ -84,7 +84,7 @@ jobs: # Define uno o más trabajos
           DEPLOY_PASS: ${{ secrets.FTP_PASS }}
         run: | # Multi-línea de comando de shell
           echo "Desplegando a ${{ env.DEPLOY_HOST }}..."
-          # ftp -n $DEPLOY_HOST <<END_SCRIPT
+          # ftp -n $DEPLOY_HOST &lt;<END_SCRIPT
           # user $DEPLOY_USER $DEPLOY_PASS
           # put build/index.html /var/www/html/index.html
           # END_SCRIPT

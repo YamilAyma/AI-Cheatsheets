@@ -44,24 +44,24 @@ icon: "☁️"
             <groupId>org.springframework.cloud</groupId>
             <artifactId>spring-cloud-starter-gateway</artifactId>
         </dependency>
-        <!-- Spring Cloud BOM (para gestionar versiones de Spring Cloud) -->
+        &lt;!-- Spring Cloud BOM (para gestionar versiones de Spring Cloud) -->
         <dependencyManagement>
             <dependencies>
                 <dependency>
                     <groupId>org.springframework.cloud</groupId>
                     <artifactId>spring-cloud-dependencies</artifactId>
-                    <version>2023.0.0</version> <!-- Usar la versión compatible con tu Spring Boot -->
+                    <version>2023.0.0</version> &lt;!-- Usar la versión compatible con tu Spring Boot -->
                     <type>pom</type>
                     <scope>import</scope>
                 </dependency>
             </dependencies>
         </dependencyManagement>
-        <!-- Opcional: Para descubrimiento de servicios (ej. Eureka) -->
+        &lt;!-- Opcional: Para descubrimiento de servicios (ej. Eureka) -->
         <dependency>
             <groupId>org.springframework.cloud</groupId>
             <artifactId>spring-cloud-starter-netflix-eureka-client</artifactId>
         </dependency>
-        <!-- Para pruebas -->
+        &lt;!-- Para pruebas -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-test</artifactId>
@@ -129,7 +129,7 @@ spring:
             - RemoteAddr=192.168.1.1/24 # Coincide con la IP remota
             - Weight=myGroup, 8 # Para Canary deployments (ver Filters)
           filters: # Filtros a aplicar a esta ruta
-            - StripPrefix=1 # Elimina 1 segmento de la ruta (ej. /api/users -> /users)
+            - StripPrefix=1 # Elimina 1 segmento de la ruta (ej. /api/users -&gt; /users)
             - AddRequestHeader=X-Request-ID, {uuid} # Añade un encabezado a la solicitud backend
             - RewritePath=/old/(?<segment>.*), /new/${segment} # Reescribe el path
             - RequestRateLimiter=#{ ... } # Rate limiting
@@ -153,16 +153,16 @@ public class GatewayRoutesConfig {
     @Bean
     public RouteLocator myCustomRoutes(RouteLocatorBuilder builder) {
         return builder.routes()
-                .route(p -> p
+                .route(p -&gt; p
                     .path("/api/legacy/**") // Predicado de Path
-                    .filters(f -> f.stripPrefix(1) // Elimina /api
+                    .filters(f -&gt; f.stripPrefix(1) // Elimina /api
                                    .addRequestHeader("X-Legacy-Route", "true")) // Añade un encabezado
                     .uri("http://localhost:8083")) // URI de destino
-                .route(p -> p
+                .route(p -&gt; p
                     .host("*.example.com") // Predicado de Host
                     .and() // Conecta predicados con AND
                     .path("/users/{id}")
-                    .filters(f -> f.rewritePath("/users/(?<segment>.*)", "/api/v1/users/${segment}"))
+                    .filters(f -&gt; f.rewritePath("/users/(?<segment>.*)", "/api/v1/users/${segment}"))
                     .uri("lb://user-service")) // Usa el nombre del servicio Eureka
                 .build();
     }
@@ -276,7 +276,7 @@ public class CustomAuthFilterFactory extends AbstractGatewayFilterFactory<Custom
 
     @Override
     public GatewayFilter apply(Config config) {
-        return (exchange, chain) -> {
+        return (exchange, chain) -&gt; {
             // Lógica de autenticación/autorización
             if (!exchange.getRequest().getHeaders().containsKey("Authorization")) {
                 exchange.getResponse().setStatusCode(HttpStatus.UNAUTHORIZED);

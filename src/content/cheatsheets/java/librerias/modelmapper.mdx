@@ -34,7 +34,7 @@ Añade la dependencia en tu `pom.xml`:
     <dependency>
         <groupId>org.modelmapper</groupId>
         <artifactId>modelmapper</artifactId>
-        <version>3.2.0</version> <!-- Usar la versión más reciente y estable -->
+        <version>3.2.0</version> &lt;!-- Usar la versión más reciente y estable -->
     </dependency>
 </dependencies>
 ```
@@ -176,7 +176,7 @@ public class CustomMapping {
                 map(source.getEmailAddress()).setEmail(null); // 'null' es un placeholder, se usa map(source.getter()).setter(null)
 
                 // Mapeo condicional o con lógica
-                using(ctx -> ((boolean) ctx.getSource()) ? "Activo" : "Inactivo") // Usa un Converter inline
+                using(ctx -&gt; ((boolean) ctx.getSource()) ? "Activo" : "Inactivo") // Usa un Converter inline
                         .map(source.isActive()).setStatus(null); // source.isActive() es el valor fuente, null es el destino
 
                 // Ignorar una propiedad en el mapeo (no la copies)
@@ -293,9 +293,9 @@ public class UsingProviders {
         modelMapper.createTypeMap(PointSource.class, PointDestination.class)
                    .setProvider(pointProvider)
                    // Opcional: añadir mapeos si los nombres de los campos no coinciden
-                   .addMappings(mapper -> {
-                       mapper.map(src -> src.getX(), PointDestination::getXCoord);
-                       mapper.map(src -> src.getY(), PointDestination::getYCoord);
+                   .addMappings(mapper -&gt; {
+                       mapper.map(src -&gt; src.getX(), PointDestination::getXCoord);
+                       mapper.map(src -&gt; src.getY(), PointDestination::getYCoord);
                    });
 
         PointSource source = new PointSource(10, 20);
@@ -322,9 +322,9 @@ public class GlobalConfig {
         // Estrategia de coincidencia de nombres (default: Standard)
         modelMapper.getConfiguration().setMatchingStrategy(MatchingStrategies.STRICT);
         // MatchingStrategies:
-        // - STRICT: Coincidencia exacta de nombres (ej. 'user.name' -> 'user.name').
-        // - STANDARD: Coincidencia por sub-propiedades (ej. 'user.firstName' -> 'user.name.firstName').
-        // - LOOSE: Coincidencia flexible (ej. 'user.firstName' -> 'userName').
+        // - STRICT: Coincidencia exacta de nombres (ej. 'user.name' -&gt; 'user.name').
+        // - STANDARD: Coincidencia por sub-propiedades (ej. 'user.firstName' -&gt; 'user.name.firstName').
+        // - LOOSE: Coincidencia flexible (ej. 'user.firstName' -&gt; 'userName').
 
         // Habilitar mapeo directo de campos (fields) además de getters/setters
         modelMapper.getConfiguration().setFieldMatchingEnabled(true);

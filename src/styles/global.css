@@ -266,41 +266,65 @@ footer {
     outline: none;
     border-color: #3b82f6;
     box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+}/* --- New Header & Global Search --- */
+header {
+    background-color: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    padding: 0.75rem 1.5rem;
+    border-bottom: 1px solid rgba(226, 232, 240, 0.8);
+    position: sticky;
+    top: 0;
+    z-index: 1000;
 }
 
-/* --- New Header & Global Search --- */
 .header-content {
     display: flex;
     justify-content: space-between;
     align-items: center;
     max-width: 1200px;
     margin: 0 auto;
-    gap: 2rem;
+    gap: 1.5rem;
+    width: 100%;
+}
+
+.logo-area {
+    display: flex;
+    flex-direction: column;
+    flex-shrink: 0;
+}
+
+.logo-area h1 {
+    font-size: 1.25rem;
+    margin: 0;
 }
 
 .logo-area h1 a {
     text-decoration: none;
-    color: inherit;
+    color: #0f172a;
+    font-weight: 800;
 }
 
 .search-area {
     flex: 1;
-    max-width: 400px;
+    max-width: 500px;
+    position: relative;
 }
 
 .search-box {
     position: relative;
+    width: 100%;
 }
 
 #globalSearchInput {
     width: 100%;
     padding: 0.6rem 1rem 0.6rem 2.5rem;
-    font-size: 0.9rem;
-    border-radius: 9999px;
+    font-size: 0.95rem;
+    border-radius: 12px;
     border: 1px solid #e2e8f0;
-    background-color: #f8fafc;
+    background-color: #f1f5f9;
     transition: all 0.2s;
-    background-image: url('data:image/svg+xml;charset=UTF-8,<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="%2394a3b8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>');
+    background-image: url('data:image/svg+xml;charset=UTF-8,<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="%2364748b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>');
     background-repeat: no-repeat;
     background-position: 0.8rem center;
 }
@@ -309,7 +333,7 @@ footer {
     outline: none;
     background-color: #fff;
     border-color: #3b82f6;
-    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+    box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1);
 }
 
 .search-results-dropdown {
@@ -318,18 +342,17 @@ footer {
     left: 0;
     right: 0;
     background: white;
-    border-radius: 12px;
-    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+    border-radius: 16px;
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
     border: 1px solid #e2e8f0;
     max-height: 400px;
     overflow-y: auto;
-    z-index: 1000;
+    z-index: 2000;
     display: none;
 }
 
 .search-result-item {
-    display: flex;
-    flex-direction: column;
+    display: block;
     padding: 0.75rem 1rem;
     text-decoration: none;
     color: #1e293b;
@@ -337,12 +360,8 @@ footer {
     transition: background-color 0.2s;
 }
 
-.search-result-item:last-child {
-    border-bottom: none;
-}
-
 .search-result-item:hover {
-    background-color: #f8fafc;
+    background-color: #eff6ff;
 }
 
 .result-row {
@@ -353,49 +372,67 @@ footer {
 
 .result-icon {
     font-size: 1.25rem;
-    width: 2rem;
-    height: 2rem;
+    width: 2.25rem;
+    height: 2.25rem;
     display: flex;
     align-items: center;
     justify-content: center;
-    background: #f1f5f9;
-    border-radius: 6px;
+    background: #f8fafc;
+    border-radius: 8px;
     flex-shrink: 0;
 }
 
 .result-text {
     display: flex;
     flex-direction: column;
+    overflow: hidden;
 }
 
 .result-title {
     font-weight: 600;
-    font-size: 0.9rem;
+    font-size: 0.95rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .result-path {
     font-size: 0.75rem;
     color: #64748b;
-}
-
-.search-no-results {
-    padding: 1rem;
-    text-align: center;
-    color: #64748b;
-    font-size: 0.9rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 @media (max-width: 768px) {
+    header {
+        padding: 1rem;
+    }
     .header-content {
         flex-direction: column;
-        align-items: flex-start;
+        align-items: stretch;
         gap: 1rem;
     }
     .search-area {
-        width: 100%;
         max-width: none;
+        order: 2;
+    }
+    .logo-area {
+        order: 1;
+    }
+    main {
+        padding: 1.5rem 1rem;
+    }
+    .content-container {
+        padding: 1.5rem;
+    }
+    .list-icon {
+        width: 2.5rem;
+        height: 2.5rem;
+        font-size: 1.25rem;
     }
 }
+
 
 /* --- Print Styles --- */
 @media print {

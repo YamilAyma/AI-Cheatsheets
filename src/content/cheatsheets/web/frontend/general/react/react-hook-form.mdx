@@ -171,7 +171,7 @@ Puedes pasar un segundo argumento a `register` con un objeto de reglas de valida
   * ```jsx
     <input
       {...register("confirmPassword", {
-        validate: (value) =>
+        validate: (value) =&gt;
           value === watch("password") || "Las contraseñas no coinciden",
       })}
     />
@@ -189,7 +189,7 @@ import { useForm } from 'react-hook-form';
 function LoginForm() {
   const { register, handleSubmit, formState: { errors } } = useForm();
 
-  const onSubmit = (data) => console.log(data);
+  const onSubmit = (data) =&gt; console.log(data);
 
   return (
     <form onSubmit={handleSubmit(onSubmit)}>
@@ -223,13 +223,13 @@ function LoginForm() {
 const { handleSubmit } = useForm();
 
 // 1. Función que se ejecuta si la validación es exitosa
-const onSubmit = (data) => {
+const onSubmit = (data) =&gt; {
   console.log("Datos enviados:", data);
   // Aquí llamarías a tu API
 };
 
 // 2. (Opcional) Función que se ejecuta si la validación falla
-const onError = (errors, e) => {
+const onError = (errors, e) =&gt; {
   console.log("Errores de validación:", errors);
   // Aquí podrías hacer scroll a los campos con error, etc.
 };
@@ -279,7 +279,7 @@ return (
   * ```javascript
     const passwordValue = getValues("password");
     // O dentro de un validate:
-    validate: (value) => value === getValues("password") || "No coinciden"
+    validate: (value) =&gt; value === getValues("password") || "No coinciden"
     ```
 
 ---
@@ -301,7 +301,7 @@ function ControlledForm() {
     }
   });
 
-  const onSubmit = (data) => console.log(data);
+  const onSubmit = (data) =&gt; console.log(data);
 
   return (
     <form onSubmit={handleSubmit(onSubmit)}>
@@ -309,7 +309,7 @@ function ControlledForm() {
         name="email"
         control={control}
         rules={{ required: 'Email es obligatorio' }} // Reglas de validación aquí
-        render={({ field }) => ( // `field` contiene props { onChange, onBlur, value, name, ref }
+        render={({ field }) =&gt; ( // `field` contiene props { onChange, onBlur, value, name, ref }
           <TextField
             {...field} // Pasa todas las props de `field` al componente
             label="Email"
@@ -343,7 +343,7 @@ function MySliderInput({ control, name }) {
   });
 
   return (
-    <>
+    &lt;>
       <Slider
         value={value}
         onChange={onChange}
@@ -357,7 +357,7 @@ function MySliderInput({ control, name }) {
 
 function ParentForm() {
   const { handleSubmit, control } = useForm();
-  const onSubmit = (data) => console.log(data);
+  const onSubmit = (data) =&gt; console.log(data);
   return (
     <form onSubmit={handleSubmit(onSubmit)}>
       <MySliderInput name="volume" control={control} />
@@ -375,7 +375,7 @@ function ParentForm() {
 * ```javascript
   const { reset } = useForm();
   // ...
-  <button onClick={() => reset()}>Limpiar Formulario</button>
+  <button onClick={() =&gt; reset()}>Limpiar Formulario</button>
 
   // Resetear con nuevos valores
   reset({
@@ -422,14 +422,14 @@ function ParentForm() {
       });
 
       return (
-        <form onSubmit={handleSubmit(data => console.log(data))}>
-          {fields.map((field, index) => (
+        <form onSubmit={handleSubmit(data =&gt; console.log(data))}>
+          {fields.map((field, index) =&gt; (
             <div key={field.id}>
               <input {...register(`items.${index}.name`)} />
-              <button type="button" onClick={() => remove(index)}>X</button>
+              <button type="button" onClick={() =&gt; remove(index)}>X</button>
             </div>
           ))}
-          <button type="button" onClick={() => append({ name: "" })}>Añadir Item</button>
+          <button type="button" onClick={() =&gt; append({ name: "" })}>Añadir Item</button>
           <button type="submit">Enviar</button>
         </form>
       );
@@ -446,7 +446,7 @@ function ParentForm() {
       const methods = useForm();
       return (
         <FormProvider {...methods}>
-          <form onSubmit={methods.handleSubmit(data => console.log(data))}>
+          <form onSubmit={methods.handleSubmit(data =&gt; console.log(data))}>
             <ChildComponent />
             <button type="submit">Enviar</button>
           </form>
@@ -460,7 +460,7 @@ function ParentForm() {
     function ChildComponent() {
       const { register, formState: { errors } } = useFormContext();
       return (
-        <>
+        &lt;>
           <input {...register('firstName')} />
           {errors.firstName && <p>{errors.firstName.message}</p>}
         </>

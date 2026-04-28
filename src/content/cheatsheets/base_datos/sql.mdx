@@ -73,7 +73,7 @@ Comandos para definir, modificar y eliminar la estructura de la base de datos y 
       Email VARCHAR(255) UNIQUE,
       FechaRegistro DATE DEFAULT CURRENT_DATE, -- O GETDATE() en SQL Server
       EsActivo BOOLEAN DEFAULT TRUE,
-      CONSTRAINT CK_Edad CHECK (Edad >= 18) -- Constraint de verificación
+      CONSTRAINT CK_Edad CHECK (Edad &gt;= 18) -- Constraint de verificación
   );
 
   CREATE TABLE Pedidos (
@@ -155,7 +155,7 @@ Comandos para manipular los datos dentro de las tablas.
     ```    *   `INSERT INTO ... SELECT`: Insertar datos desde otra tabla.
     ```sql
     INSERT INTO UsuariosAntiguos (ID_Usuario, Nombre)
-    SELECT ID_Usuario, Nombre FROM Usuarios WHERE FechaRegistro < '2022-01-01';
+    SELECT ID_Usuario, Nombre FROM Usuarios WHERE FechaRegistro &lt; '2022-01-01';
     ```
 
 ### 4.2. `UPDATE`
@@ -179,7 +179,7 @@ Comandos para manipular los datos dentro de las tablas.
   WHERE ID_Usuario = 2;
 
   DELETE FROM Pedidos
-  WHERE FechaPedido < '2023-01-01';
+  WHERE FechaPedido &lt; '2023-01-01';
   ```
 
 ---
@@ -253,14 +253,14 @@ Comandos para recuperar datos de la base de datos. **`SELECT` es el comando más
   SELECT Categoria, COUNT(*) AS TotalProductos
   FROM Productos
   GROUP BY Categoria
-  HAVING COUNT(*) > 5 AND AVG(Precio) < 500;
+  HAVING COUNT(*) > 5 AND AVG(Precio) &lt; 500;
   ```
 
 ---
 
 ## 6. 🧮 Operadores Comunes en `WHERE`
 
-* **Comparación**: `=`, `!=` (`<>`), `<`, `>`, `<=`, `>=`.
+* **Comparación**: `=`, `!=` (`&lt;>`), `&lt;`, `>`, `&lt;=`, `&gt;=`.
 * **Lógicos**: `AND`, `OR`, `NOT`.
 * **Patrones**: `LIKE` (con `_` para un carácter, `%` para cero o más caracteres).
   * `'A%'`: Empieza por A.

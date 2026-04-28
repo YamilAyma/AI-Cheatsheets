@@ -143,8 +143,8 @@ React Router DOM es la biblioteca estándar de facto para el enrutamiento declar
       <nav>
         <NavLink
           to="/"
-          className={({ isActive }) => (isActive ? 'active-link' : undefined)}
-          style={({ isActive }) => ({ color: isActive ? 'red' : 'blue' })}
+          className={({ isActive }) =&gt; (isActive ? 'active-link' : undefined)}
+          style={({ isActive }) =&gt; ({ color: isActive ? 'red' : 'blue' })}
         >
           Home
         </NavLink>
@@ -183,7 +183,7 @@ React Router DOM es la biblioteca estándar de facto para el enrutamiento declar
   function LoginPage() {
     const navigate = useNavigate();
 
-    const handleLogin = () => {
+    const handleLogin = () =&gt; {
       // Lógica de autenticación
       // Después de un login exitoso:
       navigate('/dashboard'); // Navega a /dashboard
@@ -228,7 +228,7 @@ React Router DOM es la biblioteca estándar de facto para el enrutamiento declar
     const [searchParams, setSearchParams] = useSearchParams();
     const searchTerm = searchParams.get('query') || '';
 
-    const handleSearchChange = (event) => {
+    const handleSearchChange = (event) =&gt; {
       setSearchParams({ query: event.target.value }); // Actualiza la URL a ?query=...
     };
 
@@ -321,8 +321,8 @@ Para dividir el código de tu aplicación y cargar componentes solo cuando son n
 import React, { Suspense, lazy } from 'react';
 import { Routes, Route } from 'react-router-dom';
 
-const LazyDashboard = lazy(() => import('./pages/Dashboard'));
-const LazyAdminPanel = lazy(() => import('./pages/AdminPanel'));
+const LazyDashboard = lazy(() =&gt; import('./pages/Dashboard'));
+const LazyAdminPanel = lazy(() =&gt; import('./pages/AdminPanel'));
 
 function App() {
   return (
@@ -348,7 +348,7 @@ Puedes crear un componente envoltorio para proteger rutas que requieren autentic
 import React from 'react';
 import { Navigate, Outlet } from 'react-router-dom';
 
-const ProtectedRoute = ({ isAuthenticated, children }) => {
+const ProtectedRoute = ({ isAuthenticated, children }) =&gt; {
   if (!isAuthenticated) {
     return <Navigate to="/login" replace />; // Redirige a login si no está autenticado
   }

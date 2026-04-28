@@ -36,19 +36,19 @@ icon: "☁️"
 1.  **Añadir dependencias en `pom.xml`:**
     ```xml
     <dependencies>
-        <parent>...</parent> <!-- Tu parent de Spring Boot -->
+        <parent>...</parent> &lt;!-- Tu parent de Spring Boot -->
 
         <dependency>
             <groupId>org.springframework.cloud</groupId>
             <artifactId>spring-cloud-config-server</artifactId>
         </dependency>
-        <!-- Spring Cloud BOM -->
+        &lt;!-- Spring Cloud BOM -->
         <dependencyManagement>
             <dependencies>
                 <dependency>
                     <groupId>org.springframework.cloud</groupId>
                     <artifactId>spring-cloud-dependencies</artifactId>
-                    <version>2023.0.0</version> <!-- Usar la versión compatible con tu Spring Boot -->
+                    <version>2023.0.0</version> &lt;!-- Usar la versión compatible con tu Spring Boot -->
                     <type>pom</type>
                     <scope>import</scope>
                 </dependency>
@@ -111,13 +111,13 @@ icon: "☁️"
 1.  **Añadir dependencias en `pom.xml` (en el microservicio):**
     ```xml
     <dependencies>
-        <parent>...</parent> <!-- Tu parent de Spring Boot -->
+        <parent>...</parent> &lt;!-- Tu parent de Spring Boot -->
 
         <dependency>
             <groupId>org.springframework.cloud</groupId>
             <artifactId>spring-cloud-starter-config</artifactId>
         </dependency>
-        <!-- Spring Cloud BOM -->
+        &lt;!-- Spring Cloud BOM -->
         <dependencyManagement>...</dependencyManagement>
     </dependencies>
     ```
@@ -234,7 +234,7 @@ Spring Cloud Bus propaga los cambios de configuración a múltiples instancias d
     ```xml
     <dependency>
         <groupId>org.springframework.cloud</groupId>
-        <artifactId>spring-cloud-starter-bus-kafka</artifactId> <!-- O -bus-amqp para RabbitMQ -->
+        <artifactId>spring-cloud-starter-bus-kafka</artifactId> &lt;!-- O -bus-amqp para RabbitMQ -->
     </dependency>
     ```2.  **Configurar el Broker en `application.yml` (del Config Server y Clientes):**
     ```yaml

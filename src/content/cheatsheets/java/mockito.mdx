@@ -32,7 +32,7 @@ Para usar Mockito con JUnit 5 (recomendado), necesitas las siguientes dependenci
 
 ```xml
 <dependencies>
-    <!-- JUnit Jupiter API y Engine -->
+    &lt;!-- JUnit Jupiter API y Engine -->
     <dependency>
         <groupId>org.junit.jupiter</groupId>
         <artifactId>junit-jupiter-api</artifactId>
@@ -46,14 +46,14 @@ Para usar Mockito con JUnit 5 (recomendado), necesitas las siguientes dependenci
         <scope>test</scope>
     </dependency>
 
-    <!-- Mockito Core -->
+    &lt;!-- Mockito Core -->
     <dependency>
         <groupId>org.mockito</groupId>
         <artifactId>mockito-core</artifactId>
-        <version>5.5.0</version> <!-- Usar la versión más reciente -->
+        <version>5.5.0</version> &lt;!-- Usar la versión más reciente -->
         <scope>test</scope>
     </dependency>
-    <!-- Mockito JUnit Jupiter Integration (para anotaciones @Mock, @InjectMocks con JUnit 5) -->
+    &lt;!-- Mockito JUnit Jupiter Integration (para anotaciones @Mock, @InjectMocks con JUnit 5) -->
     <dependency>
         <groupId>org.mockito</groupId>
         <artifactId>mockito-junit-jupiter</artifactId>
@@ -121,7 +121,7 @@ public class UserService {
 
     public User getUserById(Long id) {
         return userRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Usuario no encontrado con ID: " + id));
+                .orElseThrow(() -&gt; new IllegalArgumentException("Usuario no encontrado con ID: " + id));
     }
 
     public boolean createUser(User user) {
@@ -196,7 +196,7 @@ class UserServiceTest {
         when(userRepository.findById(userId)).thenReturn(Optional.empty()); // Simula que el usuario no existe
 
         // Act & Assert: Verifica que se lanza la excepción correcta
-        IllegalArgumentException thrown = assertThrows(IllegalArgumentException.class, () -> {
+        IllegalArgumentException thrown = assertThrows(IllegalArgumentException.class, () -&gt; {
             userService.getUserById(userId);
         }, "Debería lanzar IllegalArgumentException si el usuario no es encontrado");
 
@@ -256,7 +256,7 @@ Métodos para decirle a un mock qué hacer cuando se invoca un método.
     ```
 *   **`when(mock.method()).then(answer)`**: Ejecuta una `Answer` personalizada.
     ```java
-    when(userRepository.findById(anyLong())).then(invocation -> {
+    when(userRepository.findById(anyLong())).then(invocation -&gt; {
         Long id = invocation.getArgument(0); // Obtiene el primer argumento
         return Optional.of(new User(id, "Usuario Mock"));
     });
@@ -284,7 +284,7 @@ Para stubbear o verificar llamadas con argumentos que varían.
 
     ```java
     when(userRepository.findById(any(Long.class))).thenReturn(Optional.empty()); // any(Long.class)
-    when(userRepository.findById(argThat(id -> id > 10))).thenReturn(Optional.of(new User(11L, "Big ID User")));
+    when(userRepository.findById(argThat(id -&gt; id > 10))).thenReturn(Optional.of(new User(11L, "Big ID User")));
     ```
 
 ---

@@ -32,12 +32,12 @@ icon: "📄"
 1.  **Añadir dependencia en `pom.xml` (Maven):**
     ```xml
     <dependencies>
-        <!-- Incluye todas las funcionalidades de Actuator -->
+        &lt;!-- Incluye todas las funcionalidades de Actuator -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-actuator</artifactId>
         </dependency>
-        <!-- Opcional: Para métricas con Prometheus -->
+        &lt;!-- Opcional: Para métricas con Prometheus -->
         <dependency>
             <groupId>io.micrometer</groupId>
             <artifactId>micrometer-registry-prometheus</artifactId>
@@ -224,7 +224,7 @@ Todas las configuraciones se realizan en `application.properties` o `application
         @Bean
         public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
             http
-                .authorizeHttpRequests(authorize -> authorize
+                .authorizeHttpRequests(authorize -&gt; authorize
                     .requestMatchers(EndpointRequest.to("health", "info")).permitAll() // Health/Info públicos
                     .requestMatchers(EndpointRequest.toAnyEndpoint()).hasRole("ADMIN") // Otros Actuator requieren ADMIN
                     .anyRequest().authenticated() // El resto de la app requiere autenticación

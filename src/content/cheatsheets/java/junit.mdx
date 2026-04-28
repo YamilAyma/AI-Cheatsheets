@@ -33,21 +33,21 @@ Para usar JUnit 5 (Jupiter), necesitas las siguientes dependencias en tu `pom.xm
 
 ```xml
 <dependencies>
-    <!-- Módulo de API de JUnit Jupiter (para escribir pruebas) -->
+    &lt;!-- Módulo de API de JUnit Jupiter (para escribir pruebas) -->
     <dependency>
         <groupId>org.junit.jupiter</groupId>
         <artifactId>junit-jupiter-api</artifactId>
-        <version>5.10.0</version> <!-- Usar la versión más reciente -->
+        <version>5.10.0</version> &lt;!-- Usar la versión más reciente -->
         <scope>test</scope>
     </dependency>
-    <!-- Módulo de Engine de JUnit Jupiter (para ejecutar pruebas) -->
+    &lt;!-- Módulo de Engine de JUnit Jupiter (para ejecutar pruebas) -->
     <dependency>
         <groupId>org.junit.jupiter</groupId>
         <artifactId>junit-jupiter-engine</artifactId>
         <version>5.10.0</version>
         <scope>test</scope>
     </dependency>
-    <!-- Para ejecutar pruebas JUnit 4 en la plataforma JUnit 5 (opcional) -->
+    &lt;!-- Para ejecutar pruebas JUnit 4 en la plataforma JUnit 5 (opcional) -->
     <dependency>
         <groupId>org.junit.vintage</groupId>
         <artifactId>junit-vintage-engine</artifactId>
@@ -58,17 +58,17 @@ Para usar JUnit 5 (Jupiter), necesitas las siguientes dependencias en tu `pom.xm
 
 <build>
     <plugins>
-        <!-- Plugin para configurar el compilador -->
+        &lt;!-- Plugin para configurar el compilador -->
         <plugin>
             <groupId>org.apache.maven.plugins</groupId>
             <artifactId>maven-compiler-plugin</artifactId>
             <version>3.11.0</version>
             <configuration>
-                <source>17</source> <!-- Versión de Java -->
+                <source>17</source> &lt;!-- Versión de Java -->
                 <target>17</target>
             </configuration>
         </plugin>
-        <!-- Plugin para ejecutar pruebas JUnit 5 -->
+        &lt;!-- Plugin para ejecutar pruebas JUnit 5 -->
         <plugin>
             <groupId>org.apache.maven.plugins</groupId>
             <artifactId>maven-surefire-plugin</artifactId>
@@ -138,7 +138,7 @@ class CalculadoraTest {
         Calculadora calculadora = new Calculadora();
 
         // Verificar que una excepción específica es lanzada
-        assertThrows(IllegalArgumentException.class, () -> {
+        assertThrows(IllegalArgumentException.class, () -&gt; {
             calculadora.dividir(10, 0);
         }, "Dividir por cero debería lanzar IllegalArgumentException");
     }
@@ -177,20 +177,20 @@ Métodos estáticos para verificar condiciones.
 *   **`assertNull(actual, [message])`**: Comprueba si un objeto es `null`.
 *   **`assertNotNull(actual, [message])`**: Comprueba si un objeto no es `null`.
 *   **`assertThrows(expectedType, executable, [message])`**: Comprueba que un método lanza una excepción específica.
-    *   `assertThrows(IllegalArgumentException.class, () -> myObject.doSomethingInvalid());`
+    *   `assertThrows(IllegalArgumentException.class, () -&gt; myObject.doSomethingInvalid());`
 *   **`assertDoesNotThrow(executable, [message])`**: Comprueba que un método no lanza ninguna excepción.
 *   **`assertArrayEquals(expectedArray, actualArray, [message])`**: Comprueba si dos arrays son iguales (elemento a elemento).
 *   **`assertIterableEquals(expectedIterable, actualIterable, [message])`**: Comprueba si dos iterables son iguales.
 *   **`assertAll(heading, executables...)`**: Agrupa múltiples aserciones. Todas se ejecutan, y se reportan todos los fallos.
     ```java
     assertAll("Test de usuario",
-        () -> assertEquals("John", user.getFirstName()),
-        () -> assertEquals("Doe", user.getLastName()),
-        () -> assertTrue(user.isActive())
+        () -&gt; assertEquals("John", user.getFirstName()),
+        () -&gt; assertEquals("Doe", user.getLastName()),
+        () -&gt; assertTrue(user.isActive())
     );
     ```
 *   **`assertTimeout(duration, executable, [message])`**: Falla si el `executable` excede el tiempo de duración.
-    *   `assertTimeout(Duration.ofMillis(100), () -> myMethod());`
+    *   `assertTimeout(Duration.ofMillis(100), () -&gt; myMethod());`
 *   **`assertTimeoutPreemptively(duration, executable, [message])`**: Similar a `assertTimeout`, pero termina el hilo si se excede el tiempo. **¡CUIDADO con efectos secundarios!**
 
 ---
@@ -277,7 +277,7 @@ class AssumptionTest {
     @Test
     void testConRecursoOpcional() {
         boolean recursoDisponible = false; // Simula si un recurso externo está disponible
-        Assumptions.assumingThat(recursoDisponible, () -> {
+        Assumptions.assumingThat(recursoDisponible, () -&gt; {
             // Esta lambda solo se ejecuta si recursoDisponible es true
             System.out.println("Ejecutando prueba que depende de un recurso.");
             assertTrue(true);

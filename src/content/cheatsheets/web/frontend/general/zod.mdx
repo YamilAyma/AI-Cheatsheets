@@ -172,7 +172,7 @@ Aquí están los tipos de esquemas más comunes que puedes definir con Zod:
 * **`z.set(valueSchema)`**: Para `Set`s.
 * **`z.function()`**: Para funciones.
 * **`z.promise()`**: Para Promesas.
-* **`z.lazy(() => SomeSchema)`**: Para referencias circulares de esquemas (útil para estructuras de árbol).
+* **`z.lazy(() =&gt; SomeSchema)`**: Para referencias circulares de esquemas (útil para estructuras de árbol).
 
 ### 3.3. Modificadores de Opcionalidad
 
@@ -261,25 +261,25 @@ Cuando ocurre un error, `error.errors` es un array de objetos con detalles del e
 
 ## 5. ↔️ Transformaciones (`.transform()`, `.preprocess()`)
 
-* **`.transform((value) => newValue)`**:
+* **`.transform((value) =&gt; newValue)`**:
   * Modifica el valor después de que ha sido validado.
   * ```typescript
-    const stringToNumber = z.string().transform((val) => Number(val));
+    const stringToNumber = z.string().transform((val) =&gt; Number(val));
     const num = stringToNumber.parse("123"); // num es 123 (tipo number)
 
     const userSchema = z.object({
       name: z.string(),
       email: z.string().email(),
-    }).transform((user) => ({
+    }).transform((user) =&gt; ({
       ...user,
       initials: user.name.charAt(0).toUpperCase(),
     }));
     // El tipo inferido incluye 'initials'
     ```
-* **`.preprocess((value) => preprocessedValue, schema)`**:
+* **`.preprocess((value) =&gt; preprocessedValue, schema)`**:
   * Modifica el valor *antes* de que sea validado por el esquema. Útil para coercionar tipos.
   * ```typescript
-    const stringToNumberSchema = z.preprocess((val) => Number(val), z.number());
+    const stringToNumberSchema = z.preprocess((val) =&gt; Number(val), z.number());
     stringToNumberSchema.parse("123"); // 123
     stringToNumberSchema.parse("abc"); // Lanza error: NaN no es un número válido
     ```
@@ -295,21 +295,21 @@ Cuando ocurre un error, `error.errors` es un array de objetos con detalles del e
 
 Para validaciones personalizadas que no pueden ser expresadas con los métodos estándar.
 
-* **`.refine((value) => boolean, messageOrObject)`**:
+* **`.refine((value) =&gt; boolean, messageOrObject)`**:
   * Valida el valor del esquema. La función de validación devuelve `true` si es válido, `false` si no.
   * `messageOrObject`: Mensaje de error o un objeto de configuración `{ message, path }`.
   * ```typescript
     const passwordSchema = z.string().min(8).refine(
-      (val) => /[A-Z]/.test(val) && /[a-z]/.test(val) && /[0-9]/.test(val),
+      (val) =&gt; /[A-Z]/.test(val) && /[a-z]/.test(val) && /[0-9]/.test(val),
       "La contraseña debe contener mayúsculas, minúsculas y números"
     );
 
     const confirmPasswordSchema = z.string().refine(
-      (val) => val === passwordSchema.parse(val), // Requiere acceder al valor de la contraseña
+      (val) =&gt; val === passwordSchema.parse(val), // Requiere acceder al valor de la contraseña
       "Las contraseñas no coinciden"
     );
     ```
-* **`.superRefine((value, ctx) => void)`**:
+* **`.superRefine((value, ctx) =&gt; void)`**:
   * Permite añadir errores de validación de forma más granular usando el objeto `ctx` (contexto).
   * `ctx.addIssue({ code, message, path })`.
   * Ideal para validaciones que dependen de múltiples campos o que requieren mensajes de error específicos para sub-rutas.
@@ -317,7 +317,7 @@ Para validaciones personalizadas que no pueden ser expresadas con los métodos e
     const formSchema = z.object({
       password: z.string().min(8),
       confirmPassword: z.string(),
-    }).superRefine(({ password, confirmPassword }, ctx) => {
+    }).superRefine(({ password, confirmPassword }, ctx) =&gt; {
       if (password !== confirmPassword) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
@@ -401,7 +401,7 @@ function LoginForm() {
     resolver: zodResolver(loginSchema), // Aquí se integra Zod
   });
 
-  const onSubmit = (data) => console.log(data);
+  const onSubmit = (data) =&gt; console.log(data);
 
   return (
     <form onSubmit={handleSubmit(onSubmit)}>

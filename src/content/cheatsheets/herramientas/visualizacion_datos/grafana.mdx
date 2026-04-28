@@ -79,14 +79,14 @@ Grafana se organiza en una barra lateral izquierda con los siguientes iconos:
 
 ### 4.1. Añadir una Fuente de Datos
 
-1.  Ve a `Connections` -> `Data sources` -> `Add data source`.
+1.  Ve a `Connections` -&gt; `Data sources` -&gt; `Add data source`.
 2.  Selecciona el tipo (ej. `Prometheus`).
 3.  Configura los detalles de conexión (ej. URL de Prometheus: `http://localhost:9090`).
 4.  Haz clic en `Save & test`.
 
 ### 4.2. Crear un Nuevo Dashboard
 
-1.  Haz clic en el icono `Dashboard` -> `New dashboard`.
+1.  Haz clic en el icono `Dashboard` -&gt; `New dashboard`.
 2.  Haz clic en `Add a new panel`.
 
 ### 4.3. Configurar un Panel
@@ -118,7 +118,7 @@ Grafana se organiza en una barra lateral izquierda con los siguientes iconos:
 Permiten hacer tus dashboards dinámicos y reutilizables.
 
 1.  **Configurar Variable**:
-    *   En Dashboard Settings (icono de engranaje) -> `Variables` -> `Add variable`.
+    *   En Dashboard Settings (icono de engranaje) -&gt; `Variables` -&gt; `Add variable`.
     *   **`Name`**: Nombre de la variable (ej. `service`).
     *   **`Type`**:
         *   `Query`: Obtener valores de una consulta a la fuente de datos (ej. `label_values(up, job)` para jobs de Prometheus).
@@ -140,11 +140,11 @@ Permiten hacer tus dashboards dinámicos y reutilizables.
 Grafana Alerting te permite configurar reglas que monitorean tus métricas y envían notificaciones.
 
 1.  **Contact Points**: Define dónde se enviarán las notificaciones (Email, Slack, PagerDuty, Webhook).
-    *   `Alerting` -> `Contact points`.
+    *   `Alerting` -&gt; `Contact points`.
 2.  **Notification Policies**: Define qué alertas van a qué Contact Points y cómo se agrupan.
-    *   `Alerting` -> `Notification policies`.
+    *   `Alerting` -&gt; `Notification policies`.
 3.  **Alert Rules**: Define la condición de la alerta.
-    *   `Alerting` -> `Alert rules` -> `Create alert rule`.
+    *   `Alerting` -&gt; `Alert rules` -&gt; `Create alert rule`.
     *   **`Alert name`**: Nombre de la alerta.
     *   **`Datasource`**: Fuente de datos.
     *   **`Query`**: Consulta para la alerta (ej. `sum(rate(errors_total[5m])) > 0`).
