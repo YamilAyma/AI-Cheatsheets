@@ -18,7 +18,8 @@ const rootFiles = allCheatsheets
 
 const searchData = allCheatsheets.map(post => ({
     title: post.data.title || post.id.replace(/\.mdx?$/, ''),
-    slug: post.id.replace(/\.mdx?$/, '')
+    slug: post.id.replace(/\.mdx?$/, ''),
+    icon: post.data.icon || '📄'
 }));
 ---
 
@@ -30,10 +31,29 @@ const searchData = allCheatsheets.map(post => ({
 
     <ul class="file-list">
         {rootCategories.map(cat => (
-            <li><a href={`/${cat}`} class="folder">{cat}</a></li>
+            <li>
+                <a href={`/${cat}`} class="folder">
+                    <div class="list-icon"></div>
+                    <div class="list-content">
+                        <span class="list-title">{cat}</span>
+                        <span class="list-meta">Categoría</span>
+                    </div>
+                </a>
+            </li>
         ))}
         {rootFiles.map(file => (
-            <li><a href={`/${file.slug}`} class="file">{file.data.title}</a></li>
+            <li>
+                <a href={`/${file.slug}`} class="file">
+                    <div class="list-icon">{file.data.icon || '📄'}</div>
+                    <div class="list-content">
+                        <span class="list-title">{file.data.title}</span>
+                        <span class="list-meta">
+                            {file.data.updatedAt && <span>📅 {file.data.updatedAt}</span>}
+                            {file.data.tags && <span>🏷️ {Array.isArray(file.data.tags) ? file.data.tags.join(', ') : file.data.tags}</span>}
+                        </span>
+                    </div>
+                </a>
+            </li>
         ))}
     </ul>
 </BaseLayout>

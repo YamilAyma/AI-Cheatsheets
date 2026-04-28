@@ -78,7 +78,8 @@ const parentPath = parts.length > 1 ? '/' + parts.slice(0, -1).join('/') : '/';
 const allCheatsheets = await getCollection('cheatsheets');
 const searchData = allCheatsheets.map(post => ({
     title: post.data.title || post.id.replace(/\.mdx?$/, ''),
-    slug: post.id.replace(/\.mdx?$/, '')
+    slug: post.id.replace(/\.mdx?$/, ''),
+    icon: post.data.icon || '📄'
 }));
 ---
 
@@ -92,10 +93,29 @@ const searchData = allCheatsheets.map(post => ({
         <>
             <ul class="file-list">
                 {folders.map(folder => (
-                    <li><a href={`/${currentDir}/${folder}`} class="folder">{folder}</a></li>
+                    <li>
+                        <a href={`/${currentDir}/${folder}`} class="folder">
+                            <div class="list-icon"></div>
+                            <div class="list-content">
+                                <span class="list-title">{folder}</span>
+                                <span class="list-meta">Carpeta</span>
+                            </div>
+                        </a>
+                    </li>
                 ))}
                 {files.map(file => (
-                    <li><a href={`/${file.slug}`} class="file">{file.data.title}</a></li>
+                    <li>
+                        <a href={`/${file.slug}`} class="file">
+                            <div class="list-icon">{file.data.icon || '📄'}</div>
+                            <div class="list-content">
+                                <span class="list-title">{file.data.title}</span>
+                                <span class="list-meta">
+                                    {file.data.updatedAt && <span>📅 {file.data.updatedAt}</span>}
+                                    {file.data.tags && <span>🏷️ {Array.isArray(file.data.tags) ? file.data.tags.join(', ') : file.data.tags}</span>}
+                                </span>
+                            </div>
+                        </a>
+                    </li>
                 ))}
             </ul>
             <FloatingButtons backHref={parentPath} slot="fab" />

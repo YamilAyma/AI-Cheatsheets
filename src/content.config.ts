@@ -6,6 +6,10 @@ const cheatsheets = defineCollection({
   schema: z.object({
     title: z.string().optional(),
     description: z.string().optional(),
+    createdAt: z.string().optional(),
+    updatedAt: z.string().optional(),
+    tags: z.union([z.string(), z.array(z.string())]).optional(),
+    icon: z.string().optional(),
     image: z.string().optional(),
   }),
 });

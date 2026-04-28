@@ -97,8 +97,13 @@ const socialImageURL = new URL('/default-og-image.png', Astro.url);
 					if (matches.length > 0) {
 						resultsDropdown.innerHTML = matches.map(match => `
 							<a href="/${match.slug}" class="search-result-item">
-								<span class="result-title">${match.title}</span>
-								<span class="result-path">${match.slug}</span>
+								<div class="result-row">
+									<span class="result-icon">${match.icon}</span>
+									<div class="result-text">
+										<span class="result-title">${match.title}</span>
+										<span class="result-path">${match.slug}</span>
+									</div>
+								</div>
 							</a>
 						`).join('');
 						resultsDropdown.style.display = 'block';
