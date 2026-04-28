@@ -1,6 +1,32 @@
 # IA Cheatsheets 🚀
 
-Un centro de conocimiento moderno, rápido y estático para desarrolladores. Esta plataforma recopila cheatsheets, resúmenes técnicos, comandos y buenas prácticas sobre programación, arquitectura y herramientas de desarrollo.
+<div align="center">
+  <img src="https://img.shields.io/badge/Astro-6.1.10-FF5D01?style=for-the-badge&logo=astro&logoColor=white" alt="Astro Version" />
+  <img src="https://img.shields.io/badge/MDX-Content-000000?style=for-the-badge&logo=mdx&logoColor=white" alt="MDX" />
+  <img src="https://img.shields.io/badge/Vercel-Deployed-000000?style=for-the-badge&logo=vercel&logoColor=white" alt="Deployment Status" />
+  <img src="https://img.shields.io/badge/Node-%3E%3D22.12.0-339933?style=for-the-badge&logo=nodedotjs&logoColor=white" alt="Node Version" />
+</div>
+
+<br />
+
+<div align="center">
+  <!-- MOCKUP_SCREENSHOT_PLACEHOLDER -->
+  <p><i>Un centro de conocimiento moderno, rápido y estático para desarrolladores.</i></p>
+</div>
+
+## 🏗️ Arquitectura del Sistema
+
+El proyecto utiliza una arquitectura de **Generación de Sitios Estáticos (SSG)** para garantizar la máxima velocidad y eficiencia.
+
+```mermaid
+graph TD
+    A[Fuentes MDX /content] --> B[Astro Content Collections]
+    B --> C[Astro Build Engine]
+    C --> D[Scripts de Post-Procesamiento]
+    D --> E[Sitemap Plano /dist/sitemap.xml]
+    D --> F[Sitio Estático Optimizado /dist]
+    F --> G[Vercel Edge Network]
+```
 
 Originalmente desarrollado en PHP, este proyecto ha sido migrado a **Astro (SSG)** para ofrecer un rendimiento superior, mejor SEO y una experiencia de desarrollo basada en componentes y MDX.
 
@@ -31,7 +57,7 @@ Originalmente desarrollado en PHP, este proyecto ha sido migrado a **Astro (SSG)
 
 1. Clona el repositorio:
    ```bash
-   git clone <url-del-repo>
+   git clone https://github.com/YamilAyma/AI-Cheatsheets.git
    cd ai-cheatsheets
    ```
 
@@ -92,3 +118,10 @@ icon: "🚀"
 ## 📄 Licencia
 
 Este proyecto es para uso personal y educativo.
+
+---
+
+<div align="center">
+  <p>Creado por <b><a href="https://github.com/YamilAyma">YamilAyma</a></b></p>
+  <p><i>Transformando el conocimiento en herramientas útiles.</i></p>
+</div>
