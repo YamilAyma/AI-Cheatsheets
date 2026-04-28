@@ -1,52 +1,68 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
 /* Estilos generales */
 body {
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
     line-height: 1.6;
-    background-color: #f0f2ff;
-    background-image: radial-gradient(125% 125% at 50% 90%, #ffffff 40%, #e0e7ff 100%);
-    color: #333;
+    background-color: #f8fafc;
+    background-image: 
+        radial-gradient(at 0% 0%, hsla(253,16%,7%,1) 0, transparent 50%), 
+        radial-gradient(at 50% 0%, hsla(225,39%,30%,1) 0, transparent 50%), 
+        radial-gradient(at 100% 0%, hsla(339,49%,30%,1) 0, transparent 50%);
+    background-attachment: fixed;
+    color: #1e293b;
     margin: 0;
     display: flex;
     flex-direction: column;
     min-height: 100vh;
 }
 
+/* Dark theme background default, but let's keep it light as the user had it, but more refined */
+body {
+    background: #fdfdfd;
+    background-image: radial-gradient(circle at top right, #f1f5f9, #ffffff);
+}
+
 header {
-    background-color: #fff;
-    padding: 1rem 2rem;
-    border-bottom: 1px solid #ddd;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    background-color: rgba(255, 255, 255, 0.8);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    padding: 1.25rem 2rem;
+    border-bottom: 1px solid rgba(226, 232, 240, 0.8);
+    position: sticky;
+    top: 0;
+    z-index: 100;
 }
 
 header h1 {
     margin: 0;
     font-size: 1.5rem;
-    color: #2c3e50;
+    font-weight: 700;
+    letter-spacing: -0.025em;
+    color: #0f172a;
 }
 
 .breadcrumbs {
-    font-size: 0.9rem;
-    color: #7f8c8d;
+    font-size: 0.85rem;
+    color: #64748b;
     margin-top: 0.5rem;
 }
 
 .breadcrumbs a {
-    color: #3498db;
+    color: #2563eb;
     text-decoration: none;
+    transition: color 0.2s;
 }
 
 .breadcrumbs a:hover {
+    color: #1d4ed8;
     text-decoration: underline;
-}
-
-code {
-    border-radius: .4rem;
 }
 
 main {
     flex: 1;
-    padding: 2rem;
-    max-width: 900px;
+    padding: 3rem 2rem;
+    max-width: 1000px;
     margin: 0 auto;
     width: 100%;
     box-sizing: border-box;
@@ -54,19 +70,19 @@ main {
 
 .content-container {
     background-color: #fff;
-    padding: 2rem;
-    border-radius: 8px;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    padding: 3rem;
+    border-radius: 16px;
+    border: 1px solid #f1f5f9;
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.05);
 }
 
 footer {
     text-align: center;
-    padding: 1rem;
-    font-size: 0.8rem;
-    color: #95a5a6;
+    padding: 2rem;
+    font-size: 0.875rem;
+    color: #64748b;
     background-color: #fff;
-    border-top: 1px solid #ddd;
-    margin-top: 2rem;
+    border-top: 1px solid #f1f5f9;
 }
 
 /* --- Hero Banner --- */

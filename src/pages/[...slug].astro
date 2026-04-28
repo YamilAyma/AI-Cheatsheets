@@ -78,8 +78,10 @@ const parentPath = parts.length > 1 ? '/' + parts.slice(0, -1).join('/') : '/';
 
 <BaseLayout title={title} breadcrumbs={breadcrumbs}>
     {type === 'content' ? (
-        <Content />
-        <FloatingButtons backHref={parentPath} slot="fab" />
+        <>
+            <Content />
+            <FloatingButtons backHref={parentPath} slot="fab" />
+        </>
     ) : (
         <>
             <div class="search-container">
