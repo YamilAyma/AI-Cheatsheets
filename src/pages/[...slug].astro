@@ -74,9 +74,15 @@ if (type === 'content') {
 }
 
 const parentPath = parts.length > 1 ? '/' + parts.slice(0, -1).join('/') : '/';
+
+const allCheatsheets = await getCollection('cheatsheets');
+const searchData = allCheatsheets.map(post => ({
+    title: post.data.title || post.id.replace(/\.mdx?$/, ''),
+    slug: post.id.replace(/\.mdx?$/, '')
+}));
 ---
 
-<BaseLayout title={title} breadcrumbs={breadcrumbs}>
+<BaseLayout title={title} breadcrumbs={breadcrumbs} searchData={searchData}>
     {type === 'content' ? (
         <>
             <Content />
@@ -84,10 +90,6 @@ const parentPath = parts.length > 1 ? '/' + parts.slice(0, -1).join('/') : '/';
         </>
     ) : (
         <>
-            <div class="search-container">
-                <input type="text" id="searchInput" placeholder="Buscar archivos y carpetas...">
-            </div>
-
             <ul class="file-list">
                 {folders.map(folder => (
                     <li><a href={`/${currentDir}/${folder}`} class="folder">{folder}</a></li>
@@ -96,20 +98,6 @@ const parentPath = parts.length > 1 ? '/' + parts.slice(0, -1).join('/') : '/';
                     <li><a href={`/${file.slug}`} class="file">{file.data.title}</a></li>
                 ))}
             </ul>
-
-            <script is:inline>
-                const searchInput = document.getElementById('searchInput');
-                if (searchInput) {
-                    searchInput.addEventListener('keyup', () => {
-                        const filter = searchInput.value.toLowerCase();
-                        const items = document.querySelectorAll('.file-list li');
-                        items.forEach(li => {
-                            const text = li.textContent.toLowerCase();
-                            li.style.display = text.includes(filter) ? "" : "none";
-                        });
-                    });
-                }
-            </script>
             <FloatingButtons backHref={parentPath} slot="fab" />
         </>
     )}

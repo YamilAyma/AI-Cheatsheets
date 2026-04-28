@@ -15,16 +15,17 @@ const rootFiles = allCheatsheets
     .map(post => ({ ...post, slug: post.id.replace(/\.mdx?$/, '') }))
     .filter(post => !post.slug.includes('/'))
     .sort((a, b) => (a.data.title || '').localeCompare(b.data.title || ''));
+
+const searchData = allCheatsheets.map(post => ({
+    title: post.data.title || post.id.replace(/\.mdx?$/, ''),
+    slug: post.id.replace(/\.mdx?$/, '')
+}));
 ---
 
-<BaseLayout title="Inicio">
+<BaseLayout title="Inicio" searchData={searchData}>
     <div class="hero">
         <h2>Antes de aprender, explora estas guías rápidas</h2>
         <p>Resúmenes e información servida para desarrolladores. Explora las categorías para empezar.</p>
-    </div>
-
-    <div class="search-container">
-        <input type="text" id="searchInput" placeholder="Buscar archivos y carpetas...">
     </div>
 
     <ul class="file-list">
@@ -35,18 +36,4 @@ const rootFiles = allCheatsheets
             <li><a href={`/${file.slug}`} class="file">{file.data.title}</a></li>
         ))}
     </ul>
-
-    <script is:inline>
-        const searchInput = document.getElementById('searchInput');
-        if (searchInput) {
-            searchInput.addEventListener('keyup', () => {
-                const filter = searchInput.value.toLowerCase();
-                const items = document.querySelectorAll('.file-list li');
-                items.forEach(li => {
-                    const text = li.textContent.toLowerCase();
-                    li.style.display = text.includes(filter) ? "" : "none";
-                });
-            });
-        }
-    </script>
 </BaseLayout>

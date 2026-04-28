@@ -5,12 +5,14 @@ interface Props {
 	title: string;
 	description?: string;
 	breadcrumbs?: { name: string; href: string }[];
+	searchData?: any[];
 }
 
 const { 
 	title, 
 	description = "Un centro de conocimiento con resúmenes, comandos y buenas prácticas sobre programación, arquitectura y herramientas de desarrollo.",
-	breadcrumbs = [{ name: 'Inicio', href: '/' }]
+	breadcrumbs = [{ name: 'Inicio', href: '/' }],
+	searchData = []
 } = Astro.props;
 
 const canonicalURL = new URL(Astro.url.pathname, Astro.site || 'http://localhost:4321');
@@ -43,15 +45,25 @@ const socialImageURL = new URL('/default-og-image.png', Astro.url);
 	</head>
 	<body>
 		<header>
-			<h1>IA Cheatsheets</h1>
-			<nav class="breadcrumbs">
-				{breadcrumbs.map((crumb, index) => (
-					<>
-						{index > 0 && " / "}
-						<a href={crumb.href}>{crumb.name}</a>
-					</>
-				))}
-			</nav>
+			<div class="header-content">
+				<div class="logo-area">
+					<h1><a href="/">IA Cheatsheets</a></h1>
+					<nav class="breadcrumbs">
+						{breadcrumbs.map((crumb, index) => (
+							<>
+								{index > 0 && " / "}
+								<a href={crumb.href}>{crumb.name}</a>
+							</>
+						))}
+					</nav>
+				</div>
+				<div class="search-area">
+					<div class="search-box">
+						<input type="text" id="globalSearchInput" placeholder="Buscar en todos los cheatsheets..." autocomplete="off">
+						<div id="searchResults" class="search-results-dropdown"></div>
+					</div>
+				</div>
+			</div>
 		</header>
 		<main>
 			<div class="content-container">
@@ -62,7 +74,47 @@ const socialImageURL = new URL('/default-og-image.png', Astro.url);
 			<p>Plataforma de Cheatsheets v2.0 (Astro SSG)</p>
 		</footer>
 
-		<!-- Floating Buttons logic can be added here or as a component -->
 		<slot name="fab" />
+
+		<script is:inline define:vars={{ searchData }}>
+			const searchInput = document.getElementById('globalSearchInput');
+			const resultsDropdown = document.getElementById('searchResults');
+
+			if (searchInput && resultsDropdown) {
+				searchInput.addEventListener('input', (e) => {
+					const query = e.target.value.toLowerCase().trim();
+					
+					if (query.length < 2) {
+						resultsDropdown.style.display = 'none';
+						return;
+					}
+
+					const matches = searchData.filter(item => 
+						item.title.toLowerCase().includes(query) || 
+						item.slug.toLowerCase().includes(query)
+					).slice(0, 10);
+
+					if (matches.length > 0) {
+						resultsDropdown.innerHTML = matches.map(match => `
+							<a href="/${match.slug}" class="search-result-item">
+								<span class="result-title">${match.title}</span>
+								<span class="result-path">${match.slug}</span>
+							</a>
+						`).join('');
+						resultsDropdown.style.display = 'block';
+					} else {
+						resultsDropdown.innerHTML = '<div class="search-no-results">No se encontraron resultados</div>';
+						resultsDropdown.style.display = 'block';
+					}
+				});
+
+				// Close dropdown when clicking outside
+				document.addEventListener('click', (e) => {
+					if (!searchInput.contains(e.target) && !resultsDropdown.contains(e.target)) {
+						resultsDropdown.style.display = 'none';
+					}
+				});
+			}
+		</script>
 	</body>
 </html>
