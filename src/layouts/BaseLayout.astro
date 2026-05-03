@@ -1,5 +1,7 @@
 ---
+import SubNavbar from '../components/SubNavbar.astro';
 import '../styles/global.css';
+import { getCollection } from 'astro:content';
 
 interface Props {
 	title: string;
@@ -15,8 +17,28 @@ const {
 	searchData = []
 } = Astro.props;
 
+// Fetch dynamic categories for the sidebar
+const allCheatsheets = await getCollection('cheatsheets');
+const dynamicCategories = [...new Set(allCheatsheets.map(post => {
+    const slug = post.id.replace(/\.mdx?$/, '');
+    return slug.split('/')[0];
+}).filter(part => part !== "" && part !== 'welcome'))].sort();
+
 const canonicalURL = new URL(Astro.url.pathname, Astro.site || 'http://localhost:4321');
 const socialImageURL = new URL('/default-og-image.png', Astro.url);
+
+const categoryIcons = {
+    'arquitectura': '🏗️',
+    'ai': '🤖',
+    'desarrollo': '💻',
+    'herramientas': '🛠️',
+    'java': '☕',
+    'python': '🐍',
+    'php': '🐘',
+    'web': '🌐',
+    'devops': '🚀',
+    'base_datos': '🗄️'
+};
 ---
 
 <!doctype html>
@@ -30,6 +52,11 @@ const socialImageURL = new URL('/default-og-image.png', Astro.url);
 		<meta name="google-site-verification" content="2UF3L_fQMu61h2rfdzqpw1tDhVwaZpAArh1o_1N4e3c" />
 		<title>{title} - IA Cheatsheets</title>
 
+		<!-- Fonts: Plus Jakarta Sans -->
+		<link rel="preconnect" href="https://fonts.googleapis.com">
+		<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+		<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
 		<!-- Open Graph / Facebook -->
 		<meta property="og:type" content="website" />
 		<meta property="og:url" content={canonicalURL} />
@@ -40,53 +67,122 @@ const socialImageURL = new URL('/default-og-image.png', Astro.url);
 		<!-- Twitter -->
 		<meta property="twitter:card" content="summary_large_image" />
 		<meta property="twitter:url" content={canonicalURL} />
-		<meta property="twitter:title" content={`${title} - IA Cheatsheets`} />
+		<meta property="twitter:title" content={title} />
 		<meta property="twitter:description" content={description} />
 		<meta property="twitter:image" content={socialImageURL} />
+
+		<link rel="preconnect" href="https://fonts.googleapis.com">
+		<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+		<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,200..800;1,200..800&display=swap" rel="stylesheet">
 	</head>
 	<body>
-		<header>
+		<header class="main-header">
 			<div class="header-content">
 				<div class="logo-area">
-					<h1><a href="/">IA Cheatsheets</a></h1>
-					<nav class="breadcrumbs">
-						{breadcrumbs.map((crumb, index) => (
-							<>
-								{index > 0 && " / "}
-								<a href={crumb.href}>{crumb.name}</a>
-							</>
-						))}
-					</nav>
+					<a href="/" class="logo">
+						<span class="logo-text">IA Cheatsheets</span>
+						<div class="logo-underline"></div>
+					</a>
 				</div>
-				<div class="search-area">
-					<div class="search-box">
-						<input type="text" id="globalSearchInput" placeholder="Buscar en todos los cheatsheets..." autocomplete="off">
-						<div id="searchResults" class="search-results-dropdown"></div>
-					</div>
+
+				<div class="header-indicator">
+					<span class="indicator-dot"></span>
+					<span class="indicator-text">{allCheatsheets.length} Sheets Indexadas</span>
 				</div>
+			</div>
+
+			<div class="breadcrumbs-area">
+				{breadcrumbs.map((crumb, index) => (
+					<>
+						<a href={crumb.href}>{crumb.name}</a>
+						{index < breadcrumbs.length - 1 && <span class="separator">/</span>}
+					</>
+				))}
 			</div>
 		</header>
-		<main>
-			<div class="content-container">
-				<slot />
-			</div>
-		</main>
-		<footer>
-			<div class="footer-content">
-				<div class="footer-logo">
-					<span class="logo-text">IA Cheatsheets</span>
-					<p>Centro de conocimiento para desarrolladores</p>
-				</div>
-				<div class="footer-links">
-					<h4>Navegación</h4>
-					<div class="parent-links">
-						{breadcrumbs.map((crumb) => (
-							<a href={crumb.href}>{crumb.name}</a>
+
+		<SubNavbar />
+
+		<div class="holy-grail-container">
+			<aside class="sidebar left-sidebar">
+				<div class="sidebar-panel">
+					<div class="sidebar-header">Navegación Center</div>
+					<ul class="sidebar-nav">
+						<li>
+							<a href="/" class={Astro.url.pathname === '/' ? 'active' : ''}>
+								🏛️ Inicio
+							</a>
+						</li>
+						{dynamicCategories.map(cat => (
+							<li>
+								<a 
+									href={`/${cat}`} 
+									class={Astro.url.pathname.startsWith(`/${cat}`) ? 'active' : ''}
+								>
+									{categoryIcons[cat] || '📄'} {cat.charAt(0).toUpperCase() + cat.slice(1).replace('_', ' ')}
+								</a>
+							</li>
 						))}
+					</ul>
+				</div>
+				<div class="sidebar-panel">
+					<div class="sidebar-header">Estado del Sistema</div>
+					<div class="system-status">
+						<div>📡 Versión: 2.2.0</div>
+						<div>🟢 Status: Operativo</div>
+						<div class="status-date">
+							Actualizado: {new Date().toLocaleDateString()}
+						</div>
 					</div>
 				</div>
-				<div class="footer-info">
-					<p>&copy; {new Date().getFullYear()} - v2.0</p>
+			</aside>
+
+			<main class="content-area">
+				<div class="aqua-nav">
+					<button class="aqua-tab active">Resumen</button>
+					<button class="aqua-tab">Archivos</button>
+					<button class="aqua-tab">Historial</button>
+					<button class="aqua-tab">Metadatos</button>
+				</div>
+				
+				<div class="content-window">
+					<div class="window-controls">
+						<span class="control close"></span>
+						<span class="control minimize"></span>
+						<span class="control expand"></span>
+					</div>
+					<slot />
+				</div>
+			</main>
+
+			<aside class="sidebar right-sidebar">
+				<slot name="metadata" />
+				<div class="sidebar-panel">
+					<div class="sidebar-header">Acciones Rápidas</div>
+					<ul class="action-list">
+						<li><button>🖨️ Imprimir Archivo</button></li>
+						<li><button>🔗 Copiar Enlace</button></li>
+						<li><button>📁 Descargar PDF</button></li>
+					</ul>
+				</div>
+			</aside>
+		</div>
+
+		<footer class="main-footer">
+			<div class="footer-content">
+				<div class="footer-left">
+					<div class="footer-logo-group">
+						<span class="footer-logo-text">IA Cheatsheets</span>
+						<span class="footer-archive-tag">Archive v2</span>
+					</div>
+					<nav class="footer-links">
+						<a href="#">Privacidad</a>
+						<a href="#">Términos</a>
+						<a href="#">Contacto</a>
+					</nav>
+				</div>
+				<div class="footer-right">
+					<p class="copyright">© {new Date().getFullYear()} AI-Cheatsheets. Todos los derechos reservados bajo licencia Archival.</p>
 				</div>
 			</div>
 		</footer>
@@ -94,7 +190,7 @@ const socialImageURL = new URL('/default-og-image.png', Astro.url);
 		<slot name="fab" />
 
 		<script is:inline define:vars={{ searchData }}>
-			const searchInput = document.getElementById('globalSearchInput');
+			const searchInput = document.getElementById('subNavbarSearch');
 			const resultsDropdown = document.getElementById('searchResults');
 
 			if (searchInput && resultsDropdown) {
@@ -115,7 +211,6 @@ const socialImageURL = new URL('/default-og-image.png', Astro.url);
 						resultsDropdown.innerHTML = matches.map(match => `
 							<a href="/${match.slug}" class="search-result-item">
 								<div class="result-row">
-									<span class="result-icon">${match.icon}</span>
 									<div class="result-text">
 										<span class="result-title">${match.title}</span>
 										<span class="result-path">${match.slug}</span>
@@ -123,9 +218,15 @@ const socialImageURL = new URL('/default-og-image.png', Astro.url);
 								</div>
 							</a>
 						`).join('');
+						
+						// Position below subnavbar search
+						const rect = searchInput.getBoundingClientRect();
+						resultsDropdown.style.left = `${rect.left}px`;
+						resultsDropdown.style.top = `${rect.bottom + window.scrollY + 10}px`;
+						resultsDropdown.style.width = `${rect.width + 100}px`;
 						resultsDropdown.style.display = 'block';
 					} else {
-						resultsDropdown.innerHTML = '<div class="search-no-results">No se encontraron resultados</div>';
+						resultsDropdown.innerHTML = '<div class="search-no-results">No se encontraron archivos</div>';
 						resultsDropdown.style.display = 'block';
 					}
 				});

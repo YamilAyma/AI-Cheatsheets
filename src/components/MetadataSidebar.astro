@@ -1,0 +1,129 @@
+---
+interface Props {
+    title?: string;
+    created?: string;
+    updated?: string;
+    tags?: string[];
+}
+
+const { 
+    title = "Documento Sin Título", 
+    created = "Desconocido", 
+    updated = "Recientemente", 
+    tags = [] 
+} = Astro.props;
+---
+
+<div class="metadata-container">
+    <div class="sidebar-panel card">
+        <div class="sidebar-header">Detalles de Archivo</div>
+        <div class="card-content">
+            <div class="meta-row">
+                <span class="meta-label">Título:</span>
+                <span class="meta-value">{title}</span>
+            </div>
+            <div class="meta-row">
+                <span class="meta-label">Creado:</span>
+                <span class="meta-value">{created}</span>
+            </div>
+            <div class="meta-row">
+                <span class="meta-label">Versión:</span>
+                <span class="meta-value">1.0.4 (Archival)</span>
+            </div>
+            {tags.length > 0 && (
+                <div class="meta-tags">
+                    {tags.map(tag => <span class="tag">#{tag}</span>)}
+                </div>
+            )}
+        </div>
+    </div>
+
+    <div class="sidebar-panel card">
+        <div class="sidebar-header">Relacionados</div>
+        <div class="card-content">
+            <ul class="related-list">
+                <li><a href="#">📘 Git Fundamentals</a></li>
+                <li><a href="#">📘 Linux Commands</a></li>
+                <li><a href="#">📘 Bash Scripting</a></li>
+            </ul>
+        </div>
+    </div>
+</div>
+
+<style>
+    .metadata-container {
+        display: flex;
+        flex-direction: column;
+        gap: 15px;
+        padding: 15px;
+    }
+
+    .card {
+        background: white;
+        border-radius: 4px;
+        border: 1px solid #CCC;
+        overflow: hidden;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    }
+
+    .card-content {
+        padding: 12px;
+    }
+
+    .meta-row {
+        display: flex;
+        justify-content: space-between;
+        font-size: 0.8rem;
+        margin-bottom: 8px;
+        border-bottom: 1px solid #F0F0F0;
+        padding-bottom: 4px;
+    }
+
+    .meta-label {
+        color: #666;
+        font-weight: 600;
+    }
+
+    .meta-value {
+        color: #333;
+    }
+
+    .meta-tags {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 5px;
+        margin-top: 10px;
+    }
+
+    .tag {
+        font-size: 0.7rem;
+        background: #EEE;
+        padding: 2px 6px;
+        border-radius: 10px;
+        color: var(--color-primary);
+        font-weight: 600;
+    }
+
+    .related-list {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+    }
+
+    .related-list li {
+        margin-bottom: 8px;
+    }
+
+    .related-list li a {
+        font-size: 0.8rem;
+        color: #444;
+        text-decoration: none;
+        display: block;
+        padding: 4px 0;
+        border-bottom: 1px solid #F0F0F0;
+    }
+
+    .related-list li a:hover {
+        color: var(--color-primary);
+    }
+</style>

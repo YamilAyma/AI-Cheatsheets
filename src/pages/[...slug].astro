@@ -1,6 +1,7 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
 import FloatingButtons from '../components/FloatingButtons.astro';
+import MetadataSidebar from '../components/MetadataSidebar.astro';
 import { getCollection, render } from 'astro:content';
 
 export async function getStaticPaths() {
@@ -86,6 +87,13 @@ const searchData = allCheatsheets.map(post => ({
 <BaseLayout title={title} breadcrumbs={breadcrumbs} searchData={searchData}>
     {type === 'content' ? (
         <>
+            <MetadataSidebar 
+                slot="metadata" 
+                title={title}
+                created={entry.data.created}
+                updated={entry.data.updated}
+                tags={entry.data.tags || []}
+            />
             <Content />
         </>
     ) : (
