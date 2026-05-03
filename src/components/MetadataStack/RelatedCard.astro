@@ -1,0 +1,59 @@
+---
+import SidebarCard from '../Shared/SidebarCard.astro';
+
+interface Props {
+    related: string[];
+}
+
+const { related = [] } = Astro.props;
+---
+<SidebarCard title="Related">
+    <ul class="related-list">
+        {related.length > 0 ? related.map(item => (
+            <li class="related-item">
+                <a href={`/search?q=${item}`} class="related-link">
+                    <span class="link-icon">↗</span>
+                    {item}
+                </a>
+            </li>
+        )) : (
+            <li class="empty-state">No related sheets found</li>
+        )}
+    </ul>
+</SidebarCard>
+
+<style>
+    .related-list {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+    }
+
+    .related-link {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 0.8rem;
+        color: #0066CC;
+        text-decoration: none;
+        padding: 4px 0;
+    }
+
+    .related-link:hover {
+        text-decoration: underline;
+    }
+
+    .link-icon {
+        font-size: 0.7rem;
+        opacity: 0.7;
+    }
+
+    .empty-state {
+        font-size: 0.75rem;
+        color: #999;
+        font-style: italic;
+    }
+</style>

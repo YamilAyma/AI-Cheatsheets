@@ -1,0 +1,88 @@
+---
+import ActionCard from './ActionCard.astro';
+import DownloadCard from './DownloadCard.astro';
+import DetailCard from './DetailCard.astro';
+import RelatedCard from './RelatedCard.astro';
+import SidebarCard from '../Shared/SidebarCard.astro';
+
+interface Props {
+    category?: string;
+    language?: string;
+    license?: string;
+    author?: string;
+    version?: string;
+    related?: string[];
+    tags?: string[];
+    updated?: Date | string;
+}
+
+const { 
+    category = "General", 
+    language = "Spanish", 
+    license = "MIT", 
+    author = "AI Archive", 
+    version = "1.0.0",
+    related = [],
+    tags = []
+} = Astro.props;
+---
+
+<div class="metadata-stack">
+    <!-- ACTION GROUP -->
+    <ActionCard />
+
+    <!-- DOWNLOAD GROUP -->
+    <DownloadCard />
+
+    <!-- TECHNICAL DETAILS -->
+    <DetailCard 
+        category={category}
+        language={language}
+        license={license}
+        author={author}
+        version={version}
+    />
+
+    <!-- DISCOVERY -->
+    <RelatedCard related={related} />
+
+    <!-- TAGS -->
+    {tags.length > 0 && (
+        <SidebarCard title="Tags">
+            <div class="tags-cloud">
+                {tags.map(tag => (
+                    <a href={`/search?q=${tag}`} class="tag-pill">#{tag}</a>
+                ))}
+            </div>
+        </SidebarCard>
+    )}
+</div>
+
+<style>
+    .metadata-stack {
+        display: flex;
+        flex-direction: column;
+        gap: 0;
+    }
+
+    .tags-cloud {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+    }
+
+    .tag-pill {
+        font-size: 0.7rem;
+        background: #f0f0f0;
+        color: #666;
+        padding: 2px 8px;
+        border-radius: 12px;
+        text-decoration: none;
+        transition: all 0.2s;
+    }
+
+    .tag-pill:hover {
+        background: #007AFF;
+        color: white;
+    }
+</style>

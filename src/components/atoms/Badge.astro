@@ -1,0 +1,49 @@
+---
+interface Props {
+  text: string;
+  variant?: 'default' | 'aqua' | 'metal';
+  class?: string;
+}
+
+const { text, variant = 'default', class: className } = Astro.props;
+---
+<span class:list={[`badge badge-${variant}`, className]}>
+  {text}
+</span>
+
+<style>
+  .badge {
+    font-family: var(--typography-label-sm-fontFamily);
+    font-size: 0.65rem;
+    font-weight: 800;
+    padding: 1px 6px;
+    border-radius: var(--rounded-sm);
+    text-transform: uppercase;
+    display: inline-flex;
+    align-items: center;
+    border: 1px solid rgba(0,0,0,0.1);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.4);
+    letter-spacing: 0.02em;
+    height: 18px;
+    line-height: 1;
+  }
+
+  .badge-default {
+    background: #e2e8f0;
+    color: #475569;
+  }
+
+  .badge-aqua {
+    background: var(--texture-aqua);
+    color: white;
+    border-color: var(--color-primary-dark);
+    text-shadow: 0 1px 1px rgba(0,0,0,0.3);
+  }
+
+  .badge-metal {
+    background: var(--texture-metal);
+    color: #333;
+    border-color: #999;
+    box-shadow: inset 0 1px 0 #fff, 0 1px 2px rgba(0,0,0,0.1);
+  }
+</style>

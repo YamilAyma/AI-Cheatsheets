@@ -1,0 +1,109 @@
+---
+interface Props {
+    command: string;
+    description: string;
+}
+
+const { command, description } = Astro.props;
+---
+<div class="command-row">
+    <div class="command-cell">
+        <code>{command}</code>
+        <button class="copy-btn" title="Copy to clipboard" data-command={command}>
+            <span class="copy-icon">📋</span>
+        </button>
+    </div>
+    <div class="description-cell">
+        {description}
+    </div>
+</div>
+
+<style>
+    .command-row {
+        display: grid;
+        grid-template-columns: 180px 1fr;
+        gap: 15px;
+        padding: 12px 16px;
+        border-bottom: 1px solid #f1f5f9;
+        align-items: center;
+        transition: background 0.2s;
+    }
+
+    .command-row:hover {
+        background: #f8fafc;
+    }
+
+    .command-row:last-child {
+        border-bottom: none;
+    }
+
+    .command-cell {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+        background: #f1f5f9;
+        padding: 4px 8px;
+        border-radius: 4px;
+        border: 1px solid #e2e8f0;
+    }
+
+    .command-cell code {
+        font-family: 'JetBrains Mono', monospace;
+        font-size: 0.75rem;
+        color: var(--color-primary);
+        font-weight: 700;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .copy-btn {
+        background: white;
+        border: 1px solid #cbd5e1;
+        padding: 2px 4px;
+        cursor: pointer;
+        opacity: 0;
+        transition: all 0.2s;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 3px;
+        box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+    }
+
+    .command-row:hover .copy-btn {
+        opacity: 1;
+    }
+
+    .copy-btn:hover {
+        background: #f1f5f9;
+        border-color: var(--color-primary);
+    }
+
+    .copy-icon {
+        font-size: 0.8rem;
+    }
+
+    .description-cell {
+        font-size: 0.8rem;
+        color: #475569;
+        line-height: 1.5;
+        font-weight: 500;
+    }
+</style>
+
+<script is:inline>
+    document.querySelectorAll('.copy-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const cmd = btn.getAttribute('data-command');
+            navigator.clipboard.writeText(cmd);
+            
+            const originalIcon = btn.innerHTML;
+            btn.innerHTML = '<span class="copy-icon">✅</span>';
+            setTimeout(() => {
+                btn.innerHTML = originalIcon;
+            }, 2000);
+        });
+    });
+</script>

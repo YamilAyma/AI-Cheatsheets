@@ -6,31 +6,35 @@ updatedAt: "2024-05-03"
 tags: ["intro", "guide", "portal"]
 ---
 
+import CommandCard from '../../components/molecules/CommandCard.astro';
+import GridSection from '../../components/organisms/GridSection.astro';
+import CommandRow from '../../components/atoms/CommandRow.astro';
+
 # 🏛️ Aqua Archive: Executive Technical Portal
 
 Welcome to the **Aqua Archive**, the definitive knowledge base for high-performance development and artificial intelligence. This archive is structured as a professional repository, blending archival authority with early 2000s computing aesthetics.
 
-## 🚀 Quick Access Pillars
+<GridSection>
+    <CommandCard title="🤖 Artificial Intelligence" icon="🤖">
+        <CommandRow command="Prompt Mastery" description="Advanced linguistic patterns for Claude and Gemini." />
+        <CommandRow command="Vector DBs" description="Scaling retrieval-augmented generation (RAG)." />
+    </CommandCard>
 
-Our archive is divided into four strategic quadrants, each designed to provide maximum information density with minimal cognitive friction:
+    <CommandCard title="🏗️ Software Architecture" icon="🏗️">
+        <CommandRow command="Clean Architecture" description="Maintaining technical health in large-scale projects." />
+        <CommandRow command="Microservices" description="Orchestrating resilient service ecosystems." />
+    </CommandCard>
 
-### 1. 🤖 Artificial Intelligence & LLMs
-Comprehensive guides on prompt engineering, model architectures, and integration patterns for state-of-the-art AI systems.
-*   **Prompt Mastery**: Advanced linguistic patterns for Claude and Gemini.
-*   **Vector DBs**: Scaling retrieval-augmented generation (RAG).
+    <CommandCard title="🌐 Modern Web Ecosystem" icon="🌐">
+        <CommandRow command="Astro Mastery" description="Building high-performance static sites." />
+        <CommandRow command="Design Tokens" description="Mastering the Aqua-Archive visual language." />
+    </CommandCard>
 
-### 2. 🏗️ Software Architecture
-Executive summaries of design patterns, clean architecture, and distributed systems.
-*   **Clean Architecture**: Maintaining technical health in large-scale projects.
-*   **Microservices**: Orchestrating resilient service ecosystems.
-
-### 3. 🌐 Modern Web Ecosystem
-Deep dives into Astro, React, and high-fidelity CSS design systems.
-*   **Astro Mastery**: Building high-performance static sites.
-*   **Design Tokens**: Mastering the Aqua-Archive visual language.
-
-### 4. 🛠️ Productivity & DevOps
-Toolkits for the modern developer, from terminal optimization to CI/CD pipelines.
+    <CommandCard title="🛠️ Productivity & DevOps" icon="🛠️">
+        <CommandRow command="Terminal Config" description="Optimization for ZSH and Oh-My-Zsh." />
+        <CommandRow command="CI/CD Pipelines" description="Automated testing and deployment patterns." />
+    </CommandCard>
+</GridSection>
 
 ---
 

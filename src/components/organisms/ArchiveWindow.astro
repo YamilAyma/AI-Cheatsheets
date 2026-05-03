@@ -1,0 +1,123 @@
+---
+import Badge from '../atoms/Badge.astro';
+
+interface Props {
+  title: string;
+  version?: string;
+  class?: string;
+}
+
+const { title, version = "v1.0.0", class: className } = Astro.props;
+---
+<div class:list={['archive-window', className]}>
+  <div class="window-header">
+    <div class="window-controls">
+      <span class="control close"></span>
+      <span class="control minimize"></span>
+      <span class="control maximize"></span>
+    </div>
+    <div class="window-title-bar">
+      <span class="window-path">Archive &gt; {title}</span>
+    </div>
+  </div>
+  
+  <div class="window-content">
+    <div class="content-header">
+      <h1 class="main-title">{title}</h1>
+      <Badge text={version} variant="metal" class="version-badge" />
+    </div>
+    
+    <div class="content-body">
+      <slot />
+    </div>
+  </div>
+</div>
+
+<style>
+  .archive-window {
+    background: #fff;
+    border: 1px solid #999;
+    border-radius: var(--rounded-lg);
+    box-shadow: 0 10px 30px rgba(0,0,0,0.15), 0 1px 2px rgba(0,0,0,0.1);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    min-height: 600px;
+  }
+
+  .window-header {
+    background: var(--texture-metal);
+    height: 32px;
+    display: flex;
+    align-items: center;
+    padding: 0 15px;
+    border-bottom: 1px solid #bbb;
+    position: relative;
+  }
+
+  .window-controls {
+    display: flex;
+    gap: 8px;
+    z-index: 10;
+  }
+
+  .control {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    border: 1px solid rgba(0,0,0,0.1);
+    box-shadow: inset 0 1px 1px rgba(255,255,255,0.4);
+  }
+
+  .control.close { background-color: #ff5f56; }
+  .control.minimize { background-color: #ffbd2e; }
+  .control.maximize { background-color: #27c93f; }
+
+  .window-title-bar {
+    position: absolute;
+    width: 100%;
+    left: 0;
+    text-align: center;
+    pointer-events: none;
+  }
+
+  .window-path {
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: #666;
+    text-shadow: 0 1px 0 #fff;
+  }
+
+  .window-content {
+    flex: 1;
+    padding: 40px;
+    overflow-y: auto;
+  }
+
+  .content-header {
+    display: flex;
+    align-items: baseline;
+    gap: 15px;
+    border-bottom: 3px solid var(--color-primary);
+    padding-bottom: 10px;
+    margin-bottom: 30px;
+  }
+
+  .main-title {
+    font-size: 2.2rem;
+    font-weight: 900;
+    margin: 0;
+    color: #1e293b;
+    letter-spacing: -0.02em;
+  }
+
+  .version-badge {
+    transform: translateY(-4px);
+  }
+
+  .content-body {
+    font-size: 1rem;
+    line-height: 1.6;
+    color: #334155;
+  }
+</style>

@@ -1,131 +1,37 @@
 ---
-import BaseLayout from '../layouts/BaseLayout.astro';
-import FloatingButtons from '../components/FloatingButtons.astro';
-import MetadataSidebar from '../components/MetadataSidebar.astro';
 import { getCollection, render } from 'astro:content';
+import BaseLayout from '../layouts/BaseLayout.astro';
+import ArchiveWindow from '../components/organisms/ArchiveWindow.astro';
 
 export async function getStaticPaths() {
-    const allCheatsheets = await getCollection('cheatsheets');
-    const paths = [];
-
-    // 1. Routes for actual content files
-    allCheatsheets.forEach(entry => {
-        const slug = entry.id.replace(/\.mdx?$/, '');
-        paths.push({
-            params: { slug },
-            props: { type: 'content', entry }
-        });
-    });
-
-    // 2. Routes for intermediate directories
-    const slugs = allCheatsheets.map(entry => entry.id.replace(/\.mdx?$/, ''));
-    const directoryPaths = new Set();
-
-    slugs.forEach(slug => {
-        const parts = slug.split('/');
-        for (let i = 1; i < parts.length; i++) {
-            directoryPaths.add(parts.slice(0, i).join('/'));
-        }
-    });
-
-    directoryPaths.forEach(dir => {
-        const subItems = allCheatsheets.map(e => ({...e, slug: e.id.replace(/\.mdx?$/, '')}))
-                                     .filter(e => e.slug.startsWith(dir + '/'));
-        
-        // Immediate children folders
-        const folders = [...new Set(
-            subItems
-                .map(e => e.slug.replace(dir + '/', '').split('/')[0])
-                .filter(part => subItems.some(e => e.slug.startsWith(`${dir}/${part}/`)))
-        )].sort();
-
-        // Immediate children files
-        const files = subItems
-            .filter(e => !e.slug.replace(dir + '/', '').includes('/'))
-            .sort((a, b) => (a.data.title || '').localeCompare(b.data.title || ''));
-
-        paths.push({
-            params: { slug: dir },
-            props: { type: 'directory', folders, files, currentDir: dir }
-        });
-    });
-
-    return paths;
+  const entries = await getCollection('cheatsheets');
+  return entries.map(entry => ({
+    params: { slug: entry.id }, props: { entry },
+  }));
 }
 
-const { slug } = Astro.params;
-const { type, entry, folders, files, currentDir } = Astro.props;
+const { entry } = Astro.props;
+const { Content } = await render(entry);
 
-let title = slug;
-let breadcrumbs = [{ name: 'Inicio', href: '/' }];
-const parts = slug.split('/');
-let currentPath = '';
-parts.forEach(part => {
-    currentPath += '/' + part;
-    breadcrumbs.push({ name: part, href: currentPath });
-});
-
-let Content;
-if (type === 'content') {
-    const rendered = await render(entry);
-    Content = rendered.Content;
-    title = entry.data.title || slug;
-} else {
-    title = `Explorando: ${slug}`;
-}
-
-const parentPath = parts.length > 1 ? '/' + parts.slice(0, -1).join('/') : '/';
-
-const allCheatsheets = await getCollection('cheatsheets');
-const searchData = allCheatsheets.map(post => ({
-    title: post.data.title || post.id.replace(/\.mdx?$/, ''),
-    slug: post.id.replace(/\.mdx?$/, ''),
-    icon: post.data.icon || '📄'
-}));
+const breadcrumbs = [
+  { name: 'Archive', href: '/' },
+  { name: entry.data.category || 'General', href: '#' },
+  { name: entry.data.title || entry.id, href: `/${entry.id}` }
+];
 ---
 
-<BaseLayout title={title} breadcrumbs={breadcrumbs} searchData={searchData}>
-    {type === 'content' ? (
-        <>
-            <MetadataSidebar 
-                slot="metadata" 
-                title={title}
-                created={entry.data.created}
-                updated={entry.data.updated}
-                tags={entry.data.tags || []}
-            />
-            <Content />
-        </>
-    ) : (
-        <>
-            <ul class="file-list">
-                {folders.map(folder => (
-                    <li>
-                        <a href={`/${currentDir}/${folder}`} class="folder">
-                            <div class="list-icon"></div>
-                            <div class="list-content">
-                                <span class="list-title">{folder}</span>
-                                <span class="list-meta">Carpeta</span>
-                            </div>
-                        </a>
-                    </li>
-                ))}
-                {files.map(file => (
-                    <li>
-                        <a href={`/${file.slug}`} class="file">
-                            <div class="list-icon">{file.data.icon || '📄'}</div>
-                            <div class="list-content">
-                                <span class="list-title">{file.data.title}</span>
-                                <span class="list-meta">
-                                    {file.data.updatedAt && <span>📅 {file.data.updatedAt}</span>}
-                                    {file.data.tags && <span>🏷️ {Array.isArray(file.data.tags) ? file.data.tags.join(', ') : file.data.tags}</span>}
-                                </span>
-                            </div>
-                        </a>
-                    </li>
-                ))}
-            </ul>
-        </>
-    )}
-    <FloatingButtons backHref={parentPath} slot="fab" />
+<BaseLayout 
+    title={entry.data.title || entry.id}
+    author={entry.data.author}
+    version={entry.data.version}
+    updated={entry.data.updated}
+    breadcrumbs={breadcrumbs}
+    slug={entry.id}
+>
+    <ArchiveWindow 
+        title={entry.data.title} 
+        version={entry.data.version}
+    >
+        <Content />
+    </ArchiveWindow>
 </BaseLayout>

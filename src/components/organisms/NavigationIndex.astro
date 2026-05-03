@@ -1,0 +1,104 @@
+---
+import SidebarCard from '../molecules/SidebarCard.astro';
+import SidebarItem from '../molecules/SidebarItem.astro';
+import { getCollection } from 'astro:content';
+
+interface Props {
+  currentSlug?: string;
+}
+
+const { currentSlug } = Astro.props;
+
+// Fetch and organize collection
+const allCheatsheets = await getCollection('cheatsheets');
+const totalSheets = allCheatsheets.length;
+
+// Basic tree structure (could be improved with recursive logic if deep)
+const organized = allCheatsheets.reduce((acc, sheet) => {
+  const parts = sheet.id.split('/');
+  if (parts.length > 1) {
+    const folder = parts[0];
+    if (!acc[folder]) acc[folder] = [];
+    acc[folder].push(sheet);
+  }
+  return acc;
+}, {} as Record<string, any[]>);
+
+const folders = Object.keys(organized).sort();
+---
+<SidebarCard title="INDEX">
+  <div class="index-meta">
+    Showing {totalSheets} items
+  </div>
+  
+  <div class="category-list">
+    {folders.map((folder, index) => (
+      <details class="folder-group" open={index === 0}>
+        <summary class="folder-header">
+           <SidebarItem 
+            title={folder.replace('_', ' ')} 
+            type="folder" 
+            count={organized[folder].length}
+            showChevron={true}
+           />
+        </summary>
+        <div class="folder-contents">
+          {organized[folder].map(sheet => (
+            <SidebarItem 
+              title={sheet.data.title || sheet.id} 
+              type="file" 
+              href={`/${sheet.id}`}
+              isActive={currentSlug === sheet.id}
+            />
+          ))}
+        </div>
+      </details>
+    ))}
+  </div>
+</SidebarCard>
+
+<style>
+  .index-meta {
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: #94a3b8;
+    margin-bottom: 15px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid #f1f5f9;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  .folder-group {
+    margin-bottom: 4px;
+  }
+
+  summary {
+    list-style: none;
+    outline: none;
+  }
+
+  summary::-webkit-details-marker {
+    display: none;
+  }
+
+  .folder-group[open] summary :global(.chevron) {
+    transform: rotate(0deg);
+  }
+
+  /* Default closed state chevron */
+  .folder-group:not([open]) summary :global(.chevron) {
+    transform: rotate(-90deg);
+  }
+
+  .folder-contents {
+    margin-left: 10px;
+    padding-left: 12px;
+    border-left: 1px solid #f1f5f9;
+    margin-top: 2px;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding-bottom: 8px;
+  }
+</style>

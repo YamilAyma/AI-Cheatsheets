@@ -1,0 +1,25 @@
+---
+interface Props {
+  name: string;
+  size?: string;
+  color?: string;
+  class?: string;
+}
+
+const { name, size = "1.1rem", color = "currentColor", class: className } = Astro.props;
+---
+<span class:list={["icon", className]} style={`font-size: ${size}; color: ${color};`}>
+  {name}
+</span>
+
+<style>
+  .icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    user-select: none;
+    line-height: 1;
+    font-family: inherit; /* Use emoji or symbol font if needed */
+    transition: transform 0.2s ease;
+  }
+</style>

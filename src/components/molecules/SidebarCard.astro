@@ -1,0 +1,47 @@
+---
+interface Props {
+  title: string;
+  class?: string;
+}
+
+const { title, class: className } = Astro.props;
+---
+<div class:list={['sidebar-card', className]}>
+  <div class="sidebar-card-header">
+    <h3 class="header-title">{title}</h3>
+  </div>
+  <div class="sidebar-card-body">
+    <slot />
+  </div>
+</div>
+
+<style>
+  .sidebar-card {
+    background: #f8f8f8;
+    border: 1px solid #ccc;
+    border-radius: var(--rounded-md);
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    margin-bottom: 20px;
+    overflow: hidden;
+  }
+
+  .sidebar-card-header {
+    background: var(--texture-metal);
+    padding: 6px 12px;
+    border-bottom: 1px solid #bbb;
+    box-shadow: inset 0 1px 0 #fff;
+  }
+
+  .header-title {
+    font-size: 0.75rem;
+    font-weight: 900;
+    text-transform: uppercase;
+    color: #333;
+    letter-spacing: 0.05em;
+    margin: 0;
+  }
+
+  .sidebar-card-body {
+    padding: 10px;
+  }
+</style>

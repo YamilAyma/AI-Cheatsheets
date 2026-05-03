@@ -48,13 +48,19 @@ rounded:
   lg: "8px"
   pill: "9999px"
 
-# Spacing: Dense (8px base)
+# Spacing & Layout
 spacing:
   xs: "4px"
   sm: "8px"
   md: "12px"
   lg: "20px"
   xl: "32px"
+layout:
+  sidebar-left: "260px"
+  sidebar-right: "300px"
+  max-width: "1400px"
+  mobile-breakpoint: "900px"
+  tablet-breakpoint: "1200px"
 
 # Component Specifications
 components:
