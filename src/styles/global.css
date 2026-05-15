@@ -29,8 +29,23 @@
         rgba(255, 255, 255, 0.05) 100%
     ), #A0A0A0;
 
-    /* Aqua Gradient — Used for active states & scrollbars */
-    --texture-aqua: linear-gradient(to bottom, #6CB4EE, #0066CC);
+    /* Aqua Gradient — Softened for a more refined executive look */
+    --texture-aqua: linear-gradient(
+        to bottom,
+        #6CB4EE 0%,
+        #3b98e0 49%,
+        #0066CC 50%,
+        #005bb7 100%
+    );
+
+    /* Aqua Glass — Muted specular version for a 'Pro' aesthetic */
+    --texture-aqua-glass: linear-gradient(
+        to bottom,
+        rgba(255, 255, 255, 0.4) 0%,
+        rgba(255, 255, 255, 0.1) 50%,
+        rgba(0, 0, 0, 0.02) 51%,
+        rgba(0, 0, 0, 0.05) 100%
+    ), var(--color-primary);
 
     /* Typography */
     --font-interface: 'Lunasima', -apple-system, BlinkMacSystemFont, sans-serif;

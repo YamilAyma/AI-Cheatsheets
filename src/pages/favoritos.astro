@@ -1,0 +1,268 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import ArchiveWindow from '../components/organisms/ArchiveWindow.astro';
+---
+
+<BaseLayout title="Mis Favoritos" slug="favoritos">
+    <ArchiveWindow 
+        title="Mis Favoritos" 
+        version="v1.1.0"
+        breadcrumbs={[{ name: 'Home', href: '/' }, { name: 'Favoritos', href: '/favoritos' }]}
+    >
+        <div id="favorites-container">
+            <p class="loading-text">Cargando tus favoritos...</p>
+        </div>
+    </ArchiveWindow>
+</BaseLayout>
+
+<script>
+    function renderFavorites() {
+        const container = document.getElementById('favorites-container');
+        if (!container) return;
+        
+        const favorites = JSON.parse(localStorage.getItem('ai-cheatsheets-favorites') || '[]');
+        
+        if (favorites.length === 0) {
+            container.innerHTML = `
+                <div class="empty-state">
+                    <span class="empty-icon">📂</span>
+                    <h3>No tienes favoritos aún</h3>
+                    <p>Explora el archivo y marca con una estrella ⭐ las guías que quieras guardar aquí.</p>
+                    <a href="/" class="explore-btn">Explorar Archivo</a>
+                </div>
+            `;
+            return;
+        }
+
+        container.innerHTML = `
+            <div class="favorites-grid">
+                ${favorites.map(fav => `
+                    <div class="favorite-item">
+                        <div class="fav-info">
+                            <span class="fav-icon">📄</span>
+                            <div class="fav-text">
+                                <h4 class="fav-title">${fav.title}</h4>
+                                <code class="fav-path">${fav.path}</code>
+                            </div>
+                        </div>
+                        <div class="fav-actions">
+                            <a href="${fav.path}" class="action-btn visit">Ver Guía</a>
+                            <button class="action-btn remove" data-path="${fav.path}">Eliminar</button>
+                        </div>
+                    </div>
+                `).join('')}
+            </div>
+        `;
+
+        // Add event listeners for removal
+        container.querySelectorAll('.remove').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const target = e.target as HTMLElement;
+                const path = target.getAttribute('data-path');
+                const favs = JSON.parse(localStorage.getItem('ai-cheatsheets-favorites') || '[]');
+                const filtered = favs.filter(f => f.path !== path);
+                localStorage.setItem('ai-cheatsheets-favorites', JSON.stringify(filtered));
+                renderFavorites();
+            });
+        });
+    }
+
+    // Initial render
+    renderFavorites();
+</script>
+
+<style is:global>
+    .favorites-grid {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 15px;
+        margin-top: 20px;
+    }
+
+    .favorite-item {
+        background: white;
+        border: 1px solid #cbd5e1;
+        border-radius: 8px;
+        padding: 16px 20px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02);
+        transition: all 0.25s ease-out;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .favorite-item::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 3px;
+        height: 100%;
+        background: var(--color-primary);
+        opacity: 0;
+        transition: opacity 0.2s;
+    }
+
+    .favorite-item:hover {
+        transform: translateX(4px);
+        border-color: #94a3b8;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    }
+
+    .favorite-item:hover::before {
+        opacity: 1;
+    }
+
+    .fav-info {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+    }
+
+    .fav-icon {
+        font-size: 1.4rem;
+        background: #f8fafc;
+        width: 44px;
+        height: 44px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 10px;
+        border: 1px solid #e2e8f0;
+    }
+
+    .fav-text {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+    }
+
+    .fav-title {
+        margin: 0;
+        font-size: 0.95rem;
+        font-weight: 700;
+        color: #1e293b;
+        font-family: var(--font-display);
+    }
+
+    .fav-path {
+        font-size: 0.7rem;
+        color: #94a3b8;
+        font-family: var(--font-mono);
+        background: #f8fafc;
+        padding: 1px 6px;
+        border-radius: 3px;
+        width: fit-content;
+    }
+
+    .fav-actions {
+        display: flex;
+        gap: 10px;
+    }
+
+    .action-btn {
+        padding: 6px 18px;
+        border-radius: 6px;
+        font-size: 0.7rem;
+        font-weight: 800;
+        text-decoration: none;
+        cursor: pointer;
+        border: none;
+        transition: all 0.2s ease;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+    }
+
+    .action-btn.visit {
+        background: var(--texture-aqua-glass);
+        color: white;
+        border: 1px solid #005bb7;
+        box-shadow: 
+            0 2px 4px rgba(0, 102, 204, 0.15),
+            inset 0 1px 0 rgba(255,255,255,0.3);
+    }
+
+    .action-btn.remove {
+        background: linear-gradient(
+            to bottom,
+            rgba(255, 255, 255, 0.4) 0%,
+            rgba(255, 255, 255, 0.1) 50%,
+            rgba(0, 0, 0, 0.02) 51%,
+            rgba(0, 0, 0, 0.05) 100%
+        ), #ef4444;
+        color: white;
+        border: 1px solid #b91c1c;
+        box-shadow: 
+            0 2px 4px rgba(239, 68, 68, 0.1),
+            inset 0 1px 0 rgba(255,255,255,0.3);
+    }
+
+    .action-btn:hover {
+        filter: brightness(1.1);
+        transform: translateY(-2px);
+        box-shadow: 0 6px 15px rgba(0,0,0,0.2);
+    }
+
+    .action-btn:active {
+        transform: translateY(0);
+        filter: brightness(0.9);
+        box-shadow: inset 0 2px 4px rgba(0,0,0,0.2);
+    }
+
+    .empty-state {
+        text-align: center;
+        padding: 80px 40px;
+        background: #f8fafc;
+        border-radius: 12px;
+        border: 2px dashed #e2e8f0;
+        margin-top: 20px;
+    }
+
+    .empty-icon {
+        font-size: 5rem;
+        display: block;
+        margin-bottom: 24px;
+        filter: grayscale(1) opacity(0.3);
+    }
+
+    .empty-state h3 {
+        font-size: 1.5rem;
+        font-weight: 800;
+        color: #334155;
+        margin-bottom: 12px;
+    }
+
+    .empty-state p {
+        color: #64748b;
+        max-width: 400px;
+        margin: 0 auto 24px;
+    }
+
+    .explore-btn {
+        display: inline-block;
+        background: var(--texture-aqua);
+        color: white;
+        padding: 12px 32px;
+        border-radius: 8px;
+        text-decoration: none;
+        font-weight: 800;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        box-shadow: 0 4px 10px rgba(0, 102, 204, 0.3);
+        transition: all 0.2s;
+    }
+
+    .explore-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 15px rgba(0, 102, 204, 0.4);
+    }
+
+    .loading-text {
+        text-align: center;
+        padding: 40px;
+        color: #94a3b8;
+        font-style: italic;
+    }
+</style>

@@ -39,21 +39,109 @@ const {
         <div class="header-main-row">
             <span class="header-version">{version}</span>
             
-            <div class="header-actions">
-                <button class="header-action"><span class="icon">⭐</span> Add to Favorites</button>
-                <button class="header-action"><span class="icon">🖨️</span> Print</button>
-                <button class="header-action"><span class="icon">📄</span> Download (TXT)</button>
+            <div class="header-actions" data-title={title} data-path={Astro.url.pathname}>
+                <button class="header-action" id="btn-favorite">
+                    <span class="icon">⭐</span> 
+                    <span class="btn-text">Añadir a Favoritos</span>
+                </button>
+                <button class="header-action" id="btn-print">
+                    <span class="icon">🖨️</span> Imprimir
+                </button>
+                <button class="header-action" id="btn-download">
+                    <span class="icon">📄</span> Descargar MD
+                </button>
             </div>
         </div>
         
         <hr class="header-divider" />
     </div>
     
-    <div class="content-body">
+    <div class="content-body" id="cheatsheet-content">
       <slot />
     </div>
   </div>
+
+  <!-- Aqua Style Notification -->
+  <div id="aqua-notification" class="aqua-notification">
+    <div class="notif-content">
+        <span class="notif-icon"></span>
+        <span class="notif-message">Descarga completada</span>
+    </div>
+  </div>
 </div>
+
+<script>
+    const btnFavorite = document.getElementById('btn-favorite');
+    const btnPrint = document.getElementById('btn-print');
+    const btnDownload = document.getElementById('btn-download');
+    const notification = document.getElementById('aqua-notification');
+    
+    const actionsContainer = document.querySelector('.header-actions');
+    const pageTitle = actionsContainer?.getAttribute('data-title');
+    const pagePath = actionsContainer?.getAttribute('data-path');
+
+    // --- Favorites Logic ---
+    function updateFavoriteButton() {
+        if (!btnFavorite || !pagePath) return;
+        const favorites = JSON.parse(localStorage.getItem('ai-cheatsheets-favorites') || '[]');
+        const isFav = favorites.some(f => f.path === pagePath);
+        
+        const btnText = btnFavorite.querySelector('.btn-text');
+        if (btnText) {
+            btnText.textContent = isFav ? 'Quitar de Favoritos' : 'Añadir a Favoritos';
+        }
+        btnFavorite.classList.toggle('is-fav', isFav);
+    }
+
+    btnFavorite?.addEventListener('click', () => {
+        const favorites = JSON.parse(localStorage.getItem('ai-cheatsheets-favorites') || '[]');
+        const index = favorites.findIndex(f => f.path === pagePath);
+        
+        if (index > -1) {
+            favorites.splice(index, 1);
+        } else {
+            favorites.push({ title: pageTitle, path: pagePath });
+        }
+        
+        localStorage.setItem('ai-cheatsheets-favorites', JSON.stringify(favorites));
+        updateFavoriteButton();
+    });
+
+    // --- Print Logic ---
+    btnPrint?.addEventListener('click', () => {
+        window.print();
+    });
+
+    // --- Download Logic ---
+    btnDownload?.addEventListener('click', () => {
+        const content = document.getElementById('cheatsheet-content');
+        if (!content) return;
+        
+        const text = content.innerText;
+        const blob = new Blob([`# ${pageTitle}\n\n${text}`], { type: 'text/markdown' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        
+        const fileName = (pageTitle || 'cheatsheet').toLowerCase().replace(/\s+/g, '-');
+        a.href = url;
+        a.download = `${fileName}.md`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+
+        // Show Aqua Notification
+        if (notification) {
+            notification.classList.add('show');
+            setTimeout(() => {
+                notification.classList.remove('show');
+            }, 3000);
+        }
+    });
+
+    // Initialize
+    updateFavoriteButton();
+</script>
 
 <style>
   .archive-window {
@@ -65,6 +153,7 @@ const {
     display: flex;
     flex-direction: column;
     min-height: 600px;
+    position: relative;
   }
 
   .window-header {
@@ -76,6 +165,7 @@ const {
     padding: 0 15px;
     border-bottom: 1px solid #999;
     box-shadow: inset 0 1px 0 rgba(255,255,255,0.8);
+    position: relative;
   }
 
   .window-controls {
@@ -170,10 +260,15 @@ const {
     align-items: center;
     gap: 5px;
     padding: 0;
+    transition: all 0.2s;
   }
 
   .header-action:hover {
     text-decoration: underline;
+  }
+
+  .header-action.is-fav {
+    color: #eab308;
   }
 
   .header-divider {
@@ -186,5 +281,59 @@ const {
     font-size: 1rem;
     line-height: 1.6;
     color: #334155;
+  }
+
+  /* Aqua Notification Styles */
+  .aqua-notification {
+    position: absolute;
+    bottom: -60px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 1000;
+    transition: bottom 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    pointer-events: none;
+  }
+
+  .aqua-notification.show {
+    bottom: 20px;
+  }
+
+  .notif-content {
+    background: var(--texture-aqua);
+    color: white;
+    padding: 10px 24px;
+    border-radius: 20px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    box-shadow: 0 10px 25px rgba(0, 102, 204, 0.3), inset 0 1px 0 rgba(255,255,255,0.4);
+    border: 1px solid var(--color-primary-dark);
+    font-size: 0.85rem;
+    font-weight: 700;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.2);
+  }
+
+  .notif-icon {
+    font-size: 1.1rem;
+    background: rgba(255,255,255,0.2);
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+  }
+
+  @media print {
+      .meta-header, .aqua-notification {
+          display: none !important;
+      }
+      .window-header {
+          display: none !important;
+      }
+      .archive-window {
+          border: none !important;
+          box-shadow: none !important;
+      }
   }
 </style>
