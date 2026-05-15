@@ -1,5 +1,5 @@
 ---
-import Badge from '../atoms/Badge.astro';
+import Badge from "../atoms/Badge.astro";
 
 interface Props {
   title: string;
@@ -8,14 +8,15 @@ interface Props {
   class?: string;
 }
 
-const { 
-  title, 
-  version = "v1.0.0", 
+const {
+  title,
+  version = "v1.0.0",
   breadcrumbs = [],
-  class: className 
+  class: className,
 } = Astro.props;
 ---
-<div class:list={['archive-window', className]}>
+
+<div class:list={["archive-window", className]}>
   <div class="window-header">
     <div class="window-controls">
       <span class="control close"></span>
@@ -23,39 +24,47 @@ const {
       <span class="control maximize"></span>
     </div>
   </div>
-  
+
   <div class="window-content">
     <!-- Meta Header -->
     <div class="meta-header">
-        <nav class="meta-breadcrumbs">
-            {breadcrumbs.map((crumb, index) => (
-                <>
-                    <a href={crumb.href}>{crumb.name}</a>
-                    {index < breadcrumbs.length - 1 && <span class="meta-sep"> &gt; </span>}
-                </>
-            ))}
-        </nav>
-        
-        <div class="header-main-row">
-            <span class="header-version">{version}</span>
-            
-            <div class="header-actions" data-title={title} data-path={Astro.url.pathname}>
-                <button class="header-action" id="btn-favorite">
-                    <span class="icon">⭐</span> 
-                    <span class="btn-text">Añadir a Favoritos</span>
-                </button>
-                <button class="header-action" id="btn-print">
-                    <span class="icon">🖨️</span> Imprimir
-                </button>
-                <button class="header-action" id="btn-download">
-                    <span class="icon">📄</span> Descargar MD
-                </button>
-            </div>
+      <nav class="meta-breadcrumbs">
+        {
+          breadcrumbs.map((crumb, index) => (
+            <>
+              <a href={crumb.href}>{crumb.name}</a>
+              {index < breadcrumbs.length - 1 && (
+                <span class="meta-sep"> &gt; </span>
+              )}
+            </>
+          ))
+        }
+      </nav>
+
+      <div class="header-main-row">
+        <span class="header-version">{version}</span>
+
+        <div
+          class="header-actions"
+          data-title={title}
+          data-path={Astro.url.pathname}
+        >
+          <button class="header-action" id="btn-favorite">
+            <span class="icon">⭐</span>
+            <span class="btn-text">Añadir a Favoritos</span>
+          </button>
+          <button class="header-action" id="btn-print">
+            <span class="icon">🖨️</span> Imprimir
+          </button>
+          <button class="header-action" id="btn-download">
+            <span class="icon">📄</span> Descargar MD
+          </button>
         </div>
-        
-        <hr class="header-divider" />
+      </div>
+
+      <hr class="header-divider" />
     </div>
-    
+
     <div class="content-body" id="cheatsheet-content">
       <slot />
     </div>
@@ -64,83 +73,93 @@ const {
   <!-- Aqua Style Notification -->
   <div id="aqua-notification" class="aqua-notification">
     <div class="notif-content">
-        <span class="notif-icon"></span>
-        <span class="notif-message">Descarga completada</span>
+      <span class="notif-icon"></span>
+      <span class="notif-message">Descarga completada</span>
     </div>
   </div>
 </div>
 
 <script>
-    const btnFavorite = document.getElementById('btn-favorite');
-    const btnPrint = document.getElementById('btn-print');
-    const btnDownload = document.getElementById('btn-download');
-    const notification = document.getElementById('aqua-notification');
-    
-    const actionsContainer = document.querySelector('.header-actions');
-    const pageTitle = actionsContainer?.getAttribute('data-title');
-    const pagePath = actionsContainer?.getAttribute('data-path');
+  const btnFavorite = document.getElementById("btn-favorite");
+  const btnPrint = document.getElementById("btn-print");
+  const btnDownload = document.getElementById("btn-download");
+  const notification = document.getElementById("aqua-notification");
 
-    // --- Favorites Logic ---
-    function updateFavoriteButton() {
-        if (!btnFavorite || !pagePath) return;
-        const favorites = JSON.parse(localStorage.getItem('ai-cheatsheets-favorites') || '[]');
-        const isFav = favorites.some(f => f.path === pagePath);
-        
-        const btnText = btnFavorite.querySelector('.btn-text');
-        if (btnText) {
-            btnText.textContent = isFav ? 'Quitar de Favoritos' : 'Añadir a Favoritos';
-        }
-        btnFavorite.classList.toggle('is-fav', isFav);
+  const actionsContainer = document.querySelector(".header-actions");
+  const pageTitle = actionsContainer?.getAttribute("data-title");
+  const pagePath = actionsContainer?.getAttribute("data-path");
+
+  // --- Favorites Logic ---
+  function updateFavoriteButton() {
+    if (!btnFavorite || !pagePath) return;
+    const favorites = JSON.parse(
+      localStorage.getItem("ai-cheatsheets-favorites") || "[]",
+    );
+    const isFav = favorites.some((f) => f.path === pagePath);
+
+    const btnText = btnFavorite.querySelector(".btn-text");
+    if (btnText) {
+      btnText.textContent = isFav
+        ? "Quitar de Favoritos"
+        : "Añadir a Favoritos";
+    }
+    btnFavorite.classList.toggle("is-fav", isFav);
+  }
+
+  btnFavorite?.addEventListener("click", () => {
+    const favorites = JSON.parse(
+      localStorage.getItem("ai-cheatsheets-favorites") || "[]",
+    );
+    const index = favorites.findIndex((f) => f.path === pagePath);
+
+    if (index > -1) {
+      favorites.splice(index, 1);
+    } else {
+      favorites.push({ title: pageTitle, path: pagePath });
     }
 
-    btnFavorite?.addEventListener('click', () => {
-        const favorites = JSON.parse(localStorage.getItem('ai-cheatsheets-favorites') || '[]');
-        const index = favorites.findIndex(f => f.path === pagePath);
-        
-        if (index > -1) {
-            favorites.splice(index, 1);
-        } else {
-            favorites.push({ title: pageTitle, path: pagePath });
-        }
-        
-        localStorage.setItem('ai-cheatsheets-favorites', JSON.stringify(favorites));
-        updateFavoriteButton();
-    });
-
-    // --- Print Logic ---
-    btnPrint?.addEventListener('click', () => {
-        window.print();
-    });
-
-    // --- Download Logic ---
-    btnDownload?.addEventListener('click', () => {
-        const content = document.getElementById('cheatsheet-content');
-        if (!content) return;
-        
-        const text = content.innerText;
-        const blob = new Blob([`# ${pageTitle}\n\n${text}`], { type: 'text/markdown' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        
-        const fileName = (pageTitle || 'cheatsheet').toLowerCase().replace(/\s+/g, '-');
-        a.href = url;
-        a.download = `${fileName}.md`;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
-
-        // Show Aqua Notification
-        if (notification) {
-            notification.classList.add('show');
-            setTimeout(() => {
-                notification.classList.remove('show');
-            }, 3000);
-        }
-    });
-
-    // Initialize
+    localStorage.setItem("ai-cheatsheets-favorites", JSON.stringify(favorites));
     updateFavoriteButton();
+  });
+
+  // --- Print Logic ---
+  btnPrint?.addEventListener("click", () => {
+    window.print();
+  });
+
+  // --- Download Logic ---
+  btnDownload?.addEventListener("click", () => {
+    const content = document.getElementById("cheatsheet-content");
+    if (!content) return;
+
+    const text = content.innerText;
+    const blob = new Blob([`# ${pageTitle}\n\n${text}`], {
+      type: "text/markdown",
+    });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+
+    const fileName = (pageTitle || "cheatsheet")
+      .toLowerCase()
+      .replace(/\s+/g, "-");
+    a.href = url;
+    a.download = `${fileName}.md`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+
+    // Show Aqua Notification
+    if (notification) {
+      notification.classList.add("show");
+      setTimeout(() => {
+        notification.classList.remove("show");
+      }, 3000);
+    }
+  });
+
+  // Initialize
+  updateFavoriteButton();
 </script>
 
 <style>
@@ -148,7 +167,9 @@ const {
     background: #fff;
     border: 1px solid #999;
     border-radius: 8px;
-    box-shadow: 0 10px 30px rgba(0,0,0,0.15), 0 1px 2px rgba(0,0,0,0.1);
+    box-shadow:
+      0 10px 30px rgba(0, 0, 0, 0.15),
+      0 1px 2px rgba(0, 0, 0, 0.1);
     overflow: hidden;
     display: flex;
     flex-direction: column;
@@ -164,7 +185,7 @@ const {
     justify-content: center;
     padding: 0 15px;
     border-bottom: 1px solid #999;
-    box-shadow: inset 0 1px 0 rgba(255,255,255,0.8);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.8);
     position: relative;
   }
 
@@ -179,25 +200,37 @@ const {
     width: 12px;
     height: 12px;
     border-radius: 50%;
-    border: 0.5px solid rgba(0,0,0,0.3);
+    border: 0.5px solid rgba(0, 0, 0, 0.3);
     position: relative;
-    box-shadow: inset 0 1px 1px rgba(0,0,0,0.1), 0 0.5px 0.5px rgba(255,255,255,0.4);
+    box-shadow:
+      inset 0 1px 1px rgba(0, 0, 0, 0.1),
+      0 0.5px 0.5px rgba(255, 255, 255, 0.4);
   }
 
   .control::after {
-    content: '';
+    content: "";
     position: absolute;
     top: 2px;
     left: 2px;
     width: 8px;
     height: 4px;
-    background: linear-gradient(to bottom, rgba(255,255,255,0.8) 0%, rgba(255,255,255,0.1) 100%);
+    background: linear-gradient(
+      to bottom,
+      rgba(255, 255, 255, 0.8) 0%,
+      rgba(255, 255, 255, 0.1) 100%
+    );
     border-radius: 4px 4px 2px 2px;
   }
 
-  .control.close { background: linear-gradient(to bottom, #ff7b73 0%, #ff5f56 100%); }
-  .control.minimize { background: linear-gradient(to bottom, #ffce52 0%, #ffbd2e 100%); }
-  .control.maximize { background: linear-gradient(to bottom, #30e04f 0%, #27c93f 100%); }
+  .control.close {
+    background: linear-gradient(to bottom, #ff7b73 0%, #ff5f56 100%);
+  }
+  .control.minimize {
+    background: linear-gradient(to bottom, #ffce52 0%, #ffbd2e 100%);
+  }
+  .control.maximize {
+    background: linear-gradient(to bottom, #30e04f 0%, #27c93f 100%);
+  }
 
   .window-content {
     flex: 1;
@@ -306,16 +339,18 @@ const {
     display: flex;
     align-items: center;
     gap: 12px;
-    box-shadow: 0 10px 25px rgba(0, 102, 204, 0.3), inset 0 1px 0 rgba(255,255,255,0.4);
+    box-shadow:
+      0 10px 25px rgba(0, 102, 204, 0.3),
+      inset 0 1px 0 rgba(255, 255, 255, 0.4);
     border: 1px solid var(--color-primary-dark);
     font-size: 0.85rem;
     font-weight: 700;
-    text-shadow: 0 1px 2px rgba(0,0,0,0.2);
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
   }
 
   .notif-icon {
     font-size: 1.1rem;
-    background: rgba(255,255,255,0.2);
+    background: rgba(255, 255, 255, 0.2);
     width: 24px;
     height: 24px;
     display: flex;
@@ -325,15 +360,16 @@ const {
   }
 
   @media print {
-      .meta-header, .aqua-notification {
-          display: none !important;
-      }
-      .window-header {
-          display: none !important;
-      }
-      .archive-window {
-          border: none !important;
-          box-shadow: none !important;
-      }
+    .meta-header,
+    .aqua-notification {
+      display: none !important;
+    }
+    .window-header {
+      display: none !important;
+    }
+    .archive-window {
+      border: none !important;
+      box-shadow: none !important;
+    }
   }
 </style>

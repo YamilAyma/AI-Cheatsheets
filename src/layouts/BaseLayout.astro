@@ -1,110 +1,119 @@
 ---
-import Header from '../components/organisms/Header.astro';
-import SubNavbar from '../components/organisms/SubNavbar.astro';
-import Footer from '../components/organisms/Footer.astro';
-import NavigationIndex from '../components/organisms/NavigationIndex.astro';
+import Header from "../components/organisms/Header.astro";
+import SubNavbar from "../components/organisms/SubNavbar.astro";
+import Footer from "../components/organisms/Footer.astro";
+import NavigationIndex from "../components/organisms/NavigationIndex.astro";
 
-import '../styles/global.css';
+import "../styles/global.css";
 
 interface Props {
-	title: string;
-	description?: string;
-	breadcrumbs?: { name: string; href: string }[];
+    title: string;
+    description?: string;
+    breadcrumbs?: { name: string; href: string }[];
     slug?: string;
     ogImage?: string;
 }
 
-const { 
-	title, 
-	description = "AI Cheatsheets: Tu archivo universal de conocimiento sintetizado por IA. Guías rápidas, comandos y conceptos esenciales para dominar cualquier tema.",
-	breadcrumbs = [{ name: 'Home', href: '/' }],
+const {
+    title,
+    description = "AI Cheatsheets: Tu archivo universal de conocimiento sintetizado por IA. Guías rápidas, comandos y conceptos esenciales para dominar cualquier tema.",
+    breadcrumbs = [{ name: "Home", href: "/" }],
     slug,
-    ogImage = '/og-image.png'
+    ogImage = "/og-image.png",
 } = Astro.props;
 
-const canonicalURL = new URL(Astro.url.pathname, Astro.site || 'http://localhost:4321');
+const canonicalURL = new URL(
+    Astro.url.pathname,
+    Astro.site || "http://localhost:4321",
+);
 ---
 
 <!doctype html>
 <html lang="es">
-	<head>
-		<meta charset="UTF-8" />
-		<meta name="description" content={description} />
-		<meta name="viewport" content="width=device-width" />
-		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-		<meta name="generator" content={Astro.generator} />
-		<meta name="robots" content="index, follow" />
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="description" content={description} />
+        <meta name="viewport" content="width=device-width" />
+        <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+        <meta name="generator" content={Astro.generator} />
+        <meta name="robots" content="index, follow" />
 
-		<!-- Open Graph / Facebook -->
-		<meta property="og:type" content="website" />
-		<meta property="og:url" content={canonicalURL} />
-		<meta property="og:title" content={`${title} | AI Cheatsheets`} />
-		<meta property="og:description" content={description} />
-		<meta property="og:image" content={new URL(ogImage, Astro.site)} />
+        <!-- Open Graph / Facebook -->
+        <meta property="og:type" content="website" />
+        <meta property="og:url" content={canonicalURL} />
+        <meta property="og:title" content={`${title} | AI Cheatsheets`} />
+        <meta property="og:description" content={description} />
+        <meta property="og:image" content={new URL(ogImage, Astro.site)} />
 
-		<!-- Twitter -->
-		<meta property="twitter:card" content="summary_large_image" />
-		<meta property="twitter:url" content={canonicalURL} />
-		<meta property="twitter:title" content={`${title} | AI Cheatsheets`} />
-		<meta property="twitter:description" content={description} />
-		<meta property="twitter:image" content={new URL(ogImage, Astro.site)} />
+        <!-- Twitter -->
+        <meta property="twitter:card" content="summary_large_image" />
+        <meta property="twitter:url" content={canonicalURL} />
+        <meta property="twitter:title" content={`${title} | AI Cheatsheets`} />
+        <meta property="twitter:description" content={description} />
+        <meta property="twitter:image" content={new URL(ogImage, Astro.site)} />
 
-		<!-- Structured Data -->
-		<script type="application/ld+json" set:html={JSON.stringify({
-			"@context": "https://schema.org",
-			"@type": "TechArticle",
-			"headline": title,
-			"description": description,
-			"url": canonicalURL,
-			"image": new URL(ogImage, Astro.site),
-			"author": {
-				"@type": "Organization",
-				"name": "AI Cheatsheets"
-			}
-		})} />
+        <!-- Structured Data -->
+        <script
+            type="application/ld+json"
+            set:html={JSON.stringify({
+                "@context": "https://schema.org",
+                "@type": "TechArticle",
+                headline: title,
+                description: description,
+                url: canonicalURL,
+                image: new URL(ogImage, Astro.site),
+                author: {
+                    "@type": "Organization",
+                    name: "AI Cheatsheets",
+                },
+            })}
+        />
 
-		<title>{title} | AI Cheatsheets</title>
-		<link rel="canonical" href={canonicalURL} />
-		<link rel="preconnect" href="https://fonts.googleapis.com">
-		<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-		<link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;700&family=Lunasima:wght@400;700&family=Open+Sans:ital,wght@0,400;0,600;0,700;1,400&family=PT+Sans:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
-	</head>
-	<body class="app-layout">
-		<div class="fixed-top">
+        <title>{title} | AI Cheatsheets</title>
+        <link rel="canonical" href={canonicalURL} />
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+        <link
+            href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;700&family=Lunasima:wght@400;700&family=Open+Sans:ital,wght@0,400;0,600;0,700;1,400&family=PT+Sans:ital,wght@0,400;0,700;1,400&display=swap"
+            rel="stylesheet"
+        />
+    </head>
+    <body class="app-layout">
+        <div class="fixed-top">
             <Header />
             <SubNavbar breadcrumbs={breadcrumbs} />
         </div>
-		
-		<main class="holy-grail-container">
+
+        <main class="holy-grail-container">
             <!-- Left Sidebar -->
-			<aside class="sidebar-container left">
-				<div class="scroll-wrapper">
+            <aside class="sidebar-container left">
+                <div class="scroll-wrapper">
                     <NavigationIndex currentSlug={slug} />
                 </div>
-			</aside>
+            </aside>
 
             <!-- Main Content Area -->
-			<section class="main-content-area">
-				<div class="scroll-wrapper">
+            <section class="main-content-area">
+                <div class="scroll-wrapper">
                     <div class="content-constraints">
                         <slot />
                     </div>
                 </div>
-			</section>
-		</main>
+            </section>
+        </main>
 
-		<Footer />
-	</body>
+        <Footer />
+    </body>
 </html>
 
 <style is:global>
-	:root {
-		--sidebar-left-width: 260px;
-		--header-height: 52px;
-		--subnavbar-height: 38px;
-		--footer-height: 40px;
-		--top-offset: calc(var(--header-height) + var(--subnavbar-height));
-	}
+    :root {
+        --sidebar-left-width: 260px;
+        --header-height: 52px;
+        --subnavbar-height: 38px;
+        --footer-height: 40px;
+        --top-offset: calc(var(--header-height) + var(--subnavbar-height));
+    }
 
     .app-layout {
         height: 100vh;
@@ -122,14 +131,14 @@ const canonicalURL = new URL(Astro.url.pathname, Astro.site || 'http://localhost
         z-index: 1000;
     }
 
-	.holy-grail-container {
-		display: grid;
-		grid-template-columns: var(--sidebar-left-width) 1fr;
-		flex: 1;
-		margin-top: var(--top-offset);
-		height: calc(100vh - var(--top-offset) - var(--footer-height));
-		overflow: hidden;
-	}
+    .holy-grail-container {
+        display: grid;
+        grid-template-columns: var(--sidebar-left-width) 1fr;
+        flex: 1;
+        margin-top: var(--top-offset);
+        height: calc(100vh - var(--top-offset) - var(--footer-height));
+        overflow: hidden;
+    }
 
     .sidebar-container {
         border-right: 1px solid #cbd5e1;

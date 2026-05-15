@@ -1,0 +1,303 @@
+---
+import { getCollection } from 'astro:content';
+import BaseLayout from '../layouts/BaseLayout.astro';
+import ArchiveWindow from '../components/organisms/ArchiveWindow.astro';
+
+const allCheatsheets = await getCollection('cheatsheets');
+const searchableData = allCheatsheets
+    .filter(sheet => sheet.id !== 'welcome')
+    .map(sheet => ({
+        id: sheet.id,
+        title: sheet.data.title || sheet.id,
+        description: sheet.data.description || '',
+        tags: sheet.data.tags || [],
+        path: `/${sheet.id}`
+    }));
+
+const breadcrumbs = [
+    { name: 'Home', href: '/' },
+    { name: 'Search', href: '/search' }
+];
+---
+
+<BaseLayout 
+    title="Search Archive" 
+    breadcrumbs={breadcrumbs}
+>
+    <ArchiveWindow 
+        title="Search Results" 
+        breadcrumbs={breadcrumbs}
+    >
+        <div class="search-page-container">
+            <h2 id="search-title" class="search-status-title">Searching...</h2>
+            <div id="results-container" class="results-grid">
+                <!-- Results will be injected here -->
+            </div>
+            
+            <template id="result-template">
+                <a href="" class="search-result-card">
+                    <div class="card-icon">📄</div>
+                    <div class="card-content">
+                        <h3 class="result-title"></h3>
+                        <p class="result-desc"></p>
+                        <div class="result-tags"></div>
+                    </div>
+                </a>
+            </template>
+
+            <div id="no-results" class="search-2003-full-area" style="display: none;">
+                <form action="/search" method="GET">
+                    <div class="search-2003-centered-row">
+                        <input type="text" name="q" class="search-2003-input-large" autocomplete="off" />
+                        <button type="submit" class="search-2003-button-large">Search</button>
+                    </div>
+                </form>
+                <div class="search-2003-links">
+                    <a href="/">Site Map</a> | <a href="/search">Search Tips</a>
+                </div>
+
+                <div class="search-2003-support-text">
+                    Visit the AI Cheatsheets <a href="/">online</a> or at <a href="/">retail</a> locations.<br>
+                    1-800-MY-APPLE
+                </div>
+
+                <div class="search-2003-support-text" style="margin-top: 20px;">
+                    Find <a href="https://github.com/YamilAyma/AI-Cheatsheets">Job Opportunities</a> at AI Cheatsheets.
+                </div>
+            </div>
+        </div>
+    </ArchiveWindow>
+</BaseLayout>
+
+<script define:vars={{ searchableData }}>
+    function initSearch() {
+        const urlParams = new URLSearchParams(window.location.search);
+        const query = urlParams.get('q')?.toLowerCase() || '';
+        const resultsContainer = document.getElementById('results-container');
+        const searchTitle = document.getElementById('search-title');
+        const noResults = document.getElementById('no-results');
+        const template = document.getElementById('result-template');
+
+        if (!query) {
+            searchTitle.textContent = "Ingresa un término para buscar";
+            resultsContainer.innerHTML = '';
+            noResults.style.display = 'block';
+            return;
+        }
+
+        const filtered = searchableData.filter(item => {
+            return item.title.toLowerCase().includes(query) || 
+                   item.description.toLowerCase().includes(query) ||
+                   item.tags.some(tag => tag.toLowerCase().includes(query));
+        });
+
+        searchTitle.textContent = `Resultados para "${query}" (${filtered.length})`;
+
+        if (filtered.length === 0) {
+            resultsContainer.innerHTML = '';
+            noResults.style.display = 'block';
+        } else {
+            noResults.style.display = 'none';
+            resultsContainer.innerHTML = '';
+            
+            filtered.forEach(item => {
+                const clone = template.content.cloneNode(true);
+                const card = clone.querySelector('.search-result-card');
+                const title = clone.querySelector('.result-title');
+                const desc = clone.querySelector('.result-desc');
+                const tags = clone.querySelector('.result-tags');
+
+                card.href = item.path;
+                title.textContent = item.title;
+                desc.textContent = item.description;
+                
+                if (item.tags && item.tags.length > 0) {
+                    item.tags.forEach(tag => {
+                        const tagEl = document.createElement('span');
+                        tagEl.className = 'tag-badge';
+                        tagEl.textContent = tag;
+                        tags.appendChild(tagEl);
+                    });
+                }
+
+                resultsContainer.appendChild(clone);
+            });
+        }
+    }
+
+    // Run on load
+    initSearch();
+
+    // Support navigation via browser history
+    window.addEventListener('popstate', initSearch);
+</script>
+
+<style>
+    .search-page-container {
+        padding: 10px 0;
+    }
+
+    .search-status-title {
+        font-size: 1.2rem;
+        color: #1e293b;
+        margin-bottom: 24px;
+        font-weight: 700;
+        border-bottom: 2px solid var(--color-primary);
+        display: inline-block;
+        padding-bottom: 4px;
+    }
+
+    .results-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+        gap: 20px;
+    }
+
+    .search-result-card {
+        display: flex;
+        gap: 16px;
+        padding: 16px;
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+        border-radius: 8px;
+        text-decoration: none;
+        transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        color: inherit;
+    }
+
+    .search-result-card:hover {
+        transform: translateY(-2px);
+        background: white;
+        border-color: var(--color-primary);
+        box-shadow: 0 10px 20px rgba(0,0,0,0.05);
+    }
+
+    .card-icon {
+        font-size: 1.5rem;
+        opacity: 0.7;
+    }
+
+    .card-content h3 {
+        margin: 0 0 8px 0;
+        font-size: 1rem;
+        color: #0f172a;
+        font-weight: 700;
+    }
+
+    .result-desc {
+        font-size: 0.85rem;
+        color: #64748b;
+        margin: 0 0 12px 0;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+    }
+
+    .result-tags {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+    }
+
+    .tag-badge {
+        font-size: 0.65rem;
+        background: #e2e8f0;
+        color: #475569;
+        padding: 2px 8px;
+        border-radius: 4px;
+        font-weight: 600;
+        text-transform: uppercase;
+    }
+
+    /* 2003 Apple Search Page Style */
+    .search-2003-full-area {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        padding: 60px 20px;
+        text-align: center;
+    }
+
+    .search-2003-centered-row {
+        display: flex;
+        gap: 12px;
+        align-items: center;
+        margin-bottom: 12px;
+    }
+
+    .search-2003-input-large {
+        width: 320px;
+        height: 26px;
+        padding: 4px 8px;
+        border: 1px solid #999;
+        border-radius: 2px;
+        background: #fff;
+        font-family: var(--font-interface);
+        font-size: 13px;
+        outline: none;
+        box-shadow: inset 0 1px 3px rgba(0,0,0,0.1);
+    }
+
+    .search-2003-button-large {
+        height: 26px;
+        padding: 0 20px;
+        border: 1px solid #777;
+        border-radius: 13px;
+        background: linear-gradient(to bottom, 
+            #fefefe 0%, 
+            #f2f2f2 45%, 
+            #dcdcdc 50%, 
+            #cfcfcf 100%
+        );
+        color: #333;
+        font-family: var(--font-interface);
+        font-size: 13px;
+        font-weight: 700;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 1px 1px rgba(0,0,0,0.1);
+        text-shadow: 0 1px 0 rgba(255,255,255,0.8);
+    }
+
+    .search-2003-links {
+        font-family: var(--font-interface);
+        font-size: 11px;
+        color: #666;
+        margin-bottom: 30px;
+    }
+
+    .search-2003-links a {
+        color: #0066cc;
+        text-decoration: none;
+    }
+
+    .search-2003-links a:hover {
+        text-decoration: underline;
+    }
+
+    .search-2003-support-text {
+        font-family: var(--font-interface);
+        font-size: 11px;
+        color: #333;
+        line-height: 1.5;
+    }
+
+    .search-2003-support-text a {
+        color: #0066cc;
+        text-decoration: none;
+        font-weight: 700;
+    }
+
+    .search-2003-support-text a:hover {
+        text-decoration: underline;
+    }
+
+    @media (max-width: 650px) {
+        .search-2003-input-large {
+            width: 200px;
+        }
+    }
+</style>

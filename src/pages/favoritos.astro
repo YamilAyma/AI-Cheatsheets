@@ -1,13 +1,16 @@
 ---
-import BaseLayout from '../layouts/BaseLayout.astro';
-import ArchiveWindow from '../components/organisms/ArchiveWindow.astro';
+import BaseLayout from "../layouts/BaseLayout.astro";
+import ArchiveWindow from "../components/organisms/ArchiveWindow.astro";
 ---
 
 <BaseLayout title="Mis Favoritos" slug="favoritos">
-    <ArchiveWindow 
-        title="Mis Favoritos" 
+    <ArchiveWindow
+        title="Mis Favoritos"
         version="v1.1.0"
-        breadcrumbs={[{ name: 'Home', href: '/' }, { name: 'Favoritos', href: '/favoritos' }]}
+        breadcrumbs={[
+            { name: "Home", href: "/" },
+            { name: "Favoritos", href: "/favoritos" },
+        ]}
     >
         <div id="favorites-container">
             <p class="loading-text">Cargando tus favoritos...</p>
@@ -17,11 +20,13 @@ import ArchiveWindow from '../components/organisms/ArchiveWindow.astro';
 
 <script>
     function renderFavorites() {
-        const container = document.getElementById('favorites-container');
+        const container = document.getElementById("favorites-container");
         if (!container) return;
-        
-        const favorites = JSON.parse(localStorage.getItem('ai-cheatsheets-favorites') || '[]');
-        
+
+        const favorites = JSON.parse(
+            localStorage.getItem("ai-cheatsheets-favorites") || "[]",
+        );
+
         if (favorites.length === 0) {
             container.innerHTML = `
                 <div class="empty-state">
@@ -36,7 +41,9 @@ import ArchiveWindow from '../components/organisms/ArchiveWindow.astro';
 
         container.innerHTML = `
             <div class="favorites-grid">
-                ${favorites.map(fav => `
+                ${favorites
+                    .map(
+                        (fav) => `
                     <div class="favorite-item">
                         <div class="fav-info">
                             <span class="fav-icon">📄</span>
@@ -50,18 +57,25 @@ import ArchiveWindow from '../components/organisms/ArchiveWindow.astro';
                             <button class="action-btn remove" data-path="${fav.path}">Eliminar</button>
                         </div>
                     </div>
-                `).join('')}
+                `,
+                    )
+                    .join("")}
             </div>
         `;
 
         // Add event listeners for removal
-        container.querySelectorAll('.remove').forEach(btn => {
-            btn.addEventListener('click', (e) => {
+        container.querySelectorAll(".remove").forEach((btn) => {
+            btn.addEventListener("click", (e) => {
                 const target = e.target as HTMLElement;
-                const path = target.getAttribute('data-path');
-                const favs = JSON.parse(localStorage.getItem('ai-cheatsheets-favorites') || '[]');
-                const filtered = favs.filter(f => f.path !== path);
-                localStorage.setItem('ai-cheatsheets-favorites', JSON.stringify(filtered));
+                const path = target.getAttribute("data-path");
+                const favs = JSON.parse(
+                    localStorage.getItem("ai-cheatsheets-favorites") || "[]",
+                );
+                const filtered = favs.filter((f) => f.path !== path);
+                localStorage.setItem(
+                    "ai-cheatsheets-favorites",
+                    JSON.stringify(filtered),
+                );
                 renderFavorites();
             });
         });
@@ -94,7 +108,7 @@ import ArchiveWindow from '../components/organisms/ArchiveWindow.astro';
     }
 
     .favorite-item::before {
-        content: '';
+        content: "";
         position: absolute;
         top: 0;
         left: 0;
@@ -179,36 +193,38 @@ import ArchiveWindow from '../components/organisms/ArchiveWindow.astro';
         background: var(--texture-aqua-glass);
         color: white;
         border: 1px solid #005bb7;
-        box-shadow: 
+        box-shadow:
             0 2px 4px rgba(0, 102, 204, 0.15),
-            inset 0 1px 0 rgba(255,255,255,0.3);
+            inset 0 1px 0 rgba(255, 255, 255, 0.3);
     }
 
     .action-btn.remove {
-        background: linear-gradient(
-            to bottom,
-            rgba(255, 255, 255, 0.4) 0%,
-            rgba(255, 255, 255, 0.1) 50%,
-            rgba(0, 0, 0, 0.02) 51%,
-            rgba(0, 0, 0, 0.05) 100%
-        ), #ef4444;
+        background:
+            linear-gradient(
+                to bottom,
+                rgba(255, 255, 255, 0.4) 0%,
+                rgba(255, 255, 255, 0.1) 50%,
+                rgba(0, 0, 0, 0.02) 51%,
+                rgba(0, 0, 0, 0.05) 100%
+            ),
+            #ef4444;
         color: white;
         border: 1px solid #b91c1c;
-        box-shadow: 
+        box-shadow:
             0 2px 4px rgba(239, 68, 68, 0.1),
-            inset 0 1px 0 rgba(255,255,255,0.3);
+            inset 0 1px 0 rgba(255, 255, 255, 0.3);
     }
 
     .action-btn:hover {
         filter: brightness(1.1);
         transform: translateY(-2px);
-        box-shadow: 0 6px 15px rgba(0,0,0,0.2);
+        box-shadow: 0 6px 15px rgba(0, 0, 0, 0.2);
     }
 
     .action-btn:active {
         transform: translateY(0);
         filter: brightness(0.9);
-        box-shadow: inset 0 2px 4px rgba(0,0,0,0.2);
+        box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.2);
     }
 
     .empty-state {

@@ -24,6 +24,7 @@ const breadcrumbs = [
 <BaseLayout
   title={entry.data.title || entry.id}
   description={entry.data.description || `Guía rápida y síntesis sobre ${entry.data.title || entry.id}`}
+  ogImage={entry.data.image}
   breadcrumbs={breadcrumbs}
   slug={entry.id}
 >

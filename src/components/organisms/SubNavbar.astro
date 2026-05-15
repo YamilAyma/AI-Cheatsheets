@@ -1,120 +1,264 @@
 ---
-import { getCollection } from 'astro:content';
+import { getCollection } from "astro:content";
 
-const allCheatsheets = await getCollection('cheatsheets');
+const allCheatsheets = await getCollection("cheatsheets");
 
 // Define known languages for categorization
-const knownLanguages = ['python', 'javascript', 'typescript', 'php', 'css', 'html', 'sql', 'bash', 'c#', 'java', 'go', 'rust'];
+const knownLanguages = [
+    "python",
+    "javascript",
+    "typescript",
+    "php",
+    "css",
+    "html",
+    "sql",
+    "bash",
+    "c#",
+    "java",
+    "go",
+    "rust",
+];
 
 // Dynamic categories from directories (excluding 'welcome' and empty parts)
-const categories = [...new Set(allCheatsheets.map(post => {
-    const parts = post.id.split('/');
-    return parts.length > 1 ? parts[0] : null;
-}).filter(Boolean))].sort();
+const categories = [
+    ...new Set(
+        allCheatsheets
+            .map((post) => {
+                const parts = post.id.split("/");
+                return parts.length > 1 ? parts[0] : null;
+            })
+            .filter(Boolean),
+    ),
+].sort();
 
 // Extract tags and categorize them
-const allTags = [...new Set(allCheatsheets.flatMap(post => post.data.tags || []))].filter(Boolean);
+const allTags = [
+    ...new Set(allCheatsheets.flatMap((post) => post.data.tags || [])),
+].filter(Boolean);
 
-const languages = allTags.filter(tag => knownLanguages.includes(tag.toLowerCase())).sort();
-const tools = allTags.filter(tag => !knownLanguages.includes(tag.toLowerCase()) && tag.toLowerCase() !== 'general').sort();
+const languages = allTags
+    .filter((tag) => knownLanguages.includes(tag.toLowerCase()))
+    .sort();
+const tools = allTags
+    .filter(
+        (tag) =>
+            !knownLanguages.includes(tag.toLowerCase()) &&
+            tag.toLowerCase() !== "general",
+    )
+    .sort();
 ---
+
 <div class="sub-navbar">
     <div class="sub-nav-left">
-        <a href="/popular" class="sub-nav-link">Popular</a>
-        <a href="/new" class="sub-nav-link">New</a>
-        <a href="/favoritos" class="sub-nav-link"><span class="icon">⭐</span> Favoritos</a>
-        
+        <a href="/search?q=popular" class="sub-nav-link">Popular</a>
+        <a href="/search?q=new" class="sub-nav-link">New</a>
+        <a href="/favoritos" class="sub-nav-link"
+            ><span class="icon">⭐</span> Favoritos</a
+        >
+
         <div class="dropdown">
             <button class="dropdown-toggle sub-nav-link">By Category ▾</button>
             <div class="dropdown-menu">
-                {categories.map(cat => (
-                    <a href={`/${cat}`} class="dropdown-item">
-                        {cat.charAt(0).toUpperCase() + cat.slice(1)}
-                    </a>
-                ))}
+                {
+                    categories.map((cat) => (
+                        <a href={`/search?q=${cat}`} class="dropdown-item">
+                            {cat.charAt(0).toUpperCase() + cat.slice(1)}
+                        </a>
+                    ))
+                }
             </div>
         </div>
 
         <div class="dropdown">
             <button class="dropdown-toggle sub-nav-link">By Language ▾</button>
             <div class="dropdown-menu">
-                {languages.length > 0 ? languages.map(lang => (
-                    <a href={`/search?q=${lang}`} class="dropdown-item">{lang}</a>
-                )) : <span class="dropdown-item disabled">No languages found</span>}
+                {
+                    languages.length > 0 ? (
+                        languages.map((lang) => (
+                            <a href={`/search?q=${lang}`} class="dropdown-item">
+                                {lang}
+                            </a>
+                        ))
+                    ) : (
+                        <span class="dropdown-item disabled">
+                            No languages found
+                        </span>
+                    )
+                }
             </div>
         </div>
 
         <div class="dropdown">
             <button class="dropdown-toggle sub-nav-link">By Tool ▾</button>
             <div class="dropdown-menu">
-                {tools.length > 0 ? tools.map(tool => (
-                    <a href={`/search?q=${tool}`} class="dropdown-item">{tool}</a>
-                )) : <span class="dropdown-item disabled">No tools found</span>}
+                {
+                    tools.length > 0 ? (
+                        tools.map((tool) => (
+                            <a href={`/search?q=${tool}`} class="dropdown-item">
+                                {tool}
+                            </a>
+                        ))
+                    ) : (
+                        <span class="dropdown-item disabled">
+                            No tools found
+                        </span>
+                    )
+                }
             </div>
         </div>
 
-        <a href="https://github.com/YamilAyma/AI-Cheatsheets" target="_blank" class="sub-nav-link highlight">Submit a Sheet</a>
+        <div class="dropdown" style="margin-left: 20px;">
+            <a
+                href="https://github.com/YamilAyma/AI-Cheatsheets"
+                target="_blank"
+                class="sub-nav-link highlight">Submit a Sheet</a
+            >
+        </div>
     </div>
 
-    <div class="sub-nav-right">
-        <div class="search-box">
-            <input 
-                type="text" 
-                id="subNavbarSearch" 
-                class="search-input"
-                placeholder="Search Archive..." 
+    <div class="sub-nav-right" style="margin-bottom: 6px;">
+        <form
+            action="/search"
+            method="GET"
+            class="search-2003-container"
+            id="globalSearchForm"
+        >
+            <input
+                type="text"
+                name="q"
+                id="subNavbarSearch"
+                class="search-2003-input"
+                placeholder="Search"
                 autocomplete="off"
             />
-            <button class="search-button">SEARCH</button>
-        </div>
+            <button type="submit" class="search-2003-button">Search</button>
+        </form>
     </div>
 </div>
 
+<script>
+    function syncSearchInput() {
+        const searchInput = document.getElementById(
+            "subNavbarSearch",
+        ) as HTMLInputElement;
+        const form = document.getElementById(
+            "globalSearchForm",
+        ) as HTMLFormElement;
+        if (!searchInput || !form) return;
+
+        // Sync input with URL query
+        const urlParams = new URLSearchParams(window.location.search);
+        const query = urlParams.get("q");
+        if (query) {
+            searchInput.value = query;
+        }
+
+        // Robust Enter key handling
+        searchInput.addEventListener("keydown", (e) => {
+            if (e.key === "Enter") {
+                e.preventDefault(); // Prevent double submission if browser handles it weirdly
+                const q = searchInput.value.trim();
+                if (q) {
+                    window.location.href = `/search?q=${encodeURIComponent(q)}`;
+                }
+            }
+        });
+
+        // Click handler for the button (manual fallback)
+        const btn = form.querySelector("button");
+        btn?.addEventListener("click", (e) => {
+            e.preventDefault();
+            const q = searchInput.value.trim();
+            if (q) {
+                window.location.href = `/search?q=${encodeURIComponent(q)}`;
+            }
+        });
+    }
+
+    // Run on every page load
+    document.addEventListener("DOMContentLoaded", syncSearchInput);
+    // Also run immediately if script is loaded after DOM
+    if (
+        document.readyState === "complete" ||
+        document.readyState === "interactive"
+    ) {
+        syncSearchInput();
+    }
+</script>
+
 <style>
-.sub-navbar {
-        background: #f1f5f9;
-        height: 38px;
-        border-bottom: 1px solid #cbd5e1;
+    .sub-navbar {
+        background-color: #ededed;
+        background-image: linear-gradient(rgba(255,255,255,0.4) 1px, transparent 1px);
+        background-size: 100% 2px;
+        height: 40px;
+        border-bottom: 1px solid #888;
         display: flex;
         justify-content: space-between;
-        align-items: center;
-        padding: 0 20px;
+        align-items: flex-end; /* Tabs sit on the bottom border */
+        padding: 0 15px;
         position: sticky;
         top: 0;
         z-index: 50;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
     }
 
     .sub-nav-left {
         display: flex;
-        gap: 15px;
-        align-items: center;
+        gap: 0; /* Tabs must touch */
+        align-items: flex-end;
         height: 100%;
+        padding-bottom: 0;
     }
 
-    .sub-nav-link {
-        font-size: 0.72rem;
-        color: #475569;
+    /* Core Tab Style for both Links and Dropdown Toggles */
+    .sub-nav-link, .dropdown-toggle {
+        font-family: "Lucida Grande", "Geneva", sans-serif;
+        font-size: 11px;
+        color: #000;
         text-decoration: none;
-        font-weight: 800;
-        padding: 4px 8px;
-        border-radius: 4px;
-        transition: all 0.2s;
-        text-transform: uppercase;
-        letter-spacing: 0.04em;
+        font-weight: 500;
+        padding: 5px 20px 4px 20px;
+        background: linear-gradient(to bottom, #ffffff 0%, #ececec 40%, #e0e0e0 100%);
+        border: 1px solid #888;
+        border-bottom: none;
+        border-radius: 6px 6px 0 0;
+        margin-left: -1px; /* Overlap borders */
+        transition: none;
+        text-transform: none;
+        letter-spacing: normal;
         display: flex;
         align-items: center;
         gap: 4px;
+        position: relative;
+        z-index: 1;
+        cursor: pointer;
+        box-shadow: inset 0 1px 0 rgba(255,255,255,1), inset 1px 0 0 rgba(255,255,255,0.5), inset -1px 0 0 rgba(255,255,255,0.5);
     }
 
-    .sub-nav-link:hover {
-        color: var(--color-primary);
-        background: rgba(0,0,0,0.03);
+    .sub-nav-left > *:first-child .sub-nav-link,
+    .sub-nav-left > a:first-child {
+        margin-left: 0;
     }
 
+    .sub-nav-link:hover, .dropdown:hover .dropdown-toggle {
+        background: linear-gradient(to bottom, #ffffff 0%, #f4f4f4 40%, #e8e8e8 100%);
+        z-index: 2;
+    }
+
+    .sub-nav-link:active, .dropdown-toggle:active {
+        background: linear-gradient(to bottom, #e0e0e0 0%, #d0d0d0 100%);
+        box-shadow: inset 0 1px 3px rgba(0,0,0,0.1);
+    }
+
+    /* Active/Highlight state (e.g. current section or special buttons) */
     .sub-nav-link.highlight {
-        color: var(--color-primary);
-        border-bottom: 2px solid var(--color-primary);
-        border-radius: 0;
+        color: #0066cc;
+        background: linear-gradient(to bottom, #ffffff 0%, #f8f8f8 100%);
+        z-index: 3;
+        padding-bottom: 5px; /* Slightly taller to look active */
+        margin-bottom: -1px; /* Cover the parent bottom border */
+        border-bottom: 1px solid #f8f8f8;
     }
 
     /* Dropdown Logic */
@@ -135,15 +279,14 @@ const tools = allTags.filter(tag => !knownLanguages.includes(tag.toLowerCase()) 
         position: absolute;
         top: 100%;
         left: 0;
-        background: rgba(255, 255, 255, 0.85);
-        backdrop-filter: blur(12px) saturate(180%);
-        border: 1px solid rgba(0,0,0,0.1);
-        box-shadow: 0 10px 25px rgba(0,0,0,0.1);
-        border-radius: 0 0 8px 8px;
-        padding: 8px 0;
-        min-width: 220px;
+        background: #fff;
+        border: 1px solid #888;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+        border-radius: 0 0 4px 4px;
+        padding: 4px 0;
+        min-width: 160px;
         z-index: 2000;
-        border-top: 2px solid var(--color-primary);
+        margin-top: 0px;
     }
 
     .dropdown-item {
@@ -164,50 +307,87 @@ const tools = allTags.filter(tag => !knownLanguages.includes(tag.toLowerCase()) 
     }
 
     .dropdown-item.disabled {
-        color: #94a3b8;
+        color: #999;
         font-style: italic;
-        font-size: 0.65rem;
+        font-size: 11px;
     }
 
-    .dropdown-toggle {
-        background: none;
-        border: none;
-        cursor: pointer;
-        font-family: inherit;
-    }
+    /* dropdown-toggle styles are now merged with .sub-nav-link */
 
-    /* Search Console */
-    .search-box {
+    /* 2003 Apple Search Console Style */
+    .search-2003-container {
         display: flex;
         align-items: center;
-        background: white;
-        border: 1px solid #cbd5e1;
-        border-radius: 4px;
-        padding: 2px;
-        box-shadow: inset 0 1px 2px rgba(0,0,0,0.05);
+        gap: 8px;
     }
 
-    .search-input {
-        border: none;
-        padding: 4px 10px;
-        font-size: 0.75rem;
+    .search-2003-input {
         width: 220px;
+        height: 22px;
+        padding: 2px 6px;
+        border: 1px solid #999;
+        border-radius: 2px;
+        background: #fff;
+        font-family: var(--font-interface);
+        font-size: 11px;
         outline: none;
-        font-weight: 500;
-        color: #334155;
+        box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.1);
+        color: #333;
     }
 
-    .search-button {
-        background: var(--texture-metal);
-        border: 1px solid #94a3b8;
-        padding: 4px 12px;
-        font-size: 0.65rem;
-        font-weight: 900;
-        color: #334155;
-        border-radius: 3px;
+    .search-2003-input:focus {
+        border-color: #666;
+        box-shadow: 0 0 3px rgba(0, 0, 0, 0.2);
+    }
+
+    .search-2003-button {
+        height: 22px;
+        padding: 0 16px;
+        border: 1px solid #777;
+        border-radius: 11px; /* Capsule shape */
+        background: linear-gradient(
+            to bottom,
+            #fefefe 0%,
+            #f2f2f2 45%,
+            #dcdcdc 50%,
+            #cfcfcf 100%
+        );
+        color: #333;
+        font-family: var(--font-interface);
+        font-size: 11px;
+        font-weight: 700;
         cursor: pointer;
-        box-shadow: 0 1px 2px rgba(0,0,0,0.05);
-        transition: all 0.2s;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 1px 1px rgba(0, 0, 0, 0.1);
+        text-shadow: 0 1px 0 rgba(255, 255, 255, 0.8);
+        transition: none;
+    }
+
+    .search-2003-button:hover {
+        background: linear-gradient(
+            to bottom,
+            #ffffff 0%,
+            #f8f8f8 45%,
+            #e8e8e8 50%,
+            #dadada 100%
+        );
+        border-color: #555;
+    }
+
+    .search-2003-button:active {
+        background: linear-gradient(to bottom, #d0d0d0 0%, #c0c0c0 100%);
+        box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.2);
+    }
+
+    @media (max-width: 650px) {
+        .sub-nav-left {
+            display: none;
+        }
+        .search-2003-input {
+            width: 140px;
+        }
     }
 
     .search-button:hover {
@@ -216,7 +396,13 @@ const tools = allTags.filter(tag => !knownLanguages.includes(tag.toLowerCase()) 
     }
 
     @keyframes slideDown {
-        from { opacity: 0; transform: translateY(-5px); }
-        to { opacity: 1; transform: translateY(0); }
+        from {
+            opacity: 0;
+            transform: translateY(-5px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
     }
 </style>
