@@ -1,6 +1,6 @@
 ---
 title: "astro"
-description: "Guía rápida y trucos sobre \"astro\"."
+description: "Astro es un framework web de JavaScript todo-en-uno que te permite construir sitios web rápidos y centrados en el contenido con una experiencia de desarrollo moderna."
 createdAt: 2026-04-28
 updatedAt: 2026-04-28
 tags: [fullstack]
@@ -19,7 +19,7 @@ Astro es un framework web de JavaScript todo-en-uno que te permite construir sit
 ## 1. 🌟 Conceptos Clave
 
 * **HTML-first**: Astro genera HTML puro en el servidor, luego hidrata selectivamente solo las "islas" de interactividad.
-* **Isla de Interactividad**: Un componente de framework de UI (React, Vue, Svelte, etc.) que se carga y ejecuta en el cliente. El resto de la página es HTML estático.
+* **Isla de Interactividad**: Un componente de framework de UI ([React](/web/frontend/general/react/react "¡Excelente! React es la biblioteca de JavaScript más popular para construir interfaces de usuario."), Vue, Svelte, etc.) que se carga y ejecuta en el cliente. El resto de la página es HTML estático.
 * **Zero JavaScript por defecto**: A menos que un componente tenga directivas `client:`, Astro no envía JavaScript de componentes al navegador.
 * **Agnóstico a frameworks de UI**: Puedes usar tus componentes de React, Vue, Svelte, Lit, Solid, Preact y Alpine.js (o mezclarlos en la misma página).
 * **Server-Side Rendering (SSR) / Static Site Generation (SSG)**: Astro es versátil. Puede generar sitios estáticos en tiempo de construcción o renderizar páginas dinámicamente en el servidor.
@@ -359,7 +359,7 @@ const allBlogPosts = await getCollection('blog'); // Obtiene todos los posts de 
 
 ## 8. 📁 API Routes (`src/pages/api/`)
 
-Permite construir endpoints API RESTful o GraphQL directamente en tu proyecto Astro.
+Permite construir endpoints [API](/conocimiento/api "Una API (Application Programming Interface) es un conjunto de reglas, protocolos y herramientas que permite que diferentes aplicaciones de software se comuniquen entre sí.") RESTful o GraphQL directamente en tu proyecto Astro.
 
 * **`src/pages/api/hello.ts`**:
 

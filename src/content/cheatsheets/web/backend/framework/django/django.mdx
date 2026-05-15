@@ -1,6 +1,6 @@
 ---
 title: "django"
-description: "Guía rápida y trucos sobre \"django\"."
+description: "Django es un framework web de alto nivel en Python que fomenta el desarrollo rápido y un diseño limpio y pragmático."
 createdAt: 2026-04-28
 updatedAt: 2026-04-28
 tags: [django]
@@ -12,7 +12,7 @@ icon: "📄"
 
 # 🌐 Django Cheatsheet Completo 🌐
 
-Django es un framework web de alto nivel en Python que fomenta el desarrollo rápido y un diseño limpio y pragmático. Sigue el patrón de arquitectura **MVT (Model-View-Template)**, aunque algunos lo interpretan como **MTV (Model-Template-View)**.
+Django es un framework web de alto nivel en [Python](/python/python "Python es un lenguaje de programación de alto nivel, interpretado, interactivo y orientado a objetos.") que fomenta el desarrollo rápido y un diseño limpio y pragmático. Sigue el patrón de arquitectura **MVT (Model-View-Template)**, aunque algunos lo interpretan como **MTV (Model-Template-View)**.
 
 ---
 
@@ -22,7 +22,7 @@ Django es un framework web de alto nivel en Python que fomenta el desarrollo rá
   * **Model**: La capa de datos. Define la estructura de tus datos y cómo interactúan con la base de datos (Django ORM).
   * **View**: La capa de lógica de negocio. Recibe una solicitud HTTP, interactúa con el Modelo, y selecciona el Template a renderizar (función o clase Python).
   * **Template**: La capa de presentación. Define cómo se muestra la interfaz de usuario (HTML con lógica de plantilla de Django).
-* **ORM (Object-Relational Mapper)**: Permite interactuar con tu base de datos utilizando objetos Python, sin escribir SQL directamente.
+* **ORM (Object-Relational Mapper)**: Permite interactuar con tu base de datos utilizando objetos Python, sin escribir [SQL](/base_datos/sql "SQL es el lenguaje estándar utilizado para comunicarse con y gestionar bases de datos relacionales (RDBMS) como MySQL, PostgreSQL, Oracle, SQL Server, SQLite, entre otros.") directamente.
 * **Aplicaciones (Apps)**: Django organiza los proyectos en "aplicaciones" reutilizables. Cada app tiene un propósito específico (ej. `users`, `products`, `blog`).
 * **URL Dispatcher**: Mapea las URLs a las Views.
 * **Admin Site**: Un panel de administración autogenerado para gestionar tus datos del modelo.
@@ -482,7 +482,7 @@ class ContactForm(forms.Form):
         return name
 
     # Validación a nivel de formulario
-    def clean(self):
+    def [clean](/arquitectura/clean "La Arquitectura Limpia es una filosofía de diseño de software que propone una organización de código basada en capas concéntricas, donde las dependencias siempre apuntan hacia adentro.")(self):
         cleaned_data = super().clean()
         name = cleaned_data.get('name')
         email = cleaned_data.get('email')

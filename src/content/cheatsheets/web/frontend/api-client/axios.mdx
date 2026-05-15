@@ -1,6 +1,6 @@
 ---
 title: "axios"
-description: "Guía rápida y trucos sobre \"axios\"."
+description: "¡Por supuesto! Axios es una librería muy popular para realizar peticiones HTTP desde el navegador o Node.js, conocida por su interfaz amigable basada en promesas."
 createdAt: 2026-04-28
 updatedAt: 2026-04-28
 tags: [api-client]
@@ -421,7 +421,7 @@ axios.get('/some-endpoint')
 
 ## 11. 💡 Buenas Prácticas y Consejos
 
-* **Abstrae tus Llamadas a la API**: En lugar de llamar `axios.get` directamente en tus componentes, crea funciones de servicio o un módulo de API.
+* **Abstrae tus Llamadas a la [API](/conocimiento/api "Una API (Application Programming Interface) es un conjunto de reglas, protocolos y herramientas que permite que diferentes aplicaciones de software se comuniquen entre sí.")**: En lugar de llamar `axios.get` directamente en tus componentes, crea funciones de servicio o un módulo de API.
   ```javascript
   // apiService.js
   import axios from 'axios';
@@ -436,7 +436,7 @@ axios.get('/some-endpoint')
   ```
 * **Manejo Centralizado de Errores**: Utiliza los interceptores de respuesta para manejar errores comunes (ej. 401 Unauthorized, 500 Internal Server Error) de forma global, en lugar de repetirlo en cada `.catch()`.
 * **Usa `async/await`**: Hace que el código asíncrono sea más legible y fácil de depurar que las cadenas `.then()`.
-* **Gestión de Cargas y Errores en UI**: Combina Axios con tu estado de React (ej. `useState`, `useReducer`, TanStack Query) para mostrar estados de carga, mensajes de error y datos.
+* **Gestión de Cargas y Errores en UI**: Combina Axios con tu estado de [React](/web/frontend/general/react/react "¡Excelente! React es la biblioteca de JavaScript más popular para construir interfaces de usuario.") (ej. `useState`, `useReducer`, [TanStack Query](/web/frontend/general/react/tanstack-query "¡Excelente iniciativa! Un 'cheatsheet' completo y bien estructurado de TanStack Query (anteriormente React Query) es una herramienta invaluable.")) para mostrar estados de carga, mensajes de error y datos.
 * **Nunca guardes datos sensibles en `localStorage` (tokens de auth)**: Usa `HttpOnly cookies` para tokens sensibles.
 * **Sé específico con la URL base**: Usa rutas relativas en tus llamadas a la API y configura un `baseURL` en tu instancia de Axios para facilitar los cambios de entorno.
 

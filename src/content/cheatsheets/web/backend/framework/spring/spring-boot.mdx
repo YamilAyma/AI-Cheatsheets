@@ -1,13 +1,13 @@
 ---
 title: "spring-boot"
-description: "Guía rápida y trucos sobre \"spring-boot\"."
+description: "¡Absolutamente! Spring Boot es un framework increíble para construir aplicaciones Java robustas y de alto rendimiento de manera rápida y eficiente."
 createdAt: 2026-04-28
 updatedAt: 2026-04-28
 tags: [spring]
 icon: "📄"
 ---
 
-¡Absolutamente! Spring Boot es un framework increíble para construir aplicaciones Java robustas y de alto rendimiento de manera rápida y eficiente. Aquí tienes un "cheatsheet" completo y bien estructurado, optimizado para ser claro y conciso para una IA conversacional.
+¡Absolutamente! Spring Boot es un framework increíble para construir aplicaciones [Java](/java/java "Java es un lenguaje de programación de propósito general, concurrente, basado en clases y orientado a objetos.") robustas y de alto rendimiento de manera rápida y eficiente. Aquí tienes un "cheatsheet" completo y bien estructurado, optimizado para ser claro y conciso para una IA conversacional.
 
 ---
 
@@ -20,7 +20,7 @@ Spring Boot es un framework basado en Spring Framework, diseñado para simplific
 ## 1. 🌟 Conceptos Clave
 
 * **Autoconfiguración**: Spring Boot detecta automáticamente las dependencias en tu classpath (ej. si tienes `spring-web`, configura un servidor web embebido).
-* **Servidores Embebidos**: Incluye servidores web como Tomcat, Jetty o Undertow directamente en el archivo JAR ejecutable, eliminando la necesidad de desplegar WARs en servidores de aplicaciones externos.
+* **Servidores Embebidos**: Incluye servidores web como [Tomcat](/java/tomcat "Apache Tomcat es un servidor web de código abierto y un contenedor de servlets desarrollado por la Apache Software Foundation."), Jetty o Undertow directamente en el archivo JAR ejecutable, eliminando la necesidad de desplegar WARs en servidores de aplicaciones externos.
 * **Starters**: Conjuntos de descriptores de dependencias que agrupan todas las librerías necesarias para una funcionalidad común (ej. `spring-boot-starter-web` para desarrollo web, `spring-boot-starter-data-jpa` para acceso a datos).
 * **Convención sobre Configuración**: Reduce la cantidad de configuración manual necesaria, proporcionando valores por defecto sensatos.
 * **Aplicaciones Standalone**: Permite ejecutar tu aplicación como un JAR independiente con un comando `java -jar`.
@@ -169,7 +169,7 @@ Las anotaciones son el corazón de Spring Boot para configurar y definir compone
 * **`@Column(name = "prod_name", nullable = false, unique = true)`**: Configura propiedades de la columna.
 * **`@Transient`**: Excluye un campo del mapeo de la base de datos.
 * **`@NoRepositoryBean`**: Evita que Spring Data cree una implementación para esta interfaz (para interfaces base personalizadas).
-* **`JpaRepository<T, ID>`**: Interfaz clave de Spring Data JPA que proporciona métodos CRUD y de paginación/ordenación por defecto.
+* **`JpaRepository<T, ID>`**: Interfaz clave de [Spring Data JPA](/web/backend/framework/spring/spring-data-jpa "Spring Data JPA es una parte del paraguas de Spring Data, que tiene como objetivo reducir la cantidad de código repetitivo necesario para implementar la capa de acceso a datos (Repository) en aplicaciones basadas en la tecnología JPA (Java Persistence API).") que proporciona métodos CRUD y de paginación/ordenación por defecto.
 
   ```java
   import jakarta.persistence.*; // O javax.persistence si usas JavaEE/JakartaEE 8 o anterior
@@ -373,9 +373,9 @@ Spring Boot facilita el testing con su módulo de test.
 * **Inyección por Constructor**: Preferible a la inyección por campo (`@Autowired`) porque facilita las pruebas unitarias y asegura que las dependencias sean inmutables.
 * **Manejo de Excepciones Global**: Usa `@ControllerAdvice` y `@ExceptionHandler` para centralizar el manejo de errores en tus APIs REST.
 * **Validación de Entradas**: Utiliza `@Valid` con anotaciones de JSR 303/349 (Hibernate Validator) en los `@RequestBody` de tus controladores.
-* **Documentación de API**: Integra Swagger/OpenAPI (con Springdoc OpenAPI) para documentar tus APIs REST.
-* **Seguridad**: Para aplicaciones reales, integra Spring Security.
-* **Monitorización**: Usa Spring Boot Actuator y combínalo con herramientas de monitorización externas (ej. Prometheus, Grafana).
+* **Documentación de [API](/conocimiento/api "Una API (Application Programming Interface) es un conjunto de reglas, protocolos y herramientas que permite que diferentes aplicaciones de software se comuniquen entre sí.")**: Integra Swagger/[OpenAPI](/herramientas/openapi "OpenAPI Specification (OAS) es un formato de descripción de API estándar, independiente del lenguaje, legible tanto por humanos como por máquinas.") (con Springdoc OpenAPI) para documentar tus APIs REST.
+* **Seguridad**: Para aplicaciones reales, integra [Spring Security](/web/backend/framework/spring/spring-security "¡Excelente elección! Spring Security es un pilar fundamental para la seguridad en aplicaciones Spring y Spring Boot.").
+* **Monitorización**: Usa [Spring Boot Actuator](/web/backend/framework/spring/spring-boot-actuator "Spring Boot Actuator es una característica de Spring Boot que proporciona puntos finales ('endpoints') listos para la producción.") y combínalo con herramientas de monitorización externas (ej. [Prometheus](/web/backend/framework/herramientas/prometheus "Prometheus es una solución de monitoreo de código abierto y sistema de alertado."), [Grafana](/herramientas/visualizacion_datos/grafana "Grafana es una herramienta de código abierto para la visualización y analítica de series de tiempo, diseñada para consultar, visualizar, alertar y comprender tus métricas dondequiera que se almacenen.")).
 
 ---
 

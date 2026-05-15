@@ -1,6 +1,6 @@
 ---
 title: "general"
-description: "Guía rápida y trucos sobre \"general\"."
+description: "La Arquitectura del Software es la estructura fundamental de un sistema de software y la disciplina para crear tales estructuras."
 createdAt: 2026-04-28
 updatedAt: 2026-04-28
 tags: [arquitectura]
@@ -142,12 +142,12 @@ Se enfocan en aislar la lógica de negocio central de los detalles de la infraes
 ### 6.2. Arquitectura Cebolla (Onion Architecture)
 
 * **Descripción**: Organiza las capas concéntricamente con el dominio en el centro. Cada capa depende solo de las capas más internas. Énfasis en la inversión de dependencias.
-* **Idea Clave**: Similar a la hexagonal, pero a menudo más explícita en la subdivisión de las capas internas (Dominio, Servicios de Dominio, Servicios de Aplicación, Infraestructura).
+* **Idea Clave**: Similar a la [hexagonal](/arquitectura/hexagonal "La Arquitectura Hexagonal, o Arquitectura de Puertos y Adaptadores, es un patrón de diseño de software creado por Alistair Cockburn."), pero a menudo más explícita en la subdivisión de las capas internas (Dominio, Servicios de Dominio, Servicios de Aplicación, Infraestructura).
 * **Beneficio Principal**: Clásico desacoplamiento, alta testabilidad y un diseño que sigue el modelo de negocio.
 
 ### 6.3. Arquitectura Limpia (Clean Architecture)
 
-* **Descripción**: Una síntesis de varias arquitecturas concéntricas (Hexagonal, Cebolla). Define cuatro capas principales: Entidades, Casos de Uso, Adaptadores de Interfaz, y Frameworks & Drivers. La regla de dependencia rige el flujo de control.
+* **Descripción**: Una síntesis de varias arquitecturas concéntricas (Hexagonal, [Cebolla](/arquitectura/cebolla "La Arquitectura Cebolla, propuesta por Jeffrey Palermo, es un patrón de diseño de software que organiza el código en capas concéntricas, similar a las capas de una cebolla.")). Define cuatro capas principales: Entidades, Casos de Uso, Adaptadores de Interfaz, y Frameworks & Drivers. La regla de dependencia rige el flujo de control.
 * **Idea Clave**: Máxima independencia de frameworks, UI, bases de datos y agencias externas, priorizando las reglas de negocio empresariales.
 * **Beneficio Principal**: La joya de la corona de la testabilidad, mantenibilidad y flexibilidad a largo plazo.
 

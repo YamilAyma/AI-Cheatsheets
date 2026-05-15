@@ -1,6 +1,6 @@
 ---
 title: "kiali"
-description: "Guía rápida y trucos sobre \"kiali\"."
+description: "Kiali es una consola de operaciones para Istio, que proporciona un mapa de la malla de servicios, gráficos de flujo de tráfico, vistas detalladas de la salud de los servicios, y la capacidad de depurar y validar la configuración de Istio."
 createdAt: 2026-04-28
 updatedAt: 2026-04-28
 tags: [herramientas]
@@ -12,7 +12,7 @@ icon: "📄"
 
 # 👁️ Kiali (Istio Service Mesh Observability) Cheatsheet Completo 👁️
 
-**Kiali** es una consola de operaciones para Istio, que proporciona un mapa de la malla de servicios, gráficos de flujo de tráfico, vistas detalladas de la salud de los servicios, y la capacidad de depurar y validar la configuración de Istio. Permite a los desarrolladores y operadores visualizar el comportamiento de la malla, entender las relaciones entre servicios y detectar problemas de manera eficiente.
+**Kiali** es una consola de operaciones para [Istio](/web/backend/framework/herramientas/istio "Istio es una malla de servicios (Service Mesh) de código abierto que proporciona una capa de infraestructura transparente para gestionar las comunicaciones de servicio a servicio."), que proporciona un mapa de la malla de servicios, gráficos de flujo de tráfico, vistas detalladas de la salud de los servicios, y la capacidad de depurar y validar la configuración de Istio. Permite a los desarrolladores y operadores visualizar el comportamiento de la malla, entender las relaciones entre servicios y detectar problemas de manera eficiente.
 
 ---
 
@@ -22,8 +22,8 @@ icon: "📄"
 *   **Traffic Flow (Flujo de Tráfico)**: Muestra cómo las solicitudes viajan entre los servicios en tiempo real.
 *   **Health Status (Estado de Salud)**: Indicadores visuales de la salud de los servicios (ej. tasa de errores).
 *   **Istio Configuration Validation**: Kiali puede validar tu configuración de Istio (VirtualServices, DestinationRules, Gateways, etc.) y señalar posibles errores o inconsistencias.
-*   **Trace Integration (Integración de Trazas)**: Se integra con herramientas de trazabilidad como Jaeger para mostrar los detalles de las trazas de las solicitudes.
-*   **Metrics Integration (Integración de Métricas)**: Utiliza Prometheus (el backend de métricas de Istio) para mostrar métricas detalladas de servicios y cargas de trabajo.
+*   **Trace Integration (Integración de Trazas)**: Se integra con herramientas de trazabilidad como [Jaeger](/web/backend/framework/herramientas/jaeger "Jaeger es un sistema de trazabilidad distribuida de código abierto, inspirado en Dapper de Google y OpenZipkin.") para mostrar los detalles de las trazas de las solicitudes.
+*   **Metrics Integration (Integración de Métricas)**: Utiliza [Prometheus](/web/backend/framework/herramientas/prometheus "Prometheus es una solución de monitoreo de código abierto y sistema de alertado.") (el backend de métricas de Istio) para mostrar métricas detalladas de servicios y cargas de trabajo.
 
 ---
 
@@ -40,13 +40,13 @@ Kiali se instala como parte del ecosistema de Istio.
         # O si ya tienes Istio y solo quieres Kiali:
         # istioctl install --set profile=default --set components.kiali.enabled=true
         ```
-    *   También puedes instalarlo a través del repositorio de Helm de Istio.
+    *   También puedes instalarlo a través del repositorio de [Helm](/devops/helm "Helm es el gestor de paquetes para Kubernetes.") de Istio.
 3.  **Acceder a la UI de Kiali**:
     ```bash
     istioctl dashboard kiali
     ```
     *   Esto suele abrir un navegador en la URL correcta (ej. `http://localhost:20001`).
-    *   Kiali te pedirá credenciales de Kubernetes (normalmente las de tu `kubectl` config).
+    *   Kiali te pedirá credenciales de [Kubernetes](/devops/kubernetes "Kubernetes (K8s) es una plataforma portable y extensible de código abierto para gestionar cargas de trabajo y servicios en contenedores.") (normalmente las de tu `kubectl` config).
 
 ---
 
@@ -56,7 +56,7 @@ Kiali se organiza en varias secciones principales en su barra lateral izquierda:
 
 ### 3.1. Overview (Vista General)
 
-*   Proporciona una visión general de la salud de tus namespaces y cargas de trabajo.
+*   Proporciona una visión [general](/arquitectura/general "La Arquitectura del Software es la estructura fundamental de un sistema de software y la disciplina para crear tales estructuras.") de la salud de tus namespaces y cargas de trabajo.
 *   **Filtros**: Permite filtrar por `Namespace`, `Istio Config`, `Health`, `Traffic`.
 
 ### 3.2. Graph (Grafo / Mapa de Servicios) - ¡La característica estrella!
@@ -115,7 +115,7 @@ Kiali utiliza Prometheus (el sistema de métricas de Istio) para mostrar gráfic
 *   **Métricas de Servicios**: Tasa de éxito, tasa de errores, latencia (p50, p90, p99), tráfico (solicitudes por segundo).
 *   **Métricas de Carga de Trabajo / Pods**: Uso de CPU, memoria, red.
 *   **Filtrado y Agregación**: Puedes filtrar métricas por `response code`, `method`, `destination service`, `source workload`.
-*   **Dashboards Personalizados**: Aunque Kiali proporciona gráficos predeterminados, también puedes configurar tus propios dashboards en Grafana usando las métricas de Prometheus que Istio y Kiali exponen.
+*   **Dashboards Personalizados**: Aunque Kiali proporciona gráficos predeterminados, también puedes configurar tus propios dashboards en [Grafana](/herramientas/visualizacion_datos/grafana "Grafana es una herramienta de código abierto para la visualización y analítica de series de tiempo, diseñada para consultar, visualizar, alertar y comprender tus métricas dondequiera que se almacenen.") usando las métricas de Prometheus que Istio y Kiali exponen.
 
 ---
 

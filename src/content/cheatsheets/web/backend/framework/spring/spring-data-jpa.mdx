@@ -1,6 +1,6 @@
 ---
 title: "spring-data-jpa"
-description: "Guía rápida y trucos sobre \"spring-data-jpa\"."
+description: "Spring Data JPA es una parte del paraguas de Spring Data, que tiene como objetivo reducir la cantidad de código repetitivo necesario para implementar la capa de acceso a datos (Repository) en aplicaciones basadas en la tecnología JPA (Java Persistence API)."
 createdAt: 2026-04-28
 updatedAt: 2026-04-28
 tags: [spring]
@@ -12,7 +12,7 @@ icon: "📄"
 
 # 🌿 Spring Data JPA Cheatsheet Completo 🌿
 
-**Spring Data JPA** es una parte del paraguas de Spring Data, que tiene como objetivo reducir la cantidad de código repetitivo necesario para implementar la capa de acceso a datos (Repository) en aplicaciones basadas en la tecnología JPA (Java Persistence API). Se integra perfectamente con Hibernate (la implementación JPA por defecto en Spring Boot).
+**Spring Data JPA** es una parte del paraguas de Spring Data, que tiene como objetivo reducir la cantidad de código repetitivo necesario para implementar la capa de acceso a datos (Repository) en aplicaciones basadas en la tecnología JPA ([Java](/java/java "Java es un lenguaje de programación de propósito general, concurrente, basado en clases y orientado a objetos.") Persistence [API](/conocimiento/api "Una API (Application Programming Interface) es un conjunto de reglas, protocolos y herramientas que permite que diferentes aplicaciones de software se comuniquen entre sí.")). Se integra perfectamente con Hibernate (la implementación JPA por defecto en [Spring Boot](/web/backend/framework/spring/spring-boot "¡Absolutamente! Spring Boot es un framework increíble para construir aplicaciones Java robustas y de alto rendimiento de manera rápida y eficiente.")).
 
 ---
 
@@ -341,10 +341,10 @@ public class ProductService {
 ## 8. 💡 Buenas Prácticas y Consejos
 
 *   **Capa de Servicio**: Siempre coloca tu lógica de negocio en una capa de servicio (`@Service`) y usa `@Transactional` en los métodos de servicio, no en los métodos del repositorio. Los repositorios deben ser solo para operaciones CRUD básicas.
-*   **DTOs (Data Transfer Objects)**: No expongas tus entidades JPA directamente a la capa de controlador/vista. Mapea tus entidades a DTOs para la comunicación con el cliente. ModelMapper o MapStruct son útiles para esto.
+*   **DTOs (Data Transfer Objects)**: No expongas tus entidades JPA directamente a la capa de controlador/vista. Mapea tus entidades a DTOs para la comunicación con el cliente. [ModelMapper](/java/librerias/modelmapper "ModelMapper es una librería de Java que simplifica el mapeo de objetos de un modelo a otro.") o [MapStruct](/java/librerias/mapstruct "MapStruct es un generador de código que simplifica la implementación de mapeos de datos entre clases de objetos de Java.") son útiles para esto.
 *   **Lazy Loading y N+1 Problem**: Entiende cómo funciona `FetchType.LAZY` (`@ManyToOne`, `@OneToMany` por defecto). Cargar colecciones perezosamente puede llevar al problema N+1 si no se maneja correctamente (ej. usar `JOIN FETCH` en `@Query`, o `@EntityGraph`).
 *   **`Optional` para Finders**: Todos los métodos de `findBy` que se espera que devuelvan una sola entidad deben devolver `Optional<T>`.
-*   **Consultas Nativas con Cuidado**: Usa `nativeQuery = true` solo cuando no puedas lograr la consulta deseada con JPQL o métodos derivados. Las consultas nativas son menos portátiles entre diferentes bases de datos.
+*   **Consultas Nativas con Cuidado**: Usa `nativeQuery = true` solo cuando no puedas lograr la consulta deseada con [JPQL](/java/jpql "JPQL es el lenguaje de consulta orientado a objetos definido como parte de la especificación Java Persistence API (JPA).") o métodos derivados. Las consultas nativas son menos portátiles entre diferentes bases de datos.
 *   **Pruebas (`@DataJpaTest`)**: Utiliza la anotación `@DataJpaTest` para escribir pruebas de integración para tus repositorios. Carga un subconjunto del contexto de Spring y configura una base de datos en memoria (ej. H2) automáticamente.
 *   **Auditoría**: Integra Spring Data JPA con la auditoría (`@EnableJpaAuditing`, `@CreatedDate`, `@LastModifiedDate`, `@CreatedBy`, `@LastModifiedBy`) para rastrear automáticamente quién y cuándo modificó una entidad.
 *   **Convenciones de Nomenclatura**: Sigue estrictamente las convenciones de nomenclatura de Spring Data JPA para los métodos derivados de consultas para que se autogeneren correctamente.

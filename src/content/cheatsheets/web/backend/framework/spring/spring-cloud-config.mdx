@@ -1,6 +1,6 @@
 ---
 title: "spring-cloud-config"
-description: "Guía rápida y trucos sobre \"spring-cloud-config\"."
+description: "Spring Cloud Config proporciona un servidor y clientes para una configuración externa y distribuida en arquitecturas de microservicios."
 createdAt: 2026-04-28
 updatedAt: 2026-04-28
 tags: [spring]
@@ -20,7 +20,7 @@ icon: "☁️"
 ## 1. 🌟 Conceptos Clave
 
 *   **Configuración Externa**: La configuración de una aplicación no está "empaquetada" dentro del código o JAR/WAR, sino que se carga desde una fuente externa en tiempo de ejecución.
-*   **Centralización**: Todas las configuraciones de los microservicios se almacenan en un único lugar (ej. un repositorio Git).
+*   **Centralización**: Todas las configuraciones de los microservicios se almacenan en un único lugar (ej. un repositorio [Git](/herramientas/git/git "Git es un sistema de control de versiones distribuido (DVCS) diseñado para manejar proyectos pequeños o muy grandes con velocidad y eficiencia.")).
 *   **Versionado**: La configuración se gestiona con un sistema de control de versiones (Git por defecto), lo que permite rastrear cambios, revertir versiones y auditar.
 *   **Perfiles y Etiquetas (Profiles & Labels)**: Permite tener configuraciones específicas para diferentes entornos (ej. `dev`, `prod`, `qa`) y versiones (ej. `master`, `v1.0`).
 *   **Config Server (Servidor de Configuración)**: El microservicio que sirve la configuración a las aplicaciones cliente.
@@ -96,7 +96,7 @@ icon: "☁️"
             # native: # Alternativa: Usar el sistema de archivos local (para dev/testing)
             #   search-locations: file:///C:/config-files, classpath:/config-files/
     ```
-    *   **Repositorio de Configuración (Ejemplo Git)**: Crea un repositorio Git (ej. en GitHub) que contendrá tus archivos de configuración.
+    *   **Repositorio de Configuración (Ejemplo Git)**: Crea un repositorio Git (ej. en [GitHub](/herramientas/github "GitHub es una plataforma web para el alojamiento de repositorios de control de versiones Git.")) que contendrá tus archivos de configuración.
         ```
         # mi-repo-config.git/configs/
         #   └─ my-service.yml        # Configuración por defecto para 'my-service'
@@ -164,7 +164,7 @@ icon: "☁️"
 
 ## 3. 🌐 API del Config Server
 
-El Config Server expone un API REST para acceder a las configuraciones.
+El Config Server expone un [API](/conocimiento/api "Una API (Application Programming Interface) es un conjunto de reglas, protocolos y herramientas que permite que diferentes aplicaciones de software se comuniquen entre sí.") REST para acceder a las configuraciones.
 
 *   **Endpoint Básico**: `http://localhost:8888/{application}/{profile}/{label}`
     *   `{application}`: `spring.application.name` del cliente (ej. `my-service`).
@@ -256,7 +256,7 @@ Spring Cloud Bus propaga los cambios de configuración a múltiples instancias d
 ## 5. 🔒 Seguridad
 
 *   **Config Server**:
-    *   Asegura el Config Server con Spring Security. Solo los clientes autorizados deben poder acceder a la configuración.
+    *   Asegura el Config Server con [Spring Security](/web/backend/framework/spring/spring-security "¡Excelente elección! Spring Security es un pilar fundamental para la seguridad en aplicaciones Spring y Spring Boot."). Solo los clientes autorizados deben poder acceder a la configuración.
     *   Usa autenticación HTTP Basic o OAuth2 para los endpoints del Config Server.
     *   Configura SSL/TLS para el Config Server (`server.ssl.*`).
 *   **Repositorio Git**:

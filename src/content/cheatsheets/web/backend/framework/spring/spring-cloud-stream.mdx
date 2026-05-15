@@ -1,6 +1,6 @@
 ---
 title: "spring-cloud-stream"
-description: "Guía rápida y trucos sobre \"spring-cloud-stream\"."
+description: "Spring Cloud Stream es un framework para construir microservicios basados en mensajes."
 createdAt: 2026-04-28
 updatedAt: 2026-04-28
 tags: [spring]
@@ -433,13 +433,13 @@ class MessageConsumerTest {
 
 *   **Usa el Enfoque Funcional**: Para nuevos proyectos, prioriza la definición de beans `Supplier`, `Consumer` y `Function` para productores, consumidores y procesadores. Es más flexible y menos acoplado que `@StreamListener`.
 *   **Utiliza `StreamBridge` para Productores Programáticos**: Cuando necesites enviar un mensaje desde un controlador REST o un servicio arbitrario, `StreamBridge` es la forma limpia y desacoplada de hacerlo.
-*   **Tipado Fuerte**: Define clases Java para tus payloads de mensajes. Esto permite que Spring Cloud Stream realice la deserialización automáticamente y ofrece seguridad de tipos.
+*   **Tipado Fuerte**: Define clases [Java](/java/java "Java es un lenguaje de programación de propósito general, concurrente, basado en clases y orientado a objetos.") para tus payloads de mensajes. Esto permite que Spring Cloud Stream realice la deserialización automáticamente y ofrece seguridad de tipos.
 *   **Configuración en `application.properties`/`yml`**: Centraliza la configuración de bindings, destinos y propiedades del binder en los archivos de configuración.
 *   **Consumer Groups para Escalar**: Siempre define un `group` para tus consumidores (`spring.cloud.stream.bindings.<channel>.group`). Esto permite escalar tu aplicación ejecutando múltiples instancias que comparten la carga de mensajes y aseguran que cada mensaje se procese solo una vez por grupo.
 *   **Manejo de Errores y DLQ**: Habilita y configura una Dead Letter Queue (`enable-dlq`) para manejar mensajes fallidos de forma robusta. Implementa lógica para monitorear y re-procesar los mensajes en la DLQ.
 *   **Contenido Tipo (Content-Type)**: Especifica siempre el `content-type` (`application/json`, `text/plain`, `application/avro`, etc.) en tus bindings. Esto permite que Spring Cloud Stream use el `MessageConverter` adecuado para serializar/deserializar payloads.
 *   **Mensajes Inmutables**: Crea tus payloads de mensajes (clases `MyEvent`) como objetos inmutables para evitar efectos secundarios.
-*   **Monitoreo**: Integra Actuator y herramientas de monitoreo (Prometheus, Grafana) para observar las métricas de tus canales y binders.
+*   **Monitoreo**: Integra Actuator y herramientas de monitoreo ([Prometheus](/web/backend/framework/herramientas/prometheus "Prometheus es una solución de monitoreo de código abierto y sistema de alertado."), [Grafana](/herramientas/visualizacion_datos/grafana "Grafana es una herramienta de código abierto para la visualización y analítica de series de tiempo, diseñada para consultar, visualizar, alertar y comprender tus métricas dondequiera que se almacenen.")) para observar las métricas de tus canales y binders.
 *   **Schema Registry (para Avro/Protobuf)**: Si usas formatos binarios como Avro o Protocol Buffers, considera usar un Schema Registry con tu binder (ej. Confluent Schema Registry para Kafka).
 *   **Manejo de Contrapresión**: Para flujos reactivos complejos, considera cómo se maneja la contrapresión entre productores y consumidores para evitar la saturación del sistema.
 

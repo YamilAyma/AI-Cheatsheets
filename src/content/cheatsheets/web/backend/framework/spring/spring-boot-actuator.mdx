@@ -1,6 +1,6 @@
 ---
 title: "spring-boot-actuator"
-description: "Guía rápida y trucos sobre \"spring-boot-actuator\"."
+description: "Spring Boot Actuator es una característica de Spring Boot que proporciona puntos finales (\"endpoints\") listos para la producción."
 createdAt: 2026-04-28
 updatedAt: 2026-04-28
 tags: [spring]
@@ -13,7 +13,7 @@ icon: "📄"
 
 # 📈 Spring Boot Actuator Cheatsheet Completo 📈
 
-**Spring Boot Actuator** es una característica de Spring Boot que proporciona puntos finales ("endpoints") listos para la producción. Estos endpoints te permiten monitorear y gestionar tu aplicación, obteniendo información sobre el estado de salud, métricas, configuración, logs y mucho más, sin necesidad de escribir código adicional.
+**[Spring Boot](/web/backend/framework/spring/spring-boot "¡Absolutamente! Spring Boot es un framework increíble para construir aplicaciones Java robustas y de alto rendimiento de manera rápida y eficiente.") Actuator** es una característica de Spring Boot que proporciona puntos finales ("endpoints") listos para la producción. Estos endpoints te permiten monitorear y gestionar tu aplicación, obteniendo información sobre el estado de salud, métricas, configuración, logs y mucho más, sin necesidad de escribir código adicional.
 
 ---
 
@@ -208,7 +208,7 @@ Todas las configuraciones se realizan en `application.properties` o `application
 ## 7. 🔒 Seguridad
 
 *   **¡CRÍTICO en Producción!**
-*   Por defecto, Spring Security (si está en el classpath) asegurará automáticamente todos los endpoints de Actuator.
+*   Por defecto, [Spring Security](/web/backend/framework/spring/spring-security "¡Excelente elección! Spring Security es un pilar fundamental para la seguridad en aplicaciones Spring y Spring Boot.") (si está en el classpath) asegurará automáticamente todos los endpoints de Actuator.
 *   Necesitarás un usuario/contraseña para acceder a la mayoría de los endpoints.
 *   Puedes configurar reglas de autorización en tu `SecurityConfig` de Spring Security.
     ```java
@@ -239,10 +239,10 @@ Todas las configuraciones se realizan en `application.properties` o `application
 
 ## 8. 📊 Integración con Herramientas de Monitoreo
 
-*   **Prometheus**: Expone métricas en un formato que Prometheus puede rastrear (`/actuator/prometheus`).
-*   **Grafana**: Utiliza Grafana para visualizar las métricas recolectadas por Prometheus.
+*   **[Prometheus](/web/backend/framework/herramientas/prometheus "Prometheus es una solución de monitoreo de código abierto y sistema de alertado.")**: Expone métricas en un formato que Prometheus puede rastrear (`/actuator/prometheus`).
+*   **[Grafana](/herramientas/visualizacion_datos/grafana "Grafana es una herramienta de código abierto para la visualización y analítica de series de tiempo, diseñada para consultar, visualizar, alertar y comprender tus métricas dondequiera que se almacenen.")**: Utiliza Grafana para visualizar las métricas recolectadas por Prometheus.
 *   **Spring Boot Admin**: Proporciona una interfaz de usuario centralizada para monitorear múltiples aplicaciones Spring Boot con Actuator.
-*   **JMX**: También puedes acceder a los endpoints a través de JMX (Java Management Extensions) usando herramientas como JConsole o VisualVM.
+*   **JMX**: También puedes acceder a los endpoints a través de JMX ([Java](/java/java "Java es un lenguaje de programación de propósito general, concurrente, basado en clases y orientado a objetos.") Management Extensions) usando herramientas como JConsole o VisualVM.
 
 ---
 

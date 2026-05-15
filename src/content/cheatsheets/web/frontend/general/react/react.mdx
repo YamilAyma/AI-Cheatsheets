@@ -1,6 +1,6 @@
 ---
 title: "react"
-description: "Guía rápida y trucos sobre \"react\"."
+description: "¡Excelente! React es la biblioteca de JavaScript más popular para construir interfaces de usuario."
 createdAt: 2026-04-28
 updatedAt: 2026-04-28
 tags: [react]
@@ -458,7 +458,7 @@ export default ExpensiveCalculation;
 ### 6.7. `useReducer` (Estado Complejo)
 
 * Una alternativa a `useState` para lógica de estado más compleja, especialmente cuando el estado es un objeto o array y las actualizaciones dependen del estado anterior o involucran múltiples sub-valores.
-* Funciona con un patrón similar a Redux: `(state, action) =&gt; newState`.
+* Funciona con un patrón similar a [Redux](/web/frontend/general/react/redux "Redux es una librería de JavaScript para gestionar el estado de la aplicación."): `(state, action) =&gt; newState`.
 
 ```jsx
 import React, { useReducer } from 'react';
@@ -740,7 +740,7 @@ Una extensión de navegador esencial para depurar aplicaciones React.
 
 * **Componentes Pequeños y Reutilizables**: Divide tu UI en componentes pequeños y específicos con una única responsabilidad.
 * **Separación de Preocupaciones**: Separa la lógica de presentación de la lógica de negocio.
-* **Prop Drilling vs. Context API**: Evita pasar props por muchos niveles (prop drilling). Usa Context API o librerías de gestión de estado (Redux, Zustand) para estado global.
+* **Prop Drilling vs. Context [API](/conocimiento/api "Una API (Application Programming Interface) es un conjunto de reglas, protocolos y herramientas que permite que diferentes aplicaciones de software se comuniquen entre sí.")**: Evita pasar props por muchos niveles (prop drilling). Usa Context API o librerías de gestión de estado (Redux, [Zustand](/web/frontend/general/zustand "¡Claro que sí! Zustand es una librería de gestión de estados para React (y vainilla JavaScript) conocida por su simplicidad, ligereza y rendimiento.")) para estado global.
 * **Inmutabilidad del Estado**: Cuando actualices el estado (especialmente objetos o arrays), crea nuevas copias en lugar de mutar el estado directamente.
   ```javascript
   // Incorrecto:
@@ -753,7 +753,7 @@ Una extensión de navegador esencial para depurar aplicaciones React.
 * **Manejo de Formularios Controlados**: Prefiere componentes controlados para formularios para tener un mejor control sobre el estado del input.
 * **Optimización con `React.memo`**: Envuelve componentes funcionales con `React.memo` para que no se re-rendericen si sus props no han cambiado. Útil junto con `useCallback` y `useMemo`.
 * **Manejo de Errores (Error Boundaries)**: Utiliza `Error Boundaries` (solo componentes de clase) para capturar y manejar errores en el árbol de componentes sin romper toda la aplicación.
-* **Tipado (TypeScript)**: Usa TypeScript para añadir seguridad de tipos a tus componentes, props, estado y más.
+* **Tipado ([TypeScript](/web/general/typescript "¡Excelente elección! TypeScript es una herramienta fundamental en el desarrollo web moderno, especialmente para proyectos a gran escala, ya que añade seguridad de tipo y mejoras en la productividad."))**: Usa TypeScript para añadir seguridad de tipos a tus componentes, props, estado y más.
 * **ESLint/Prettier**: Configura estas herramientas para mantener un código consistente y limpio.
 
 ---

@@ -1,6 +1,6 @@
 ---
 title: "spring-authorization-server"
-description: "Guía rápida y trucos sobre \"spring-authorization-server\"."
+description: "Spring Authorization Server (SAS) es un proyecto de Spring Security que implementa la especificación OAuth 2.1 y OpenID Connect 1.0."
 createdAt: 2026-04-28
 updatedAt: 2026-04-28
 tags: [spring]
@@ -13,7 +13,7 @@ icon: "📄"
 
 # 🔑 Spring Authorization Server Cheatsheet Completo 🔑
 
-**Spring Authorization Server (SAS)** es un proyecto de Spring Security que implementa la especificación OAuth 2.1 y OpenID Connect 1.0. Permite a las aplicaciones actuar como un **Servidor de Autorización**, emitiendo tokens de acceso a clientes autenticados después de obtener la autorización del propietario del recurso.
+**Spring Authorization Server (SAS)** es un proyecto de [Spring Security](/web/backend/framework/spring/spring-security "¡Excelente elección! Spring Security es un pilar fundamental para la seguridad en aplicaciones Spring y Spring Boot.") que implementa la especificación OAuth 2.1 y OpenID Connect 1.0. Permite a las aplicaciones actuar como un **Servidor de Autorización**, emitiendo tokens de acceso a clientes autenticados después de obtener la autorización del propietario del recurso.
 
 ---
 
@@ -312,7 +312,7 @@ Spring Authorization Server expone automáticamente los siguientes endpoints:
 Para producción, `InMemoryRegisteredClientRepository` y `InMemoryUserDetailsManager` no son suficientes. SAS proporciona implementaciones basadas en JDBC.
 
 1.  **Dependencias**: Asegúrate de tener `spring-boot-starter-data-jpa` y el driver de tu base de datos (ej. `mysql-connector-java`).
-2.  **Esquemas de Base de Datos**: Spring Authorization Server proporciona scripts SQL para crear las tablas necesarias (`oauth2_registered_client`, `oauth2_authorization`, `oauth2_authorization_consent`). Busca `oauth2-authorization-server-schema.sql` en el JAR de la librería.
+2.  **Esquemas de Base de Datos**: Spring Authorization Server proporciona scripts [SQL](/base_datos/sql "SQL es el lenguaje estándar utilizado para comunicarse con y gestionar bases de datos relacionales (RDBMS) como MySQL, PostgreSQL, Oracle, SQL Server, SQLite, entre otros.") para crear las tablas necesarias (`oauth2_registered_client`, `oauth2_authorization`, `oauth2_authorization_consent`). Busca `oauth2-authorization-server-schema.sql` en el JAR de la librería.
 3.  **Configurar Beans de JDBC**:
     *   `JdbcRegisteredClientRepository` (para `RegisteredClientRepository`)
     *   `JdbcOAuth2AuthorizationService` (para `OAuth2AuthorizationService`)
@@ -358,7 +358,7 @@ Para producción, `InMemoryRegisteredClientRepository` y `InMemoryUserDetailsMan
 
 ## 6. 🌐 Configuración de Cliente OAuth2 (Ejemplo Spring Boot Cliente)
 
-Para que otra aplicación Spring Boot actúe como Cliente de OAuth2 e inicie sesión vía SAS.
+Para que otra aplicación [Spring Boot](/web/backend/framework/spring/spring-boot "¡Absolutamente! Spring Boot es un framework increíble para construir aplicaciones Java robustas y de alto rendimiento de manera rápida y eficiente.") actúe como Cliente de OAuth2 e inicie sesión vía SAS.
 
 1.  **Dependencias en `pom.xml` (del Cliente):**
     ```xml

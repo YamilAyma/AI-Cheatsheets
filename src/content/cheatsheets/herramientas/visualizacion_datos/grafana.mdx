@@ -1,6 +1,6 @@
 ---
 title: "grafana"
-description: "Guía rápida y trucos sobre \"grafana\"."
+description: "Grafana es una herramienta de código abierto para la visualización y analítica de series de tiempo, diseñada para consultar, visualizar, alertar y comprender tus métricas dondequiera que se almacenen."
 createdAt: 2026-04-28
 updatedAt: 2026-04-28
 tags: [visualizacion_datos]
@@ -18,7 +18,7 @@ icon: "📄"
 
 ## 1. 🌟 Conceptos Clave
 
-*   **Fuente de Datos (Data Source)**: Una conexión a un sistema de base de datos o API donde se almacenan tus métricas o logs (ej. Prometheus, Elasticsearch, InfluxDB, MySQL, PostgreSQL, Loki, Jaeger, CloudWatch).
+*   **Fuente de Datos (Data Source)**: Una conexión a un sistema de base de datos o [API](/conocimiento/api "Una API (Application Programming Interface) es un conjunto de reglas, protocolos y herramientas que permite que diferentes aplicaciones de software se comuniquen entre sí.") donde se almacenan tus métricas o logs (ej. [Prometheus](/web/backend/framework/herramientas/prometheus "Prometheus es una solución de monitoreo de código abierto y sistema de alertado."), [Elasticsearch](/devops/elasticsearch "Elasticsearch es un motor de búsqueda y análisis distribuido en tiempo real, construido sobre Apache Lucene."), InfluxDB, MySQL, PostgreSQL, Loki, [Jaeger](/web/backend/framework/herramientas/jaeger "Jaeger es un sistema de trazabilidad distribuida de código abierto, inspirado en Dapper de Google y OpenZipkin."), CloudWatch).
 *   **Panel (Panel)**: Una única visualización en un dashboard (ej. un gráfico de líneas, un gráfico de barras, una tabla, un indicador).
 *   **Dashboard (Tablero de Control)**: Una colección de paneles organizados en una o más filas, que proporcionan una vista completa y unificada de tus datos.
 *   **Query (Consulta)**: El lenguaje específico del data source que se utiliza para recuperar datos para un panel (ej. PromQL para Prometheus, KQL para Elasticsearch).
@@ -45,7 +45,7 @@ docker run -d --name grafana -p 3000:3000 grafana/grafana:latest
 *   **`[server]`**: `http_port`, `domain`, `root_url`.
 *   **`[database]`**: Configuración de la base de datos interna de Grafana (SQLite por defecto, puedes usar MySQL/PostgreSQL).
 *   **`[security]`**: `admin_user`, `admin_password`, `allow_sign_up`.
-*   **`[auth]`**: Integración con OAuth (GitHub, Google), LDAP.
+*   **`[auth]`**: Integración con OAuth ([GitHub](/herramientas/github "GitHub es una plataforma web para el alojamiento de repositorios de control de versiones Git."), Google), LDAP.
 *   **`[paths]`**: Ubicaciones de los datos de Grafana.
 
 ---
@@ -96,7 +96,7 @@ Grafana se organiza en una barra lateral izquierda con los siguientes iconos:
     2.  **Escribe tu consulta**:
         *   **Prometheus (PromQL)**: `rate(http_requests_total[5m])`
         *   **Elasticsearch (KQL o Lucene)**: `http.method:POST AND http.status_code:[400 TO 599]`
-        *   **SQL (ej. PostgreSQL)**: `SELECT time_column, value_column FROM my_table WHERE $__timeFilter(time_column)` ( `$__timeFilter` es una macro de Grafana)
+        *   **[SQL](/base_datos/sql "SQL es el lenguaje estándar utilizado para comunicarse con y gestionar bases de datos relacionales (RDBMS) como MySQL, PostgreSQL, Oracle, SQL Server, SQLite, entre otros.") (ej. PostgreSQL)**: `SELECT time_column, value_column FROM my_table WHERE $__timeFilter(time_column)` ( `$__timeFilter` es una macro de Grafana)
     3.  **Añadir series**: Puedes añadir múltiples consultas (A, B, C...) para mostrar diferentes líneas en un gráfico.
 *   **Transform (Pestaña `Transform`)**:
     *   Aplica transformaciones a los resultados de tus consultas.

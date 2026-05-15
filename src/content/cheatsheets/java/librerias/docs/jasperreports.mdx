@@ -1,6 +1,6 @@
 ---
 title: "jasperreports"
-description: "Guía rápida y trucos sobre \"jasperreports\"."
+description: "JasperReports es una librería de código abierto y motor de informes más popular en Java."
 createdAt: 2026-04-28
 updatedAt: 2026-04-28
 tags: [docs]
@@ -12,7 +12,7 @@ icon: "🔷"
 
 # 📊 JasperReports Cheatsheet Completo 📊
 
-**JasperReports** es una librería de código abierto y motor de informes más popular en Java. Permite generar informes complejos y altamente personalizables en varios formatos (PDF, HTML, XLS, CSV, DOCX, ODT, RTF, etc.) a partir de diferentes fuentes de datos (JDBC, JavaBeans, XML, CSV, etc.).
+**JasperReports** es una librería de código abierto y motor de informes más popular en [Java](/java/java "Java es un lenguaje de programación de propósito general, concurrente, basado en clases y orientado a objetos."). Permite generar informes complejos y altamente personalizables en varios formatos (PDF, HTML, XLS, CSV, DOCX, ODT, RTF, etc.) a partir de diferentes fuentes de datos (JDBC, JavaBeans, XML, CSV, etc.).
 
 ---
 
@@ -221,7 +221,7 @@ El diseño del informe se realiza en un archivo XML (`.jrxml`). Jaspersoft Studi
 
 ## 4. 🚀 Generación de Informes (Proceso Java)
 
-El proceso general en Java para generar un informe implica 3 pasos principales: Compilar, Rellenar y Exportar.
+El proceso [general](/arquitectura/general "La Arquitectura del Software es la estructura fundamental de un sistema de software y la disciplina para crear tales estructuras.") en Java para generar un informe implica 3 pasos principales: Compilar, Rellenar y Exportar.
 
 ```java
 import net.sf.jasperreports.engine.*;
@@ -442,7 +442,7 @@ Para incluir otros informes dentro de un informe principal.
 *   **Manejo de Excepciones**: Las operaciones de JasperReports (`compileReport`, `fillReport`, `exportReport`) lanzan `JRException` o `IOException`. Manéjalas adecuadamente.
 *   **Cerrar Recursos**: Si usas `java.sql.Connection` directamente, asegúrate de cerrar la conexión en un bloque `finally`.
 *   **Parámetros y Fields Claros**: Nombra tus parámetros y fields de forma descriptiva.
-*   **Evita Queries Complejas en JRXML**: Si la consulta SQL se vuelve muy compleja, es mejor procesar los datos en Java y pasarlos al informe como un `JRBeanCollectionDataSource`.
+*   **Evita Queries Complejas en JRXML**: Si la consulta [SQL](/base_datos/sql "SQL es el lenguaje estándar utilizado para comunicarse con y gestionar bases de datos relacionales (RDBMS) como MySQL, PostgreSQL, Oracle, SQL Server, SQLite, entre otros.") se vuelve muy compleja, es mejor procesar los datos en Java y pasarlos al informe como un `JRBeanCollectionDataSource`.
 *   **Personalización de Exportación**: Utiliza las clases `SimpleXxxReportConfiguration` (ej. `SimpleXlsxReportConfiguration`) para controlar finamente el formato de salida.
 *   **Fuentes Incrustadas**: Para garantizar que los informes se vean igual en diferentes entornos, incrusta las fuentes en el informe JRXML (Jaspersoft Studio tiene una opción para esto). Si usas fuentes que no son las PDF Core Fonts (Helvetica, Times-Roman, Courier), necesitarás `jasperreports-fonts` y configurar las fuentes.
 *   **Testing**: Prueba la generación de tus informes para diferentes escenarios de datos y parámetros.

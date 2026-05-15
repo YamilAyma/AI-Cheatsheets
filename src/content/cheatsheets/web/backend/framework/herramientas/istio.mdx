@@ -1,6 +1,6 @@
 ---
 title: "istio"
-description: "Guía rápida y trucos sobre \"istio\"."
+description: "Istio es una malla de servicios (Service Mesh) de código abierto que proporciona una capa de infraestructura transparente para gestionar las comunicaciones de servicio a servicio."
 createdAt: 2026-04-28
 updatedAt: 2026-04-28
 tags: [herramientas]
@@ -20,7 +20,7 @@ icon: "📄"
 
 *   **Service Mesh (Malla de Servicios)**: Una capa de infraestructura dedicada para gestionar las comunicaciones de servicio a servicio.
 *   **Control Plane (Plano de Control)**: El cerebro de Istio. Gestiona y configura el Data Plane. En versiones modernas de Istio, está consolidado en `istiod`.
-*   **Data Plane (Plano de Datos)**: Compuesto por **proxies Envoy** que se despliegan como "sidecars" junto a cada instancia de servicio (Pod en Kubernetes). Interceptan y gestionan todo el tráfico de red de entrada y salida del Pod.
+*   **Data Plane (Plano de Datos)**: Compuesto por **proxies Envoy** que se despliegan como "sidecars" junto a cada instancia de servicio (Pod en [Kubernetes](/devops/kubernetes "Kubernetes (K8s) es una plataforma portable y extensible de código abierto para gestionar cargas de trabajo y servicios en contenedores.")). Interceptan y gestionan todo el tráfico de red de entrada y salida del Pod.
 *   **Envoy Proxy**: Un proxy de servicio de alto rendimiento, de código abierto, diseñado para lenguajes de programación modernos. Es el proxy por defecto en Istio.
 *   **Sidecar Pattern (Patrón Sidecar)**: Un patrón de diseño donde un "contenedor sidecar" (Envoy) se ejecuta junto al contenedor principal de la aplicación dentro del mismo Pod. Comparten red y almacenamiento.
 *   **Inyección de Sidecar**: El proceso de añadir automáticamente el proxy Envoy como un contenedor sidecar a un Pod de Kubernetes.
@@ -70,7 +70,7 @@ icon: "📄"
 
 ## 4. 🌐 Gestión de Tráfico (Traffic Management)
 
-Controlar el flujo de tráfico y las llamadas a la API entre servicios.
+Controlar el flujo de tráfico y las llamadas a la [API](/conocimiento/api "Una API (Application Programming Interface) es un conjunto de reglas, protocolos y herramientas que permite que diferentes aplicaciones de software se comuniquen entre sí.") entre servicios.
 
 ### 4.1. `Gateway` (Puerta de Enlace)
 
@@ -275,13 +275,13 @@ Istio proporciona seguridad en la capa de la malla de servicios.
 
 Istio proporciona telemetría sin instrumentación de código.
 
-*   **Métricas**: Recopila automáticamente métricas de 4 "golden signals" (latencia, tráfico, errores, saturación) para todos los servicios. Se integra con Prometheus por defecto.
+*   **Métricas**: Recopila automáticamente métricas de 4 "golden signals" (latencia, tráfico, errores, saturación) para todos los servicios. Se integra con [Prometheus](/web/backend/framework/herramientas/prometheus "Prometheus es una solución de monitoreo de código abierto y sistema de alertado.") por defecto.
     *   Acceso a Prometheus UI: `istioctl dashboard prometheus`
-*   **Trazabilidad Distribuida**: Genera y propaga trazas para el seguimiento de solicitudes a través de múltiples servicios. Se integra con Jaeger o Zipkin.
+*   **Trazabilidad Distribuida**: Genera y propaga trazas para el seguimiento de solicitudes a través de múltiples servicios. Se integra con [Jaeger](/web/backend/framework/herramientas/jaeger "Jaeger es un sistema de trazabilidad distribuida de código abierto, inspirado en Dapper de Google y OpenZipkin.") o [Zipkin](/web/backend/framework/spring/zipkin "Zipkin es un sistema de trazabilidad distribuida de código abierto.").
     *   Acceso a Jaeger UI: `istioctl dashboard jaeger`
     *   Acceso a Zipkin UI: `istioctl dashboard zipkin`
 *   **Registros (Access Logs)**: Recopila logs de acceso detallados del tráfico de la malla.
-*   **Kiali**: Un panel de control de visualización de mallas de servicios para Istio, que proporciona un mapa gráfico de la malla, métricas, trazas y configuraciones.
+*   **[Kiali](/web/backend/framework/herramientas/kiali "Kiali es una consola de operaciones para Istio, que proporciona un mapa de la malla de servicios, gráficos de flujo de tráfico, vistas detalladas de la salud de los servicios, y la capacidad de depurar y validar la configuración de Istio.")**: Un panel de control de visualización de mallas de servicios para Istio, que proporciona un mapa gráfico de la malla, métricas, trazas y configuraciones.
     *   Acceso a Kiali UI: `istioctl dashboard kiali`
 
 ---
@@ -305,7 +305,7 @@ Istio proporciona telemetría sin instrumentación de código.
 *   **Definir Subsets en `DestinationRule`**: Es crucial para habilitar patrones avanzados de tráfico como Canary releases y A/B testing.
 *   **`mTLS STRICT` en Producción**: Habilita mTLS en modo `STRICT` en producción para asegurar todas las comunicaciones de servicio a servicio.
 *   **Políticas de Autorización Detalladas (`AuthorizationPolicy`)**: Define políticas de control de acceso granulares para proteger tus servicios.
-*   **Monitorea y Depura con Herramientas de Observabilidad**: Usa Prometheus, Grafana, Jaeger/Zipkin y Kiali para entender el comportamiento de tu malla. Son indispensables.
+*   **Monitorea y Depura con Herramientas de Observabilidad**: Usa Prometheus, [Grafana](/herramientas/visualizacion_datos/grafana "Grafana es una herramienta de código abierto para la visualización y analítica de series de tiempo, diseñada para consultar, visualizar, alertar y comprender tus métricas dondequiera que se almacenen."), Jaeger/Zipkin y Kiali para entender el comportamiento de tu malla. Son indispensables.
 *   **`istioctl analyze`**: Ejecuta esta herramienta regularmente para detectar problemas de configuración de Istio.
 *   **Actualizaciones**: Mantén Istio actualizado, ya que evoluciona rápidamente.
 *   **Riesgos de Rendimiento**: Aunque Istio es eficiente, la inyección de proxies introduce una latencia mínima. Mide el rendimiento de tus aplicaciones después de integrarlo.

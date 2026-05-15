@@ -1,6 +1,6 @@
 ---
 title: "openapi"
-description: "Guía rápida y trucos sobre \"openapi\"."
+description: "OpenAPI Specification (OAS) es un formato de descripción de API estándar, independiente del lenguaje, legible tanto por humanos como por máquinas."
 createdAt: 2026-04-28
 updatedAt: 2026-04-28
 tags: [herramientas]
@@ -12,7 +12,7 @@ icon: "📄"
 
 # 📄 OpenAPI (OAS) Cheatsheet Completo 📄
 
-OpenAPI Specification (OAS) es un formato de descripción de API estándar, independiente del lenguaje, legible tanto por humanos como por máquinas. Permite describir la estructura y las capacidades de las APIs RESTful de forma declarativa utilizando archivos YAML o JSON.
+OpenAPI Specification (OAS) es un formato de descripción de [API](/conocimiento/api "Una API (Application Programming Interface) es un conjunto de reglas, protocolos y herramientas que permite que diferentes aplicaciones de software se comuniquen entre sí.") estándar, independiente del lenguaje, legible tanto por humanos como por máquinas. Permite describir la estructura y las capacidades de las APIs RESTful de forma declarativa utilizando archivos YAML o JSON.
 
 ---
 
@@ -425,8 +425,8 @@ components:
 
 * **Swagger UI**: Herramienta de código abierto para generar documentación interactiva a partir de una especificación OpenAPI. Puedes "probar" los endpoints directamente desde el navegador.
 * **Swagger Editor**: Un editor basado en navegador para escribir y validar especificaciones OpenAPI. Ayuda con el autocompletado y la detección de errores.
-* **Swagger Codegen**: Genera automáticamente SDKs de cliente y stubs de servidor en varios lenguajes (Java, Python, TypeScript, Go, etc.) a partir de una especificación OpenAPI.
-* **Postman / Insomnia**: Clientes de API populares que pueden importar especificaciones OpenAPI para generar colecciones de solicitudes, facilitando las pruebas.
+* **Swagger Codegen**: Genera automáticamente SDKs de cliente y stubs de servidor en varios lenguajes ([Java](/java/java "Java es un lenguaje de programación de propósito general, concurrente, basado en clases y orientado a objetos."), [Python](/python/python "Python es un lenguaje de programación de alto nivel, interpretado, interactivo y orientado a objetos."), [TypeScript](/web/general/typescript "¡Excelente elección! TypeScript es una herramienta fundamental en el desarrollo web moderno, especialmente para proyectos a gran escala, ya que añade seguridad de tipo y mejoras en la productividad."), Go, etc.) a partir de una especificación OpenAPI.
+* **[Postman](/herramientas/postman "Postman es una plataforma colaborativa para el desarrollo de APIs.") / Insomnia**: Clientes de API populares que pueden importar especificaciones OpenAPI para generar colecciones de solicitudes, facilitando las pruebas.
 * **Spectral**: Un linter de API que valida tu especificación OpenAPI contra un conjunto de reglas para asegurar la consistencia y las mejores prácticas.
 
 ---
@@ -439,7 +439,7 @@ components:
 * **Proporciona Ejemplos (`examples`)**: Ofrecer ejemplos de solicitud (`requestBody`) y respuesta (`responses`) hace que tu API sea mucho más fácil de entender y consumir.
 * **Usa `tags` para Agrupar**: Organiza tus operaciones en grupos lógicos para una mejor navegación en la documentación generada.
 * **Nombres Semánticos (`operationId`)**: Asigna `operationId`s únicos y significativos a cada operación. Esto es crucial para la generación de código.
-* **Control de Versiones**: Mantén tu especificación OpenAPI versionada junto con tu código fuente (ej. en Git). Actualiza la `info.version` con cada cambio significativo.
+* **Control de Versiones**: Mantén tu especificación OpenAPI versionada junto con tu código fuente (ej. en [Git](/herramientas/git/git "Git es un sistema de control de versiones distribuido (DVCS) diseñado para manejar proyectos pequeños o muy grandes con velocidad y eficiencia.")). Actualiza la `info.version` con cada cambio significativo.
 * **Valida tu Especificación**: Usa herramientas como Swagger Editor o Spectral para validar que tu documento OpenAPI es sintácticamente correcto y sigue las mejores prácticas.
 * **Diseña Primero**: Utiliza OpenAPI como una herramienta para diseñar tu API antes de escribir el código. Esto puede mejorar la consistencia y la calidad.
 

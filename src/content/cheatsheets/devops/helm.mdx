@@ -1,6 +1,6 @@
 ---
 title: "helm"
-description: "Guía rápida y trucos sobre \"helm\"."
+description: "Helm es el gestor de paquetes para Kubernetes."
 createdAt: 2026-04-28
 updatedAt: 2026-04-28
 tags: [devops]
@@ -12,7 +12,7 @@ icon: "📄"
 
 # ⛑️ Helm Cheatsheet Completo ⛑️
 
-**Helm** es el gestor de paquetes para Kubernetes. Te ayuda a definir, instalar y actualizar incluso las aplicaciones de Kubernetes más complejas. Los "paquetes" de Helm se llaman **Charts**.
+**Helm** es el gestor de paquetes para [Kubernetes](/devops/kubernetes "Kubernetes (K8s) es una plataforma portable y extensible de código abierto para gestionar cargas de trabajo y servicios en contenedores."). Te ayuda a definir, instalar y actualizar incluso las aplicaciones de Kubernetes más complejas. Los "paquetes" de Helm se llaman **Charts**.
 
 ---
 
@@ -217,7 +217,7 @@ Helm utiliza Go templating para procesar los manifiestos de Kubernetes.
 *   **Variables del Chart (`.Chart`)**:
     *   `.Chart.Name`: Nombre del Chart.
     *   `.Chart.Version`: Versión del Chart.
-*   **Variables de Ámbito (`.Capabilities`)**: Información sobre el clúster (versión de K8s, API).
+*   **Variables de Ámbito (`.Capabilities`)**: Información sobre el clúster (versión de K8s, [API](/conocimiento/api "Una API (Application Programming Interface) es un conjunto de reglas, protocolos y herramientas que permite que diferentes aplicaciones de software se comuniquen entre sí.")).
 *   **Funciones de Plantilla (Built-in Functions)**:
     *   `{{ .Values.key | default "defaultValue" }}`: Valor por defecto.
     *   `{{ .Values.key | quote }}`: Citas para cadenas.

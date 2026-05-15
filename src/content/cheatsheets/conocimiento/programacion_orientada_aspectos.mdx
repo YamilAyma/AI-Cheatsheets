@@ -1,6 +1,6 @@
 ---
 title: "programacion_orientada_aspectos"
-description: "Guía rápida y trucos sobre \"programacion_orientada_aspectos\"."
+description: "La Programación Orientada a Aspectos (AOP) es un paradigma de programación que busca modularizar las preocupaciones transversales (cross-cutting concerns)."
 createdAt: 2026-04-28
 updatedAt: 2026-04-28
 tags: [conocimiento]
@@ -74,11 +74,11 @@ Estos definen cuándo se ejecuta el código del aspecto con respecto al Join Poi
 El proceso de integrar los aspectos en el código.
 
 *   **Compile-Time Weaving (CTW)**:
-    *   **Cuándo**: Durante la compilación del código fuente. El compilador AOP (ej. `ajc` de AspectJ) procesa el código fuente y el aspecto, generando un bytecode con el Advice ya inyectado.
+    *   **Cuándo**: Durante la compilación del código fuente. El compilador AOP (ej. `ajc` de [AspectJ](/java/librerias/aspectj "AspectJ es una extensión 'seamless' (sin costuras) de Java que implementa la Programación Orientada a Aspectos (AOP).")) procesa el código fuente y el aspecto, generando un bytecode con el Advice ya inyectado.
     *   **Pros**: Más potente (puede afectar más tipos de Join Points), menor sobrecarga en tiempo de ejecución.
     *   **Contras**: Requiere un proceso de compilación específico.
 *   **Post-Compile Weaving (Binary / Load-Time Weaving - LTW)**:
-    *   **Cuándo**: Después de que el código Java ha sido compilado a bytecode (`.class` files), pero antes o durante la carga de las clases en la JVM.
+    *   **Cuándo**: Después de que el código [Java](/java/java "Java es un lenguaje de programación de propósito general, concurrente, basado en clases y orientado a objetos.") ha sido compilado a bytecode (`.class` files), pero antes o durante la carga de las clases en la JVM.
     *   **Pros**: No requiere modificar el proceso de compilación del código fuente, útil para tejer aspectos en librerías de terceros.
     *   **Contras**: Requiere un agente Java configurado en la JVM.
 *   **Runtime Weaving (Proxy-based)**:
@@ -114,7 +114,7 @@ El proceso de integrar los aspectos en el código.
     *   A menudo suficiente para la mayoría de los casos de uso comunes en aplicaciones Spring.
     *   Puede usar AspectJ como su "backend" de Weaving para capacidades completas de AspectJ si se configura LTW.
 *   **PostSharp (.NET)**: Un framework de AOP popular para el ecosistema .NET.
-*   **Otros Lenguajes**: Aunque AOP es más prominente en Java/.NET, otros lenguajes tienen características similares (ej. decoradores/atributos en Python, TypeScript, C++).
+*   **Otros Lenguajes**: Aunque AOP es más prominente en Java/.NET, otros lenguajes tienen características similares (ej. decoradores/atributos en [Python](/python/python "Python es un lenguaje de programación de alto nivel, interpretado, interactivo y orientado a objetos."), [TypeScript](/web/general/typescript "¡Excelente elección! TypeScript es una herramienta fundamental en el desarrollo web moderno, especialmente para proyectos a gran escala, ya que añade seguridad de tipo y mejoras en la productividad."), C++).
 
 ---
 

@@ -1,6 +1,6 @@
 ---
 title: "motor_db"
-description: "Guía rápida y trucos sobre \"motor_db\"."
+description: "Un Motor de Base de Datos (o Sistema de Gestión de Bases de Datos - SGBD) es el software que permite almacenar, modificar, extraer y gestionar datos en una base de datos."
 createdAt: 2026-04-28
 updatedAt: 2026-04-28
 tags: [conocimiento]
@@ -20,7 +20,7 @@ Un **Motor de Base de Datos** (o Sistema de Gestión de Bases de Datos - SGBD) e
 
 * **Modelo de Datos**: La forma en que los datos se organizan, almacenan y manipulan. (ej. Relacional, Documento, Clave-Valor).
 * **Consistencia (Consistency)**:
-  * **ACID (Atomicidad, Consistencia, Aislamiento, Durabilidad)**: Conjunto de propiedades que garantizan que las transacciones de bases de datos son procesadas de forma fiable. Crucial para bases de datos transaccionales tradicionales (SQL).
+  * **ACID (Atomicidad, Consistencia, Aislamiento, Durabilidad)**: Conjunto de propiedades que garantizan que las transacciones de bases de datos son procesadas de forma fiable. Crucial para bases de datos transaccionales tradicionales ([SQL](/base_datos/sql "SQL es el lenguaje estándar utilizado para comunicarse con y gestionar bases de datos relacionales (RDBMS) como MySQL, PostgreSQL, Oracle, SQL Server, SQLite, entre otros.")).
   * **BASE (Basically Available, Soft state, Eventually consistent)**: Un conjunto de propiedades para sistemas NoSQL distribuidos que priorizan la disponibilidad y la tolerancia a particiones sobre la consistencia fuerte.
 * **Teorema CAP**: En un sistema distribuido, solo se pueden satisfacer dos de estas tres propiedades: **Consistencia (C)**, **Disponibilidad (A)** y **Tolerancia a Particiones (P)**.
 * **Escalabilidad**:
@@ -154,7 +154,7 @@ Un **Motor de Base de Datos** (o Sistema de Gestión de Bases de Datos - SGBD) e
 * **Casos de Uso**:
   * Motores de búsqueda de e-commerce, análisis de logs, monitoreo de aplicaciones.
   * Búsqueda de documentos, Business Intelligence.
-* **Ejemplos Populares**: Elasticsearch, Apache Solr, Apache Lucene (librería base).
+* **Ejemplos Populares**: [Elasticsearch](/devops/elasticsearch "Elasticsearch es un motor de búsqueda y análisis distribuido en tiempo real, construido sobre Apache Lucene."), Apache Solr, Apache Lucene (librería base).
 
 ### 2.7. ⌚ Bases de Datos de Series de Tiempo (NoSQL / Especializadas)
 
@@ -168,12 +168,12 @@ Un **Motor de Base de Datos** (o Sistema de Gestión de Bases de Datos - SGBD) e
   * Almacenamiento eficiente.
   * Funciones analíticas de tiempo integradas.
 * **Contras**:
-  * No son adecuadas para datos de propósito general.
+  * No son adecuadas para datos de propósito [general](/arquitectura/general "La Arquitectura del Software es la estructura fundamental de un sistema de software y la disciplina para crear tales estructuras.").
   * Modelado de datos rígido centrado en el tiempo.
 * **Casos de Uso**:
   * Datos de sensores IoT, monitoreo de infraestructura, datos financieros (mercado de valores).
   * Análisis de rendimiento de aplicaciones (APM), telemetría.
-* **Ejemplos Populares**: InfluxDB, TimescaleDB (extensión de PostgreSQL), Prometheus, OpenTSDB.
+* **Ejemplos Populares**: InfluxDB, TimescaleDB (extensión de PostgreSQL), [Prometheus](/web/backend/framework/herramientas/prometheus "Prometheus es una solución de monitoreo de código abierto y sistema de alertado."), OpenTSDB.
 
 ---
 

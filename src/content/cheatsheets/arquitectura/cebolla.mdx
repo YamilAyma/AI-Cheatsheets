@@ -1,6 +1,6 @@
 ---
 title: "cebolla"
-description: "Guía rápida y trucos sobre \"cebolla\"."
+description: "La Arquitectura Cebolla, propuesta por Jeffrey Palermo, es un patrón de diseño de software que organiza el código en capas concéntricas, similar a las capas de una cebolla."
 createdAt: 2026-04-28
 updatedAt: 2026-04-28
 tags: [arquitectura]
@@ -57,7 +57,7 @@ La Arquitectura Cebolla típicamente define cuatro capas principales, aunque el 
 * **Propósito**: Contiene la lógica de negocio específica de la aplicación o "casos de uso". Orquestra el modelo de dominio y los servicios de infraestructura para cumplir los requisitos funcionales de la aplicación.
 * **Contenido**:
   * **Servicios de Aplicación / Casos de Uso (Application Services / Use Cases)**: Clases que implementan funcionalidades específicas de la aplicación (ej. `CreateProductUseCase`, `ProcessOrderService`).
-  * **DTOs (Data Transfer Objects)**: Modelos de datos para la entrada (Request DTOs) y salida (Response DTOs) de esta capa, desacoplando los modelos de dominio de la interfaz de usuario/API.
+  * **DTOs (Data Transfer Objects)**: Modelos de datos para la entrada (Request DTOs) y salida (Response DTOs) de esta capa, desacoplando los modelos de dominio de la interfaz de usuario/[API](/conocimiento/api "Una API (Application Programming Interface) es un conjunto de reglas, protocolos y herramientas que permite que diferentes aplicaciones de software se comuniquen entre sí.").
   * Interfaces para la interacción con la infraestructura (si se necesita una capa de adaptadores independiente).
 * **Dependencias**: Depende de la capa de Dominio y de la capa de Servicios de Dominio. Define interfaces para la capa de Infraestructura (ej. `IPaymentGateway`).
 
@@ -68,7 +68,7 @@ La Arquitectura Cebolla típicamente define cuatro capas principales, aunque el 
   * **Implementaciones de Repositorios**: Clases que implementan las interfaces de Repositorio definidas en la capa de Dominio (ej. `JpaProductRepository`, `MongoDbUserRepository`).
   * **Clientes de Servicios Externos**: Clases que interactúan con APIs de terceros, sistemas de mensajería, etc.
   * **Frameworks Web**: Controladores, configuraciones de ruteo (ej. Spring MVC, Express.js, ASP.NET Core).
-  * **Interfaces de Usuario (UI)**: Componentes de interfaz de usuario (React, Angular, WPF, WinForms).
+  * **Interfaces de Usuario (UI)**: Componentes de interfaz de usuario ([React](/web/frontend/general/react/react "¡Excelente! React es la biblioteca de JavaScript más popular para construir interfaces de usuario."), [Angular](/web/frontend/framework/angular "Angular es un framework de desarrollo de aplicaciones web de código abierto, desarrollado por Google, para construir aplicaciones de una sola página (SPA) y aplicaciones móviles de alto rendimiento."), WPF, WinForms).
   * **Base de Datos**: ORMs (Hibernate, Entity Framework), drivers de bases de datos.
   * **Logging, Autenticación, Configuración**: Implementaciones concretas de estos servicios.
 * **Dependencias**: Depende de todas las capas internas para implementar sus interfaces. También depende directamente de frameworks y librerías externas.
@@ -140,7 +140,7 @@ MyApplication.sln (Solución) / my-application (Proyecto Raíz)
 
 * **Dominio Protegido**: El modelo de negocio central es inafectado por cambios en la tecnología externa.
 * **Alta Testabilidad**: Las capas internas (Dominio, Servicios de Dominio, Servicios de Aplicación) son puras y desacopladas, lo que permite pruebas unitarias rápidas y efectivas sin dependencias de infraestructura.
-* **Flexibilidad Extrema**: Facilita enormemente la migración entre tecnologías (cambiar de SQL a NoSQL, de REST a gRPC, de un framework web a otro) al reemplazar solo adaptadores.
+* **Flexibilidad Extrema**: Facilita enormemente la migración entre tecnologías (cambiar de [SQL](/base_datos/sql "SQL es el lenguaje estándar utilizado para comunicarse con y gestionar bases de datos relacionales (RDBMS) como MySQL, PostgreSQL, Oracle, SQL Server, SQLite, entre otros.") a NoSQL, de REST a gRPC, de un framework web a otro) al reemplazar solo adaptadores.
 * **Desarrollo Paralelo**: Diferentes equipos pueden trabajar en diferentes capas y adaptadores simultáneamente una vez que las interfaces están definidas.
 * **Mantenibilidad Mejorada**: Los cambios de requisitos o tecnológicos suelen estar contenidos en sus respectivas capas.
 * **Fomenta la Coherencia**: Al proteger el dominio, se mantiene una visión clara y consistente de las reglas de negocio.
@@ -151,7 +151,7 @@ MyApplication.sln (Solución) / my-application (Proyecto Raíz)
 
 * **Complejidad Inicial / Boilerplate**: Requiere más interfaces, DTOs y clases que una arquitectura monolítica simple, lo que puede ser una sobreingeniería para proyectos pequeños o prototipos.
 * **Curva de Aprendizaje**: Los desarrolladores deben comprender profundamente el Principio de Inversión de Dependencias y la distinción entre las capas.
-* **Mapeo de DTOs**: La conversión constante entre Entidades de Dominio, DTOs de Aplicación y Entidades de Persistencia puede generar código repetitivo, aunque herramientas como AutoMapper o MapStruct ayudan.
+* **Mapeo de DTOs**: La conversión constante entre Entidades de Dominio, DTOs de Aplicación y Entidades de Persistencia puede generar código repetitivo, aunque herramientas como AutoMapper o [MapStruct](/java/librerias/mapstruct "MapStruct es un generador de código que simplifica la implementación de mapeos de datos entre clases de objetos de Java.") ayudan.
 * **Navegación del Código**: Puede ser más difícil seguir el flujo de una solicitud a través de múltiples abstracciones y clases sin buenas herramientas de IDE.
 * **Disciplina Requerida**: Un equipo debe adherirse estrictamente a la Regla de Dependencia para evitar que la arquitectura se deteriore.
 
@@ -159,14 +159,14 @@ MyApplication.sln (Solución) / my-application (Proyecto Raíz)
 
 ## 7. 🤝 Relación con Otras Arquitecturas Limpias
 
-La Arquitectura Cebolla, Hexagonal y Limpia son a menudo consideradas como variaciones o evoluciones del mismo concepto central. Todas comparten la idea de:
+La Arquitectura Cebolla, [Hexagonal](/arquitectura/hexagonal "La Arquitectura Hexagonal, o Arquitectura de Puertos y Adaptadores, es un patrón de diseño de software creado por Alistair Cockburn.") y Limpia son a menudo consideradas como variaciones o evoluciones del mismo concepto central. Todas comparten la idea de:
 
 * **Capas Concéntricas**: Con la lógica de negocio en el centro.
 * **Regla de Dependencia**: Las dependencias siempre apuntan hacia adentro.
 * **Inversión de Dependencias**: Para lograr el desacoplamiento.
 * **Independencia de la Infraestructura**: El objetivo final.
 * **Arquitectura Hexagonal (Ports & Adapters)**: Es muy similar a la Arquitectura Cebolla. A menudo se considera que la Arquitectura Hexagonal es el "núcleo" de la Arquitectura Cebolla, con Puertos (interfaces) y Adaptadores (implementaciones) que conectan el interior con el exterior. La Arquitectura Cebolla a veces es más explícita al detallar las capas internas (Dominio, Servicios de Dominio, Servicios de Aplicación).
-* **Arquitectura Limpia (Clean Architecture)**: Robert C. Martin (Uncle Bob) sintetizó ideas de la Arquitectura Hexagonal, la Arquitectura Cebolla y otras para crear su "Arquitectura Limpia". La Arquitectura Limpia es una generalización con cuatro anillos principales (Entidades, Casos de Uso, Adaptadores de Interfaz, Frameworks & Drivers), pero sus principios son casi idénticos.
+* **Arquitectura Limpia ([Clean](/arquitectura/clean "La Arquitectura Limpia es una filosofía de diseño de software que propone una organización de código basada en capas concéntricas, donde las dependencias siempre apuntan hacia adentro.") Architecture)**: Robert C. Martin (Uncle Bob) sintetizó ideas de la Arquitectura Hexagonal, la Arquitectura Cebolla y otras para crear su "Arquitectura Limpia". La Arquitectura Limpia es una generalización con cuatro anillos principales (Entidades, Casos de Uso, Adaptadores de Interfaz, Frameworks & Drivers), pero sus principios son casi idénticos.
 
 En esencia, si entiendes una, entiendes las ideas fundamentales de todas ellas. La elección de una sobre otra a menudo se reduce a la terminología preferida o a matices de cómo se subdividen las capas internas.
 

@@ -1,6 +1,6 @@
 ---
 title: "netflix-eureka"
-description: "Guía rápida y trucos sobre \"netflix-eureka\"."
+description: "Netflix Eureka es un servicio de descubrimiento de servicios basado en REST que permite a los microservicios registrarse en una ubicación central y luego descubrir otros servicios para comunicarse con ellos."
 createdAt: 2026-04-28
 updatedAt: 2026-04-28
 tags: [spring]
@@ -114,7 +114,7 @@ icon: "📄"
     </dependencies>
     ```
 
-2.  **Habilitar Eureka Client en la clase principal (opcional a partir de Spring Boot 2.x):**
+2.  **Habilitar Eureka Client en la clase principal (opcional a partir de [Spring Boot](/web/backend/framework/spring/spring-boot "¡Absolutamente! Spring Boot es un framework increíble para construir aplicaciones Java robustas y de alto rendimiento de manera rápida y eficiente.") 2.x):**
     *   Spring Boot habilita el cliente automáticamente si está en el classpath.
     *   `@EnableDiscoveryClient` o `@EnableEurekaClient` (deprecated) ya no son estrictamente necesarios.
 
@@ -247,7 +247,7 @@ public class ProductServiceClient {
 
 ### 3.3. Usando `WebClient` con `@LoadBalanced` (Cliente HTTP Reactivo)
 
-*   Para aplicaciones Spring WebFlux.
+*   Para aplicaciones [Spring WebFlux](/web/backend/framework/spring/spring-webflux "Spring WebFlux es un framework web reactivo y no bloqueante, parte de Spring 5, construido sobre Project Reactor.").
 
 ```java
 // src/main/java/com/example/myservice/AppConfig.java
@@ -401,11 +401,11 @@ eureka:
 
 *   **Nombre de Servicio Único (`spring.application.name`)**: Es el identificador principal de tu microservicio en Eureka. Asegúrate de que sea único y descriptivo.
 *   **Heartbeat y `eviction`**: Ajusta `lease-renewal-interval-in-seconds` (cliente) y `lease-expiration-duration-in-seconds` (servidor) según la tolerancia de tu sistema a instancias "muertas" pero aún registradas.
-*   **"Prefer-IP-Address"**: En entornos de contenedor (Docker, Kubernetes) donde los hostnames internos no son fiables o las IPs son más directas, considera `eureka.instance.prefer-ip-address=true`.
+*   **"Prefer-IP-Address"**: En entornos de contenedor ([Docker](/devops/docker "Docker es una plataforma de código abierto que utiliza la contenerización para empaquetar una aplicación y todas sus dependencias en una unidad estándar para el desarrollo de software."), [Kubernetes](/devops/kubernetes "Kubernetes (K8s) es una plataforma portable y extensible de código abierto para gestionar cargas de trabajo y servicios en contenedores.")) donde los hostnames internos no son fiables o las IPs son más directas, considera `eureka.instance.prefer-ip-address=true`.
 *   **Zona de Disponibilidad (AZ) Awareness**: En la nube, configura Eureka para ser consciente de las AZs. Los clientes prefieren llamar a servicios en su misma AZ para reducir latencia y costos.
 *   **Deshabilita el Registro del Servidor**: El Eureka Server no debe registrarse a sí mismo como cliente (`register-with-eureka: false`, `fetch-registry: false`).
 *   **Usa `FeignClient` para Clientes REST**: Simplifica drásticamente la creación de clientes REST declarativos y maneja el descubrimiento de servicios y el balanceo de carga automáticamente.
-*   **Hystrix / Resilience4j (Circuit Breakers)**: Combina Eureka con librerías de resiliencia como Resilience4j (sucesor de Hystrix). Esto evita cascadas de fallos en arquitecturas de microservicios.
+*   **Hystrix / [Resilience4j](/web/backend/framework/spring/resilience4j "Resilience4j es una librería de resiliencia ligera y modular para Java.") (Circuit Breakers)**: Combina Eureka con librerías de resiliencia como Resilience4j (sucesor de Hystrix). Esto evita cascadas de fallos en arquitecturas de microservicios.
 *   **Dashboard de Eureka**: Monitorea el estado de tus servicios registrados a través de la UI de Eureka Server.
 *   **Evita la Inyección Directa de `DiscoveryClient`**: Aunque es posible, es mejor usar abstracciones de nivel superior como `@LoadBalanced RestTemplate`, `WebClient.Builder`, o `FeignClient` para el consumo de servicios.
 *   **Registros Dinámicos (Netflix Sidecar)**: Para registrar servicios no JVM en Eureka (requiere una configuración más avanzada).

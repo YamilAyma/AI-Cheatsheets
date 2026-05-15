@@ -1,6 +1,6 @@
 ---
 title: "spring-webflux"
-description: "Guía rápida y trucos sobre \"spring-webflux\"."
+description: "Spring WebFlux es un framework web reactivo y no bloqueante, parte de Spring 5, construido sobre Project Reactor."
 createdAt: 2026-04-28
 updatedAt: 2026-04-28
 tags: [spring]
@@ -23,7 +23,7 @@ icon: "📄"
 *   **Project Reactor**: La librería que implementa las especificaciones de Reactive Streams y en la que se basa Spring WebFlux. Proporciona los tipos `Mono` y `Flux`.
 *   **Contrapresión (Backpressure)**: Mecanismo que permite a un consumidor señalar al productor que está listo para recibir más elementos, evitando la sobrecarga del consumidor.
 *   **Menos Hilos (Threads)**: WebFlux puede manejar un gran número de conexiones concurrentes con un número reducido de hilos, lo que reduce el consumo de memoria y el overhead de cambio de contexto.
-*   **Servidores Netty/Undertow/Jetty**: WebFlux puede ejecutarse en servidores no bloqueantes como Netty (por defecto en Spring Boot WebFlux), Undertow o Jetty, a diferencia de Spring MVC que usa el Servlet API (Tomcat, Jetty).
+*   **Servidores Netty/Undertow/Jetty**: WebFlux puede ejecutarse en servidores no bloqueantes como Netty (por defecto en [Spring Boot](/web/backend/framework/spring/spring-boot "¡Absolutamente! Spring Boot es un framework increíble para construir aplicaciones Java robustas y de alto rendimiento de manera rápida y eficiente.") WebFlux), Undertow o Jetty, a diferencia de Spring MVC que usa el Servlet [API](/conocimiento/api "Una API (Application Programming Interface) es un conjunto de reglas, protocolos y herramientas que permite que diferentes aplicaciones de software se comuniquen entre sí.") ([Tomcat](/java/tomcat "Apache Tomcat es un servidor web de código abierto y un contenedor de servlets desarrollado por la Apache Software Foundation."), Jetty).
 
 ---
 
@@ -343,7 +343,7 @@ public class WebClientExample {
 
 ## 6. 🌿 Acceso a Datos Reactivo (R2DBC / Reactive Mongo)
 
-*   Spring Data proporciona repositorios reactivos para bases de datos no bloqueantes (R2DBC para SQL, Reactive MongoDB, Reactive Redis, etc.).
+*   Spring Data proporciona repositorios reactivos para bases de datos no bloqueantes (R2DBC para [SQL](/base_datos/sql "SQL es el lenguaje estándar utilizado para comunicarse con y gestionar bases de datos relacionales (RDBMS) como MySQL, PostgreSQL, Oracle, SQL Server, SQLite, entre otros."), Reactive MongoDB, Reactive Redis, etc.).
 
 ```java
 import org.springframework.data.r2dbc.repository.Query;
@@ -547,9 +547,9 @@ class ReactiveStreamTest {
 *   **Manejo de Errores Explícito**: Siempre maneja los errores en tus flujos reactivos con operadores como `onErrorResume`, `onErrorMap`, etc. No dejes que los errores no controlados se propaguen.
 *   **Depuración**: La depuración de flujos reactivos puede ser compleja. Usa `doOnNext`, `doOnError`, `doFinally`, etc., para loggear eventos. Considera añadir el Reactor Debug Agent para mejorar las trazas de pila.
 *   **WebClient para Llamadas Externas**: Siempre usa `WebClient` para hacer llamadas HTTP a otros servicios desde una aplicación WebFlux.
-*   **Monitoreo**: Integra herramientas de monitoreo (ej. Actuator con Prometheus/Grafana) para observar el rendimiento y el comportamiento de tu aplicación WebFlux.
+*   **Monitoreo**: Integra herramientas de monitoreo (ej. Actuator con [Prometheus](/web/backend/framework/herramientas/prometheus "Prometheus es una solución de monitoreo de código abierto y sistema de alertado.")/[Grafana](/herramientas/visualizacion_datos/grafana "Grafana es una herramienta de código abierto para la visualización y analítica de series de tiempo, diseñada para consultar, visualizar, alertar y comprender tus métricas dondequiera que se almacenen.")) para observar el rendimiento y el comportamiento de tu aplicación WebFlux.
 *   **No para todo**: WebFlux es excelente para aplicaciones de I/O intensivas y alta concurrencia. No siempre es la mejor opción para aplicaciones CPU-bound o CRUD simples donde Spring MVC podría ser más fácil de entender y depurar.
 
 ---
 
-Este cheatsheet te proporciona una referencia completa de Spring WebFlux, cubriendo sus conceptos esenciales, cómo configurarlo, los tipos reactivos, la creación de APIs (controladores y funcionales), el cliente HTTP, el acceso a datos, el manejo de errores y las mejores prácticas para construir aplicaciones web Java reactivas y eficientes.
+Este cheatsheet te proporciona una referencia completa de Spring WebFlux, cubriendo sus conceptos esenciales, cómo configurarlo, los tipos reactivos, la creación de APIs (controladores y funcionales), el cliente HTTP, el acceso a datos, el manejo de errores y las mejores prácticas para construir aplicaciones web [Java](/java/java "Java es un lenguaje de programación de propósito general, concurrente, basado en clases y orientado a objetos.") reactivas y eficientes.

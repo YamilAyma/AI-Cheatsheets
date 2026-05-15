@@ -1,6 +1,6 @@
 ---
 title: "kubernetes"
-description: "Guía rápida y trucos sobre \"kubernetes\"."
+description: "Kubernetes (K8s) es una plataforma portable y extensible de código abierto para gestionar cargas de trabajo y servicios en contenedores."
 createdAt: 2026-04-28
 updatedAt: 2026-04-28
 tags: [devops]
@@ -20,7 +20,7 @@ Kubernetes (K8s) es una plataforma portable y extensible de código abierto para
 * **Nodo (Node)**: Una máquina virtual o física en el clúster. Contiene servicios para ejecutar Pods.
 * **Pod**: La unidad de computación más pequeña y básica que puedes desplegar en Kubernetes. Contiene uno o más contenedores (que comparten almacenamiento, red y recursos), y la especificación para cómo ejecutarlos.
 * **Control Plane (Plano de Control)**: El cerebro del clúster. Gestiona los nodos de trabajo y los Pods en el clúster.
-  * **`kube-apiserver`**: Expone la API de Kubernetes.
+  * **`kube-apiserver`**: Expone la [API](/conocimiento/api "Una API (Application Programming Interface) es un conjunto de reglas, protocolos y herramientas que permite que diferentes aplicaciones de software se comuniquen entre sí.") de Kubernetes.
   * **`etcd`**: Almacén de clave-valor consistente y de alta disponibilidad para todos los datos del cl clúster.
   * **`kube-scheduler`**: Asigna Pods sin nodo a nodos basándose en recursos disponibles.
   * **`kube-controller-manager`**: Ejecuta controladores de alto nivel (Deployment, ReplicaSet, etc.).
@@ -28,7 +28,7 @@ Kubernetes (K8s) es una plataforma portable y extensible de código abierto para
 * **Componentes del Nodo de Trabajo**:
   * **`kubelet`**: Un agente que se ejecuta en cada nodo, asegura que los contenedores en los Pods se estén ejecutando y en un estado saludable.
   * **`kube-proxy`**: Un proxy de red que mantiene reglas de red en los nodos, permitiendo la comunicación de red a tus Pods.
-  * **Container Runtime (Tiempo de ejecución de contenedores)**: Software para ejecutar contenedores (ej. containerd, CRI-O, Docker).
+  * **Container Runtime (Tiempo de ejecución de contenedores)**: Software para ejecutar contenedores (ej. containerd, CRI-O, [Docker](/devops/docker "Docker es una plataforma de código abierto que utiliza la contenerización para empaquetar una aplicación y todas sus dependencias en una unidad estándar para el desarrollo de software.")).
 * **`kubectl`**: La herramienta de línea de comandos para interactuar con el clúster de Kubernetes.
 * **Objetos de Kubernetes**: Entidades persistentes en el clúster que representan el estado deseado de tu clúster (Pods, Deployments, Services, ConfigMaps, Secrets, etc.).
 

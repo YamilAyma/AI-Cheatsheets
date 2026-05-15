@@ -1,6 +1,6 @@
 ---
 title: "react-select"
-description: "Guía rápida y trucos sobre \"react-select\"."
+description: "react-select es un componente select totalmente personalizable y extensible para React."
 createdAt: 2026-04-28
 updatedAt: 2026-04-28
 tags: [react]
@@ -91,11 +91,11 @@ import React, { useState } from 'react';
 import Select from 'react-select';
 
 const techOptions = [
-  { value: 'react', label: 'React' },
+  { value: '[react](/web/frontend/general/react/react "¡Excelente! React es la biblioteca de JavaScript más popular para construir interfaces de usuario.")', label: 'React' },
   { value: 'vue', label: 'Vue.js' },
-  { value: 'angular', label: 'Angular' },
+  { value: '[angular](/web/frontend/framework/angular "Angular es un framework de desarrollo de aplicaciones web de código abierto, desarrollado por Google, para construir aplicaciones de una sola página (SPA) y aplicaciones móviles de alto rendimiento.")', label: 'Angular' },
   { value: 'node', label: 'Node.js' },
-  { value: 'python', label: 'Python' },
+  { value: '[python](/python/python "Python es un lenguaje de programación de alto nivel, interpretado, interactivo y orientado a objetos.")', label: 'Python' },
 ];
 
 function MultiSelectExample() {
@@ -169,7 +169,7 @@ import React, { useState } from 'react';
 import AsyncSelect from 'react-select/async'; // Importa AsyncSelect
 
 const loadUsers = async (inputValue) =&gt; {
-  // Simula una API call
+  // Simula una [API](/conocimiento/api "Una API (Application Programming Interface) es un conjunto de reglas, protocolos y herramientas que permite que diferentes aplicaciones de software se comuniquen entre sí.") call
   const response = await new Promise(resolve =&gt; setTimeout(() =&gt; {
     const users = [
       { id: 1, name: 'Alice' },
@@ -407,7 +407,7 @@ function FormWithReactSelect() {
         Selecciona una fruta:
         <Controller
           name="fruit" // Nombre del campo en el formulario
-          control={control} // Instancia de control de React Hook Form
+          control={control} // Instancia de control de [React Hook Form](/web/frontend/general/react/react-hook-form "¡Excelente elección! React Hook Form es una librería fantástica para la gestión de formularios en React, conocida por su rendimiento y facilidad de uso.")
           rules={{ required: '¡Este campo es obligatorio!' }} // Reglas de validación
           render={({ field }) =&gt; ( // 'field' contiene props { onChange, onBlur, value, name, ref }
             <Select

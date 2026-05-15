@@ -1,6 +1,6 @@
 ---
 title: "hexagonal"
-description: "Guía rápida y trucos sobre \"hexagonal\"."
+description: "La Arquitectura Hexagonal, o Arquitectura de Puertos y Adaptadores, es un patrón de diseño de software creado por Alistair Cockburn."
 createdAt: 2026-04-28
 updatedAt: 2026-04-28
 tags: [arquitectura]
@@ -23,7 +23,7 @@ La **Arquitectura Hexagonal**, o **Arquitectura de Puertos y Adaptadores**, es u
 * **Adaptadores (Adapters)**: Son las implementaciones concretas de los puertos. Convierten las interacciones entre el formato específico del exterior y el formato genérico del puerto de la aplicación. Los adaptadores viven **fuera** del núcleo de la aplicación.
 * **Inversión de Dependencias (Dependency Inversion Principle - DIP)**: Las dependencias siempre apuntan hacia adentro, hacia el núcleo. El núcleo define lo que necesita (el puerto), y el exterior lo implementa (el adaptador).
 * **Testabilidad**: Al aislar la lógica de negocio, se vuelve trivial de probar sin la necesidad de levantar una base de datos, un servidor web o una interfaz gráfica.
-* **Flexibilidad Tecnológica**: Permite cambiar tecnologías externas (ej. de SQL a NoSQL, de REST a gRPC, de CLI a Web UI) con mínimo impacto en la lógica de negocio.
+* **Flexibilidad Tecnológica**: Permite cambiar tecnologías externas (ej. de [SQL](/base_datos/sql "SQL es el lenguaje estándar utilizado para comunicarse con y gestionar bases de datos relacionales (RDBMS) como MySQL, PostgreSQL, Oracle, SQL Server, SQLite, entre otros.") a NoSQL, de REST a gRPC, de CLI a Web UI) con mínimo impacto en la lógica de negocio.
 * **Anatomía "Hexagonal"**: El nombre hexagonal simboliza que la aplicación puede interactuar con múltiples tipos de agentes externos a través de diferentes puertos, como los lados de un hexágono.
 
 ---
@@ -57,7 +57,7 @@ La capa externa que implementa los puertos y gestiona las interacciones con el m
     * Son llamados por el núcleo de la aplicación a través de sus respectivos puertos.
     * Convierten las llamadas del núcleo al formato que el sistema externo entiende.
     * Interactúan con la base de datos, sistemas de archivos, APIs de terceros, etc.
-    * *Ejemplos:* Implementación de un `ProductRepository` con JPA/Entity Framework, cliente HTTP para una API externa, un servicio de envío de correos.
+    * *Ejemplos:* Implementación de un `ProductRepository` con JPA/Entity Framework, cliente HTTP para una [API](/conocimiento/api "Una API (Application Programming Interface) es un conjunto de reglas, protocolos y herramientas que permite que diferentes aplicaciones de software se comuniquen entre sí.") externa, un servicio de envío de correos.
 * **Dependencias**: Dependen del núcleo de la aplicación (de las interfaces de los puertos que implementan) y de los frameworks/librerías externos que usan. El núcleo de la aplicación no los conoce.
 
 ---
@@ -155,7 +155,7 @@ mi-aplicacion/
 
 La Arquitectura Hexagonal es conceptualmente muy similar a (y a menudo citada como precursora o sinónimo de) otras arquitecturas limpias:
 
-* **Arquitectura Limpia (Clean Architecture)**: Robert C. Martin se inspiró en la Arquitectura Hexagonal y la Arquitectura Cebolla, entre otras, para formar la Arquitectura Limpia. Comparten el principio central de independencia de la infraestructura y capas concéntricas con la regla de dependencia.
+* **Arquitectura Limpia ([Clean](/arquitectura/clean "La Arquitectura Limpia es una filosofía de diseño de software que propone una organización de código basada en capas concéntricas, donde las dependencias siempre apuntan hacia adentro.") Architecture)**: Robert C. Martin se inspiró en la Arquitectura Hexagonal y la Arquitectura [Cebolla](/arquitectura/cebolla "La Arquitectura Cebolla, propuesta por Jeffrey Palermo, es un patrón de diseño de software que organiza el código en capas concéntricas, similar a las capas de una cebolla."), entre otras, para formar la Arquitectura Limpia. Comparten el principio central de independencia de la infraestructura y capas concéntricas con la regla de dependencia.
 * **Arquitectura Cebolla (Onion Architecture)**: Propuesta por Jeffrey Palermo. También se centra en la inversión de dependencias y un núcleo de dominio. La principal diferencia es su enfoque explícito en la persistencia como una capa separada dentro del "interior" pero fuera del dominio puro.
 
 Todos estos patrones buscan lograr los mismos beneficios de desacoplamiento y testabilidad al poner la lógica de negocio en el centro y aislarla de los detalles externos.

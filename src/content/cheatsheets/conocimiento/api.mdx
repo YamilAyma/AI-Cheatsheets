@@ -1,6 +1,6 @@
 ---
 title: "api"
-description: "Guía rápida y trucos sobre \"api\"."
+description: "Una API (Application Programming Interface) es un conjunto de reglas, protocolos y herramientas que permite que diferentes aplicaciones de software se comuniquen entre sí."
 createdAt: 2026-04-28
 updatedAt: 2026-04-28
 tags: [conocimiento]
@@ -95,7 +95,7 @@ Una **API (Application Programming Interface)** es un conjunto de reglas, protoc
 * **Status Code (Código de Estado HTTP)**: Indica el resultado de la solicitud.
   * **1xx (Informativo)**: Solicitud recibida, proceso continuando.
   * **2xx (Éxito)**: La solicitud fue recibida, entendida y aceptada.
-    * `200 OK`: Éxito general para GET, PUT, PATCH.
+    * `200 OK`: Éxito [general](/arquitectura/general "La Arquitectura del Software es la estructura fundamental de un sistema de software y la disciplina para crear tales estructuras.") para GET, PUT, PATCH.
     * `201 Created`: Nuevo recurso creado (para POST).
     * `204 No Content`: Solicitud exitosa, pero sin cuerpo de respuesta (para DELETE).
   * **3xx (Redirección)**: Se necesita una acción adicional para completar la solicitud.
@@ -144,7 +144,7 @@ Una **API (Application Programming Interface)** es un conjunto de reglas, protoc
 * **Versioning (Versionado)**: Incluye la versión de la API en la URL (ej. `/v1/users`) o en los encabezados para manejar cambios a lo largo del tiempo.
 * **Errores Significativos**: Devuelve códigos de estado HTTP apropiados y cuerpos de respuesta con mensajes de error claros y consistentes.
 * **Paginación, Filtrado y Ordenación**: Para colecciones grandes, permite al cliente controlar los resultados (ej. `/products?limit=10&offset=20&sort=price,desc&category=electronics`).
-* **Documentación**: Una documentación de API clara y actualizada es CRUCIAL. OpenAPI (Swagger) es el estándar.
+* **Documentación**: Una documentación de API clara y actualizada es CRUCIAL. [OpenAPI](/herramientas/openapi "OpenAPI Specification (OAS) es un formato de descripción de API estándar, independiente del lenguaje, legible tanto por humanos como por máquinas.") (Swagger) es el estándar.
 * **Idempotencia**: Diseña operaciones `PUT` y `DELETE` para que sean idempotentes (múltiples solicitudes idénticas tienen el mismo efecto que una sola). `POST` no suele serlo.
 * **HTTPS**: Siempre usa HTTPS para todas las comunicaciones de API para cifrar los datos en tránsito.
 
@@ -152,8 +152,8 @@ Una **API (Application Programming Interface)** es un conjunto de reglas, protoc
 
 ## 6. 🧰 Herramientas Comunes para Trabajar con APIs
 
-* **Postman / Insomnia**: Clientes de API GUI para construir, enviar y probar solicitudes HTTP.
-* **cURL**: Herramienta de línea de comandos para transferir datos con URLs, muy utilizada para probar APIs.
+* **[Postman](/herramientas/postman "Postman es una plataforma colaborativa para el desarrollo de APIs.") / Insomnia**: Clientes de API GUI para construir, enviar y probar solicitudes HTTP.
+* **[cURL](/herramientas/cURL "cURL es una herramienta de línea de comandos para transferir datos a o desde un servidor, utilizando uno de los muchos protocolos soportados (HTTP, HTTPS, FTP, FTPS, SCP, SFTP, TFTP, DICT, TELNET, LDAP, FILE, POP3, IMAP, SMTP, RTMP y RTSP).")**: Herramienta de línea de comandos para transferir datos con URLs, muy utilizada para probar APIs.
   * `curl -X GET https://api.example.com/users`
   * `curl -X POST -H "Content-Type: application/json" -d '{"name":"NewUser"}' https://api.example.com/users`
 * **Swagger UI / Redoc**: Herramientas para generar documentación interactiva a partir de especificaciones OpenAPI.
@@ -162,8 +162,8 @@ Una **API (Application Programming Interface)** es un conjunto de reglas, protoc
 * **Web Browsers**: Pueden realizar solicitudes `GET` directamente en la barra de direcciones.
 * **Librerías HTTP**:
   * **JavaScript (Frontend)**: `fetch API`, `Axios`.
-  * **Python**: `requests`.
-  * **Java**: `HttpClient` (Java 11+), `OkHttp`.
+  * **[Python](/python/python "Python es un lenguaje de programación de alto nivel, interpretado, interactivo y orientado a objetos.")**: `requests`.
+  * **[Java](/java/java "Java es un lenguaje de programación de propósito general, concurrente, basado en clases y orientado a objetos.")**: `HttpClient` (Java 11+), `OkHttp`.
   * **Node.js**: `http/https` (core), `Axios`.
   * **C#**: `HttpClient`.
 

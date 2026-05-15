@@ -1,6 +1,6 @@
 ---
 title: "jaeger"
-description: "Guía rápida y trucos sobre \"jaeger\"."
+description: "Jaeger es un sistema de trazabilidad distribuida de código abierto, inspirado en Dapper de Google y OpenZipkin."
 createdAt: 2026-04-28
 updatedAt: 2026-04-28
 tags: [herramientas]
@@ -35,11 +35,11 @@ icon: "📄"
 
 Jaeger se compone de varios componentes principales:
 
-*   **Jaeger Client**: Librerías específicas de lenguaje (Java, Go, Python, Node.js, etc.) que instrumentan tu aplicación. Capturan Spans y los envían al Jaeger Agent.
-*   **Jaeger Agent**: Un demonio de red que escucha a los Jaeger Clients y envía los Spans en lotes al Jaeger Collector. Generalmente se despliega como un sidecar en Kubernetes o en el mismo host que la aplicación.
+*   **Jaeger Client**: Librerías específicas de lenguaje ([Java](/java/java "Java es un lenguaje de programación de propósito general, concurrente, basado en clases y orientado a objetos."), Go, [Python](/python/python "Python es un lenguaje de programación de alto nivel, interpretado, interactivo y orientado a objetos."), Node.js, etc.) que instrumentan tu aplicación. Capturan Spans y los envían al Jaeger Agent.
+*   **Jaeger Agent**: Un demonio de red que escucha a los Jaeger Clients y envía los Spans en lotes al Jaeger Collector. Generalmente se despliega como un sidecar en [Kubernetes](/devops/kubernetes "Kubernetes (K8s) es una plataforma portable y extensible de código abierto para gestionar cargas de trabajo y servicios en contenedores.") o en el mismo host que la aplicación.
 *   **Jaeger Collector**: Recibe Spans del Jaeger Agent, los valida, los procesa y los almacena en el backend de almacenamiento.
 *   **Jaeger Query**: Un servicio que recupera trazas del almacenamiento y las expone a la UI de Jaeger.
-*   **Storage**: El backend de almacenamiento persistente para las trazas (Cassandra, Elasticsearch, Kafka).
+*   **Storage**: El backend de almacenamiento persistente para las trazas (Cassandra, [Elasticsearch](/devops/elasticsearch "Elasticsearch es un motor de búsqueda y análisis distribuido en tiempo real, construido sobre Apache Lucene."), Kafka).
 *   **Jaeger UI**: La interfaz de usuario web para visualizar y explorar las trazas.
 
 ---
@@ -77,7 +77,7 @@ Para producción, necesitas configurar un backend de almacenamiento persistente.
 
 ## 4. 📝 Instrumentación de Aplicaciones (Spring Boot con Micrometer Tracing)
 
-Micrometer Tracing (parte de Spring Boot 3+ y Micrometer 1.10+) es el enfoque recomendado y estándar para instrumentar aplicaciones Spring Boot para Jaeger (basado en OpenTelemetry).
+[Micrometer Tracing](/web/backend/framework/spring/micrometer-tracing "Micrometer Tracing (parte de Spring Boot 3+ y Micrometer 1.10+) es un puente entre las aplicaciones Spring y las APIs de instrumentación de trazabilidad distribuida (principalmente OpenTelemetry).") (parte de [Spring Boot](/web/backend/framework/spring/spring-boot "¡Absolutamente! Spring Boot es un framework increíble para construir aplicaciones Java robustas y de alto rendimiento de manera rápida y eficiente.") 3+ y Micrometer 1.10+) es el enfoque recomendado y estándar para instrumentar aplicaciones Spring Boot para Jaeger (basado en OpenTelemetry).
 
 1.  **Añadir dependencias en `pom.xml` (en tu microservicio):**
     ```xml
@@ -157,9 +157,9 @@ Micrometer Tracing (parte de Spring Boot 3+ y Micrometer 1.10+) es el enfoque re
 
 *   **Micrometer Tracing**: El puente de instrumentación para Java (Spring Boot).
 *   **OpenTelemetry**: El estándar de facto para instrumentación de observabilidad (trazas, métricas, logs). Jaeger es compatible con Spans de OTel.
-*   **Istio**: Una malla de servicios que utiliza Jaeger para su trazabilidad distribuida.
+*   **[Istio](/web/backend/framework/herramientas/istio "Istio es una malla de servicios (Service Mesh) de código abierto que proporciona una capa de infraestructura transparente para gestionar las comunicaciones de servicio a servicio.")**: Una malla de servicios que utiliza Jaeger para su trazabilidad distribuida.
 *   **Logs**: Los logs de la aplicación pueden ser enriquecidos con `Trace ID` y `Span ID` para facilitar la correlación. (Spring Boot lo hace por defecto con Micrometer Tracing).
-*   **Métricas**: Aunque Jaeger se enfoca en trazas, los sistemas de monitoreo de métricas (Prometheus, Grafana) son complementarios para identificar problemas que luego se investigan con trazas.
+*   **Métricas**: Aunque Jaeger se enfoca en trazas, los sistemas de monitoreo de métricas ([Prometheus](/web/backend/framework/herramientas/prometheus "Prometheus es una solución de monitoreo de código abierto y sistema de alertado."), [Grafana](/herramientas/visualizacion_datos/grafana "Grafana es una herramienta de código abierto para la visualización y analítica de series de tiempo, diseñada para consultar, visualizar, alertar y comprender tus métricas dondequiera que se almacenen.")) son complementarios para identificar problemas que luego se investigan con trazas.
 
 ---
 

@@ -1,6 +1,6 @@
 ---
 title: "spring-cloud-gateway"
-description: "Guía rápida y trucos sobre \"spring-cloud-gateway\"."
+description: "Spring Cloud Gateway es un framework API Gateway construido sobre Spring Framework 5, Spring Boot 2 y Project Reactor."
 createdAt: 2026-04-28
 updatedAt: 2026-04-28
 tags: [spring]
@@ -13,7 +13,7 @@ icon: "☁️"
 
 # 🚪 Spring Cloud Gateway Cheatsheet Completo 🚪
 
-**Spring Cloud Gateway** es un framework API Gateway construido sobre Spring Framework 5, Spring Boot 2 y Project Reactor. Proporciona una forma potente y flexible de enrutar solicitudes HTTP y aplicar filtros a esas solicitudes. Es una alternativa reactiva al Zuul 1 de Netflix.
+**Spring Cloud Gateway** es un framework [API](/conocimiento/api "Una API (Application Programming Interface) es un conjunto de reglas, protocolos y herramientas que permite que diferentes aplicaciones de software se comuniquen entre sí.") Gateway construido sobre Spring Framework 5, [Spring Boot](/web/backend/framework/spring/spring-boot "¡Absolutamente! Spring Boot es un framework increíble para construir aplicaciones Java robustas y de alto rendimiento de manera rápida y eficiente.") 2 y Project Reactor. Proporciona una forma potente y flexible de enrutar solicitudes HTTP y aplicar filtros a esas solicitudes. Es una alternativa reactiva al Zuul 1 de Netflix.
 
 ---
 
@@ -208,7 +208,7 @@ Para modificar las solicitudes o respuestas.
     *   `FallbackHeaders`: Añade encabezados si el servicio backend falla o excede el timeout.
     *   `RequestRateLimiter`: Implementa rate limiting.
     *   `Retry`: Reintenta la solicitud al servicio backend si falla.
-    *   `CircuitBreaker`: Implementa el patrón Circuit Breaker (con Resilience4j).
+    *   `CircuitBreaker`: Implementa el patrón Circuit Breaker (con [Resilience4j](/web/backend/framework/spring/resilience4j "Resilience4j es una librería de resiliencia ligera y modular para Java.")).
     *   `Hystrix`: (Legado) Implementa Hystrix.
     *   `DedupeResponseHeader`: Elimina encabezados de respuesta duplicados.
     *   `SetPath`: Establece el path para la solicitud backend.
@@ -255,7 +255,7 @@ spring:
 
 ## 7. 🔒 Seguridad
 
-*   Spring Cloud Gateway se integra con Spring Security para la autenticación y autorización.
+*   Spring Cloud Gateway se integra con [Spring Security](/web/backend/framework/spring/spring-security "¡Excelente elección! Spring Security es un pilar fundamental para la seguridad en aplicaciones Spring y Spring Boot.") para la autenticación y autorización.
 *   Puedes aplicar filtros de seguridad globales o por ruta.
 *   Comúnmente, se usa el Gateway para la autenticación/autorización con un IDP (Identity Provider) como OAuth2/JWT y luego pasa un token a los servicios backend.
 
@@ -303,7 +303,7 @@ public class CustomAuthFilterFactory extends AbstractGatewayFilterFactory<Custom
 ## 8. 💡 Buenas Prácticas y Consejos
 
 *   **Centraliza el Tráfico**: Haz que el Gateway sea el único punto de entrada para los clientes.
-*   **Routing Declarativo**: Prefiere la configuración basada en YAML (`application.yml`) para la mayoría de las rutas por su simplicidad y legibilidad. Usa el enfoque Java (`RouteLocator`) para rutas que requieren lógica compleja o son muy dinámicas.
+*   **Routing Declarativo**: Prefiere la configuración basada en YAML (`application.yml`) para la mayoría de las rutas por su simplicidad y legibilidad. Usa el enfoque [Java](/java/java "Java es un lenguaje de programación de propósito general, concurrente, basado en clases y orientado a objetos.") (`RouteLocator`) para rutas que requieren lógica compleja o son muy dinámicas.
 *   **Filtros Globales vs. por Ruta**: Usa `default-filters` para preocupaciones transversales que afectan a TODAS las rutas (ej. logging, seguridad básica). Usa filtros por ruta para lógica específica de un servicio.
 *   **Manejo de Errores**: Implementa un manejo de errores robusto en el Gateway para proporcionar respuestas de error consistentes a los clientes, incluso si los servicios backend fallan.
 *   **Circuit Breakers y Rate Limiting**: Implementa estos patrones de resiliencia (con filtros como `CircuitBreaker` y `RequestRateLimiter`) para proteger tus servicios backend de la sobrecarga y los fallos en cascada.

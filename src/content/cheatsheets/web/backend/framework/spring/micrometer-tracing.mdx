@@ -1,6 +1,6 @@
 ---
 title: "micrometer-tracing"
-description: "Guía rápida y trucos sobre \"micrometer-tracing\"."
+description: "Micrometer Tracing (parte de Spring Boot 3+ y Micrometer 1.10+) es un puente entre las aplicaciones Spring y las APIs de instrumentación de trazabilidad distribuida (principalmente OpenTelemetry)."
 createdAt: 2026-04-28
 updatedAt: 2026-04-28
 tags: [spring]
@@ -13,7 +13,7 @@ icon: "📄"
 
 # 🔎 Micrometer Tracing Cheatsheet Completo 🔎
 
-**Micrometer Tracing** (parte de Spring Boot 3+ y Micrometer 1.10+) es un puente entre las aplicaciones Spring y las APIs de instrumentación de trazabilidad distribuida (principalmente OpenTelemetry). Permite instrumentar tus microservicios para recolectar información de traces y correlacionar solicitudes a través de diferentes servicios, facilitando la depuración, el monitoreo y el análisis de rendimiento en entornos distribuidos.
+**Micrometer Tracing** (parte de [Spring Boot](/web/backend/framework/spring/spring-boot "¡Absolutamente! Spring Boot es un framework increíble para construir aplicaciones Java robustas y de alto rendimiento de manera rápida y eficiente.") 3+ y Micrometer 1.10+) es un puente entre las aplicaciones Spring y las APIs de instrumentación de trazabilidad distribuida (principalmente OpenTelemetry). Permite instrumentar tus microservicios para recolectar información de traces y correlacionar solicitudes a través de diferentes servicios, facilitando la depuración, el monitoreo y el análisis de rendimiento en entornos distribuidos.
 
 ---
 
@@ -24,7 +24,7 @@ icon: "📄"
 *   **Span (Tramo)**: Representa una única operación lógica dentro de una Trace. Cada Span tiene un **Span ID** único y un **Parent Span ID** que lo vincula a su operación "padre", creando así una jerarquía de Spans dentro de una Trace.
 *   **Context Propagation (Propagación de Contexto)**: El mecanismo mediante el cual los Trace ID y Span ID se pasan de un servicio a otro (ej. a través de encabezados HTTP) para mantener la continuidad de la Trace.
 *   **Sampler (Muestreador)**: Un componente que decide si una Trace debe ser recolectada o no. Esto es crucial para gestionar el volumen de datos de traza en producción.
-*   **Exporter (Exportador)**: Un componente que envía los Spans recolectados a un sistema de backend de trazabilidad (ej. Zipkin, Jaeger, Grafana Tempo).
+*   **Exporter (Exportador)**: Un componente que envía los Spans recolectados a un sistema de backend de trazabilidad (ej. [Zipkin](/web/backend/framework/spring/zipkin "Zipkin es un sistema de trazabilidad distribuida de código abierto."), [Jaeger](/web/backend/framework/herramientas/jaeger "Jaeger es un sistema de trazabilidad distribuida de código abierto, inspirado en Dapper de Google y OpenZipkin."), [Grafana](/herramientas/visualizacion_datos/grafana "Grafana es una herramienta de código abierto para la visualización y analítica de series de tiempo, diseñada para consultar, visualizar, alertar y comprender tus métricas dondequiera que se almacenen.") Tempo).
 *   **Baggage**: Pares clave-valor que se propagan a través de Spans y entre servicios, permitiendo añadir metadatos personalizados que viajan con la traza.
 
 ---
@@ -92,7 +92,7 @@ icon: "📄"
           logging:
             enabled: true # Para ver las trazas en los logs de la consola (solo para desarrollo)
     ```
-    *   **Levantar un Zipkin Server**: Puedes ejecutar un servidor Zipkin localmente con Docker:
+    *   **Levantar un Zipkin Server**: Puedes ejecutar un servidor Zipkin localmente con [Docker](/devops/docker "Docker es una plataforma de código abierto que utiliza la contenerización para empaquetar una aplicación y todas sus dependencias en una unidad estándar para el desarrollo de software."):
         ```bash
         docker run -d -p 9411:9411 openzipkin/zipkin
         ```
@@ -360,4 +360,4 @@ class CustomBusinessServiceTest {
 
 ---
 
-Este cheatsheet te proporciona una referencia completa de Micrometer Tracing, cubriendo sus conceptos esenciales, cómo configurarlo en Spring Boot, la instrumentación automática y manual, el uso de Baggage, las pruebas y las mejores prácticas para implementar una trazabilidad distribuida efectiva en tus aplicaciones Java.
+Este cheatsheet te proporciona una referencia completa de Micrometer Tracing, cubriendo sus conceptos esenciales, cómo configurarlo en Spring Boot, la instrumentación automática y manual, el uso de Baggage, las pruebas y las mejores prácticas para implementar una trazabilidad distribuida efectiva en tus aplicaciones [Java](/java/java "Java es un lenguaje de programación de propósito general, concurrente, basado en clases y orientado a objetos.").

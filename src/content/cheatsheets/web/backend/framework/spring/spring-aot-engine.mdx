@@ -1,6 +1,6 @@
 ---
 title: "spring-aot-engine"
-description: "Guía rápida y trucos sobre \"spring-aot-engine\"."
+description: "El Spring AOT Engine (Ahead-of-Time Engine) es un conjunto de herramientas y un proceso dentro de Spring Boot 3+ que permite transformar una aplicación Spring Boot estándar en un ejecutable nativo compilado."
 createdAt: 2026-04-28
 updatedAt: 2026-04-28
 tags: [spring]
@@ -13,14 +13,14 @@ icon: "📄"
 
 # 🚀 Spring AOT Engine Cheatsheet Completo 🚀
 
-El **Spring AOT Engine** (Ahead-of-Time Engine) es un conjunto de herramientas y un proceso dentro de **Spring Boot 3+** que permite transformar una aplicación Spring Boot estándar en un ejecutable nativo compilado. Esto se logra mediante la generación de metadatos de configuración para **GraalVM Native Image** en tiempo de compilación (AOT), lo que permite a las aplicaciones Spring beneficiarse de arranques instantáneos y una huella de memoria reducida.
+El **Spring AOT Engine** (Ahead-of-Time Engine) es un conjunto de herramientas y un proceso dentro de **[Spring Boot](/web/backend/framework/spring/spring-boot "¡Absolutamente! Spring Boot es un framework increíble para construir aplicaciones Java robustas y de alto rendimiento de manera rápida y eficiente.") 3+** que permite transformar una aplicación Spring Boot estándar en un ejecutable nativo compilado. Esto se logra mediante la generación de metadatos de configuración para **[GraalVM](/herramientas/machines/graalvm "GraalVM es una máquina virtual universal de alto rendimiento que extiende la JVM de Java.") Native Image** en tiempo de compilación (AOT), lo que permite a las aplicaciones Spring beneficiarse de arranques instantáneos y una huella de memoria reducida.
 
 ---
 
 ## 1. 🌟 Conceptos Clave
 
 *   **AOT (Ahead-of-Time Compilation)**: Proceso de compilación que ocurre *antes* de la ejecución (en tiempo de construcción), a diferencia de JIT (Just-In-Time Compilation) que sucede en tiempo de ejecución.
-*   **GraalVM Native Image**: La tecnología de GraalVM que compila aplicaciones Java a ejecutables binarios independientes y ligeros.
+*   **GraalVM Native Image**: La tecnología de GraalVM que compila aplicaciones [Java](/java/java "Java es un lenguaje de programación de propósito general, concurrente, basado en clases y orientado a objetos.") a ejecutables binarios independientes y ligeros.
 *   **Dinamismo en Java**: Características como la reflexión, la carga dinámica de clases y los proxies son muy usadas en frameworks como Spring. GraalVM Native Image, al compilar AOT, no puede ver estas llamadas dinámicas.
 *   **Metadata (Runtime Hints)**: Spring AOT Engine analiza el código de tu aplicación Spring y genera los metadatos necesarios (hints) para GraalVM Native Image, instruyéndole sobre qué elementos dinámicos necesita incluir en el ejecutable nativo.
 *   **Procesamiento AOT**: La fase del proceso de construcción donde Spring Boot analiza la aplicación, sus dependencias y las librerías de Spring para generar el código y los metadatos AOT.

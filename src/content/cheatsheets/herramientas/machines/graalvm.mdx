@@ -1,6 +1,6 @@
 ---
 title: "graalvm"
-description: "Guía rápida y trucos sobre \"graalvm\"."
+description: "GraalVM es una máquina virtual universal de alto rendimiento que extiende la JVM de Java."
 createdAt: 2026-04-28
 updatedAt: 2026-04-28
 tags: [machines]
@@ -12,7 +12,7 @@ icon: "📄"
 
 # ⚡ GraalVM Cheatsheet Completo ⚡
 
-**GraalVM** es una máquina virtual universal de alto rendimiento que extiende la JVM de Java. Permite ejecutar programas escritos en Java, JavaScript, Python, Ruby, R, WebAssembly, LLVM bitcode y otros lenguajes en un entorno de ejecución compartido. Su característica más destacada es su capacidad de compilar aplicaciones a ejecutables nativos (Ahead-of-Time compilation - AOT).
+**GraalVM** es una máquina virtual universal de alto rendimiento que extiende la JVM de [Java](/java/java "Java es un lenguaje de programación de propósito general, concurrente, basado en clases y orientado a objetos."). Permite ejecutar programas escritos en Java, JavaScript, [Python](/python/python "Python es un lenguaje de programación de alto nivel, interpretado, interactivo y orientado a objetos."), Ruby, R, WebAssembly, LLVM bitcode y otros lenguajes en un entorno de ejecución compartido. Su característica más destacada es su capacidad de compilar aplicaciones a ejecutables nativos (Ahead-of-Time compilation - AOT).
 
 ---
 
@@ -191,7 +191,7 @@ icon: "📄"
 *   **Usa `gu` para gestionar componentes**: Simplifica la instalación y actualización de lenguajes y herramientas.
 *   **Considera Native Image para Microservicios/Serverless/CLI**: Donde el arranque rápido y el bajo consumo de memoria son críticos.
 *   **Optimiza el Proceso de Construcción de Native Image**: Usa parámetros de configuración de `native-image` (ej. `-H:+UnlockExperimentalVMOptions -H:+AggressiveOptimization`) y el Agente de Trazas.
-*   **Integra con Frameworks Modernos**: Frameworks como Spring Boot 3+ (con Spring Native) y Quarkus tienen un excelente soporte para Native Image, simplificando enormemente la configuración.
+*   **Integra con Frameworks Modernos**: Frameworks como [Spring Boot](/web/backend/framework/spring/spring-boot "¡Absolutamente! Spring Boot es un framework increíble para construir aplicaciones Java robustas y de alto rendimiento de manera rápida y eficiente.") 3+ (con Spring Native) y Quarkus tienen un excelente soporte para Native Image, simplificando enormemente la configuración.
 *   **Benchmarking y Perfilado**: Siempre compara el rendimiento de tu aplicación con GraalVM frente a un JDK estándar y usa herramientas de perfilado (`VisualVM`, `gprof`) para identificar cuellos de botella.
 *   **Aprovecha la Interoperabilidad Políglota**: Si tienes una base de código mixta, explora cómo GraalVM puede optimizar la interacción entre lenguajes.
 *   **Sigue la Documentación Oficial**: La documentación de GraalVM es muy completa y está al día con las últimas características.

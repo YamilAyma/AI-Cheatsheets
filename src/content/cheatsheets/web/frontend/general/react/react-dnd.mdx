@@ -1,6 +1,6 @@
 ---
 title: "react-dnd"
-description: "Guía rápida y trucos sobre \"react-dnd\"."
+description: "react-dnd es un conjunto de utilidades para crear interfaces de usuario de arrastrar y soltar en React."
 createdAt: 2026-04-28
 updatedAt: 2026-04-28
 tags: [react]
@@ -11,7 +11,7 @@ icon: "⚛️"
 
 # 🚚 `react-dnd` Cheatsheet Completo 🚚
 
-`react-dnd` es un conjunto de utilidades para crear interfaces de usuario de arrastrar y soltar en React. Se basa en la API HTML5 de arrastrar y soltar (o en backends personalizados) y se centra en mantener el estado de arrastrar/soltar fuera de tus componentes, lo que los hace fáciles de probar y componer.
+`react-dnd` es un conjunto de utilidades para crear interfaces de usuario de arrastrar y soltar en React. Se basa en la [API](/conocimiento/api "Una API (Application Programming Interface) es un conjunto de reglas, protocolos y herramientas que permite que diferentes aplicaciones de software se comuniquen entre sí.") HTML5 de arrastrar y soltar (o en backends personalizados) y se centra en mantener el estado de arrastrar/soltar fuera de tus componentes, lo que los hace fáciles de probar y componer.
 
 ---
 
@@ -394,7 +394,7 @@ export default CardList;
 
 *   **Tipos Explícitos (`ItemTypes`)**: Define tus tipos de "Item" como constantes para evitar errores tipográficos y mejorar la legibilidad.
 *   **Actualizaciones Inmutables**: Siempre que modifiques el estado (especialmente arrays y objetos) en el contexto de arrastrar y soltar, hazlo de forma inmutable. Librerías como `immutability-helper` (`update` en el ejemplo de reordenación) son muy útiles.
-*   **`key` Prop en Listas**: Asegúrate de que los elementos arrastrables en listas tengan una prop `key` única y estable para ayudar a React a optimizar el renderizado.
+*   **`key` Prop en Listas**: Asegúrate de que los elementos arrastrables en listas tengan una prop `key` única y estable para ayudar a [React](/web/frontend/general/react/react "¡Excelente! React es la biblioteca de JavaScript más popular para construir interfaces de usuario.") a optimizar el renderizado.
 *   **Optimiza `collect` Functions**: Las funciones `collect` se ejecutan con frecuencia. Mantenlas simples y solo devuelven las props que tu componente realmente necesita para re-renderizar. Si las funciones `collect` son complejas o lentas, pueden afectar el rendimiento.
 *   **`useCallback` y `useMemo`**: Utiliza estos hooks para memorizar funciones y valores en componentes que se re-renderizan con frecuencia para mejorar el rendimiento, especialmente con `moveCard` o `drop` callbacks.
 *   **Feedback Visual Claro**: Proporciona retroalimentación visual al usuario (ej. cambios de opacidad, colores de fondo del objetivo de soltar) para indicar el estado de arrastrar/soltar.

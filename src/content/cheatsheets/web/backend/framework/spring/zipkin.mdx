@@ -1,6 +1,6 @@
 ---
 title: "zipkin"
-description: "Guía rápida y trucos sobre \"zipkin\"."
+description: "Zipkin es un sistema de trazabilidad distribuida de código abierto."
 createdAt: 2026-04-28
 updatedAt: 2026-04-28
 tags: [spring]
@@ -21,9 +21,9 @@ icon: "📄"
 *   **Trace (Traza)**: Representa el camino completo de una única solicitud/transacción a través de un sistema distribuido. Tiene un `Trace ID` único.
 *   **Span (Tramo)**: Una unidad de trabajo lógica dentro de una traza (ej. una llamada a un servicio, una operación de base de datos). Cada Span tiene un `Span ID` y un `Parent Span ID` (que lo vincula a su operación padre), formando una jerarquía.
 *   **Annotation (Anotación)**: Una marca de tiempo asociada a un Span. Zipkin las utiliza para marcar eventos clave dentro de la vida de un Span (ej. `cs` - client send, `sr` - server receive, `ss` - server send, `cr` - client receive).
-*   **Binary Annotation (Anotación Binaria / Etiqueta)**: Pares clave-valor que proporcionan metadatos adicionales sobre un Span (ej. `http.method`, `http.url`, `error`, `db.statement`). Son el equivalente a los "tags" en OpenTelemetry/Micrometer Tracing.
+*   **Binary Annotation (Anotación Binaria / Etiqueta)**: Pares clave-valor que proporcionan metadatos adicionales sobre un Span (ej. `http.method`, `http.url`, `error`, `db.statement`). Son el equivalente a los "tags" en OpenTelemetry/[Micrometer Tracing](/web/backend/framework/spring/micrometer-tracing "Micrometer Tracing (parte de Spring Boot 3+ y Micrometer 1.10+) es un puente entre las aplicaciones Spring y las APIs de instrumentación de trazabilidad distribuida (principalmente OpenTelemetry).").
 *   **Colector (Collector)**: El componente de Zipkin que recibe los Spans de los servicios instrumentados.
-*   **Almacenamiento (Storage)**: Zipkin almacena las trazas en un backend (Memoria, MySQL, Cassandra, Elasticsearch).
+*   **Almacenamiento (Storage)**: Zipkin almacena las trazas en un backend (Memoria, MySQL, Cassandra, [Elasticsearch](/devops/elasticsearch "Elasticsearch es un motor de búsqueda y análisis distribuido en tiempo real, construido sobre Apache Lucene.")).
 *   **Query Service (Servicio de Consulta)**: Permite a la UI de Zipkin buscar y recuperar trazas del almacenamiento.
 *   **UI (Interfaz de Usuario)**: La interfaz web de Zipkin para visualizar y explorar las trazas.
 
@@ -80,7 +80,7 @@ Por defecto, Zipkin usa almacenamiento en memoria (no persistente). Para persist
 
 ## 3. 📝 Instrumentación de Aplicaciones (Spring Boot con Micrometer Tracing)
 
-Micrometer Tracing (el sucesor de Spring Cloud Sleuth) es la forma recomendada de instrumentar aplicaciones Spring Boot para Zipkin (basado en OpenTelemetry).
+Micrometer Tracing (el sucesor de Spring Cloud Sleuth) es la forma recomendada de instrumentar aplicaciones [Spring Boot](/web/backend/framework/spring/spring-boot "¡Absolutamente! Spring Boot es un framework increíble para construir aplicaciones Java robustas y de alto rendimiento de manera rápida y eficiente.") para Zipkin (basado en OpenTelemetry).
 
 1.  **Añadir dependencias en `pom.xml` (en tu microservicio):**
     ```xml
@@ -169,7 +169,7 @@ Zipkin soporta varios protocolos para enviar Spans desde los servicios instrumen
 
 ## 6. 🌐 Integración con Otros Componentes
 
-*   **Spring Cloud Gateway**: Si tu API Gateway (con Spring Cloud Gateway) también está instrumentado, las trazas se iniciarán y propagarán desde allí.
+*   **[Spring Cloud Gateway](/web/backend/framework/spring/spring-cloud-gateway "Spring Cloud Gateway es un framework API Gateway construido sobre Spring Framework 5, Spring Boot 2 y Project Reactor.")**: Si tu [API](/conocimiento/api "Una API (Application Programming Interface) es un conjunto de reglas, protocolos y herramientas que permite que diferentes aplicaciones de software se comuniquen entre sí.") Gateway (con Spring Cloud Gateway) también está instrumentado, las trazas se iniciarán y propagarán desde allí.
 *   **Spring Cloud Sleuth (Legacy)**: Las versiones de Spring Boot anteriores a 3.x usan Spring Cloud Sleuth, que se integra directamente con Brave (una librería de trazabilidad) para Zipkin. Micrometer Tracing es la evolución compatible con OpenTelemetry.
 *   **JMS/Kafka/RabbitMQ**: Los clientes de mensajería están instrumentados para propagar el contexto de la traza a través de los headers del mensaje.
 *   **Logs**: Configura tus logs para incluir el `Trace ID` y `Span ID` para que puedas correlacionar fácilmente los logs con las trazas en Zipkin.

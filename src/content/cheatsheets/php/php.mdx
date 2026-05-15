@@ -1,6 +1,6 @@
 ---
 title: "php"
-description: "Guía rápida y trucos sobre \"php\"."
+description: "PHP es un lenguaje de scripting del lado del servidor, diseñado principalmente para el desarrollo web."
 createdAt: 2026-04-28
 updatedAt: 2026-04-28
 tags: [php]
@@ -744,13 +744,13 @@ Composer es la herramienta de gestión de dependencias estándar de facto para P
 * **Usa PHP Moderno**: Siempre que sea posible, usa PHP 7.4+ o PHP 8+. Ofrecen mejoras significativas de rendimiento, nuevas características y mejor seguridad.
 * **Seguridad**:
   * **Validar y Sanitizar Entradas**: Siempre limpia y valida los datos recibidos del usuario (superglobales).
-  * **Prepared Statements (PDO)**: Usa consultas preparadas para protegerte de la inyección SQL.
+  * **Prepared Statements (PDO)**: Usa consultas preparadas para protegerte de la inyección [SQL](/base_datos/sql "SQL es el lenguaje estándar utilizado para comunicarse con y gestionar bases de datos relacionales (RDBMS) como MySQL, PostgreSQL, Oracle, SQL Server, SQLite, entre otros.").
   * **`htmlspecialchars()`**: Utilízalo al mostrar datos del usuario en HTML para prevenir ataques XSS.
   * **Contraseñas**: Almacena contraseñas de forma segura usando `password_hash()` y `password_verify()`.
 * **Composer**: Es indispensable para gestionar dependencias externas y el autoloading.
 * **Frameworks**: Para proyectos serios, usa un framework (Laravel, Symfony, CodeIgniter, Yii) para una estructura robusta, herramientas de seguridad, ORM y mucho más.
 * **Estándares PSR**: Sigue los estándares de PHP-FIG (PSR) para la organización del código, la codificación, etc., para mayor interoperabilidad y legibilidad.
-* **Control de Versiones**: Usa Git para el control de versiones de tu código.
+* **Control de Versiones**: Usa [Git](/herramientas/git/git "Git es un sistema de control de versiones distribuido (DVCS) diseñado para manejar proyectos pequeños o muy grandes con velocidad y eficiencia.") para el control de versiones de tu código.
 * **Manejo de Errores**: Configura el reporte de errores adecuadamente en desarrollo y producción, y usa `try-catch` para excepciones.
 * **Separación de Preocupaciones**: Divide tu código en capas (ej. Lógica de Negocio, Acceso a Datos, Presentación) para mayor mantenibilidad.
 

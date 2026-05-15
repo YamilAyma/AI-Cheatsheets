@@ -1,6 +1,6 @@
 ---
 title: "elasticsearch"
-description: "Guía rápida y trucos sobre \"elasticsearch\"."
+description: "Elasticsearch es un motor de búsqueda y análisis distribuido en tiempo real, construido sobre Apache Lucene."
 createdAt: 2026-04-28
 updatedAt: 2026-04-28
 tags: [devops]
@@ -19,7 +19,7 @@ icon: "📄"
 ## 1. 🌟 Conceptos Clave
 
 *   **Documento (Document)**: La unidad básica de información en Elasticsearch. Es un objeto JSON flexible y auto-contenido.
-*   **Índice (Index)**: Una colección lógica de documentos que comparten un propósito similar (similar a una "tabla" en SQL, pero más flexible).
+*   **Índice (Index)**: Una colección lógica de documentos que comparten un propósito similar (similar a una "tabla" en [SQL](/base_datos/sql "SQL es el lenguaje estándar utilizado para comunicarse con y gestionar bases de datos relacionales (RDBMS) como MySQL, PostgreSQL, Oracle, SQL Server, SQLite, entre otros."), pero más flexible).
 *   **Tipo (Type)**: (¡Deprecado en ES 7+, obsoleto en ES 8+) Anteriormente, una subdivisión de un índice para agrupar documentos similares. Ahora, se recomienda usar un índice por tipo de documento. El tipo por defecto es `_doc`.
 *   **Shard (Fragmento)**: Una partición horizontal de un índice. Los shards permiten escalar un índice horizontalmente y distribuir los documentos entre múltiples nodos.
 *   **Réplica (Replica)**: Una copia de un shard primario. Proporciona alta disponibilidad (tolerancia a fallos) y escalabilidad de lectura.
@@ -75,7 +75,7 @@ docker run -d --name elasticsearch -p 9200:9200 -p 9300:9300 \
 
 ## 4. 🗄️ Operaciones CRUD de Documentos (API REST)
 
-Todas las interacciones con Elasticsearch se realizan a través de una API RESTful (generalmente JSON sobre HTTP). Puedes usar `curl`, Postman, Kibana Dev Tools o clientes de lenguaje.
+Todas las interacciones con Elasticsearch se realizan a través de una [API](/conocimiento/api "Una API (Application Programming Interface) es un conjunto de reglas, protocolos y herramientas que permite que diferentes aplicaciones de software se comuniquen entre sí.") RESTful (generalmente JSON sobre HTTP). Puedes usar `curl`, [Postman](/herramientas/postman "Postman es una plataforma colaborativa para el desarrollo de APIs."), [Kibana](/herramientas/visualizacion_datos/kibana "Kibana es una interfaz de usuario de código abierto basada en web que permite visualizar y explorar los datos indexados en Elasticsearch.") Dev Tools o clientes de lenguaje.
 
 *   **Encabezado Común**: `Content-Type: application/json`
 
@@ -375,8 +375,8 @@ PUT /my_articles
 
 Elasticsearch proporciona clientes oficiales para varios lenguajes:
 
-*   **Java**: `Elasticsearch Java Client` (cliente moderno), `Java High Level REST Client` (cliente anterior, ahora en modo mantenimiento).
-*   **Python**: `elasticsearch-py`.
+*   **[Java](/java/java "Java es un lenguaje de programación de propósito general, concurrente, basado en clases y orientado a objetos.")**: `Elasticsearch Java Client` (cliente moderno), `Java High Level REST Client` (cliente anterior, ahora en modo mantenimiento).
+*   **[Python](/python/python "Python es un lenguaje de programación de alto nivel, interpretado, interactivo y orientado a objetos.")**: `elasticsearch-py`.
 *   **JavaScript**: `@elastic/elasticsearch`.
 *   **Go**: `go-elasticsearch`.
 *   **C#**: `NEST`, `Elastic.Clients.Elasticsearch`.

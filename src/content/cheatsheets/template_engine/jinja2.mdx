@@ -1,6 +1,6 @@
 ---
 title: "jinja2"
-description: "Guía rápida y trucos sobre \"jinja2\"."
+description: "Jinja2 es un motor de plantillas (template engine) para Python."
 createdAt: 2026-04-28
 updatedAt: 2026-04-28
 tags: [template_engine]
@@ -12,7 +12,7 @@ icon: "📄"
 
 # 📜 Jinja2 Cheatsheet Completo 📜
 
-Jinja2 es un motor de plantillas (template engine) para Python. Su objetivo es generar documentos de texto (como HTML, XML, CSS, o cualquier formato de texto) a partir de un template y un conjunto de datos. Es rápido, seguro (con sandboxing) y fácil de extender.
+Jinja2 es un motor de plantillas (template engine) para [Python](/python/python "Python es un lenguaje de programación de alto nivel, interpretado, interactivo y orientado a objetos."). Su objetivo es generar documentos de texto (como HTML, XML, CSS, o cualquier formato de texto) a partir de un template y un conjunto de datos. Es rápido, seguro (con sandboxing) y fácil de extender.
 
 ---
 
@@ -207,7 +207,7 @@ Permite reutilizar la estructura de las plantillas.
 
 Transforman el valor de una expresión. Se usan con el operador pipe `|`.
 
-* **Formato general**: `{{ valor | filtro(argumentos) }}`
+* **Formato [general](/arquitectura/general "La Arquitectura del Software es la estructura fundamental de un sistema de software y la disciplina para crear tales estructuras.")**: `{{ valor | filtro(argumentos) }}`
 * **Comunes**:
 
   * `default(value)`: Provee un valor por defecto si la variable es `undefined` o `null`.
@@ -333,6 +333,6 @@ Jinja2 puede dejar mucho espacio en blanco.
 * **Manejo de Valores Faltantes**: Utiliza el filtro `default` o el test `is defined` para manejar variables que podrían no estar presentes en el contexto.
 * **Variables de Entorno (`Environment`)**: Configura el entorno de Jinja2 (`Environment`) solo una vez y reutilízalo para la eficiencia.
 * **Depuración**: Jinja2 proporciona modos de depuración para ayudarte a encontrar errores en tus plantillas.
-* **`url_for` (en Flask/Django)**: En frameworks web, usa las funciones proporcionadas por el framework (como `url_for` en Flask) para generar URLs, en lugar de escribirlas directamente.
+* **`url_for` (en [Flask](/web/backend/framework/flask/flask "Flask es un microframework web para Python que proporciona las herramientas esenciales para construir aplicaciones web, dejando la elección de otras herramientas (como ORM o templating) en manos del desarrollador.")/[Django](/web/backend/framework/django/django "Django es un framework web de alto nivel en Python que fomenta el desarrollo rápido y un diseño limpio y pragmático."))**: En frameworks web, usa las funciones proporcionadas por el framework (como `url_for` en Flask) para generar URLs, en lugar de escribirlas directamente.
 
 ---

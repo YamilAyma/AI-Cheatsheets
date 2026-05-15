@@ -1,6 +1,6 @@
 ---
 title: "resilience4j"
-description: "Guía rápida y trucos sobre \"resilience4j\"."
+description: "Resilience4j es una librería de resiliencia ligera y modular para Java."
 createdAt: 2026-04-28
 updatedAt: 2026-04-28
 tags: [spring]
@@ -13,7 +13,7 @@ icon: "📄"
 
 # 🛡️ Resilience4j Cheatsheet Completo 🛡️
 
-**Resilience4j** es una librería de resiliencia ligera y modular para Java. Proporciona patrones de tolerancia a fallos como Circuit Breaker, Rate Limiter, Retry, Bulkhead y Time Limiter para mejorar la fiabilidad y la estabilidad de los microservicios en un entorno distribuido.
+**Resilience4j** es una librería de resiliencia ligera y modular para [Java](/java/java "Java es un lenguaje de programación de propósito general, concurrente, basado en clases y orientado a objetos."). Proporciona patrones de tolerancia a fallos como Circuit Breaker, Rate Limiter, Retry, Bulkhead y Time Limiter para mejorar la fiabilidad y la estabilidad de los microservicios en un entorno distribuido.
 
 ---
 
@@ -33,7 +33,7 @@ icon: "📄"
 ## 2. 🛠️ Configuración Inicial (Spring Boot)
 
 1.  **Añadir dependencias en `pom.xml` (Maven):**
-    *   Necesitarás el starter de Spring Boot para Resilience4j y las dependencias de los módulos específicos de resiliencia que quieras usar.
+    *   Necesitarás el starter de [Spring Boot](/web/backend/framework/spring/spring-boot "¡Absolutamente! Spring Boot es un framework increíble para construir aplicaciones Java robustas y de alto rendimiento de manera rápida y eficiente.") para Resilience4j y las dependencias de los módulos específicos de resiliencia que quieras usar.
     ```xml
     <dependencies>
         <parent>...</parent> &lt;!-- Tu parent de Spring Boot -->
@@ -343,14 +343,14 @@ public class FunctionalDecoratorsExample {
 
 ## 5. 📊 Métricas y Monitoreo
 
-*   Resilience4j se integra con Micrometer, lo que permite exponer sus métricas a través de Spring Boot Actuator (`/actuator/prometheus`).
+*   Resilience4j se integra con Micrometer, lo que permite exponer sus métricas a través de [Spring Boot Actuator](/web/backend/framework/spring/spring-boot-actuator "Spring Boot Actuator es una característica de Spring Boot que proporciona puntos finales ('endpoints') listos para la producción.") (`/actuator/prometheus`).
 *   **Métricas Comunes**:
     *   **Circuit Breaker**: `resilience4j_circuitbreaker_state` (Estado: CLOSED, OPEN, HALF_OPEN), `resilience4j_circuitbreaker_calls` (Llamadas: successful, failed, not_permitted), `resilience4j_circuitbreaker_buffered_calls`.
     *   **Rate Limiter**: `resilience4j_ratelimiter_waiting_threads`, `resilience4j_ratelimiter_available_permissions`.
     *   **Retry**: `resilience4j_retry_calls` (successful_with_retry, successful_without_retry, failed_after_retry, failed_without_retry).
     *   **Bulkhead**: `resilience4j_bulkhead_available_concurrent_calls`, `resilience4j_bulkhead_max_allowed_concurrent_calls`, `resilience4j_bulkhead_waiting_threads`.
     *   **Time Limiter**: `resilience4j_timelimiter_calls`.
-*   **Visualización**: Usa Prometheus para recolectar las métricas y Grafana para visualizarlas en dashboards.
+*   **Visualización**: Usa [Prometheus](/web/backend/framework/herramientas/prometheus "Prometheus es una solución de monitoreo de código abierto y sistema de alertado.") para recolectar las métricas y [Grafana](/herramientas/visualizacion_datos/grafana "Grafana es una herramienta de código abierto para la visualización y analítica de series de tiempo, diseñada para consultar, visualizar, alertar y comprender tus métricas dondequiera que se almacenen.") para visualizarlas en dashboards.
 
 ---
 

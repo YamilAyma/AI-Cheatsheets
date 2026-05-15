@@ -1,6 +1,6 @@
 ---
 title: "aspectj"
-description: "Guía rápida y trucos sobre \"aspectj\"."
+description: "AspectJ es una extensión \"seamless\" (sin costuras) de Java que implementa la Programación Orientada a Aspectos (AOP)."
 createdAt: 2026-04-28
 updatedAt: 2026-04-28
 tags: [librerias]
@@ -12,7 +12,7 @@ icon: "📄"
 
 # ✂️ AspectJ Cheatsheet Completo ✂️
 
-**AspectJ** es una extensión "seamless" (sin costuras) de Java que implementa la **Programación Orientada a Aspectos (AOP)**. Permite la modularización de preocupaciones transversales (cross-cutting concerns) que no encajan bien en la programación orientada a objetos tradicional, mejorando la modularidad, mantenibilidad y reusabilidad del código.
+**AspectJ** es una extensión "seamless" (sin costuras) de [Java](/java/java "Java es un lenguaje de programación de propósito general, concurrente, basado en clases y orientado a objetos.") que implementa la **Programación Orientada a Aspectos (AOP)**. Permite la modularización de preocupaciones transversales (cross-cutting concerns) que no encajan bien en la programación orientada a objetos tradicional, mejorando la modularidad, mantenibilidad y reusabilidad del código.
 
 ---
 
@@ -201,7 +201,7 @@ public aspect LoggingAspect { // La palabra clave 'aspect' para aspectos nativos
 
 ### 3.1. Aspectos Basados en Anotaciones (Estilo Spring AOP, soportado por AspectJ)
 
-Si estás trabajando en un entorno Spring Boot, a menudo usarás Spring AOP, que se basa en proxies y solo soporta `execution` Join Points en métodos públicos. Sin embargo, AspectJ puede interpretar estas anotaciones y hacer Compile-Time Weaving para un AOP más completo.
+Si estás trabajando en un entorno [Spring Boot](/web/backend/framework/spring/spring-boot "¡Absolutamente! Spring Boot es un framework increíble para construir aplicaciones Java robustas y de alto rendimiento de manera rápida y eficiente."), a menudo usarás Spring AOP, que se basa en proxies y solo soporta `execution` Join Points en métodos públicos. Sin embargo, AspectJ puede interpretar estas anotaciones y hacer Compile-Time Weaving para un AOP más completo.
 
 ```java
 // src/main/java/com/example/myapp/logging/AnnotatedLoggingAspect.java

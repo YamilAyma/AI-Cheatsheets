@@ -1,6 +1,6 @@
 ---
 title: "tomcat"
-description: "Guía rápida y trucos sobre \"tomcat\"."
+description: "Apache Tomcat es un servidor web de código abierto y un contenedor de servlets desarrollado por la Apache Software Foundation."
 createdAt: 2026-04-28
 updatedAt: 2026-04-28
 tags: [java]
@@ -11,7 +11,7 @@ icon: "📄"
 
 # 🐱 Apache Tomcat Cheatsheet Completo 🐱
 
-**Apache Tomcat** es un servidor web de código abierto y un contenedor de servlets desarrollado por la Apache Software Foundation. Implementa las especificaciones Java Servlet, JavaServer Pages (JSP), Java Unified Expression Language (JUEL) y Java WebSocket. Es un pilar para el despliegue de aplicaciones web basadas en Java.
+**Apache Tomcat** es un servidor web de código abierto y un contenedor de servlets desarrollado por la Apache Software Foundation. Implementa las especificaciones [Java](/java/java "Java es un lenguaje de programación de propósito general, concurrente, basado en clases y orientado a objetos.") Servlet, JavaServer Pages (JSP), Java Unified Expression Language (JUEL) y Java WebSocket. Es un pilar para el despliegue de aplicaciones web basadas en Java.
 
 ---
 
@@ -20,7 +20,7 @@ icon: "📄"
 *   **Servidor Web**: Capaz de servir contenido estático (HTML, CSS, JS, imágenes).
 *   **Contenedor de Servlets**: El componente principal que gestiona el ciclo de vida de los Servlets y JSPs. Proporciona el entorno de ejecución para las aplicaciones web Java.
 *   **Servlet**: Una clase Java que extiende las capacidades de un servidor, respondiendo a solicitudes HTTP. Es el componente fundamental de las aplicaciones web Java del lado del servidor.
-*   **JSP (JavaServer Pages)**: Una tecnología que permite incrustar código Java directamente en páginas HTML. Similar a PHP, pero para Java. Se compilan a Servlets.
+*   **JSP (JavaServer Pages)**: Una tecnología que permite incrustar código Java directamente en páginas HTML. Similar a [PHP](/php/php "PHP es un lenguaje de scripting del lado del servidor, diseñado principalmente para el desarrollo web."), pero para Java. Se compilan a Servlets.
 *   **WAR (Web Application ARchive)**: El formato de archivo estándar para empaquetar una aplicación web Java completa para su despliegue en un servidor de aplicaciones o contenedor de servlets como Tomcat. Contiene código Java compilado, JSPs, HTML, CSS, JS, recursos e información de configuración (`web.xml`).
 *   **Catalina**: El contenedor de servlets principal de Tomcat.
 *   **Coyote**: El conector HTTP de Tomcat, que maneja las solicitudes HTTP entrantes.
@@ -112,7 +112,7 @@ Define la configuración por defecto para **todos** los Contexts (aplicaciones w
 
 ## 5. 📦 Despliegue de Aplicaciones Web (WARs)
 
-1.  **Construir el archivo WAR**: Empaqueta tu aplicación web Java (Spring Boot, Spring MVC, JSP, Servlets) en un archivo `.war`. (Ej. `mvn package` para Maven).
+1.  **Construir el archivo WAR**: Empaqueta tu aplicación web Java ([Spring Boot](/web/backend/framework/spring/spring-boot "¡Absolutamente! Spring Boot es un framework increíble para construir aplicaciones Java robustas y de alto rendimiento de manera rápida y eficiente."), Spring MVC, JSP, Servlets) en un archivo `.war`. (Ej. `mvn package` para Maven).
 2.  **Copiar el WAR**: Coloca el archivo `.war` en el directorio `<CATALINA_HOME>/webapps/`.
 3.  **Despliegue Automático**: Si `autoDeploy="true"` en `server.xml`, Tomcat desplegará el WAR automáticamente al iniciarse o al detectarlo. Descomprimirá el WAR en un directorio del mismo nombre (ej. `webapps/myApp/`).
 4.  **Acceder a la Aplicación**: Si el WAR se llama `myApp.war`, la aplicación estará accesible en `http://localhost:8080/myApp/`.
@@ -140,7 +140,7 @@ Define la configuración por defecto para **todos** los Contexts (aplicaciones w
 *   **¡Cambia las contraseñas por defecto!**
 *   **Roles de Gestión**:
     *   `manager-gui`: Acceso a la interfaz web de la Manager App.
-    *   `manager-script`: Acceso a la API del Manager (para scripts de automatización).
+    *   `manager-script`: Acceso a la [API](/conocimiento/api "Una API (Application Programming Interface) es un conjunto de reglas, protocolos y herramientas que permite que diferentes aplicaciones de software se comuniquen entre sí.") del Manager (para scripts de automatización).
     *   `admin-gui`: Acceso a la interfaz web de la Host Manager App.
 *   **Seguridad en `web.xml` de las apps de gestión**: Los archivos `web.xml` dentro de los directorios `webapps/manager` y `webapps/host-manager` definen qué roles pueden acceder a ellos.
 
@@ -168,7 +168,7 @@ Define la configuración por defecto para **todos** los Contexts (aplicaciones w
 *   **No Ejecutar como Root**: Nunca ejecutes Tomcat como usuario `root`. Crea un usuario dedicado con permisos mínimos.
 *   **Cambiar el Puerto por Defecto**: Si despliegas en un servidor público, cambia el puerto 8080 a 80 (o usa un proxy inverso como Nginx/Apache que redirija del puerto 80 al 8080).
 *   **Asegurar las Aplicaciones de Gestión**: Cambia las contraseñas por defecto y considera restringir el acceso a la `Manager App` por IP.
-*   **Monitoreo**: Utiliza herramientas de monitoreo (ej. JMX, Prometheus/Grafana) para observar el rendimiento y la salud de tu instancia de Tomcat.
+*   **Monitoreo**: Utiliza herramientas de monitoreo (ej. JMX, [Prometheus](/web/backend/framework/herramientas/prometheus "Prometheus es una solución de monitoreo de código abierto y sistema de alertado.")/[Grafana](/herramientas/visualizacion_datos/grafana "Grafana es una herramienta de código abierto para la visualización y analítica de series de tiempo, diseñada para consultar, visualizar, alertar y comprender tus métricas dondequiera que se almacenen.")) para observar el rendimiento y la salud de tu instancia de Tomcat.
 *   **Logging**: Configura los logs de Tomcat y de tu aplicación para obtener información útil sobre errores y comportamiento.
 *   **Actualizaciones de Seguridad**: Mantén tu versión de Tomcat actualizada con los últimos parches de seguridad.
 *   **Spring Boot y Tomcat Embebido**: Para la mayoría de las aplicaciones Spring Boot modernas, Tomcat viene embebido y preconfigurado, simplificando el despliegue. No necesitas un WAR o una instalación de Tomcat separada. Este cheatsheet es más relevante si despliegas WARs en un Tomcat "standalone".

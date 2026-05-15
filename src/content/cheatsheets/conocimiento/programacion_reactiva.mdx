@@ -1,6 +1,6 @@
 ---
 title: "programacion_reactiva"
-description: "Guía rápida y trucos sobre \"programacion_reactiva\"."
+description: "La Programación Reactiva es un paradigma de programación que se centra en el trabajo con flujos de datos asíncronos y propagación de cambios."
 createdAt: 2026-04-28
 updatedAt: 2026-04-28
 tags: [conocimiento]
@@ -187,14 +187,14 @@ Cuando un productor genera datos más rápido de lo que un consumidor puede proc
 * **Curva de Aprendizaje**: Los conceptos de Observables, operadores y flujos pueden ser nuevos y requieren un cambio de mentalidad.
 * **Depuración**: Las trazas de pila (stack traces) pueden ser largas y difíciles de seguir a través de múltiples operadores y hilos.
 * **Over-engineering**: No todo problema necesita una solución reactiva. A veces, una promesa o `async/await` es suficiente.
-* **Fugas de Memoria**: Es crucial desuscribirse de los Observables de larga duración para evitar fugas de memoria (ej. en Angular, con `takeUntil(destroy$)` o `async` pipe).
+* **Fugas de Memoria**: Es crucial desuscribirse de los Observables de larga duración para evitar fugas de memoria (ej. en [Angular](/web/frontend/framework/angular "Angular es un framework de desarrollo de aplicaciones web de código abierto, desarrollado por Google, para construir aplicaciones de una sola página (SPA) y aplicaciones móviles de alto rendimiento."), con `takeUntil(destroy$)` o `async` pipe).
 
 ---
 
 ## 9. 💡 Buenas Prácticas y Consejos
 
 * **Desuscribirse (`unsubscribe()`)**: Para Observables de larga duración (ej. eventos de UI, WebSockets), siempre desuscríbete cuando el componente/recurso ya no los necesite.
-* **Isolar Efectos Secundarios**: Realiza operaciones con efectos secundarios (ej. llamadas a la API, mutaciones DOM) solo en los puntos finales de la cadena o utilizando operadores como `tap` (RxJS) / `doOnNext` (Reactor) de forma controlada.
+* **Isolar Efectos Secundarios**: Realiza operaciones con efectos secundarios (ej. llamadas a la [API](/conocimiento/api "Una API (Application Programming Interface) es un conjunto de reglas, protocolos y herramientas que permite que diferentes aplicaciones de software se comuniquen entre sí."), mutaciones DOM) solo en los puntos finales de la cadena o utilizando operadores como `tap` (RxJS) / `doOnNext` (Reactor) de forma controlada.
 * **Usar Operadores Puros**: Las funciones pasadas a los operadores deben ser lo más puras posible.
 * **Error Handling Temprano**: Maneja los errores lo antes posible en la cadena con `catchError` o `onErrorResumeNext` si quieres que el flujo continúe.
 * **`async` Pipe (Angular)**: Utiliza el `async` pipe en las plantillas de Angular para suscribirse y desuscribirse automáticamente de los Observables.

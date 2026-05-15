@@ -1,6 +1,6 @@
 ---
 title: "expressjs"
-description: "Guía rápida y trucos sobre \"expressjs\"."
+description: "Express.js es un framework web rápido, sin opiniones (unopinionated) y minimalista para Node.js."
 createdAt: 2026-04-28
 updatedAt: 2026-04-28
 tags: [expressjs]
@@ -347,13 +347,13 @@ app.listen(3000, () =&gt; console.log('Servidor en 3000'));
 
 * **Modularización**: Divide tu aplicación usando `express.Router` y archivos separados para rutas, middleware y lógica.
 * **Middleware Ordenado**: La secuencia de middleware es crucial. Los middleware de autenticación deben ir antes de las rutas protegidas, y los manejadores de errores deben ser los últimos.
-* **Variables de Entorno**: Utiliza variables de entorno (ej. con `dotenv` para desarrollo) para configurar la aplicación y almacenar secretos (ej. claves de API, credenciales de base de datos).
+* **Variables de Entorno**: Utiliza variables de entorno (ej. con `dotenv` para desarrollo) para configurar la aplicación y almacenar secretos (ej. claves de [API](/conocimiento/api "Una API (Application Programming Interface) es un conjunto de reglas, protocolos y herramientas que permite que diferentes aplicaciones de software se comuniquen entre sí."), credenciales de base de datos).
 * **Validación de Entradas**: Siempre valida y sanitiza las entradas del usuario (ej. con librerías como Joi o Express-validator).
 * **Logging**: Implementa un sistema de logging robusto (ej. con `morgan` para requests, `winston` o `pino` para logs de aplicación).
-* **Seguridad**: Usa librerías de seguridad (ej. `helmet` para protección HTTP, `cors` para CORS) y ten en cuenta las vulnerabilidades comunes (XSS, CSRF, inyección SQL).
+* **Seguridad**: Usa librerías de seguridad (ej. `helmet` para protección HTTP, `cors` para CORS) y ten en cuenta las vulnerabilidades comunes (XSS, CSRF, inyección [SQL](/base_datos/sql "SQL es el lenguaje estándar utilizado para comunicarse con y gestionar bases de datos relacionales (RDBMS) como MySQL, PostgreSQL, Oracle, SQL Server, SQLite, entre otros.")).
 * **Manejo Asíncrono de Errores**: Asegúrate de que tus manejadores de ruta y middleware asíncronos pasen los errores a `next(err)`. Usa un `try...catch` o un envoltorio de promesa.
 * **Testing**: Escribe pruebas unitarias y de integración para tus rutas y middleware (ej. `Jest`, `Supertest`).
-* **Despliegue**: No uses `app.listen()` directamente en producción. Utiliza un proceso como `PM2` o un orquestador de contenedores como Docker/Kubernetes.
+* **Despliegue**: No uses `app.listen()` directamente en producción. Utiliza un proceso como `PM2` o un orquestador de contenedores como [Docker](/devops/docker "Docker es una plataforma de código abierto que utiliza la contenerización para empaquetar una aplicación y todas sus dependencias en una unidad estándar para el desarrollo de software.")/[Kubernetes](/devops/kubernetes "Kubernetes (K8s) es una plataforma portable y extensible de código abierto para gestionar cargas de trabajo y servicios en contenedores.").
 
 ---
 

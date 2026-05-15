@@ -1,6 +1,6 @@
 ---
 title: "prometheus"
-description: "Guía rápida y trucos sobre \"prometheus\"."
+description: "Prometheus es una solución de monitoreo de código abierto y sistema de alertado."
 createdAt: 2026-04-28
 updatedAt: 2026-04-28
 tags: [herramientas]
@@ -33,12 +33,12 @@ icon: "📄"
 1.  **Prometheus Server**:
     *   **Retriever**: Scrapea métricas de los targets.
     *   **Time Series Database (TSDB)**: Almacena las métricas scrapeadas.
-    *   **HTTP Server**: Para la UI, el API y los Pushgateway.
+    *   **HTTP Server**: Para la UI, el [API](/conocimiento/api "Una API (Application Programming Interface) es un conjunto de reglas, protocolos y herramientas que permite que diferentes aplicaciones de software se comuniquen entre sí.") y los Pushgateway.
     *   **Rule Manager**: Evalúa reglas de grabación y reglas de alerta.
 2.  **Exporters**: Aplicaciones o librerías que exponen métricas en el formato Prometheus desde sistemas que no lo hacen nativamente (ej. Node Exporter para métricas de host, JMX Exporter para JVMs).
 3.  **Pushgateway (Opcional)**: Para métricas de trabajos de corta duración que no pueden ser scrapeadas directamente. Los jobs envían sus métricas al Pushgateway, y Prometheus las scrapea del Pushgateway.
 4.  **Alertmanager**: Recibe alertas de Prometheus, las agrupa, silencia y las envía a los destinatarios.
-5.  **Service Discovery**: Prometheus puede descubrir Targets dinámicamente de sistemas como Kubernetes, Consúl, EC2, etc.
+5.  **Service Discovery**: Prometheus puede descubrir Targets dinámicamente de sistemas como [Kubernetes](/devops/kubernetes "Kubernetes (K8s) es una plataforma portable y extensible de código abierto para gestionar cargas de trabajo y servicios en contenedores."), Consúl, EC2, etc.
 
 ---
 
@@ -233,7 +233,7 @@ receivers:
 
 ## 6. 📊 Integración con Grafana (Visualización)
 
-Grafana es la herramienta de visualización de dashboards más popular para Prometheus.
+[Grafana](/herramientas/visualizacion_datos/grafana "Grafana es una herramienta de código abierto para la visualización y analítica de series de tiempo, diseñada para consultar, visualizar, alertar y comprender tus métricas dondequiera que se almacenen.") es la herramienta de visualización de dashboards más popular para Prometheus.
 
 1.  **Instalar Grafana**: Sigue las instrucciones de Grafana.
     ```bash

@@ -1,6 +1,6 @@
 ---
 title: "fluentd"
-description: "Guía rápida y trucos sobre \"fluentd\"."
+description: "Fluentd es un colector de datos de código abierto que unifica la recopilación y el consumo de logs y datos de eventos para una mejor utilización y comprensión."
 createdAt: 2026-04-28
 updatedAt: 2026-04-28
 tags: [devops]
@@ -37,7 +37,7 @@ icon: "📄"
     curl -L https://toolbelt.treasuredata.com/sh/install-ubuntu-focal-td-agent4.sh | sh # Para td-agent (paquete oficial)
     # O para Fluentd nativo (requiere Ruby): gem install fluentd
     ```
-*   **Docker (Recomendado para contenedores)**:
+*   **[Docker](/devops/docker "Docker es una plataforma de código abierto que utiliza la contenerización para empaquetar una aplicación y todas sus dependencias en una unidad estándar para el desarrollo de software.") (Recomendado para contenedores)**:
     ```bash
     docker run -d -p 24224:24224 -p 24224:24224/udp fluentd/fluentd:v1.16-debian
     # Para usar un custom config:
@@ -241,7 +241,7 @@ Define cómo Fluentd almacena temporalmente los datos antes de enviarlos a la sa
 *   **Logging Interno de Fluentd**: Configura el `log_level` en `<system>` para depurar Fluentd mismo.
 *   **Fluentd vs. Fluent Bit**:
     *   **Fluentd**: Mayor funcionalidad, más plugins, escrito en Ruby. Más pesado. Ideal para agregadores centrales o servidores intermedios.
-    *   **Fluent Bit**: Más ligero, menor huella de memoria/CPU, escrito en C. Ideal para agentes en el borde (ej. en cada Pod de Kubernetes).
+    *   **Fluent Bit**: Más ligero, menor huella de memoria/CPU, escrito en C. Ideal para agentes en el borde (ej. en cada Pod de [Kubernetes](/devops/kubernetes "Kubernetes (K8s) es una plataforma portable y extensible de código abierto para gestionar cargas de trabajo y servicios en contenedores.")).
     *   A menudo se usan juntos: Fluent Bit recolecta y envía a Fluentd, y Fluentd agrega y envía al destino final.
 *   **Monitoriza Fluentd**: Monitoriza el rendimiento de Fluentd (uso de CPU/memoria, tamaño de los buffers, errores de salida) para asegurar que está funcionando eficientemente.
 *   **Volúmenes Persistentes para Logs y Buffers**: Cuando ejecutes Fluentd en contenedores (ej. Docker, Kubernetes), asegúrate de que los directorios de logs (`/var/log/app/`) y los buffers (`/var/log/fluentd/buffer/`) se monten en volúmenes persistentes.

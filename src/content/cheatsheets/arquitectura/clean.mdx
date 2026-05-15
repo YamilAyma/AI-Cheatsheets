@@ -1,6 +1,6 @@
 ---
 title: "clean"
-description: "Guía rápida y trucos sobre \"clean\"."
+description: "La Arquitectura Limpia es una filosofía de diseño de software que propone una organización de código basada en capas concéntricas, donde las dependencias siempre apuntan hacia adentro."
 createdAt: 2026-04-28
 updatedAt: 2026-04-28
 tags: [arquitectura]
@@ -20,10 +20,10 @@ La **Arquitectura Limpia** es una filosofía de diseño de software que propone 
 
 La Arquitectura Limpia se basa en varios principios clave, a menudo resumidos como las "5 Independencias":
 
-1. **Independiente de Frameworks**: La arquitectura no depende de la existencia de alguna librería o framework. No estás atado a Express, Spring, React, Angular, etc.
+1. **Independiente de Frameworks**: La arquitectura no depende de la existencia de alguna librería o framework. No estás atado a Express, Spring, [React](/web/frontend/general/react/react "¡Excelente! React es la biblioteca de JavaScript más popular para construir interfaces de usuario."), [Angular](/web/frontend/framework/angular "Angular es un framework de desarrollo de aplicaciones web de código abierto, desarrollado por Google, para construir aplicaciones de una sola página (SPA) y aplicaciones móviles de alto rendimiento."), etc.
 2. **Testable**: Las reglas de negocio pueden ser probadas sin la UI, la base de datos, el servidor web, o cualquier otro elemento externo.
 3. **Independiente de la UI**: La lógica de negocio no sabe nada sobre la interfaz de usuario.
-4. **Independiente de la Base de Datos**: Las reglas de negocio no saben nada sobre la base de datos que utilizas (SQL, NoSQL, ORM, etc.).
+4. **Independiente de la Base de Datos**: Las reglas de negocio no saben nada sobre la base de datos que utilizas ([SQL](/base_datos/sql "SQL es el lenguaje estándar utilizado para comunicarse con y gestionar bases de datos relacionales (RDBMS) como MySQL, PostgreSQL, Oracle, SQL Server, SQLite, entre otros."), NoSQL, ORM, etc.).
 5. **Independiente de Agencias Externas**: La lógica de negocio no depende de factores externos que puedan cambiar frecuentemente (servicios de terceros, APIs específicas).
 
 ---
@@ -45,7 +45,7 @@ La Arquitectura Limpia organiza el código en capas concéntricas, donde cada c�
 * **Propósito**: Contienen las reglas de negocio específicas de la aplicación (application-specific business rules). Orchestran las Entidades para lograr los objetivos de la aplicación.
 * **Contenido**:
   * **Interactores / Servicios de Aplicación**: Clases que implementan casos de uso específicos (ej. `CreateOrder`, `LoginUser`, `GetProductDetails`).
-  * **Interfaces de Puertos de Entrada (`Input Port`)**: Definidas por los casos de uso para que los "drivers" (controladores de UI/API) las invoquen. Toman un "Request Model" como entrada.
+  * **Interfaces de Puertos de Entrada (`Input Port`)**: Definidas por los casos de uso para que los "drivers" (controladores de UI/[API](/conocimiento/api "Una API (Application Programming Interface) es un conjunto de reglas, protocolos y herramientas que permite que diferentes aplicaciones de software se comuniquen entre sí.")) las invoquen. Toman un "Request Model" como entrada.
   * **Interfaces de Puertos de Salida (`Output Port`)**: Definidas por los casos de uso para que los "adaptadores" (presentadores, pasarelas de datos) las implementen. Devuelven un "Response Model" como salida.
 * **Dependencias**: Solo dependen de las Entidades.
 * **Cambios**: Cambian cuando las reglas de negocio de la aplicación cambian.
@@ -73,7 +73,7 @@ La Arquitectura Limpia organiza el código en capas concéntricas, donde cada c�
 * **Propósito**: La capa más externa. Contiene las implementaciones concretas de frameworks, librerías, bases de datos y la interfaz de usuario.
 * **Contenido**:
   * **Base de Datos**: ORMs (Hibernate, Entity Framework), drivers de bases de datos.
-  * **Web Frameworks**: Servidores web (Spring Boot, Express.js, ASP.NET Core), frameworks de UI (React, Vue, Angular).
+  * **Web Frameworks**: Servidores web ([Spring Boot](/web/backend/framework/spring/spring-boot "¡Absolutamente! Spring Boot es un framework increíble para construir aplicaciones Java robustas y de alto rendimiento de manera rápida y eficiente."), Express.js, ASP.NET Core), frameworks de UI (React, Vue, Angular).
   * **Herramientas y Utilidades**: Cualquier otra librería de terceros o implementación de bajo nivel.
 * **Dependencias**: Dependen de las capas internas. Son las que cambian con más frecuencia, pero sus cambios no afectan a las capas internas.
 * **Cambios**: Cambian cuando decides usar un nuevo framework, una nueva base de datos, o actualizas la versión principal de una librería.
@@ -143,8 +143,8 @@ La Arquitectura Limpia organiza el código en capas concéntricas, donde cada c�
 
 ## 7. 🤝 Conceptos Relacionados
 
-* **Arquitectura Hexagonal (Ports & Adapters)**: Un precursor y concepto hermano de la Arquitectura Limpia. Se enfoca en aislar el núcleo de la aplicación de los detalles externos a través de "puertos" (interfaces) y "adaptadores" (implementaciones).
-* **Arquitectura Cebolla (Onion Architecture)**: Otro modelo concéntrico muy similar, con énfasis en el dominio como el núcleo.
+* **Arquitectura [Hexagonal](/arquitectura/hexagonal "La Arquitectura Hexagonal, o Arquitectura de Puertos y Adaptadores, es un patrón de diseño de software creado por Alistair Cockburn.") (Ports & Adapters)**: Un precursor y concepto hermano de la Arquitectura Limpia. Se enfoca en aislar el núcleo de la aplicación de los detalles externos a través de "puertos" (interfaces) y "adaptadores" (implementaciones).
+* **Arquitectura [Cebolla](/arquitectura/cebolla "La Arquitectura Cebolla, propuesta por Jeffrey Palermo, es un patrón de diseño de software que organiza el código en capas concéntricas, similar a las capas de una cebolla.") (Onion Architecture)**: Otro modelo concéntrico muy similar, con énfasis en el dominio como el núcleo.
 * **DDD (Domain-Driven Design)**: A menudo se utiliza junto con la Arquitectura Limpia para modelar dominios complejos, ya que la capa de Entidades/Dominio es el corazón de ambos.
 * **Principios SOLID**: La Arquitectura Limpia encarna y se beneficia fuertemente de los principios SOLID, especialmente del Principio de Inversión de Dependencias (DIP).
 

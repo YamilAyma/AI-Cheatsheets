@@ -1,13 +1,13 @@
 ---
 title: "tanstack-query"
-description: "Guía rápida y trucos sobre \"tanstack-query\"."
+description: "¡Excelente iniciativa! Un \"cheatsheet\" completo y bien estructurado de TanStack Query (anteriormente React Query) es una herramienta invaluable."
 createdAt: 2026-04-28
 updatedAt: 2026-04-28
 tags: [react]
 icon: "📄"
 ---
 
-¡Excelente iniciativa! Un "cheatsheet" completo y bien estructurado de TanStack Query (anteriormente React Query) es una herramienta invaluable. He preparado uno que es conciso pero cubre los aspectos más importantes, con ejemplos claros y puntos clave.
+¡Excelente iniciativa! Un "cheatsheet" completo y bien estructurado de TanStack Query (anteriormente [React](/web/frontend/general/react/react "¡Excelente! React es la biblioteca de JavaScript más popular para construir interfaces de usuario.") Query) es una herramienta invaluable. He preparado uno que es conciso pero cubre los aspectos más importantes, con ejemplos claros y puntos clave.
 
 Este cheatsheet está diseñado para ser entregado a una IA conversacional, por lo que es **altamente estructurado, con ejemplos de código claros y explicaciones directas** para facilitar su procesamiento y uso en la generación de respuestas precisas sobre TanStack Query.
 
@@ -203,7 +203,7 @@ const {
   // ...otras propiedades
 } = useMutation({
   mutationFn: async (variables) =&gt; { // **FUNCIÓN ASÍNCRONA OBLIGATORIA**
-    const res = await fetch('/api/crear-item', {
+    const res = await fetch('/[api](/conocimiento/api "Una API (Application Programming Interface) es un conjunto de reglas, protocolos y herramientas que permite que diferentes aplicaciones de software se comuniquen entre sí.")/crear-item', {
       method: 'POST',
       body: JSON.stringify(variables),
       headers: { 'Content-Type': 'application/json' },

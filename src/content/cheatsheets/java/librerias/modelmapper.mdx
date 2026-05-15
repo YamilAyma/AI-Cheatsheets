@@ -1,6 +1,6 @@
 ---
 title: "modelmapper"
-description: "Guía rápida y trucos sobre \"modelmapper\"."
+description: "ModelMapper es una librería de Java que simplifica el mapeo de objetos de un modelo a otro."
 createdAt: 2026-04-28
 updatedAt: 2026-04-28
 tags: [librerias]
@@ -11,7 +11,7 @@ icon: "📄"
 
 # 🔄 ModelMapper (Java) Cheatsheet Completo 🔄
 
-**ModelMapper** es una librería de Java que simplifica el mapeo de objetos de un modelo a otro. Está diseñada bajo el principio de "convención sobre configuración" (Convention over Configuration), lo que significa que intenta adivinar las asignaciones basándose en los nombres de las propiedades, reduciendo drásticamente el código boilerplate para las conversiones de objetos.
+**ModelMapper** es una librería de [Java](/java/java "Java es un lenguaje de programación de propósito general, concurrente, basado en clases y orientado a objetos.") que simplifica el mapeo de objetos de un modelo a otro. Está diseñada bajo el principio de "convención sobre configuración" (Convention over Configuration), lo que significa que intenta adivinar las asignaciones basándose en los nombres de las propiedades, reduciendo drásticamente el código boilerplate para las conversiones de objetos.
 
 ---
 
@@ -361,7 +361,7 @@ public class GlobalConfig {
 *   **Manejo de Colecciones**: Por defecto, ModelMapper sobrescribe las colecciones de destino. Si quieres fusionarlas, usa `setCollectionsMergeEnabled(true)`.
 *   **Manejo de Nulos**: Considera `setSkipNullEnabled(true)` si no quieres que los valores nulos en el objeto fuente sobrescriban los valores existentes en el objeto destino.
 *   **Pruebas Unitarias para Mapeos**: A pesar de la automatización, es vital escribir pruebas unitarias para tus mapeos críticos para asegurar que funcionan como se espera, especialmente después de cambios.
-*   **Rendimiento**: Para aplicaciones con requisitos de rendimiento muy estrictos y un gran volumen de mapeos, mide el rendimiento. Si ModelMapper se convierte en un cuello de botella, considera mapeos manuales o librerías de generación de código como MapStruct.
+*   **Rendimiento**: Para aplicaciones con requisitos de rendimiento muy estrictos y un gran volumen de mapeos, mide el rendimiento. Si ModelMapper se convierte en un cuello de botella, considera mapeos manuales o librerías de generación de código como [MapStruct](/java/librerias/mapstruct "MapStruct es un generador de código que simplifica la implementación de mapeos de datos entre clases de objetos de Java.").
 
 ---
 

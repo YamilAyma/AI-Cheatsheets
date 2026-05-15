@@ -1,6 +1,6 @@
 ---
 title: "jwt-decode-npm"
-description: "Guía rápida y trucos sobre \"jwt-decode-npm\"."
+description: "¡Claro que sí! Aquí tienes un \"cheatsheet\" completo y bien estructurado de la librería jwt-decode, optimizado para ser claro y conciso para una IA conversacional."
 createdAt: 2026-04-28
 updatedAt: 2026-04-28
 tags: [general]
@@ -113,7 +113,7 @@ try {
 
 ## 5. 🟦 Inferencia de Tipos con TypeScript
 
-Cuando usas `jwt-decode` con TypeScript, puedes inferir el tipo del payload para obtener autocompletado y seguridad de tipos.
+Cuando usas `jwt-decode` con [TypeScript](/web/general/typescript "¡Excelente elección! TypeScript es una herramienta fundamental en el desarrollo web moderno, especialmente para proyectos a gran escala, ya que añade seguridad de tipo y mejoras en la productividad."), puedes inferir el tipo del payload para obtener autocompletado y seguridad de tipos.
 
 ```typescript
 import { jwtDecode } from 'jwt-decode';
@@ -160,7 +160,7 @@ try {
   * **NUNCA USES `jwt-decode` PARA VALIDAR LA AUTENTICACIÓN O AUTORIZACIÓN CRÍTICA EN EL FRONTEND.**
   * La validación real de un JWT (especialmente la verificación de la firma) **SIEMPRE DEBE HACERSE EN EL SERVIDOR (Backend)**. El backend tiene acceso al secreto o a la clave pública necesaria para verificar la firma, lo que garantiza la integridad y autenticidad del token.
 * **Casos de Uso Aceptables para `jwt-decode` (Frontend):**
-  * **Mostrar información al usuario**: Mostrar el nombre del usuario, el rol, o el ID sin hacer otra llamada a la API.
+  * **Mostrar información al usuario**: Mostrar el nombre del usuario, el rol, o el ID sin hacer otra llamada a la [API](/conocimiento/api "Una API (Application Programming Interface) es un conjunto de reglas, protocolos y herramientas que permite que diferentes aplicaciones de software se comuniquen entre sí.").
   * **Verificar la expiración para UX**: Mostrar un mensaje "Tu sesión expirará pronto" o redirigir al usuario al login *antes* de que expire para una mejor experiencia de usuario. (Pero la decisión de si el token es *realmente* válido para una acción sigue siendo del backend).
   * **Depuración**: Inspeccionar el contenido de un token durante el desarrollo.
   * **Pasar información contextual**: Si necesitas un dato del payload para una lógica de UI simple (ej. si el usuario es `admin` para mostrar/ocultar un botón) y *ya has asumido que el token es válido porque tu backend lo validó al inicio de la sesión*.
