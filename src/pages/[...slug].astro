@@ -22,15 +22,13 @@ const breadcrumbs = [
 
 <BaseLayout 
     title={entry.data.title || entry.id}
-    author={entry.data.author}
-    version={entry.data.version}
-    updated={entry.data.updated}
     breadcrumbs={breadcrumbs}
     slug={entry.id}
 >
     <ArchiveWindow 
         title={entry.data.title} 
         version={entry.data.version}
+        breadcrumbs={breadcrumbs}
     >
         <Content />
     </ArchiveWindow>

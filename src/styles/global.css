@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+/* Aqua-Archive Typography System */
 
 :root {
     /* Aqua-Archive Design Tokens */
@@ -29,9 +29,17 @@
         rgba(255, 255, 255, 0.05) 100%
     ), #A0A0A0;
 
+    /* Aqua Gradient — Used for active states & scrollbars */
+    --texture-aqua: linear-gradient(to bottom, #6CB4EE, #0066CC);
+
+    /* Typography */
+    --font-interface: 'Lunasima', -apple-system, BlinkMacSystemFont, sans-serif;
+    --font-display: 'PT Sans', sans-serif;
+    --font-body: 'Open Sans', sans-serif;
+    --font-mono: 'Fira Code', 'JetBrains Mono', monospace;
+
     /* Holy Grail Layout Dimensions */
     --sidebar-left-width: 260px;
-    --sidebar-right-width: 300px;
     --content-max-width: 900px;
 
     /* Information Density */
@@ -46,7 +54,7 @@
 
 /* Base Styles & Pinstripe Background */
 body {
-    font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    font-family: var(--font-interface);
     line-height: 1.5;
     background-color: var(--color-surface);
     /* Classic Mac OS X Pinstripe Pattern */
@@ -201,6 +209,7 @@ header {
 }
 
 .search-button {
+    font-family: var(--font-interface);
     height: 28px;
     padding: 0 12px;
     background: linear-gradient(to bottom, #f9f9f9, #e0e0e0);
@@ -624,8 +633,8 @@ pre {
     box-shadow: inset 0 2px 4px rgba(0,0,0,0.3);
 }
 
-code {
-    font-family: 'JetBrains Mono', 'Fira Code', monospace;
+code, pre, kbd, samp {
+    font-family: var(--font-mono);
     font-size: 0.9em;
 }
 
@@ -655,8 +664,8 @@ code {
 .hero h2 { color: var(--color-primary); border: none; font-weight: 800; }
 
 /* Typography Overhaul - High Density Archive */
-h1, h2, h3, h4 {
-    font-family: 'Plus Jakarta Sans', sans-serif;
+h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-display);
     color: #111;
     margin-top: 1.5em;
     margin-bottom: 0.6em;
@@ -665,8 +674,8 @@ h1, h2, h3, h4 {
 
 h1 { 
     font-size: 2.2rem; 
-    font-weight: 800; 
-    letter-spacing: -0.04em;
+    font-weight: 700; 
+    letter-spacing: -0.02em;
     border-bottom: 3px solid var(--color-primary); 
     padding-bottom: 0.3em;
     text-shadow: 0 1px 0 #fff;
@@ -675,7 +684,7 @@ h1 {
 h2 { 
     font-size: 1.6rem; 
     font-weight: 700;
-    letter-spacing: -0.03em;
+    letter-spacing: -0.01em;
     border-bottom: 1px solid #ddd; 
     padding-bottom: 0.2em;
     margin-top: 2rem;
@@ -687,7 +696,8 @@ h3 {
     color: #334155;
 }
 
-p, li, td {
+p, li, td, .content-container span {
+    font-family: var(--font-body);
     font-size: 0.95rem;
     color: #445566;
     line-height: 1.6;
@@ -823,133 +833,31 @@ p, li, td {
     }
 }
 
-/* Category Tree Styling */
-.category-tree {
-    list-style: none;
-    padding: 0;
-    margin: 0;
+/* ============================
+   Aqua Scrollbar — Global
+   ============================ */
+* {
+    scrollbar-width: thin;
+    scrollbar-color: #4A9EDB #E8E8E8;
 }
 
-.category-node {
-    margin-bottom: 5px;
+::-webkit-scrollbar {
+    width: 10px;
 }
 
-.category-summary {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 6px 10px;
-    cursor: pointer;
-    font-size: 0.9rem;
-    font-weight: 600;
-    color: #444;
-    transition: background 0.2s;
-    border-radius: 4px;
+::-webkit-scrollbar-track {
+    background: #E8E8E8;
+    border-left: 1px solid #ccc;
 }
 
-.category-summary:hover {
-    background: rgba(0,0,0,0.05);
+::-webkit-scrollbar-thumb {
+    background: linear-gradient(to bottom, #6CB4EE, #4A9EDB);
+    border-radius: 5px;
+    border: 1px solid #3A7BBF;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.4);
 }
 
-.category-summary::-webkit-details-marker {
-    display: none;
-}
-
-.folder-icon {
-    font-size: 1.1rem;
-}
-
-.count-badge {
-    margin-left: auto;
-    background: #ccc;
-    color: #555;
-    padding: 2px 6px;
-    border-radius: 10px;
-    font-size: 0.75rem;
-    font-weight: 700;
-}
-
-.file-list {
-    list-style: none;
-    padding-left: 20px;
-    margin: 5px 0;
-    border-left: 1px dotted #bbb;
-}
-
-.file-node {
-    margin: 2px 0;
-}
-
-.file-link {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    padding: 4px 10px;
-    text-decoration: none;
-    color: #555;
-    font-size: 0.85rem;
-    border-radius: 4px;
-    transition: all 0.2s;
-}
-
-.file-link:hover {
-    background: var(--texture-aqua);
-    color: white;
-}
-
-.file-icon {
-    font-size: 1rem;
-}
-
-/* Window Body */
-.window-body {
-    padding: 25px;
-    background: white;
-}
-
-/* Layout Utilities Cleanup */
-.holy-grail-container {
-    display: grid;
-    grid-template-columns: var(--sidebar-left-width) 1fr var(--sidebar-right-width);
-    gap: 20px;
-    max-width: var(--max-width);
-    margin: 20px auto;
-    padding: 0 20px;
-    align-items: start;
-}
-
-.sidebar-card {
-    background: #f8f8f8;
-    border: 1px solid #ccc;
-    border-radius: 4px;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-    margin-bottom: 20px;
-    overflow: hidden;
-}
-
-.sidebar-card-header {
-    background: var(--texture-metal);
-    padding: 6px 12px;
-    border-bottom: 1px solid #bbb;
-}
-
-.header-title {
-    font-size: 0.8rem;
-    font-weight: 800;
-    text-transform: uppercase;
-    color: #333;
-    letter-spacing: 0.05em;
-}
-
-.sidebar-card-body {
-    padding: 10px;
-}
-
-.index-counter {
-    font-size: 0.75rem;
-    color: #666;
-    margin-bottom: 10px;
-    padding-bottom: 8px;
-    border-bottom: 1px solid #ddd;
+::-webkit-scrollbar-thumb:hover {
+    background: linear-gradient(to bottom, #7FC2F5, #5AAEEB);
 }
 

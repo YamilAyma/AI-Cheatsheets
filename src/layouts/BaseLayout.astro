@@ -3,7 +3,6 @@ import Header from '../components/organisms/Header.astro';
 import SubNavbar from '../components/organisms/SubNavbar.astro';
 import Footer from '../components/organisms/Footer.astro';
 import NavigationIndex from '../components/organisms/NavigationIndex.astro';
-import MetadataStack from '../components/organisms/MetadataStack.astro';
 
 import '../styles/global.css';
 
@@ -11,19 +10,13 @@ interface Props {
 	title: string;
 	description?: string;
 	breadcrumbs?: { name: string; href: string }[];
-    author?: string;
-    version?: string;
-    updated?: string;
     slug?: string;
 }
 
 const { 
 	title, 
-	description = "Un centro de conocimiento con resúmenes, comandos y buenas prácticas sobre programación, arquitectura y herramientas de desarrollo.",
+	description = "AI Cheatsheets: Tu archivo universal de conocimiento sintetizado por IA. Guías rápidas, comandos y conceptos esenciales para dominar cualquier tema.",
 	breadcrumbs = [{ name: 'Home', href: '/' }],
-    author,
-    version,
-    updated,
     slug
 } = Astro.props;
 
@@ -38,35 +31,34 @@ const canonicalURL = new URL(Astro.url.pathname, Astro.site || 'http://localhost
 		<meta name="viewport" content="width=device-width" />
 		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
 		<meta name="generator" content={Astro.generator} />
-		<title>{title} | AI-Cheatsheets Archive</title>
+		<title>{title} | AI Cheatsheets</title>
 		<link rel="canonical" href={canonicalURL} />
 		<link rel="preconnect" href="https://fonts.googleapis.com">
 		<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-		<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+		<link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;700&family=Lunasima:wght@400;700&family=Open+Sans:ital,wght@0,400;0,600;0,700;1,400&family=PT+Sans:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
 	</head>
-	<body>
-		<Header />
-		<SubNavbar breadcrumbs={breadcrumbs} />
+	<body class="app-layout">
+		<div class="fixed-top">
+            <Header />
+            <SubNavbar breadcrumbs={breadcrumbs} />
+        </div>
 		
 		<main class="holy-grail-container">
             <!-- Left Sidebar -->
-			<aside class="left-sidebar">
-				<NavigationIndex currentSlug={slug} />
+			<aside class="sidebar-container left">
+				<div class="scroll-wrapper">
+                    <NavigationIndex currentSlug={slug} />
+                </div>
 			</aside>
 
             <!-- Main Content Area -->
-			<div class="main-content">
-				<slot />
-			</div>
-
-            <!-- Right Sidebar -->
-			<aside class="right-sidebar">
-				<MetadataStack 
-                    author={author} 
-                    version={version} 
-                    updated={updated} 
-                />
-			</aside>
+			<section class="main-content-area">
+				<div class="scroll-wrapper">
+                    <div class="content-constraints">
+                        <slot />
+                    </div>
+                </div>
+			</section>
 		</main>
 
 		<Footer />
@@ -76,74 +68,76 @@ const canonicalURL = new URL(Astro.url.pathname, Astro.site || 'http://localhost
 <style is:global>
 	:root {
 		--sidebar-left-width: 260px;
-		--sidebar-right-width: 300px;
-		--max-width: 1400px;
+		--header-height: 52px;
+		--subnavbar-height: 38px;
+		--footer-height: 40px;
+		--top-offset: calc(var(--header-height) + var(--subnavbar-height));
 	}
 
-	body {
-		background-color: var(--color-surface);
-		margin: 0;
-		padding: 0;
-	}
+    .app-layout {
+        height: 100vh;
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+        background-color: var(--color-surface);
+    }
+
+    .fixed-top {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        z-index: 1000;
+    }
 
 	.holy-grail-container {
 		display: grid;
-		grid-template-columns: var(--sidebar-left-width) 1fr var(--sidebar-right-width);
-		gap: 20px;
-		max-width: var(--max-width);
-		margin: 20px auto;
-		padding: 0 20px;
-		align-items: start;
-        animation: revealUp 0.6s cubic-bezier(0.22, 1, 0.36, 1) backwards;
+		grid-template-columns: var(--sidebar-left-width) 1fr;
+		flex: 1;
+		margin-top: var(--top-offset);
+		height: calc(100vh - var(--top-offset) - var(--footer-height));
+		overflow: hidden;
 	}
 
-    .left-sidebar {
-        animation: revealRight 0.6s cubic-bezier(0.22, 1, 0.36, 1) backwards;
-        animation-delay: 0.1s;
+    .sidebar-container {
+        border-right: 1px solid #cbd5e1;
+        background: #f8fafc;
+        overflow: hidden;
     }
 
-    .main-content {
-        animation: revealUp 0.6s cubic-bezier(0.22, 1, 0.36, 1) backwards;
-        animation-delay: 0.2s;
+    .scroll-wrapper {
+        height: 100%;
+        overflow-y: auto;
+        padding: 16px;
     }
 
-    .right-sidebar {
-        animation: revealLeft 0.6s cubic-bezier(0.22, 1, 0.36, 1) backwards;
-        animation-delay: 0.3s;
+    .main-content-area {
+        background: #e2e8f0;
+        overflow: hidden;
     }
 
-    /* Animations */
-    @keyframes revealUp {
-        from { opacity: 0; transform: translateY(20px); }
-        to { opacity: 1; transform: translateY(0); }
+    .main-content-area > .scroll-wrapper {
+        overflow-y: auto;
+        height: 100%;
+        padding: 30px 40px;
     }
 
-    @keyframes revealRight {
-        from { opacity: 0; transform: translateX(-20px); }
-        to { opacity: 1; transform: translateX(0); }
+    .content-constraints {
+        width: 100%;
+        max-width: 100%;
     }
 
-    @keyframes revealLeft {
-        from { opacity: 0; transform: translateX(20px); }
-        to { opacity: 1; transform: translateX(0); }
-    }
-
-    @media (max-width: 1200px) {
-        .holy-grail-container {
-            grid-template-columns: var(--sidebar-left-width) 1fr;
-        }
-        .right-sidebar {
-            display: none;
-        }
+    footer {
+        height: var(--footer-height);
+        flex-shrink: 0;
     }
 
     @media (max-width: 900px) {
         .holy-grail-container {
-            display: flex;
-            flex-direction: column;
+            grid-template-columns: 1fr;
         }
-        .left-sidebar, .right-sidebar {
-            width: 100%;
+        .sidebar-container.left {
+            display: none;
         }
     }
 </style>

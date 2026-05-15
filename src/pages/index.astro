@@ -14,14 +14,12 @@ const { Content } = await render(welcomeEntry);
 
 <BaseLayout 
     title={welcomeEntry.data.title || welcomeEntry.id}
-    author={welcomeEntry.data.author}
-    version={welcomeEntry.data.version}
-    updated={welcomeEntry.data.updated}
     slug={welcomeEntry.id}
 >
     <ArchiveWindow 
         title={welcomeEntry.data.title || welcomeEntry.id} 
         version={welcomeEntry.data.version}
+        breadcrumbs={[{ name: 'Home', href: '/' }, { name: 'Welcome', href: '/' }]}
     >
         <Content />
     </ArchiveWindow>

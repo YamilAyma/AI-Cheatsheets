@@ -10,14 +10,14 @@ const totalSheets = allCheatsheets.length;
             <h1 class="site-title">
                 <a href="/">
                     <span class="logo-icon"></span>
-                    <span class="logo-text">Cheatsheets</span>
-                    <span class="archive-label">Archive</span>
+                    <span class="logo-text">AI Cheatsheets</span>
+                    <span class="archive-label">Beta</span>
                 </a>
             </h1>
         </div>
         <div class="header-indicator">
             <div class="indicator-led"></div>
-            <span class="indicator-text">{totalSheets} SHEETS INDEXADAS</span>
+            <span class="indicator-text">AI SYNTHESIZED • {totalSheets} SHEETS</span>
         </div>
     </div>
 </header>
@@ -59,7 +59,9 @@ const totalSheets = allCheatsheets.length;
 }
 
 .logo-text {
-    font-weight: 800;
+    font-family: var(--font-display);
+    font-weight: 400;
+    font-size: 1.3rem;
     color: #333;
     letter-spacing: -0.01em;
 }

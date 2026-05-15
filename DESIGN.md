@@ -1,7 +1,7 @@
 ---
 version: "1.0"
-name: "Aqua-Archive"
-description: "Skeuomorphic design system blending early 2000s OS X aesthetics with Wikipedia-level information density."
+name: "AI Cheatsheets"
+description: "Universal AI-synthesized knowledge archive blending early 2000s OS X aesthetics with executive information density."
 
 # Colors: Defining depth and materiality
 colors:
@@ -15,30 +15,24 @@ colors:
   metal-border: "#8E8E8E"   # Sharp mechanical borders
   accent: "#FFCC00"         # Notification/Star yellow
 
-# Typography: Modern Humanist (Plus Jakarta Sans)
+# Typography: Triple System (Lunasima + PT Sans + Open Sans)
 typography:
-  headline-lg:
-    fontFamily: "'Plus Jakarta Sans', sans-serif"
-    fontSize: "32px"
-    fontWeight: 800
-    letterSpacing: "-0.03em"
-  headline-md:
-    fontFamily: "'Plus Jakarta Sans', sans-serif"
-    fontSize: "24px"
-    fontWeight: 700
-  body-lg:
-    fontFamily: "'Plus Jakarta Sans', sans-serif"
-    fontSize: "16px"
-    fontWeight: 500
+  interface:
+    fontFamily: "'Lunasima', sans-serif"
+    description: "Used for navigation, buttons, tabs, and all UI elements."
+    fontWeight: "400, 700"
+  headings:
+    fontFamily: "'PT Sans', sans-serif"
+    description: "Used for all content titles (h1, h2, h3, etc.)."
+    fontWeight: "400, 700"
+  body:
+    fontFamily: "'Open Sans', sans-serif"
+    description: "Used for the core content of the cheatsheets."
+    fontSize: "15px"
     lineHeight: "1.6"
-  body-md:
-    fontFamily: "'Plus Jakarta Sans', sans-serif"
-    fontSize: "14px"
-    fontWeight: 400
-  label-sm:
-    fontFamily: "'Plus Jakarta Sans', sans-serif"
-    fontSize: "12px"
-    fontWeight: 600
+  mono:
+    fontFamily: "'Fira Code', monospace"
+    description: "Used for code blocks and inline code."
 
 # Shapes: Small radius for an engineered look
 rounded:
@@ -57,10 +51,8 @@ spacing:
   xl: "32px"
 layout:
   sidebar-left: "260px"
-  sidebar-right: "300px"
   max-width: "1400px"
   mobile-breakpoint: "900px"
-  tablet-breakpoint: "1200px"
 
 # Component Specifications
 components:
@@ -105,16 +97,17 @@ The primary action color is Blue. It must always have a gradient to simulate a l
 ---
 
 ## Typography Hierarchy
-We priority **readability at small sizes** using **Plus Jakarta Sans**, a modern humanist font that captures the friendly clarity of early Apple interfaces without the overexposure of Inter.
-- **Headlines**: Use heavy weights (700-800) but compact spacing.
-- **Lists & Tables**: Use `body-md` (14px) as the standard for cheatsheet data to ensure high density.
+We use a **triple-font system**: **Lunasima** for interface elements (tabs, buttons, nav), **PT Sans** for content titles (h1-h6), and **Open Sans** for the main body content.
+- **Interface (Lunasima)**: Clean, high-legibility sans-serif for UI functionality.
+- **Headings (PT Sans)**: Distinctive, technical feel for content hierarchy.
+- **Body (Open Sans)**: Classic, highly readable font for long-form technical content.
 
 ---
 
 ## Layout & Grids
-The system follows a **Fixed-Sidebar** model.
-- **Main Column**: Max 800px for readable line lengths.
-- **Sidebar**: 240px for the "Index" and "Tools".
+The system follows a **Two-Column** model (sidebar + content).
+- **Main Column**: Max 900px for readable line lengths.
+- **Sidebar**: 260px for the folder tree navigation.
 - **Gaps**: Strict 16px (`md`) or 24px (`lg`) spacing between panels.
 
 ---
@@ -125,9 +118,10 @@ The system follows a **Fixed-Sidebar** model.
 - Use subtle `box-shadow` to create depth.
 - Use `pinstripe` background for large empty areas.
 - Ensure all text has sufficient contrast against the surface.
-- Use Plus Jakarta Sans for all UI elements.
+- Use Lunasima for all UI elements.
 
 ### ❌ Don't
 - Use pure white backgrounds for everything; use `surface` (#F4F4F4) to frame content.
 - Use "modern" large-radius corners (e.g., 24px); keep it between 4px and 8px for an OS look.
 - Use flat buttons without borders.
+- Use Instrument Serif, DM Sans, or Inter — the system uses Lunasima + PT Sans + Open Sans.
