@@ -9,7 +9,10 @@
     "dev": "astro dev",
     "build": "astro build && node scripts/flatten_sitemap.cjs",
     "preview": "astro preview",
-    "astro": "astro"
+    "astro": "astro",
+    "link": "node scripts/internal-linker.mjs",
+    "link:dry": "node scripts/internal-linker.mjs --dry-run",
+    "link:auto": "node scripts/internal-linker.mjs --auto"
   },
   "dependencies": {
     "@astrojs/mdx": "^5.0.4",

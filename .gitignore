@@ -43,3 +43,6 @@ old_php_version/
 interstellar-inclination/
 
 todo.txt
+
+# Internal linker (generated)
+scripts/link-dictionary.json
