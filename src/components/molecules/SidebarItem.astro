@@ -1,5 +1,5 @@
 ---
-import Icon from '../atoms/Icon.astro';
+import AquaIcon from '../atoms/AquaIcon.astro';
 import Badge from '../atoms/Badge.astro';
 
 interface Props {
@@ -12,12 +12,12 @@ interface Props {
 }
 
 const { title, type, count, href, isActive, showChevron } = Astro.props;
-const icon = type === 'folder' ? '📂' : '📄';
+const iconName = type === 'folder' ? 'folder-closed' : 'file';
 const Tag = href ? 'a' : 'div';
 ---
 <Tag href={href} class:list={['sidebar-item', type, { active: isActive, 'has-chevron': showChevron }]}>
-  {showChevron && <span class="chevron">▾</span>}
-  <Icon name={icon} class="item-icon" />
+  {showChevron && <AquaIcon name="arrow-down" class="chevron" />}
+  <AquaIcon name={iconName} class="item-icon" />
   <span class="item-title">{title}</span>
   {count !== undefined && <Badge text={count.toString()} variant="metal" class="item-count" />}
 </Tag>

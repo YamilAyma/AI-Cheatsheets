@@ -1,5 +1,6 @@
 ---
 import SidebarItem from '../molecules/SidebarItem.astro';
+import AquaIcon from '../atoms/AquaIcon.astro';
 import { getCollection } from 'astro:content';
 
 interface Props {
@@ -87,10 +88,16 @@ function formatName(name: string): string {
     {[...tree.entries()].sort(([a], [b]) => a.localeCompare(b)).map(([key, node]) => (
       <details class="folder-group" open={isAncestor(node.path, currentSlug)}>
         <summary class="folder-summary">
-          <span class="folder-icon">📁</span>
+          <div class="folder-icon-wrapper">
+            <span class="icon-closed"><AquaIcon name="folder-closed" class="folder-icon" /></span>
+            <span class="icon-open"><AquaIcon name="folder-open" class="folder-icon" /></span>
+          </div>
           <span class="folder-name">{formatName(key)}</span>
           <span class="folder-count">{node.files.length + [...node.children.values()].reduce((acc, c) => acc + c.files.length, 0)}</span>
-          <span class="chevron">▸</span>
+          <div class="chevron-wrapper">
+            <span class="chevron-right"><AquaIcon name="arrow-right" class="chevron" /></span>
+            <span class="chevron-down"><AquaIcon name="arrow-down" class="chevron" /></span>
+          </div>
         </summary>
         <div class="folder-contents">
           {/* Render files at this level */}
@@ -106,10 +113,16 @@ function formatName(name: string): string {
           {[...node.children.entries()].sort(([a], [b]) => a.localeCompare(b)).map(([subKey, subNode]) => (
             <details class="folder-group nested" open={isAncestor(subNode.path, currentSlug)}>
               <summary class="folder-summary sub">
-                <span class="folder-icon">📂</span>
+                <div class="folder-icon-wrapper">
+                  <span class="icon-closed"><AquaIcon name="folder-closed" class="folder-icon" /></span>
+                  <span class="icon-open"><AquaIcon name="folder-open" class="folder-icon" /></span>
+                </div>
                 <span class="folder-name">{formatName(subKey)}</span>
                 <span class="folder-count">{subNode.files.length + [...subNode.children.values()].reduce((acc, c) => acc + c.files.length, 0)}</span>
-                <span class="chevron">▸</span>
+                <div class="chevron-wrapper">
+                  <span class="chevron-right"><AquaIcon name="arrow-right" class="chevron" /></span>
+                  <span class="chevron-down"><AquaIcon name="arrow-down" class="chevron" /></span>
+                </div>
               </summary>
               <div class="folder-contents">
                 {subNode.files.map(file => (
@@ -124,10 +137,16 @@ function formatName(name: string): string {
                 {[...subNode.children.entries()].sort(([a], [b]) => a.localeCompare(b)).map(([l3Key, l3Node]) => (
                   <details class="folder-group nested" open={isAncestor(l3Node.path, currentSlug)}>
                     <summary class="folder-summary sub">
-                      <span class="folder-icon">📂</span>
+                      <div class="folder-icon-wrapper">
+                        <span class="icon-closed"><AquaIcon name="folder-closed" class="folder-icon" /></span>
+                        <span class="icon-open"><AquaIcon name="folder-open" class="folder-icon" /></span>
+                      </div>
                       <span class="folder-name">{formatName(l3Key)}</span>
-                      <span class="folder-count">{l3Node.files.length + [...l3Node.children.values()].reduce((acc, c) => acc + c.files.length, 0)}</span>
-                      <span class="chevron">▸</span>
+                      <span class="folder-count">{l3Node.files.length + [...l3Node.children.values()].reduce((acc, acc2) => acc + acc2.files.length, 0)}</span>
+                      <div class="chevron-wrapper">
+                        <span class="chevron-right"><AquaIcon name="arrow-right" class="chevron" /></span>
+                        <span class="chevron-down"><AquaIcon name="arrow-down" class="chevron" /></span>
+                      </div>
                     </summary>
                     <div class="folder-contents">
                       {l3Node.files.map(file => (
@@ -142,10 +161,16 @@ function formatName(name: string): string {
                       {[...l3Node.children.entries()].sort(([a], [b]) => a.localeCompare(b)).map(([l4Key, l4Node]) => (
                         <details class="folder-group nested" open={isAncestor(l4Node.path, currentSlug)}>
                           <summary class="folder-summary sub">
-                            <span class="folder-icon">📂</span>
+                            <div class="folder-icon-wrapper">
+                              <span class="icon-closed"><AquaIcon name="folder-closed" class="folder-icon" /></span>
+                              <span class="icon-open"><AquaIcon name="folder-open" class="folder-icon" /></span>
+                            </div>
                             <span class="folder-name">{formatName(l4Key)}</span>
                             <span class="folder-count">{l4Node.files.length}</span>
-                            <span class="chevron">▸</span>
+                            <div class="chevron-wrapper">
+                              <span class="chevron-right"><AquaIcon name="arrow-right" class="chevron" /></span>
+                              <span class="chevron-down"><AquaIcon name="arrow-down" class="chevron" /></span>
+                            </div>
                           </summary>
                           <div class="folder-contents">
                             {l4Node.files.map(file => (
@@ -239,6 +264,32 @@ function formatName(name: string): string {
     padding: 4px 6px;
   }
 
+  /* Default states (Closed) */
+  .icon-open, .chevron-down {
+    display: none !important;
+  }
+
+  /* Open states (triggered by details[open]) */
+  .folder-group[open] > summary .icon-closed {
+    display: none !important;
+  }
+  .folder-group[open] > summary .icon-open {
+    display: flex !important;
+  }
+
+  .folder-group[open] > summary .chevron-right {
+    display: none !important;
+  }
+  .folder-group[open] > summary .chevron-down {
+    display: flex !important;
+  }
+
+  .folder-icon-wrapper, .chevron-wrapper {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
   .folder-icon {
     font-size: 0.85rem;
     flex-shrink: 0;
@@ -262,12 +313,7 @@ function formatName(name: string): string {
   .chevron {
     font-size: 0.65rem;
     color: #94a3b8;
-    transition: transform 0.15s;
     flex-shrink: 0;
-  }
-
-  .folder-group[open] > summary .chevron {
-    transform: rotate(90deg);
   }
 
   .folder-contents {

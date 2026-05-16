@@ -1,5 +1,6 @@
 ---
 import Badge from "../atoms/Badge.astro";
+import AquaIcon from "../atoms/AquaIcon.astro";
 
 interface Props {
   title: string;
@@ -50,14 +51,14 @@ const {
           data-path={Astro.url.pathname}
         >
           <button class="header-action" id="btn-favorite">
-            <span class="icon">⭐</span>
+            <AquaIcon name="⭐" class="icon" />
             <span class="btn-text">Añadir a Favoritos</span>
           </button>
           <button class="header-action" id="btn-print">
-            <span class="icon">🖨️</span> Imprimir
+            <AquaIcon name="🖨️" class="icon" /> Imprimir
           </button>
           <button class="header-action" id="btn-download">
-            <span class="icon">📄</span> Descargar MD
+            <AquaIcon name="📄" class="icon" /> Descargar MD
           </button>
         </div>
       </div>
