@@ -12,11 +12,16 @@
     "astro": "astro",
     "link": "node scripts/internal-linker.mjs",
     "link:dry": "node scripts/internal-linker.mjs --dry-run",
-    "link:auto": "node scripts/internal-linker.mjs --auto"
+    "link:auto": "node scripts/internal-linker.mjs --auto",
+    "icons:optimize": "node scripts/resize-icons.mjs",
+    "icons:clean": "node scripts/cleanup-icons.mjs"
   },
   "dependencies": {
     "@astrojs/mdx": "^5.0.4",
     "@astrojs/sitemap": "^3.7.2",
     "astro": "^6.1.10"
+  },
+  "devDependencies": {
+    "sharp": "^0.34.5"
   }
 }

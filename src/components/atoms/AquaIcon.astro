@@ -1,0 +1,51 @@
+---
+import { aquaIconMap } from '../../utils/aquaIconMap';
+
+interface Props {
+  name: string; // The emoji itself or a shortcode, mapped in aquaIconMap
+  class?: string;
+  size?: 'sm' | 'md' | 'lg' | 'auto'; // Optional sizing presets
+}
+
+const { name, class: className = '', size = 'auto' } = Astro.props;
+
+// Lookup the path, fallback to rendering the text if not found in dictionary
+const iconPath = aquaIconMap[name];
+
+// Map sizes to pixel dimensions if strictly needed, though CSS `em` scaling is usually better
+const sizeClass = size !== 'auto' ? `aqua-icon-${size}` : '';
+---
+
+{iconPath ? (
+  <img 
+    src={iconPath} 
+    alt={name} 
+    class:list={['aqua-icon', sizeClass, className]} 
+    loading="lazy" 
+    decoding="async"
+    aria-hidden="true"
+  />
+) : (
+  <span class={className} aria-hidden="true">{name}</span>
+)}
+
+<style>
+  .aqua-icon {
+    /* Scales perfectly with the surrounding text size */
+    width: 1.25em; 
+    height: 1.25em;
+    vertical-align: text-bottom;
+    display: inline-block;
+    
+    /* Optional: add a tiny drop shadow to give that 2003 3D feel */
+    filter: drop-shadow(0px 1px 1px rgba(0, 0, 0, 0.15));
+    
+    /* Optimize rendering for pixel art or high-res downscaled */
+    image-rendering: high-quality;
+  }
+  
+  /* Hardcoded sizes if needed for specific UI areas */
+  .aqua-icon-sm { width: 16px; height: 16px; }
+  .aqua-icon-md { width: 24px; height: 24px; }
+  .aqua-icon-lg { width: 32px; height: 32px; }
+</style>
