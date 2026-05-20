@@ -1,0 +1,587 @@
+---
+title: "AutoHotkey (AHK)"
+description: "AutoHotkey es el lenguaje de automatización de UI más potente para Windows: hotkeys, remapeo de teclado, macros de escritura, control de ventanas y creación de GUIs sencillas."
+createdAt: 2026-05-20
+updatedAt: 2026-05-20
+tags: [autohotkey, ahk, windows, automatizacion, hotkeys, macros, ui, scripting]
+icon: "⌨️"
+---
+
+# ⌨️ AutoHotkey (AHK) — Cheatsheet Completo ⌨️
+
+**AutoHotkey** (AHK) es un lenguaje de scripting gratuito y de código abierto para Windows diseñado específicamente para la automatización de la interfaz de usuario, el remapeo de teclas y la creación de macros. Con AHK puedes automatizar cualquier tarea repetitiva de Windows: rellenar formularios automáticamente, crear atajos de teclado personalizados para cualquier aplicación, controlar el ratón y teclado con precisión milimétrica, automatizar ventanas del sistema operativo y construir pequeñas herramientas de productividad con interfaces gráficas simples. Es la herramienta favorita de los power users de Windows y es ampliamente utilizado en entornos de oficina, gaming y automatización de pruebas de UI. Esta guía cubre **AutoHotkey v2** (la versión moderna y recomendada).
+
+---
+
+## 1. 🌟 Conceptos Clave y Fundamentos
+
+* **Hotkey**: Una combinación de teclas que, al presionarse, ejecuta una acción definida en el script. Declaradas con `::` (ej: `^s::Save()`).
+* **Hotstring**: Un texto disparador que, al escribirse, se reemplaza automáticamente por otro texto o ejecuta una acción (ej: `::ahk::AutoHotkey`).
+* **Send**: Función para simular pulsaciones de teclado, incluyendo teclas especiales como `{Enter}`, `{F1}`, etc.
+* **Click / MouseMove**: Funciones para simular clics de ratón en posiciones absolutas o relativas a una ventana.
+* **WinActivate / WinWait**: Funciones para controlar ventanas del sistema operativo.
+* **Persistent**: Directiva que mantiene el script ejecutándose aunque no haya hotkeys activos.
+* **#Include**: Directiva para incluir código de otros archivos AHK.
+* **Modificadores de tecla**: `^` (Ctrl), `!` (Alt), `+` (Shift), `#` (Win), `<`/`>` (izquierda/derecha).
+* **Script como ejecutable**: Los scripts AHK se pueden compilar a `.exe` con Ahk2Exe para distribuirlos sin que el destinatario tenga AHK instalado.
+* **AHK v2 vs v1**: AHK v2 (actual) tiene una sintaxis más consistente y moderna. Usa siempre v2 para proyectos nuevos.
+
+---
+
+## 2. 🛠️ Instalación y Configuración
+
+### 2.1. Instalación
+
+```
+; Descarga e instala AutoHotkey v2 desde: https://www.autohotkey.com/
+; O via winget:
+; winget install AutoHotkey.AutoHotkey
+
+; Verificar versión en el script
+MsgBox "Versión AHK: " A_AhkVersion
+
+; Estructura de un script AHK v2
+; ─────────────────────────────
+; 1. Directivas (#)
+; 2. Variables y configuración global
+; 3. Código a ejecutar al inicio (auto-execute section)
+; 4. Hotkeys y funciones
+```
+
+### 2.2. Estructura del Script
+
+```ahk
+; Directivas — deben estar al inicio del script
+#Requires AutoHotkey v2.0
+#SingleInstance Force          ; Solo permite una instancia del script
+#Warn                          ; Activa todas las advertencias
+
+; ─ Variables globales y configuración inicial ─────────────────
+TITULO_APP := "Mi Herramienta AHK"
+VERSION    := "1.0"
+
+; ─ Código de inicio (auto-execute section) ────────────────────
+; Este bloque se ejecuta al iniciar el script, antes que cualquier hotkey
+TrayTip TITULO_APP, "Script iniciado (v" VERSION ")", 3000
+A_TrayMenu.Add("Acerca de...", (*) => MsgBox(TITULO_APP " v" VERSION))
+
+; ─ Hotkeys y funciones ────────────────────────────────────────
+; ... (definir hotkeys aquí)
+
+; Mantener el script vivo (requerido si no hay hotkeys persistentes)
+Persistent
+```
+
+---
+
+## 3. ⌨️ Hotkeys — Atajos de Teclado
+
+```ahk
+; Sintaxis: Modificador+Tecla::Acción
+
+; ─ Modificadores ─────────────────────────────────
+; ^   = Ctrl
+; !   = Alt
+; +   = Shift
+; #   = Win (tecla Windows)
+; <^  = Ctrl izquierdo
+; >^  = Ctrl derecho
+; *   = Ignorar modificadores adicionales (wildcard)
+; ~   = Permite el comportamiento nativo además del script
+; $   = Fuerza AHK a "capturar" la tecla (evita loops con Send)
+
+; ─ Ejemplos básicos ──────────────────────────────
+
+; Ctrl+Shift+C → copiar y mostrar contenido
+^+c:: {
+    A_Clipboard := ""
+    Send "^c"              ; Ctrl+C — copiar al portapapeles
+    ClipWait 2             ; Esperar hasta 2 segundos a que haya contenido
+    MsgBox "Copiado: " A_Clipboard
+}
+
+; Win+E → abrir Explorador de Archivos
+#e:: Run "explorer.exe"
+
+; F12 → abrir terminal en el directorio actual
+F12:: {
+    dir := "C:\Users\" A_UserName
+    Run "wt.exe -d " dir     ; Windows Terminal
+}
+
+; Alt+F4 sobreescrito (solo en Chrome)
+#HotIf WinActive("ahk_exe chrome.exe")
+!F4:: MsgBox "¿Cerrar Chrome? Usa Ctrl+W para cerrar solo esta pestaña"
+#HotIf  ; Resetear contexto
+
+; Doble clic en Ctrl+F1 → ejecutar acción especial
+~F1:: {
+    static nClicks := 0
+    nClicks++
+    if (A_ThisHotkey = A_PriorHotkey && A_TimeSincePriorHotkey < 400) {
+        nClicks := 0
+        MsgBox "Doble F1 detectado!"
+        return
+    }
+    SetTimer () => nClicks := 0, -500
+}
+
+; ─ Deshabilitar tecla ────────────────────────────
+CapsLock::return      ; Deshabilitar CapsLock
+ScrollLock::return    ; Deshabilitar ScrollLock
+
+; ─ Remapeo de teclas ─────────────────────────────
+; Cambia la funcionalidad de una tecla por otra
+CapsLock::LCtrl       ; CapsLock actúa como Ctrl izquierdo
+; (Remapeo nativo — más eficiente que un hotkey)
+```
+
+---
+
+## 4. 🔤 Hotstrings — Auto-reemplazo de Texto
+
+```ahk
+; Sintaxis: ::disparador::reemplazo
+
+; ─ Hotstrings simples ────────────────────────────
+::ahk::AutoHotkey           ; Escribir "ahk" + disparador → "AutoHotkey"
+::tel::+34 600 000 000      ; Número de teléfono
+::mail::usuario@empresa.com  ; Email
+
+; Disparadores: Por defecto se activan con espacio, Enter, punto, coma, etc.
+; Cambia el disparador con el flag ?
+:?:ahk::AutoHotkey          ; Se activa dentro de palabras también
+
+; ─ Hotstrings con opciones ───────────────────────
+; Opciones entre ::
+:C:AHK::AutoHotkey    ; C = Case-sensitive (distingue mayúsculas)
+:*:-->::→             ; * = No esperar disparador (activar inmediatamente)
+:B0::ahk::AutoHotkey  ; B0 = No borrar el texto disparador antes de reemplazar
+
+; ─ Hotstrings como función ───────────────────────
+; Útil para lógica más compleja
+
+:*?:@fecha::{
+    A_Clipboard := FormatTime(, "dd/MM/yyyy HH:mm")
+    Send "^v"    ; Pegar la fecha del portapapeles
+}
+
+:*?:@sig:: {
+    ; Firma de correo compleja
+    Send "Atención,{Enter}"
+    Send "{Enter}"
+    Send "Quedo a su disposición para cualquier consulta.{Enter}"
+    Send "{Enter}"
+    Send "Saludos cordiales,{Enter}"
+    Send A_UserName "{Enter}"
+}
+
+; ─ Menú de selección con hotstring ──────────────
+::dns::{
+    opciones := ["8.8.8.8 (Google)", "1.1.1.1 (Cloudflare)", "208.67.222.222 (OpenDNS)"]
+    elegido := ""
+    for i, op in opciones {
+        elegido := op
+        break  ; Simplificación — en real usarías un menú o InputBox
+    }
+    Send elegido
+}
+```
+
+---
+
+## 5. 🖱️ Control del Ratón y Teclado
+
+```ahk
+; ─ Send — simular pulsaciones de teclado ─────────
+Send "Hola Mundo"             ; Escribir texto
+Send "^c"                     ; Ctrl+C
+Send "^{Home}"                ; Ctrl+Inicio
+Send "{Enter}"                ; Enter
+Send "{Tab 3}"                ; Tab tres veces
+Send "{BackSpace 5}"          ; Retroceso 5 veces
+Send "{F5}"                   ; F5
+Send "{Delete}"               ; Supr
+Send "{Up 3}"                 ; Flecha arriba 3 veces
+Send "!{F4}"                  ; Alt+F4
+
+; SendInput — más rápido y fiable que Send (recomendado)
+SendInput "texto a escribir"
+SendInput "{LWin}r"          ; Win+R (abrir Ejecutar)
+
+; SendText — envía texto literalmente sin interpretar {} ni modificadores
+SendText "Este {texto} se escribe tal cual, incluyendo llaves"
+
+; ─ Control del Ratón ─────────────────────────────
+; Click [Botón] [Opciones]
+Click             ; Clic izquierdo en posición actual
+Click 500, 300    ; Clic izquierdo en (500, 300)
+Click "Right"     ; Clic derecho en posición actual
+Click "Right", 800, 400   ; Clic derecho en (800, 400)
+Click "Double"    ; Doble clic
+Click "Up"        ; Soltar botón (para arrastrar)
+Click "Down"      ; Presionar botón (para arrastrar)
+Click 3           ; 3 clics en posición actual
+
+; MouseMove [X, Y, Velocidad, Relativo]
+MouseMove 640, 360        ; Mover a (640, 360)
+MouseMove 100, 0, 5, 1   ; Mover 100px a la derecha (relativo), velocidad 5
+
+; MouseClickDrag — arrastrar
+MouseClickDrag "Left", 100, 100, 400, 400   ; Arrastrar desde (100,100) hasta (400,400)
+
+; Scroll
+Send "{WheelDown 3}"    ; Scroll abajo 3 pasos
+Send "{WheelUp}"        ; Scroll arriba
+
+; ─ Coordenadas relativas a ventana ───────────────
+CoordMode "Mouse", "Window"    ; Coordenadas relativas a la ventana activa
+CoordMode "Mouse", "Screen"    ; Coordenadas absolutas de pantalla (default)
+CoordMode "Mouse", "Client"    ; Coordenadas relativas al área cliente
+
+; ─ Obtener posición del ratón ────────────────────
+MouseGetPos &xPos, &yPos
+MsgBox "Ratón en: " xPos "," yPos
+```
+
+---
+
+## 6. 🪟 Control de Ventanas
+
+```ahk
+; ─ Activar y detectar ventanas ───────────────────
+
+; WinActivate — traer ventana al frente
+WinActivate "ahk_exe notepad.exe"           ; Por proceso ejecutable
+WinActivate "Untitled - Notepad"            ; Por título
+WinActivate "ahk_class Notepad"             ; Por clase de ventana
+WinActivate "ahk_pid 1234"                  ; Por PID
+
+; WinWait — esperar a que aparezca una ventana
+WinWait "Abrir archivo", , 5    ; Espera max 5 segundos
+if WinExist("Abrir archivo") {
+    WinActivate
+}
+
+; WinExists — verificar si una ventana existe
+if WinExist("Chrome") {
+    MsgBox "Chrome está abierto"
+}
+
+; ─ Manipular ventanas ────────────────────────────
+WinMinimize "ahk_exe notepad.exe"           ; Minimizar
+WinMaximize "ahk_exe notepad.exe"           ; Maximizar
+WinRestore  "ahk_exe notepad.exe"           ; Restaurar
+WinClose    "ahk_exe notepad.exe"           ; Cerrar (con diálogo de guardado)
+WinKill     "ahk_exe notepad.exe"           ; Forzar cierre
+
+; Mover y redimensionar ventana
+WinMove 100, 100, 800, 600, "Notepad"  ; X, Y, Ancho, Alto
+
+; Obtener información de ventana
+hwnd := WinGetID("Notepad")                ; Handle de la ventana
+titulo := WinGetTitle("ahk_exe notepad.exe")
+clase := WinGetClass("ahk_exe notepad.exe")
+pid   := WinGetPID("ahk_exe notepad.exe")
+WinGetPos &x, &y, &w, &h, "Notepad"       ; Posición y tamaño
+
+; ─ Contexto sensible a ventanas (#HotIf) ─────────
+; Hotkeys que solo funcionan en aplicaciones específicas
+
+#HotIf WinActive("ahk_exe Code.exe")   ; Solo en VS Code
+^+k:: Send "^k ^c"                    ; Ctrl+Shift+K → comentar bloque
+#HotIf
+
+#HotIf WinActive("ahk_exe excel.exe") ; Solo en Excel
+^Enter:: Send "^{Enter}"              ; Ctrl+Enter → ingresar en celda
+#HotIf
+
+; ─ Esperar a que una ventana esté activa ─────────
+WinWaitActive "ahk_exe installer.exe"
+WinWaitNotActive "ahk_exe installer.exe", , 120   ; Esperar hasta 120s
+```
+
+---
+
+## 7. 📋 Portapapeles y Variables
+
+```ahk
+; ─ Portapapeles ──────────────────────────────────
+; Leer portapapeles
+contenido := A_Clipboard
+MsgBox "Portapapeles: " contenido
+
+; Escribir al portapapeles
+A_Clipboard := "Texto personalizado"
+
+; Copiar texto seleccionado con Ctrl+C y leerlo
+A_Clipboard := ""              ; Limpiar primero
+Send "^c"                      ; Copiar
+ClipWait 2                     ; Esperar hasta 2 segundos
+if A_Clipboard = "" {
+    MsgBox "No se copió nada"
+} else {
+    MsgBox "Copiado: " A_Clipboard
+}
+
+; ─ Tipos de Variables ────────────────────────────
+; Texto
+nombre := "AutoHotkey"
+version := "2.0"
+ruta := "C:\Users\" A_UserName "\Documentos"  ; Concatenación con espacio o punto
+
+; Números
+contador := 0
+precio := 29.99
+
+; Booleanos (0 = false, 1 o cualquier string no vacío = true)
+activado := true
+desactivado := false
+
+; Arrays
+frutas := ["manzana", "pera", "uva"]
+primera := frutas[1]          ; Índice 1-based en AHK v2
+frutas.Push("kiwi")
+frutas.Length                 ; 4
+
+; Map (diccionario)
+colores := Map("rojo", "#FF0000", "verde", "#00FF00")
+colores["azul"] := "#0000FF"
+colores.Delete("rojo")
+colores.Has("verde")          ; true
+
+; Constantes del sistema
+A_ComputerName   ; Nombre del equipo
+A_UserName       ; Nombre del usuario actual
+A_Desktop        ; Ruta al escritorio
+A_MyDocuments    ; Ruta a Documentos
+A_ScriptDir      ; Directorio del script actual
+A_ScriptName     ; Nombre del archivo del script
+A_Now            ; Fecha y hora actual (YYYYMMDDHH24MISS)
+A_YYYY           ; Año actual (4 dígitos)
+A_MM             ; Mes actual (2 dígitos)
+A_DD             ; Día actual (2 dígitos)
+A_Hour           ; Hora actual (0-23)
+A_Min            ; Minuto actual
+A_Sec            ; Segundo actual
+```
+
+---
+
+## 8. 🖼️ Interfaces Gráficas (GUI)
+
+```ahk
+; ─ GUI Básica ────────────────────────────────────
+mi_gui := Gui(, "Mi Herramienta")
+mi_gui.OnEvent("Close", (*) => ExitApp())
+
+; Añadir controles
+mi_gui.Add("Text",, "Nombre:")
+campo_nombre := mi_gui.Add("Edit", "w200", "")
+
+mi_gui.Add("Text",, "Entorno:")
+entorno := mi_gui.Add("DropDownList", "w200", ["dev", "staging", "production"])
+entorno.Value := 1   ; Seleccionar primer elemento
+
+checkbox := mi_gui.Add("CheckBox",, "Activar modo debug")
+
+btn_ok := mi_gui.Add("Button", "Default w100", "Aceptar")
+btn_ok.OnEvent("Click", alAceptar)
+
+btn_cancel := mi_gui.Add("Button", "w100", "Cancelar")
+btn_cancel.OnEvent("Click", (*) => mi_gui.Hide())
+
+mi_gui.Show()
+
+; ─ Función manejadora del botón ──────────────────
+alAceptar(*) {
+    global campo_nombre, entorno, checkbox
+    nombre := campo_nombre.Value
+    env    := entorno.Text
+    debug  := checkbox.Value
+
+    if nombre = "" {
+        MsgBox "El nombre es obligatorio", "Validación", "Icon!"
+        return
+    }
+
+    MsgBox "Nombre: " nombre "`nEntorno: " env "`nDebug: " debug
+    mi_gui.Hide()
+}
+
+; ─ InputBox (diálogo de entrada simple) ──────────
+resultado := InputBox("Introduce tu nombre:", "Identificación")
+if resultado.Result = "OK" {
+    MsgBox "Hola, " resultado.Value "!"
+}
+
+; ─ FileSelect (selector de archivos) ─────────────
+archivo := FileSelect(, , "Selecciona un archivo CSV", "CSV Files (*.csv)")
+if archivo != ""
+    MsgBox "Archivo seleccionado: " archivo
+
+; DirSelect (selector de directorio)
+carpeta := DirSelect(, , "Selecciona una carpeta")
+if carpeta != ""
+    MsgBox "Carpeta: " carpeta
+
+; ─ MsgBox con botones ────────────────────────────
+respuesta := MsgBox("¿Continuar?", "Confirmación", "YesNo Icon?")
+if respuesta = "Yes" {
+    MsgBox "Continuando..."
+}
+```
+
+---
+
+## 9. 📁 Sistema de Archivos y Procesos
+
+```ahk
+; ─ Archivos ──────────────────────────────────────
+; Leer archivo completo
+contenido := FileRead("C:\datos\config.txt")
+
+; Leer línea a línea
+bucle_archivo := "C:\datos\log.txt"
+Loop Read, bucle_archivo {
+    if InStr(A_LoopReadLine, "ERROR") {
+        MsgBox "Error encontrado: " A_LoopReadLine
+    }
+}
+
+; Escribir archivo
+FileAppend "Nueva línea de log`n", "C:\datos\log.txt"     ; Append
+FileDelete "C:\datos\log.txt"                              ; Eliminar
+FileCopy "origen.txt", "destino.txt", 1                   ; Copiar (1=sobreescribir)
+FileMove "viejo.txt", "nuevo.txt", 1                      ; Mover
+
+; Crear directorio
+DirCreate "C:\MiApp\logs"
+
+; ─ Procesos ──────────────────────────────────────
+; Ejecutar programa
+Run "notepad.exe"
+Run "notepad.exe C:\docs\readme.txt"
+Run "explorer.exe C:\Users"
+Run "wt.exe"                            ; Windows Terminal
+RunWait "cmd.exe /c ping google.com"    ; Esperar a que termine
+
+; Ejecutar con privilegios de administrador
+Run "*RunAs powershell.exe"
+
+; Capturar salida de comando (via archivo temporal)
+temp := A_Temp "\output.txt"
+RunWait 'cmd.exe /c git status > "' temp '"', , "Hide"
+salida := FileRead(temp)
+FileDelete temp
+MsgBox salida
+
+; Verificar si un proceso está corriendo
+if ProcessExist("chrome.exe") {
+    MsgBox "Chrome está en ejecución"
+    ProcessClose "chrome.exe"   ; Cerrar proceso
+}
+
+; Esperar a que un proceso termine
+ProcessWaitClose "installer.exe", 120    ; Esperar max 120 segundos
+```
+
+---
+
+## 10. ⏱️ Timers y Funciones Avanzadas
+
+```ahk
+; ─ Timers ────────────────────────────────────────
+; Ejecutar función cada N milisegundos
+SetTimer MostrarHora, 1000   ; Cada segundo
+SetTimer MostrarHora, 0      ; Detener el timer
+
+MostrarHora() {
+    ToolTip A_Hour ":" A_Min ":" A_Sec, 0, 0
+}
+
+; Timer de una sola vez (negativo = una sola ejecución)
+SetTimer (*) => MsgBox("¡Recuerda tomar agua!"), -1800000   ; En 30 minutos
+
+; ─ Funciones ─────────────────────────────────────
+; Definición de función
+SaludarUsuario(nombre := "Mundo") {
+    return "Hola, " nombre "!"
+}
+MsgBox SaludarUsuario("AHK")   ; Hola, AHK!
+MsgBox SaludarUsuario()         ; Hola, Mundo!
+
+; Función flecha (arrow function)
+Duplicar := (x) => x * 2
+MsgBox Duplicar(5)   ; 10
+
+; Función con parámetros por referencia (&)
+IntercambiarValores(&a, &b) {
+    temp := a
+    a := b
+    b := temp
+}
+x := 10, y := 20
+IntercambiarValores(&x, &y)
+MsgBox x " " y   ; 20 10
+
+; ─ Manejo de Errores ─────────────────────────────
+try {
+    resultado := 10 / 0
+} catch Error as e {
+    MsgBox "Error: " e.Message
+}
+
+; ─ ToolTip y Notificaciones ──────────────────────
+ToolTip "Procesando..."         ; Tooltip en posición del ratón
+Sleep 2000
+ToolTip                         ; Ocultar tooltip
+
+TrayTip "Mi App", "Operación completada", 5000, 1   ; Notificación del sistema
+```
+
+---
+
+## 11. ⚠️ Errores Comunes y Pitfalls
+
+* **AHK v1 vs v2**: La sintaxis cambió significativamente entre versiones. Scripts v1 no son compatibles con v2. Verifica siempre con `#Requires AutoHotkey v2.0` al inicio del script.
+
+* **Loops infinitos con Send**: Si un hotkey usa `Send "^c"` y está mapeado a `^c`, se llama a sí mismo indefinidamente. Usa `$^c::` (el `$` fuerza que AHK capture la tecla directamente del teclado).
+
+* **Coordenadas relativas vs absolutas**: Por defecto, `Click` y `MouseMove` usan coordenadas absolutas de pantalla. Si la ventana se mueve o cambia de tamaño, las coordenadas quedan desactualizadas. Usa `CoordMode "Mouse", "Window"` + `WinActivate` para coordenadas relativas.
+
+* **Olvidar `WinActivate` antes de `Send`**: `Send` envía teclas a la ventana que tenga el foco. Si no activas explícitamente la ventana destino antes, el texto puede ir a la ventana equivocada.
+
+* **`ClipWait` sin limpiar el portapapeles**: Sin `A_Clipboard := ""` antes de `Send "^c"`, `ClipWait` puede retornar inmediatamente si ya había algo en el portapapeles del paso anterior.
+
+* **Caracteres especiales en Send**: Algunos caracteres como `{`, `}`, `!`, `^`, `+`, `#` tienen significado especial en `Send`. Escápalos con llaves: `Send "{{}texto{}"` para enviar `{texto}`.
+
+* **Scripts que interfieren entre sí**: Múltiples scripts AHK activos pueden tener hotkeys en conflicto. Usa `#SingleInstance Force` y organiza todos tus hotkeys en un solo script maestro.
+
+---
+
+## 12. 💡 Buenas Prácticas y Consejos Pro
+
+* **Usa `#HotIf` para limitar hotkeys a aplicaciones específicas**: Evita que tus macros interfieran con otras aplicaciones. Un hotkey que solo funciona en Excel no molestará en Word.
+
+* **Compila tus scripts a `.exe` para distribución**: Usa Ahk2Exe (incluido con AHK) para crear ejecutables portables. Ideal para herramientas de equipo donde no todos tienen AHK instalado.
+
+* **Añade el script al inicio de Windows**: Copia un acceso directo del script a `shell:startup` (`Win+R` → `shell:startup`) para que se inicie automáticamente con Windows.
+
+* **Usa `A_ScriptDir` para rutas relativas**: En lugar de rutas absolutas hardcodeadas, usa `A_ScriptDir "\recursos\datos.csv"` para que el script sea portable.
+
+* **Documenta los hotkeys disponibles**: Añade un hotkey de ayuda (`F1` o `^!h`) que muestre un `MsgBox` o `Gui` con todos los atajos disponibles del script.
+
+* **Usa `ToolTip` para feedback visual durante macros largas**: En lugar de `Sleep` silencioso, muestra un `ToolTip "Procesando paso 1..."` para que el usuario sepa que el script está funcionando.
+
+* **Logging básico con `FileAppend`**:
+```ahk
+Log(msg) {
+    FileAppend FormatTime(, "yyyy-MM-dd HH:mm:ss") " — " msg "`n", A_ScriptDir "\log.txt"
+}
+Log("Script iniciado")
+```
+
+---
+
+Este cheatsheet proporciona una referencia exhaustiva de **AutoHotkey v2**, cubriendo desde la declaración de hotkeys y hotstrings, el control preciso del teclado y ratón, la automatización de ventanas del sistema operativo, la creación de GUIs básicas, el manejo de archivos y procesos, hasta las mejores prácticas para crear scripts de automatización de UI robustos y portables en entornos Windows.
