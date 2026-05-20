@@ -1,0 +1,704 @@
+---
+title: "Python para Scripting"
+description: "Python como lenguaje de automatización y scripting de sistemas: subprocess, pathlib, argparse, requests, shutil y las herramientas esenciales para reemplazar scripts Bash complejos."
+createdAt: 2026-05-20
+updatedAt: 2026-05-20
+tags: [python, scripting, automatizacion, subprocess, pathlib, cli, devops]
+icon: "🐍"
+---
+
+# 🐍 Python para Scripting y Automatización — Cheatsheet Completo 🐍
+
+**Python** es el lenguaje de scripting más versatile y productivo del ecosistema moderno. Mientras que Bash es imbatible para pipelines simples de comandos Unix, Python sobresale cuando el script crece en complejidad: manejo robusto de errores, manipulación de datos estructurados (JSON, CSV, YAML), llamadas HTTP a APIs, y lógica de negocio que supera las capacidades de los shells. Con su ecosistema de módulos estándar (`pathlib`, `subprocess`, `argparse`, `shutil`, `json`) y la enorme librería de terceros (PyPI), Python permite automatizar prácticamente cualquier tarea del sistema operativo y DevOps con código limpio, legible y fácilmente mantenible.
+
+---
+
+## 1. 🌟 Conceptos Clave y Fundamentos
+
+* **Script vs Módulo**: Un archivo Python que se ejecuta directamente es un script. Añadir `if __name__ == "__main__":` permite que el mismo archivo funcione como módulo importable y como script ejecutable.
+* **Shebang para scripts ejecutables**: `#!/usr/bin/env python3` en la primera línea + `chmod +x script.py` = ejecución directa como `./script.py`.
+* **Paths como objetos, no strings**: La librería `pathlib` representa rutas del sistema de archivos como objetos `Path` con operadores intuitivos (`/` para unir rutas).
+* **Subprocess, no os.system**: Para ejecutar comandos externos, usa `subprocess.run()` (no `os.system()` que es inseguro y no captura salida).
+* **Context managers (`with`)**: Garantizan el cierre de recursos (archivos, conexiones de red) incluso cuando ocurren excepciones.
+* **Typing hints (Python 3.5+)**: Las anotaciones de tipo no son obligatorias pero mejoran enormemente la legibilidad y permiten el uso de herramientas como `mypy`.
+* **Virtual environments**: Cada proyecto debería tener su propio entorno virtual (`python3 -m venv .venv`) para aislar dependencias.
+* **`sys.exit(code)`**: La forma correcta de salir de un script con un código de retorno. `sys.exit(0)` = éxito, `sys.exit(1)` = error.
+* **Logging vs print**: Para scripts de producción, usa el módulo `logging` en lugar de `print`. Permite niveles, formatos y destinos configurables.
+
+---
+
+## 2. 🛠️ Setup y Entorno de Scripting
+
+### 2.1. Shebang y Permisos
+
+```python
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+descripcion_breve.py — Descripción de lo que hace este script.
+
+Uso:
+    python3 script.py [opciones] <argumento>
+    ./script.py --help
+"""
+```
+
+```bash
+# Dar permisos de ejecución al script
+chmod +x script.py
+
+# Ejecutar directamente
+./script.py --verbose input.csv
+
+# Ejecutar con Python explícito
+python3 script.py --verbose input.csv
+```
+
+### 2.2. Entorno Virtual
+
+```bash
+# Crear entorno virtual
+python3 -m venv .venv
+
+# Activar (Linux/macOS)
+source .venv/bin/activate
+
+# Activar (Windows PowerShell)
+.venv\Scripts\Activate.ps1
+
+# Instalar dependencias
+pip install requests pyyaml rich
+
+# Guardar dependencias
+pip freeze > requirements.txt
+
+# Restaurar en otra máquina
+pip install -r requirements.txt
+```
+
+### 2.3. Logging Profesional
+
+```python
+import logging
+import sys
+
+# Configuración básica de logging
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s [%(levelname)-8s] %(message)s",
+    datefmt="%Y-%m-%d %H:%M:%S",
+    handlers=[
+        logging.StreamHandler(sys.stdout),       # Salida a consola
+        logging.FileHandler("script.log"),        # Salida a archivo
+    ]
+)
+
+log = logging.getLogger(__name__)
+
+log.debug("Mensaje de depuración (solo visible con nivel DEBUG)")
+log.info("Proceso iniciado correctamente")
+log.warning("Atención: el archivo ya existe, será sobreescrito")
+log.error("Error al conectar con la base de datos")
+log.critical("Error fatal — saliendo del script")
+
+# En scripts CI/CD, activar DEBUG con variable de entorno
+import os
+if os.getenv("DEBUG"):
+    logging.getLogger().setLevel(logging.DEBUG)
+```
+
+---
+
+## 3. 📁 Sistema de Archivos con pathlib
+
+`pathlib` es la forma moderna y recomendada de manejar rutas. Evita la concatenación frágil de strings.
+
+```python
+from pathlib import Path
+
+# Crear objetos Path
+ruta = Path("/home/usuario/proyectos")
+archivo = Path("config.yaml")
+relativo = Path("../datos")
+
+# Operador / para unir rutas (nunca uses os.path.join)
+ruta_completa = ruta / "mi-proyecto" / "src" / "main.py"
+# /home/usuario/proyectos/mi-proyecto/src/main.py
+
+# Path desde el directorio del script (no el CWD)
+BASE_DIR = Path(__file__).parent
+CONFIG = BASE_DIR / "config" / "settings.yaml"
+
+# Propiedades de Path
+p = Path("/home/usuario/datos.csv")
+p.name          # "datos.csv"
+p.stem          # "datos" (sin extensión)
+p.suffix        # ".csv"
+p.parent        # Path("/home/usuario")
+p.parts         # ('/', 'home', 'usuario', 'datos.csv')
+p.is_absolute() # True
+p.exists()      # True/False
+p.is_file()     # True/False
+p.is_dir()      # True/False
+
+# Crear directorios
+Path("logs/2024/enero").mkdir(parents=True, exist_ok=True)
+# parents=True: crea todos los padres necesarios
+# exist_ok=True: no lanza error si ya existe
+
+# Listar contenido de directorio
+for archivo in Path(".").iterdir():
+    print(archivo)
+
+# Listar con patrón glob
+for log in Path("/var/log").glob("*.log"):
+    print(log)
+
+# Glob recursivo
+for py_file in Path(".").rglob("*.py"):
+    print(py_file)
+
+# Leer y escribir archivos
+contenido = Path("config.json").read_text(encoding="utf-8")
+Path("output.txt").write_text("Datos procesados\n", encoding="utf-8")
+bytes_data = Path("imagen.png").read_bytes()
+
+# Renombrar y mover
+Path("viejo.txt").rename("nuevo.txt")
+Path("archivo.txt").replace("/tmp/archivo.txt")  # Mueve y sobreescribe
+
+# Eliminar
+Path("temporal.txt").unlink()             # Eliminar archivo
+Path("directorio_vacio").rmdir()          # Eliminar dir vacío
+
+# Información de estadísticas
+stat = Path("script.py").stat()
+stat.st_size     # Tamaño en bytes
+stat.st_mtime    # Timestamp de última modificación
+```
+
+---
+
+## 4. ⚙️ Ejecución de Comandos con subprocess
+
+```python
+import subprocess
+import sys
+
+# subprocess.run — la función principal (Python 3.5+)
+resultado = subprocess.run(
+    ["git", "status", "--short"],   # Lista de argumentos (más seguro que string)
+    capture_output=True,            # Captura stdout y stderr
+    text=True,                      # Decodifica bytes a str
+    check=False,                    # Si True, lanza CalledProcessError en código != 0
+    cwd="/ruta/al/proyecto",        # Directorio de trabajo
+    env={**os.environ, "MI_VAR": "valor"}  # Variables de entorno
+)
+
+# Acceder a resultados
+print(resultado.stdout)           # Salida estándar como string
+print(resultado.stderr)           # Salida de error como string
+print(resultado.returncode)       # Código de retorno (0 = éxito)
+
+# Lanzar excepción si el comando falla
+resultado = subprocess.run(["npm", "test"], check=True, capture_output=True, text=True)
+
+# Wrapper genérico recomendado para scripts
+def ejecutar(cmd: list[str], cwd: str = None, env: dict = None) -> tuple[str, str, int]:
+    """Ejecuta un comando y retorna (stdout, stderr, returncode)."""
+    resultado = subprocess.run(
+        cmd,
+        capture_output=True,
+        text=True,
+        cwd=cwd,
+        env={**os.environ, **(env or {})}
+    )
+    return resultado.stdout.strip(), resultado.stderr.strip(), resultado.returncode
+
+stdout, stderr, code = ejecutar(["docker", "ps"])
+if code != 0:
+    log.error(f"docker ps falló: {stderr}")
+    sys.exit(1)
+
+# Ejecutar en shell (solo cuando sea necesario, con cuidado por inyección)
+resultado = subprocess.run(
+    "ls -la | grep .py | wc -l",
+    shell=True,
+    capture_output=True,
+    text=True
+)
+
+# Streaming de salida en tiempo real (útil para comandos largos)
+with subprocess.Popen(
+    ["ping", "-c", "10", "8.8.8.8"],
+    stdout=subprocess.PIPE,
+    stderr=subprocess.STDOUT,
+    text=True
+) as proceso:
+    for linea in proceso.stdout:
+        print(linea, end="")  # Imprimir en tiempo real
+
+# Timeout: evitar que un comando cuelgue el script
+try:
+    subprocess.run(["curl", "https://api.ejemplo.com"], timeout=30, check=True)
+except subprocess.TimeoutExpired:
+    log.error("El comando excedió el timeout de 30 segundos")
+except subprocess.CalledProcessError as e:
+    log.error(f"Comando falló con código {e.returncode}: {e.stderr}")
+```
+
+---
+
+## 5. 🖥️ Argumentos CLI con argparse
+
+```python
+import argparse
+import sys
+
+def crear_parser() -> argparse.ArgumentParser:
+    parser = argparse.ArgumentParser(
+        prog="mi_script",
+        description="Procesa archivos CSV y genera reportes",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog="""
+Ejemplos:
+  %(prog)s input.csv --output reporte.json --verbose
+  %(prog)s datos/ --formato html --limite 100
+        """
+    )
+
+    # Argumento posicional (obligatorio)
+    parser.add_argument(
+        "entrada",
+        type=Path,
+        help="Archivo o directorio de entrada"
+    )
+
+    # Opción con valor
+    parser.add_argument(
+        "-o", "--output",
+        type=Path,
+        default=Path("output.json"),
+        help="Archivo de salida (default: output.json)"
+    )
+
+    # Opción de selección (choices)
+    parser.add_argument(
+        "-f", "--formato",
+        choices=["json", "csv", "html"],
+        default="json",
+        help="Formato de salida"
+    )
+
+    # Flag booleano
+    parser.add_argument(
+        "-v", "--verbose",
+        action="store_true",
+        help="Mostrar información detallada"
+    )
+
+    # Repetible (lista)
+    parser.add_argument(
+        "--etiqueta",
+        action="append",
+        metavar="ETIQUETA",
+        help="Etiqueta a incluir (puede repetirse)"
+    )
+
+    # Entero con rango
+    parser.add_argument(
+        "--limite",
+        type=int,
+        default=1000,
+        metavar="N",
+        help="Número máximo de registros a procesar"
+    )
+
+    return parser
+
+def main():
+    parser = crear_parser()
+    args = parser.parse_args()
+
+    if args.verbose:
+        logging.getLogger().setLevel(logging.DEBUG)
+
+    log.info(f"Procesando: {args.entrada}")
+    log.debug(f"Formato de salida: {args.formato}")
+
+if __name__ == "__main__":
+    main()
+```
+
+---
+
+## 6. 📊 Manejo de JSON, CSV y YAML
+
+```python
+import json
+import csv
+import sys
+from pathlib import Path
+
+# ===== JSON =====
+# Leer JSON
+with open("config.json", encoding="utf-8") as f:
+    config = json.load(f)
+valor = config.get("database", {}).get("host", "localhost")
+
+# Escribir JSON con formato legible
+datos = {"nombre": "Proyecto", "version": "2.0", "activo": True}
+with open("output.json", "w", encoding="utf-8") as f:
+    json.dump(datos, f, indent=2, ensure_ascii=False)
+
+# JSON desde/hacia string
+texto_json = json.dumps(datos, indent=2)
+datos_parsed = json.loads('{"clave": "valor"}')
+
+# ===== CSV =====
+# Leer CSV con cabecera
+with open("datos.csv", encoding="utf-8", newline="") as f:
+    reader = csv.DictReader(f)
+    for fila in reader:
+        # fila es un dict: {"nombre": "Juan", "edad": "30", ...}
+        print(fila["nombre"], fila["edad"])
+
+# Escribir CSV
+campos = ["nombre", "email", "rol"]
+filas = [
+    {"nombre": "Ana", "email": "ana@ejemplo.com", "rol": "admin"},
+    {"nombre": "Luis", "email": "luis@ejemplo.com", "rol": "user"},
+]
+
+with open("usuarios.csv", "w", encoding="utf-8", newline="") as f:
+    writer = csv.DictWriter(f, fieldnames=campos)
+    writer.writeheader()
+    writer.writerows(filas)
+
+# ===== YAML (requiere: pip install pyyaml) =====
+import yaml
+
+with open("config.yaml", encoding="utf-8") as f:
+    config = yaml.safe_load(f)  # Usa safe_load (nunca yaml.load sin Loader)
+
+with open("output.yaml", "w", encoding="utf-8") as f:
+    yaml.dump(config, f, default_flow_style=False, allow_unicode=True)
+```
+
+---
+
+## 7. 🌐 HTTP y APIs REST con requests
+
+```python
+import requests
+from requests.adapters import HTTPAdapter
+from urllib3.util.retry import Retry
+
+# Sesión con reintentos automáticos (patrón recomendado para scripts de producción)
+def crear_sesion(reintentos: int = 3, backoff: float = 0.3) -> requests.Session:
+    sesion = requests.Session()
+    retry = Retry(
+        total=reintentos,
+        backoff_factor=backoff,
+        status_forcelist=[500, 502, 503, 504]
+    )
+    adapter = HTTPAdapter(max_retries=retry)
+    sesion.mount("http://", adapter)
+    sesion.mount("https://", adapter)
+    return sesion
+
+sesion = crear_sesion()
+
+# GET request
+resp = sesion.get(
+    "https://api.github.com/repos/python/cpython",
+    headers={"Authorization": f"Bearer {TOKEN}"},
+    timeout=10
+)
+resp.raise_for_status()  # Lanza HTTPError si código >= 400
+datos = resp.json()
+print(f"Stars: {datos['stargazers_count']}")
+
+# POST con JSON
+resp = sesion.post(
+    "https://api.ejemplo.com/eventos",
+    json={"tipo": "deploy", "app": "mi-api", "version": "1.5.0"},
+    headers={"Authorization": f"Bearer {TOKEN}"},
+    timeout=10
+)
+resp.raise_for_status()
+
+# Descarga de archivo grande con streaming
+with sesion.get("https://ejemplo.com/archivo-grande.zip", stream=True, timeout=60) as resp:
+    resp.raise_for_status()
+    with open("descarga.zip", "wb") as f:
+        for chunk in resp.iter_content(chunk_size=8192):
+            f.write(chunk)
+
+# Manejo de errores HTTP
+try:
+    resp = sesion.get("https://api.ejemplo.com/datos", timeout=10)
+    resp.raise_for_status()
+except requests.exceptions.ConnectionError:
+    log.error("No se puede conectar a la API")
+    sys.exit(1)
+except requests.exceptions.Timeout:
+    log.error("La solicitud agotó el tiempo de espera")
+    sys.exit(1)
+except requests.exceptions.HTTPError as e:
+    log.error(f"Error HTTP {e.response.status_code}: {e.response.text}")
+    sys.exit(1)
+```
+
+---
+
+## 8. 📂 Operaciones de Sistema de Archivos con shutil
+
+```python
+import shutil
+from pathlib import Path
+
+# Copiar archivos y directorios
+shutil.copy2("origen.txt", "destino.txt")         # Copia con metadatos
+shutil.copytree("src/", "backup/src/")            # Copia directorio completo
+shutil.copytree(
+    "proyecto/",
+    "backup_proyecto/",
+    ignore=shutil.ignore_patterns("*.pyc", "__pycache__", ".git")
+)
+
+# Mover archivos y directorios
+shutil.move("archivo.txt", "/tmp/")
+shutil.move("directorio/", "/nuevo/directorio/")
+
+# Eliminar directorio y su contenido (equivale a rm -rf)
+shutil.rmtree("directorio_temporal")
+shutil.rmtree("directorio_temporal", ignore_errors=True)  # No falla si no existe
+
+# Comprimir y descomprimir
+shutil.make_archive("backup_2024", "zip", "directorio_origen")   # Crea backup_2024.zip
+shutil.make_archive("backup_2024", "tar", "directorio_origen")   # .tar
+shutil.make_archive("backup_2024", "gztar", "directorio_origen") # .tar.gz
+
+shutil.unpack_archive("backup_2024.zip", "destino/")  # Descomprimir
+
+# Información de disco
+uso = shutil.disk_usage("/")
+print(f"Total: {uso.total / 1e9:.1f} GB")
+print(f"Usado: {uso.used / 1e9:.1f} GB")
+print(f"Libre: {uso.free / 1e9:.1f} GB")
+
+# Encontrar ejecutables en PATH
+git_path = shutil.which("git")          # "/usr/bin/git"
+if not shutil.which("docker"):
+    log.error("Docker no está instalado o no está en PATH")
+    sys.exit(1)
+```
+
+---
+
+## 9. 🔐 Variables de Entorno y Configuración
+
+```python
+import os
+from pathlib import Path
+
+# Leer variables de entorno
+token = os.environ["API_TOKEN"]                         # KeyError si no existe
+token = os.getenv("API_TOKEN", "valor_por_defecto")    # None si no existe
+
+# Verificar variables obligatorias al inicio del script
+VARS_REQUERIDAS = ["DATABASE_URL", "API_TOKEN", "APP_ENV"]
+
+def verificar_entorno():
+    faltantes = [v for v in VARS_REQUERIDAS if not os.getenv(v)]
+    if faltantes:
+        log.critical(f"Variables de entorno faltantes: {', '.join(faltantes)}")
+        sys.exit(1)
+
+# Cargar .env (pip install python-dotenv)
+from dotenv import load_dotenv
+load_dotenv()  # Lee .env en el directorio actual
+
+# Configuración con prioridad: CLI args > .env > valores por defecto
+import argparse
+parser = argparse.ArgumentParser()
+parser.add_argument("--port", type=int, default=int(os.getenv("PORT", 8080)))
+parser.add_argument("--host", default=os.getenv("HOST", "localhost"))
+
+# Rutas comunes del sistema
+home = Path.home()                    # /home/usuario
+config_dir = home / ".config" / "mi-app"
+cache_dir = home / ".cache" / "mi-app"
+config_dir.mkdir(parents=True, exist_ok=True)
+```
+
+---
+
+## 10. 🔄 Concurrencia y Paralelismo en Scripts
+
+```python
+from concurrent.futures import ThreadPoolExecutor, ProcessPoolExecutor, as_completed
+import threading
+
+# ThreadPoolExecutor — ideal para I/O bound (HTTP, archivos, DB)
+urls = ["https://api1.ejemplo.com", "https://api2.ejemplo.com", "https://api3.ejemplo.com"]
+
+def descargar(url: str) -> dict:
+    resp = sesion.get(url, timeout=10)
+    resp.raise_for_status()
+    return {"url": url, "datos": resp.json()}
+
+with ThreadPoolExecutor(max_workers=10) as executor:
+    futuros = {executor.submit(descargar, url): url for url in urls}
+    for futuro in as_completed(futuros):
+        url = futuros[futuro]
+        try:
+            resultado = futuro.result()
+            log.info(f"Descargado: {url}")
+        except Exception as e:
+            log.error(f"Error en {url}: {e}")
+
+# ProcessPoolExecutor — ideal para CPU bound (cálculos pesados)
+def procesar_archivo(ruta: Path) -> dict:
+    """Procesa un archivo CSV y retorna estadísticas."""
+    # ... procesamiento intensivo ...
+    return {"archivo": str(ruta), "filas": 1000}
+
+archivos = list(Path("datos/").glob("*.csv"))
+with ProcessPoolExecutor() as executor:
+    resultados = list(executor.map(procesar_archivo, archivos))
+
+# asyncio — ideal para scripts con muchas operaciones I/O concurrentes
+import asyncio
+import aiohttp
+
+async def descargar_async(sesion: aiohttp.ClientSession, url: str) -> dict:
+    async with sesion.get(url) as resp:
+        return await resp.json()
+
+async def main():
+    async with aiohttp.ClientSession() as sesion:
+        tareas = [descargar_async(sesion, url) for url in urls]
+        resultados = await asyncio.gather(*tareas, return_exceptions=True)
+    return resultados
+
+resultados = asyncio.run(main())
+```
+
+---
+
+## 11. 📦 Distribución de Scripts como Herramientas CLI
+
+```python
+# pyproject.toml (con pip install -e .)
+# [project.scripts]
+# mi-herramienta = "mi_paquete.cli:main"
+
+# Estructura típica de una herramienta CLI con Click
+# pip install click
+
+import click
+
+@click.group()
+@click.version_option(version="1.0.0")
+def cli():
+    """Herramienta de automatización de despliegues."""
+    pass
+
+@cli.command()
+@click.argument("entorno", type=click.Choice(["dev", "staging", "prod"]))
+@click.option("--tag", required=True, help="Tag Docker a desplegar")
+@click.option("--dry-run", is_flag=True, help="Simular sin ejecutar")
+def deploy(entorno, tag, dry_run):
+    """Despliega la aplicación al entorno especificado."""
+    if dry_run:
+        click.echo(f"[DRY-RUN] Desplegaría {tag} en {entorno}")
+        return
+    click.echo(f"Desplegando {tag} en {entorno}...")
+    # ... lógica de despliegue ...
+
+@cli.command()
+def status():
+    """Muestra el estado actual de todos los entornos."""
+    click.echo("Verificando entornos...")
+
+if __name__ == "__main__":
+    cli()
+```
+
+---
+
+## 12. ⚠️ Errores Comunes y Pitfalls
+
+* **Usar `os.path` en lugar de `pathlib`**: `os.path.join("a", "b", "c")` es frágil y verboso. `Path("a") / "b" / "c"` es moderno, legible y multiplataforma.
+
+* **`subprocess.run(cmd_string, shell=True)` con input de usuario**: Inyección de comandos. Siempre usa listas de argumentos sin `shell=True` cuando los argumentos vienen de fuentes externas.
+  * ❌ `subprocess.run(f"rm -rf {user_input}", shell=True)`
+  * ✅ `subprocess.run(["rm", "-rf", user_input])`
+
+* **No manejar el encoding de archivos**: En Windows, el encoding por defecto no es UTF-8. Siempre especifica `encoding="utf-8"` explícitamente al abrir archivos de texto.
+
+* **Mutar listas mientras se itera**: Causa comportamiento impredecible. Crea una copia para iterar: `for item in lista[:]:`.
+
+* **No usar `check=True` en subprocess**: Silencia errores de comandos que fallaron. El script continúa como si nada hubiese pasado.
+
+* **Usar `yaml.load()` sin `Loader`**: Vulnerabilidad de deserialización. Siempre usa `yaml.safe_load()`.
+
+* **Olvidar `newline=""` al abrir CSV en Windows**: Sin este argumento, `csv.writer` duplica los saltos de línea en Windows (`\r\r\n`).
+
+* **Paths relativos vs absolutos**: Un script puede ejecutarse desde distintos directorios de trabajo. Usa siempre `Path(__file__).parent` como base para referir a recursos del proyecto.
+
+---
+
+## 13. 💡 Buenas Prácticas y Consejos Pro
+
+* **Estructura mínima recomendada para scripts de producción**:
+
+```python
+#!/usr/bin/env python3
+"""Descripción del script."""
+
+import logging
+import sys
+from pathlib import Path
+
+log = logging.getLogger(__name__)
+
+def main() -> int:
+    """Función principal. Retorna 0 en éxito, 1+ en error."""
+    logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
+    # ... lógica ...
+    return 0
+
+if __name__ == "__main__":
+    sys.exit(main())
+```
+
+* **Usa `rich` para output de calidad profesional**: `pip install rich` — tablas, barras de progreso, syntax highlighting en terminal con cero esfuerzo.
+
+* **Usa `typer` para CLIs modernas sin boilerplate**: Genera automáticamente el parser de argumentos desde las type annotations de Python.
+
+* **Idempotencia**: Diseña scripts que puedan ejecutarse múltiples veces sin efectos secundarios negativos. Usa `exist_ok=True` en `mkdir`, `if not exists()` antes de crear recursos.
+
+* **Manejo de señales (Ctrl+C)**: Registra un handler para `SIGINT` y `SIGTERM` para limpiar recursos antes de salir.
+
+```python
+import signal
+
+def cleanup_handler(signum, frame):
+    log.info("Señal recibida, limpiando recursos...")
+    # cerrar conexiones, archivos temporales, etc.
+    sys.exit(0)
+
+signal.signal(signal.SIGINT, cleanup_handler)
+signal.signal(signal.SIGTERM, cleanup_handler)
+```
+
+* **Crea scripts multiplataforma desde el inicio**: Usa `Path` (no `/`), `shutil` (no `rm -rf`), y `sys.platform` solo cuando sea estrictamente necesario.
+
+* **Testea con `pytest`**: Incluso los scripts de automatización deben tener tests. Separa la lógica del I/O para hacerla testeable sin ejecutar comandos reales.
+
+---
+
+Este cheatsheet proporciona una referencia exhaustiva de **Python para scripting y automatización**, cubriendo desde el entorno de desarrollo y manejo de rutas con `pathlib`, hasta la ejecución segura de subprocesos, construcción de CLIs profesionales, consumo de APIs REST, procesamiento de datos estructurados y las mejores prácticas para escribir scripts robustos, mantenibles y multiplataforma.
