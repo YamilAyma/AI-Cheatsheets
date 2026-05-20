@@ -1,0 +1,692 @@
+---
+title: "Jenkins Pipelines"
+description: "Guía completa de Jenkins Pipelines: Jenkinsfile declarativo y scripted, stages, parallel, credenciales, agentes, triggers y mejores prácticas para CI/CD profesional con Groovy."
+createdAt: 2026-05-20
+updatedAt: 2026-05-20
+tags: [jenkins, ci-cd, groovy, pipeline, devops, automatizacion, jenkinsfile]
+icon: "🔧"
+---
+
+# 🔧 Jenkins Pipelines — Cheatsheet Completo 🔧
+
+**Jenkins** es el servidor de automatización de código abierto más adoptado del mundo, utilizado por miles de equipos para orquestar sus flujos de Integración Continua y Despliegue Continuo (CI/CD). Su sistema de **Pipelines como Código** (Pipeline as Code) permite definir todo el flujo de construcción, prueba y despliegue en un fichero **Jenkinsfile** versionado junto al código fuente, reemplazando la configuración frágil de la interfaz web. Los Jenkinsfiles se escriben en un DSL (Domain-Specific Language) basado en **Groovy** que soporta dos sintaxis: **Declarativa** (estructurada, recomendada para la mayoría de casos) y **Scripted** (más flexible, basada en Groovy puro). Esta guía cubre ambas sintaxis, los patrones de CI/CD más comunes y las mejores prácticas del sector.
+
+---
+
+## 1. 🌟 Conceptos Clave y Fundamentos
+
+* **Pipeline**: Una secuencia de stages (etapas) automatizadas que definen el flujo completo desde el código fuente hasta el despliegue en producción.
+* **Jenkinsfile**: El archivo de configuración del pipeline, versionado en el repositorio. Puede ser Declarativo o Scripted.
+* **Stage (Etapa)**: Una fase lógica del pipeline (Build, Test, Deploy). Visible en la UI de Jenkins como bloques coloreados.
+* **Step (Paso)**: La unidad mínima de trabajo dentro de un stage. Ejemplos: `sh`, `git`, `docker.build`, `echo`.
+* **Agent**: El nodo donde se ejecuta el pipeline. Puede ser el nodo master, un agente específico, o un contenedor Docker.
+* **Workspace**: Directorio de trabajo del pipeline en el agente. El código fuente se clona aquí.
+* **Credenciales**: Secretos (contraseñas, tokens, certificados) gestionados de forma segura por Jenkins. Se inyectan con `withCredentials` o `credentials()`.
+* **Trigger**: Condición que inicia automáticamente el pipeline (push de git, schedule cron, llamada de webhook).
+* **Stash/Unstash**: Mecanismo para pasar artefactos entre stages que se ejecutan en agentes diferentes.
+* **Shared Libraries**: Código Groovy reutilizable compartido entre múltiples Jenkinsfiles del equipo.
+* **Blue Ocean**: Interfaz visual moderna de Jenkins para pipelines (complementa la interfaz clásica).
+
+---
+
+## 2. 🛠️ Estructura: Pipeline Declarativo
+
+El pipeline declarativo es la sintaxis recomendada. Estructura rígida pero más legible y con validación integrada.
+
+```groovy
+// Jenkinsfile — Pipeline Declarativo Completo
+pipeline {
+    // ===== AGENTE =====
+    agent any  // Cualquier agente disponible
+
+    // ===== OPCIONES GLOBALES =====
+    options {
+        timeout(time: 30, unit: 'MINUTES')      // Timeout total del pipeline
+        buildDiscarder(logRotator(numToKeepStr: '10')) // Guardar solo últimos 10 builds
+        disableConcurrentBuilds()                // No ejecutar builds en paralelo
+        skipStagesAfterUnstable()               // Saltar etapas si el build está inestable
+        timestamps()                             // Añadir timestamps a la salida de log
+        ansiColor('xterm')                       // Colores ANSI en la consola
+    }
+
+    // ===== TRIGGERS =====
+    triggers {
+        cron('H/15 * * * *')       // Cada 15 minutos (H = hash para distribuir carga)
+        pollSCM('H/5 * * * *')     // Comprobar SCM cada 5 minutos
+        githubPush()               // Trigger en push de GitHub (requiere plugin)
+    }
+
+    // ===== PARÁMETROS =====
+    parameters {
+        string(name: 'ENTORNO', defaultValue: 'staging', description: 'Entorno objetivo')
+        choice(name: 'VERSION', choices: ['latest', '1.5', '1.4'], description: 'Versión a desplegar')
+        booleanParam(name: 'SKIP_TESTS', defaultValue: false, description: 'Omitir tests')
+        password(name: 'DEPLOY_TOKEN', description: 'Token de despliegue')
+    }
+
+    // ===== VARIABLES DE ENTORNO =====
+    environment {
+        APP_NAME    = 'mi-aplicacion'
+        DOCKER_REPO = 'mi-org/mi-aplicacion'
+        // Inyectar credencial de Jenkins como variable de entorno
+        DOCKER_CREDENTIALS = credentials('docker-hub-credentials')
+        // Inyectar solo el username o password de una credencial
+        API_TOKEN = credentials('api-token-secret')
+    }
+
+    // ===== STAGES =====
+    stages {
+        stage('Checkout') {
+            steps {
+                checkout scm  // Clonar el repositorio que activó el pipeline
+            }
+        }
+
+        stage('Build') {
+            steps {
+                sh 'mvn clean package -DskipTests'
+            }
+            post {
+                success {
+                    archiveArtifacts artifacts: 'target/*.jar', fingerprint: true
+                }
+            }
+        }
+
+        stage('Test') {
+            when {
+                not { expression { params.SKIP_TESTS } }
+            }
+            steps {
+                sh 'mvn test'
+            }
+            post {
+                always {
+                    junit 'target/surefire-reports/**/*.xml'
+                }
+            }
+        }
+
+        stage('Deploy') {
+            when {
+                branch 'main'
+            }
+            steps {
+                sh "kubectl set image deployment/${APP_NAME} ${APP_NAME}=${DOCKER_REPO}:${params.VERSION}"
+            }
+        }
+    }
+
+    // ===== POST (acciones finales) =====
+    post {
+        always {
+            cleanWs()  // Limpiar workspace siempre
+        }
+        success {
+            slackSend(color: 'good', message: "✅ Build #${BUILD_NUMBER} exitoso: ${env.JOB_NAME}")
+        }
+        failure {
+            slackSend(color: 'danger', message: "❌ Build #${BUILD_NUMBER} fallido: ${env.JOB_NAME}")
+            emailext(
+                subject: "FALLO: ${env.JOB_NAME} #${env.BUILD_NUMBER}",
+                body: "Ver detalles en: ${env.BUILD_URL}",
+                recipientProviders: [developers()]
+            )
+        }
+        unstable {
+            slackSend(color: 'warning', message: "⚠️ Build inestable: ${env.JOB_NAME}")
+        }
+    }
+}
+```
+
+---
+
+## 3. 🎭 Agentes y Nodos
+
+```groovy
+// Agente en cualquier nodo disponible
+agent any
+
+// Sin agente global (definir por stage)
+agent none
+
+// Agente en nodo específico (por etiqueta)
+agent { label 'linux && docker' }
+
+// Agente Docker (ejecutar en contenedor)
+agent {
+    docker {
+        image 'maven:3.9-eclipse-temurin-17'
+        args  '-v $HOME/.m2:/root/.m2'   // Montar caché de Maven
+        // reuseNode true  // Usar el mismo nodo que el pipeline padre
+    }
+}
+
+// Agente Docker con Dockerfile personalizado
+agent {
+    dockerfile {
+        filename 'Dockerfile.ci'
+        dir      'docker/'
+        args     '--network host'
+    }
+}
+
+// Agente Kubernetes (pod dinámico)
+agent {
+    kubernetes {
+        yaml '''
+            apiVersion: v1
+            kind: Pod
+            spec:
+              containers:
+              - name: maven
+                image: maven:3.9
+                command: ["sleep"]
+                args: ["infinity"]
+              - name: docker
+                image: docker:dind
+                securityContext:
+                  privileged: true
+        '''
+        defaultContainer 'maven'
+    }
+}
+
+// Definir agente por stage (sobreescribe el global)
+stages {
+    stage('Build en Linux') {
+        agent { label 'linux' }
+        steps { sh 'make build' }
+    }
+    stage('Build en Windows') {
+        agent { label 'windows' }
+        steps { bat 'msbuild solution.sln' }
+    }
+}
+```
+
+---
+
+## 4. 🔀 Ejecución Paralela y Matrices
+
+```groovy
+// ===== PARALELO EN DECLARATIVO =====
+stages {
+    stage('Tests Paralelos') {
+        parallel {
+            stage('Tests Unitarios') {
+                steps { sh 'npm run test:unit' }
+            }
+            stage('Tests de Integración') {
+                steps { sh 'npm run test:integration' }
+            }
+            stage('Análisis de Código') {
+                steps { sh 'sonar-scanner' }
+            }
+        }
+    }
+}
+
+// ===== MATRIZ (matrix) — Permutaciones automáticas (Jenkins 2.x) =====
+stage('Tests Multiplataforma') {
+    matrix {
+        axes {
+            axis {
+                name   'PLATAFORMA'
+                values 'linux', 'windows', 'macos'
+            }
+            axis {
+                name   'NODE_VERSION'
+                values '18', '20', '22'
+            }
+        }
+        excludes {
+            exclude {
+                axis { name 'PLATAFORMA'; values 'macos' }
+                axis { name 'NODE_VERSION'; values '18' }
+            }
+        }
+        stages {
+            stage('Instalar') {
+                steps { sh 'npm install' }
+            }
+            stage('Test') {
+                steps { sh "npm test --node=${env.NODE_VERSION}" }
+            }
+        }
+    }
+}
+
+// ===== PARALELO DINÁMICO (scripted dentro de declarativo) =====
+stage('Deploy a Múltiples Regiones') {
+    steps {
+        script {
+            def regiones = ['us-east-1', 'eu-west-1', 'ap-southeast-1']
+            def pasos = regiones.collectEntries { region ->
+                [region, {
+                    sh "kubectl --context=${region} apply -f k8s/"
+                }]
+            }
+            parallel pasos
+        }
+    }
+}
+```
+
+---
+
+## 5. 🔐 Credenciales y Secretos
+
+```groovy
+// ===== EN ENVIRONMENT (inyección automática) =====
+environment {
+    // Username/Password: crea USER_CREDENTIALS_USR y USER_CREDENTIALS_PSW
+    USER_CREDENTIALS = credentials('my-user-pass')
+    // Token/Secret text: crea API_TOKEN directamente
+    API_TOKEN = credentials('api-token-id')
+    // Archivo SSH: crea DEPLOY_KEY como ruta al archivo temporal
+    DEPLOY_KEY = credentials('ssh-deploy-key')
+}
+
+// ===== withCredentials (más control) =====
+steps {
+    withCredentials([
+        usernamePassword(
+            credentialsId: 'docker-credentials',
+            usernameVariable: 'DOCKER_USER',
+            passwordVariable: 'DOCKER_PASS'
+        )
+    ]) {
+        sh '''
+            echo $DOCKER_PASS | docker login -u $DOCKER_USER --password-stdin
+            docker push mi-imagen:latest
+        '''
+    }
+
+    withCredentials([string(credentialsId: 'api-token', variable: 'TOKEN')]) {
+        sh 'curl -H "Authorization: Bearer $TOKEN" https://api.ejemplo.com'
+    }
+
+    withCredentials([sshUserPrivateKey(
+        credentialsId: 'ssh-key',
+        keyFileVariable: 'SSH_KEY',
+        usernameVariable: 'SSH_USER'
+    )]) {
+        sh 'ssh -i $SSH_KEY $SSH_USER@servidor.com "sudo systemctl restart app"'
+    }
+
+    withCredentials([file(credentialsId: 'kubeconfig', variable: 'KUBECONFIG')]) {
+        sh 'kubectl apply -f k8s/'
+    }
+}
+```
+
+---
+
+## 6. 🔧 Steps Esenciales
+
+```groovy
+// ===== EJECUTAR COMANDOS =====
+sh 'npm install'                          // Shell Unix
+sh '''
+    set -e                                 // Salir en error
+    npm ci
+    npm run build
+    npm run test
+'''
+bat 'msbuild solution.sln'               // Batch Windows
+powershell 'Get-Process | Select-Object Name'  // PowerShell
+
+// ===== GIT =====
+checkout scm  // Checkout del SCM configurado en el job
+git url: 'https://github.com/org/repo.git', branch: 'main'
+checkout([
+    $class: 'GitSCM',
+    branches: [[name: '*/main']],
+    userRemoteConfigs: [[credentialsId: 'github-creds', url: 'https://github.com/org/repo.git']]
+])
+
+// ===== DOCKER =====
+script {
+    def imagen = docker.build("mi-app:${env.BUILD_NUMBER}")
+    docker.withRegistry('https://registry.ejemplo.com', 'registry-credentials') {
+        imagen.push()
+        imagen.push('latest')
+    }
+}
+
+// ===== ARTEFACTOS =====
+archiveArtifacts artifacts: 'build/**/*.jar', allowEmptyArchive: true
+stash name: 'binarios-compilados', includes: 'build/**/*.jar'
+unstash 'binarios-compilados'  // Recuperar en otro stage/agente
+
+// ===== REPORTES =====
+junit 'target/surefire-reports/**/*.xml'
+publishHTML([
+    allowMissing: false,
+    reportDir: 'coverage/',
+    reportFiles: 'index.html',
+    reportName: 'Reporte de Cobertura'
+])
+
+// ===== INPUT (aprobación manual) =====
+stage('Aprobar Deploy a Producción') {
+    steps {
+        input(
+            message: '¿Desplegar a producción?',
+            ok: 'Desplegar',
+            submitter: 'admin,devops-lead',
+            parameters: [string(name: 'NOTAS', description: 'Notas del deploy')]
+        )
+    }
+}
+
+// ===== SLEEP Y RETRY =====
+sleep(time: 30, unit: 'SECONDS')
+retry(3) { sh 'curl --retry 5 https://api.inestable.com' }
+
+// ===== TIMEOUT POR STEP =====
+timeout(time: 5, unit: 'MINUTES') {
+    sh './test_largo.sh'
+}
+```
+
+---
+
+## 7. 📋 Variables de Entorno Predefinidas
+
+```groovy
+// Variables disponibles en todos los pipelines de Jenkins
+env.BUILD_NUMBER     // Número del build actual: "42"
+env.BUILD_ID         // Igual que BUILD_NUMBER
+env.BUILD_URL        // URL del build: "http://jenkins/job/mi-job/42/"
+env.JOB_NAME         // Nombre del job: "mi-proyecto/main"
+env.JOB_BASE_NAME    // Nombre base del job sin carpeta: "main"
+env.WORKSPACE        // Ruta absoluta del workspace: "/var/jenkins/workspace/..."
+env.JENKINS_URL      // URL base de Jenkins: "http://jenkins:8080/"
+env.NODE_NAME        // Nombre del agente donde se ejecuta: "worker-01"
+env.GIT_COMMIT       // Hash del commit de git: "abc123def..."
+env.GIT_BRANCH       // Rama de git: "origin/main"
+env.GIT_URL          // URL del repositorio
+env.CHANGE_ID        // Número del Pull Request (solo en PR builds)
+env.CHANGE_BRANCH    // Rama del PR
+env.CHANGE_AUTHOR    // Autor del PR
+env.TAG_NAME         // Nombre del tag de git (solo en tag builds)
+
+// Uso en shell con interpolación de string de Groovy
+sh "echo 'Build #${env.BUILD_NUMBER} en ${env.NODE_NAME}'"
+
+// Uso en shell directamente (disponibles como variables de entorno)
+sh 'echo "Build #$BUILD_NUMBER"'
+```
+
+---
+
+## 8. 🔀 Condicionales y Control de Flujo
+
+```groovy
+// ===== WHEN (en declarativo) =====
+stage('Solo en main') {
+    when { branch 'main' }
+    steps { sh 'deploy.sh' }
+}
+
+stage('Solo en tags') {
+    when { buildingTag() }
+    steps { sh 'release.sh' }
+}
+
+stage('En main o release/*') {
+    when {
+        anyOf {
+            branch 'main'
+            branch pattern: 'release/.*', comparator: 'REGEXP'
+        }
+    }
+    steps { sh 'npm publish' }
+}
+
+stage('Solo si no hubo errores previos') {
+    when { expression { currentBuild.result == null } }
+    steps { sh 'sonar-scanner' }
+}
+
+stage('Con parámetro activado') {
+    when { expression { params.DEPLOY_TO_PROD == true } }
+    steps { sh 'deploy-prod.sh' }
+}
+
+stage('Archivo existe') {
+    when { expression { fileExists('dist/main.js') } }
+    steps { sh 'upload.sh' }
+}
+
+// ===== SCRIPT BLOCK (Groovy puro en declarativo) =====
+stage('Lógica Compleja') {
+    steps {
+        script {
+            // Aquí puedes usar Groovy completo
+            def version = sh(script: 'cat VERSION', returnStdout: true).trim()
+            def es_release = version ==~ /^\d+\.\d+\.\d+$/
+
+            if (es_release) {
+                echo "Versión de release: ${version}"
+                env.IS_RELEASE = 'true'
+            } else {
+                echo "Versión de desarrollo: ${version}"
+                env.IS_RELEASE = 'false'
+            }
+
+            // Iterar sobre lista
+            def entornos = ['dev', 'staging']
+            entornos.each { env_name ->
+                echo "Notificando entorno: ${env_name}"
+            }
+        }
+    }
+}
+```
+
+---
+
+## 9. 📚 Shared Libraries
+
+Las Shared Libraries permiten reutilizar código Groovy entre múltiples pipelines.
+
+```groovy
+// En jenkins.yaml o Global Pipeline Libraries:
+// - Nombre: mi-libreria
+// - SCM: git repo con estructura:
+//   vars/         <- funciones globales (callable como steps)
+//   src/          <- clases Groovy reutilizables
+//   resources/    <- archivos de recursos
+
+// ===== vars/deployar.groovy =====
+def call(Map config) {
+    def entorno = config.entorno ?: 'staging'
+    def imagen  = config.imagen  ?: error("Se requiere 'imagen'")
+    def version = config.version ?: 'latest'
+
+    echo "Desplegando ${imagen}:${version} en ${entorno}"
+    sh "kubectl set image deployment/app app=${imagen}:${version} --namespace=${entorno}"
+}
+
+// ===== Uso en Jenkinsfile =====
+@Library('mi-libreria') _   // El _ es necesario
+
+pipeline {
+    agent any
+    stages {
+        stage('Deploy') {
+            steps {
+                deployar(
+                    entorno: 'production',
+                    imagen: 'mi-org/mi-app',
+                    version: env.BUILD_NUMBER
+                )
+            }
+        }
+    }
+}
+
+// ===== vars/notificarSlack.groovy =====
+def call(String mensaje, String color = 'good') {
+    slackSend(
+        channel: '#deployments',
+        color: color,
+        message: "${mensaje} — Job: ${env.JOB_NAME} #${env.BUILD_NUMBER}"
+    )
+}
+```
+
+---
+
+## 10. 🐋 Pipeline Docker Completo — Ejemplo Real
+
+```groovy
+// Jenkinsfile — Pipeline CI/CD completo con Docker y Kubernetes
+pipeline {
+    agent { label 'docker' }
+
+    environment {
+        APP_NAME    = 'mi-api'
+        REGISTRY    = 'registry.empresa.com'
+        IMAGE_TAG   = "${env.BUILD_NUMBER}-${env.GIT_COMMIT.take(7)}"
+        FULL_IMAGE  = "${env.REGISTRY}/${env.APP_NAME}:${env.IMAGE_TAG}"
+        REGISTRY_CREDS = credentials('registry-credentials')
+    }
+
+    stages {
+        stage('Checkout') {
+            steps { checkout scm }
+        }
+
+        stage('Tests') {
+            parallel {
+                stage('Unit Tests') {
+                    agent { docker { image 'node:20-alpine' } }
+                    steps {
+                        sh 'npm ci'
+                        sh 'npm run test:unit -- --coverage'
+                    }
+                    post {
+                        always { junit 'junit.xml' }
+                    }
+                }
+                stage('Lint') {
+                    agent { docker { image 'node:20-alpine' } }
+                    steps {
+                        sh 'npm ci'
+                        sh 'npm run lint'
+                    }
+                }
+            }
+        }
+
+        stage('Build Docker Image') {
+            steps {
+                sh """
+                    docker build \
+                        --build-arg VERSION=${IMAGE_TAG} \
+                        --build-arg BUILD_DATE=$(date -u +"%Y-%m-%dT%H:%M:%SZ") \
+                        -t ${FULL_IMAGE} \
+                        .
+                """
+            }
+        }
+
+        stage('Security Scan') {
+            steps {
+                sh "trivy image --exit-code 1 --severity HIGH,CRITICAL ${FULL_IMAGE}"
+            }
+        }
+
+        stage('Push Image') {
+            when { branch 'main' }
+            steps {
+                sh "echo ${REGISTRY_CREDS_PSW} | docker login ${REGISTRY} -u ${REGISTRY_CREDS_USR} --password-stdin"
+                sh "docker push ${FULL_IMAGE}"
+                sh "docker tag ${FULL_IMAGE} ${REGISTRY}/${APP_NAME}:latest"
+                sh "docker push ${REGISTRY}/${APP_NAME}:latest"
+            }
+        }
+
+        stage('Deploy Staging') {
+            when { branch 'main' }
+            steps {
+                withCredentials([file(credentialsId: 'kubeconfig-staging', variable: 'KUBECONFIG')]) {
+                    sh "helm upgrade --install ${APP_NAME} ./charts/${APP_NAME} --set image.tag=${IMAGE_TAG} --namespace staging"
+                }
+            }
+        }
+
+        stage('Integration Tests') {
+            when { branch 'main' }
+            steps {
+                sh 'sleep 30'  // Esperar a que la app inicie
+                sh 'npm run test:e2e -- --env staging'
+            }
+        }
+
+        stage('Deploy Production') {
+            when { buildingTag() }
+            steps {
+                input message: "¿Desplegar ${TAG_NAME} a producción?", ok: 'Deploy'
+                withCredentials([file(credentialsId: 'kubeconfig-prod', variable: 'KUBECONFIG')]) {
+                    sh "helm upgrade --install ${APP_NAME} ./charts/${APP_NAME} --set image.tag=${IMAGE_TAG} --namespace production"
+                }
+            }
+        }
+    }
+
+    post {
+        always { cleanWs() }
+        success { echo "Pipeline completado exitosamente: ${FULL_IMAGE}" }
+        failure { sh "docker rmi ${FULL_IMAGE} || true" }
+    }
+}
+```
+
+---
+
+## 11. ⚠️ Errores Comunes y Pitfalls
+
+* **Hardcodear secretos en el Jenkinsfile**: Los Jenkinsfiles están versionados en Git. NUNCA incluyas contraseñas, tokens o credenciales directamente. Usa siempre el credential store de Jenkins con `credentials()` o `withCredentials`.
+
+* **No usar `set -e` en bloques `sh` multilínea**: Por defecto, Bash en un bloque `sh '''...\n...'''` continúa ejecutando aunque un comando falle. Añade `set -e` al inicio del bloque o usa `sh 'cmd1 && cmd2'`.
+
+* **Concatenar variables de entorno con `+` en lugar de interpolación GString**: En Groovy, las strings con comillas simples `'...'` NO interpolan variables. Usa comillas dobles `"..."` para interpolación.
+  * ❌ `sh 'echo $BUILD_NUMBER'` (imprime literalmente `$BUILD_NUMBER`)
+  * ✅ `sh "echo ${env.BUILD_NUMBER}"` o `sh 'echo "$BUILD_NUMBER"'` (variable de shell)
+
+* **Variables definidas en `script {}` no son accesibles fuera**: Las variables locales de Groovy en un bloque `script {}` tienen scope local. Para compartir entre stages, usa `env.MI_VAR = valor` o variables de `script` al nivel del pipeline.
+
+* **Ignorar el timeout en builds eternos**: Sin `options { timeout(...) }`, un stage colgado puede bloquear el agente indefinidamente. Siempre define timeouts.
+
+* **No limpiar el workspace**: Los workspaces acumulan artefactos y espacio en disco. Usa `post { always { cleanWs() } }` o `options { skipDefaultCheckout() }` junto con limpieza manual.
+
+---
+
+## 12. 💡 Buenas Prácticas y Consejos Pro
+
+* **Jenkinsfile en el repositorio, no en Jenkins**: Pipeline as Code. El Jenkinsfile vive junto al código que construye, para que los cambios al pipeline sigan el mismo proceso de revisión que el código.
+
+* **Usa Declarativo siempre que sea posible**: La sintaxis declarativa es más legible, tiene validación integrada, y soporta `when`, `matrix`, y `post` de forma nativa. Solo usa Scripted para lógica Groovy muy compleja.
+
+* **`H` en cron expressions**: Usa `H` en lugar de `0` para distribuir los builds en el tiempo. `H/15 * * * *` (cada 15 minutos) es mejor que `*/15 * * * *` porque Jenkins elige un minuto estable para cada job.
+
+* **Shared Libraries para DRY**: Si tienes más de 3 Jenkinsfiles en tu organización, extrae el código común a una Shared Library. Reduce la duplicación y centraliza los patrones de CI/CD del equipo.
+
+* **`returnStdout: true` para capturar salida de comandos**:
+  ```groovy
+  def version = sh(script: 'cat VERSION', returnStdout: true).trim()
+  ```
+
+* **`currentBuild.result` para tomar decisiones en `post`**: En el bloque `post`, usa `currentBuild.result` (`SUCCESS`, `FAILURE`, `UNSTABLE`, `ABORTED`) para tomar decisiones condicionales sobre notificaciones.
+
+* **Usa `timestamps()` y `ansiColor('xterm')`** en `options` para logs más legibles en la consola de Jenkins.
+
+---
+
+Este cheatsheet proporciona una referencia exhaustiva de **Jenkins Pipelines**, cubriendo desde la estructura del Jenkinsfile declarativo y scripted, agentes dinámicos con Docker y Kubernetes, ejecución paralela y matrices, manejo seguro de credenciales, steps esenciales, variables predefinidas, Shared Libraries, hasta un ejemplo completo de pipeline CI/CD con Docker y las mejores prácticas del sector.
