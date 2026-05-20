@@ -1,0 +1,512 @@
+---
+title: "JS/TS Scripting con Bun y Deno"
+description: "Scripting moderno con JavaScript y TypeScript usando Bun y Deno: ejecución directa de TS, shell nativo, APIs de sistema de archivos, HTTP y compilación a ejecutables autónomos."
+createdAt: 2026-05-20
+updatedAt: 2026-05-20
+tags: [javascript, typescript, bun, deno, scripting, automatizacion, cli, zx]
+icon: "⚡"
+---
+
+# ⚡ Scripting Moderno con JS/TS (Bun & Deno) — Cheatsheet Completo ⚡
+
+**Bun** y **Deno** han transformado JavaScript y TypeScript en lenguajes de primera clase para el scripting de sistemas, eliminando la fricción histórica de Node.js (necesidad de compilar TS, node_modules, configuraciones complejas). **Bun** es un runtime ultrarrápido (escrito en Zig sobre JavaScriptCore) con un shell JavaScript integrado, gestor de paquetes, bundler y test runner en un solo binario. **Deno** (creado por el autor original de Node.js, Ryan Dahl) es un runtime seguro por defecto con soporte nativo de TypeScript, URLs como imports y permisos explícitos. Junto con **zx** (la librería de Google para scripting Bash-like en JS), estas herramientas permiten escribir scripts de automatización robustos, tipados y mantenibles que escalan mucho mejor que los scripts Bash tradicionales.
+
+---
+
+## 1. 🌟 Conceptos Clave y Fundamentos
+
+* **TypeScript sin compilación**: Tanto Bun como Deno ejecutan `.ts` directamente, sin `tsc` ni configuraciones de build.
+* **Bun Shell (`$`)**: Bun expone un template literal `$` que ejecuta comandos de shell y retorna objetos JavaScript, no strings de texto.
+* **Permisos en Deno**: Por defecto, Deno deniega acceso a red, archivos y variables de entorno. Debes conceder permisos explícitamente con flags (`--allow-net`, `--allow-read`, `--allow-env`).
+* **Importaciones nativas ESM**: Deno usa URLs como imports. Bun usa el sistema de módulos de Node pero admite URLs también.
+* **Compilación a binario**: Ambos runtimes pueden compilar scripts a ejecutables autónomos que no requieren que el runtime esté instalado en la máquina destino.
+* **APIs Web estándar**: Ambos implementan APIs web estándar (`fetch`, `Request`, `Response`, `ReadableStream`, `TextEncoder`) para máxima portabilidad.
+* **zx**: Librería de Google para Node/Bun/Deno que expone `$\`comando\`` con promesas y manejo de errores elegante.
+
+---
+
+## 2. 🛠️ Instalación y Configuración
+
+### 2.1. Bun
+
+```bash
+# Instalación (Linux/macOS)
+curl -fsSL https://bun.sh/install | bash
+
+# Windows (via PowerShell)
+powershell -c "irm bun.sh/install.ps1 | iex"
+
+# Verificar
+bun --version   # 1.x.x
+
+# Ejecutar scripts TypeScript directamente
+bun mi_script.ts
+
+# Shebang para scripts ejecutables
+#!/usr/bin/env bun
+# chmod +x script.ts && ./script.ts
+
+# Inicializar proyecto
+bun init
+
+# Instalar dependencias (10-100x más rápido que npm)
+bun add zod axios
+bun add -d @types/node typescript
+bun install   # Instalar desde package.json
+```
+
+### 2.2. Deno
+
+```bash
+# Instalación (Linux/macOS)
+curl -fsSL https://deno.land/install.sh | sh
+
+# Windows (PowerShell)
+irm https://deno.land/install.ps1 | iex
+
+# Verificar
+deno --version
+
+# Ejecutar TypeScript directamente
+deno run script.ts
+deno run --allow-all script.ts  # Con todos los permisos (cuidado)
+
+# Shebang para scripts Deno
+#!/usr/bin/env -S deno run --allow-all
+
+# REPL
+deno repl
+
+# Instalar herramienta CLI global
+deno install --allow-all --name mi-herramienta ./script.ts
+```
+
+### 2.3. zx (Google)
+
+```bash
+# Instalar globalmente para scripts standalone
+npm install -g zx
+bun add -g zx
+
+# Ejecutar script zx
+zx mi_script.mjs
+
+# O directamente en un script con shebang
+#!/usr/bin/env zx
+```
+
+---
+
+## 3. 🐚 Bun Shell — El Super Poder de Bun
+
+El Bun Shell permite ejecutar comandos como si estuvieras en Bash, pero con la potencia de TypeScript.
+
+```typescript
+import { $ } from "bun";
+
+// Ejecutar comando y capturar salida como string
+const resultado = await $`git status --short`.text();
+console.log(resultado);
+
+// Capturar salida como JSON
+const datos = await $`curl -s https://api.github.com/users/octocat`.json();
+console.log(datos.name);
+
+// Capturar como Buffer de bytes
+const bytes = await $`cat archivo.bin`.bytes();
+
+// Capturar stdout y stderr por separado
+const proc = await $`npm test 2>&1`.nothrow();  // nothrow: no lanza en error
+if (proc.exitCode !== 0) {
+    console.error("Tests fallaron:", proc.stderr.toString());
+    process.exit(1);
+}
+
+// Pipe entre comandos
+const top5 = await $`cat /var/log/app.log | grep ERROR | tail -5`.text();
+
+// Variables interpoladas de forma segura (sin inyección de comandos)
+const nombreArchivo = "mi archivo con espacios.txt";
+await $`rm ${nombreArchivo}`;  // Bun escapa automáticamente
+
+// Array como argumentos
+const archivos = ["a.txt", "b.txt", "c.txt"];
+await $`git add ${archivos}`;  // git add a.txt b.txt c.txt
+
+// Cambiar directorio de trabajo
+await $`ls`.cwd("/tmp");
+
+// Variables de entorno personalizadas
+await $`node script.js`.env({ NODE_ENV: "production", PORT: "8080" });
+
+// Modo silencioso (no imprime el comando ejecutado)
+$.nothrow().quiet();
+
+// Pipes con objetos Response / streams
+const response = await fetch("https://api.ejemplo.com/datos");
+const datos2 = await $`jq '.items[] | .name'`.stdin(response);
+```
+
+---
+
+## 4. 📁 Sistema de Archivos
+
+### 4.1. Bun File API
+
+```typescript
+// Leer archivos — API nativa de Bun (más rápida que fs de Node)
+const archivo = Bun.file("config.json");
+const texto = await archivo.text();
+const json = await archivo.json();
+const bytes = await archivo.arrayBuffer();
+
+// Propiedades del archivo
+console.log(archivo.size);      // Tamaño en bytes
+console.log(archivo.type);      // MIME type
+console.log(archivo.name);      // Nombre del archivo
+
+// Escribir archivos
+await Bun.write("output.txt", "Contenido del archivo\n");
+await Bun.write("output.json", JSON.stringify(datos, null, 2));
+await Bun.write("copia.png", Bun.file("original.png"));  // Copiar
+
+// Verificar existencia
+const existe = await Bun.file("archivo.txt").exists();
+
+// Usar Node.js fs (también disponible en Bun)
+import { readFileSync, writeFileSync, existsSync, mkdirSync } from "fs";
+import { readFile, writeFile } from "fs/promises";
+import path from "path";
+
+// path utilities
+const base = path.dirname(import.meta.url.replace("file://", ""));
+const config = path.join(base, "config", "settings.json");
+
+// Glob (Bun nativo)
+const archivos = await Array.fromAsync(new Bun.Glob("**/*.ts").scan("."));
+console.log(archivos); // ["src/index.ts", "tests/main.test.ts", ...]
+```
+
+### 4.2. Deno File API
+
+```typescript
+// Leer texto
+const texto = await Deno.readTextFile("archivo.txt");
+
+// Leer bytes
+const bytes = await Deno.readFile("imagen.png");
+
+// Escribir texto
+await Deno.writeTextFile("output.txt", "Contenido\n");
+
+// Escribir bytes
+await Deno.writeFile("copia.png", bytes);
+
+// Información de archivo
+const stat = await Deno.stat("archivo.txt");
+console.log(stat.isFile);       // true
+console.log(stat.isDirectory);  // false
+console.log(stat.size);         // Tamaño en bytes
+console.log(stat.mtime);        // Fecha de modificación
+
+// Crear directorio
+await Deno.mkdir("nuevos/logs", { recursive: true });
+
+// Listar directorio
+for await (const entrada of Deno.readDir(".")) {
+    if (entrada.isFile && entrada.name.endsWith(".ts")) {
+        console.log(entrada.name);
+    }
+}
+
+// Glob en Deno
+import { expandGlob } from "https://deno.land/std/fs/mod.ts";
+for await (const archivo of expandGlob("src/**/*.ts")) {
+    console.log(archivo.path);
+}
+```
+
+---
+
+## 5. 🌐 HTTP y Fetch
+
+```typescript
+// fetch nativo (funciona igual en Bun, Deno y Node 18+)
+
+// GET básico
+const resp = await fetch("https://api.github.com/repos/oven-sh/bun");
+if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+const datos = await resp.json();
+console.log(`Stars: ${datos.stargazers_count}`);
+
+// POST con JSON
+const resultado = await fetch("https://api.ejemplo.com/eventos", {
+    method: "POST",
+    headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${process.env.TOKEN}`,
+    },
+    body: JSON.stringify({ tipo: "deploy", version: "1.5.0" }),
+});
+
+// Descarga de archivo con stream
+const resp2 = await fetch("https://ejemplo.com/archivo.zip");
+const file = Bun.file("descarga.zip");
+await Bun.write(file, resp2);  // Bun: escritura directa desde Response
+
+// Deno: descarga con stream
+const resp3 = await fetch("https://ejemplo.com/archivo.zip");
+const archivo = await Deno.create("descarga.zip");
+await resp3.body!.pipeTo(archivo.writable);
+
+// Servidor HTTP básico (útil para webhooks en scripts)
+// Bun:
+Bun.serve({
+    port: 3000,
+    fetch(req) {
+        const body = JSON.stringify({ status: "ok", timestamp: Date.now() });
+        return new Response(body, { headers: { "Content-Type": "application/json" } });
+    }
+});
+
+// Deno:
+Deno.serve({ port: 3000 }, (req) => {
+    return new Response(JSON.stringify({ status: "ok" }), {
+        headers: { "Content-Type": "application/json" }
+    });
+});
+```
+
+---
+
+## 6. ⚡ zx — Scripting Bash-like en Node/Bun
+
+```javascript
+#!/usr/bin/env zx
+
+// zx importa automáticamente: $, cd, fetch, fs, os, path, chalk, glob, yaml
+
+// Ejecutar comandos
+await $`git pull --rebase origin main`;
+
+// Capturar salida
+const rama = (await $`git branch --show-current`).stdout.trim();
+console.log(`Rama actual: ${rama}`);
+
+// Manejo de errores
+try {
+    await $`npm test`;
+} catch (error) {
+    console.error(`Tests fallaron con código ${error.exitCode}`);
+    console.error(error.stderr);
+    process.exit(1);
+}
+
+// Silenciar output del comando
+$.verbose = false;
+const version = (await $`node --version`).stdout.trim();
+
+// Prompts interactivos
+const confirmacion = await question("¿Deseas continuar? (s/n) ");
+if (confirmacion.toLowerCase() !== "s") process.exit(0);
+
+// Ejecutar en paralelo
+const [resultado1, resultado2] = await Promise.all([
+    $`npm run build`,
+    $`npm run lint`,
+]);
+
+// cd (cambia el directorio de trabajo para el resto del script)
+cd("/tmp");
+await $`ls -la`;
+
+// Colores con chalk (incluido en zx)
+console.log(chalk.green("✓ Deploy completado"));
+console.log(chalk.red("✗ Error encontrado"));
+console.log(chalk.blue.bold(`→ Procesando ${chalk.yellow(rama)}`));
+
+// Leer y escribir archivos
+const config = await fs.readJSON("package.json");
+config.version = "2.0.0";
+await fs.writeJSON("package.json", config, { spaces: 2 });
+
+// Glob de archivos
+const logFiles = await glob("logs/*.log");
+for (const log of logFiles) {
+    await $`gzip ${log}`;
+}
+```
+
+---
+
+## 7. 🔐 Variables de Entorno y Argumentos CLI
+
+```typescript
+// ===== BUN =====
+// .env se carga automáticamente en Bun (sin dotenv)
+const dbUrl = process.env.DATABASE_URL;
+
+// Argumentos CLI
+const args = process.argv.slice(2);  // Igual que Node
+console.log(args[0]);  // Primer argumento
+
+// Bun: parseArgs (Node 18+ compatible)
+import { parseArgs } from "util";
+const { values, positionals } = parseArgs({
+    args: process.argv.slice(2),
+    options: {
+        entorno: { type: "string", short: "e", default: "development" },
+        verbose: { type: "boolean", short: "v", default: false },
+        puerto:  { type: "string", short: "p" },
+    },
+    allowPositionals: true,
+});
+
+console.log(values.entorno);   // development
+console.log(values.verbose);   // false
+console.log(positionals);      // ["archivo1.txt", "archivo2.txt"]
+
+// ===== DENO =====
+// Variables de entorno (requiere --allow-env)
+const token = Deno.env.get("API_TOKEN");
+const puerto = parseInt(Deno.env.get("PORT") ?? "3000");
+
+// Argumentos CLI en Deno
+const args2 = Deno.args;  // Array de strings
+
+// Flags con @std/cli
+import { parseArgs as denoParseArgs } from "https://deno.land/std/cli/parse_args.ts";
+const flags = denoParseArgs(Deno.args, {
+    string: ["entorno", "output"],
+    boolean: ["verbose"],
+    default: { entorno: "development", verbose: false },
+});
+```
+
+---
+
+## 8. 🔨 Compilar a Ejecutable Autónomo
+
+```bash
+# ===== BUN: compilar .ts a binario nativo =====
+bun build --compile --outfile mi-herramienta ./cli.ts
+
+# Con target específico
+bun build --compile --target=bun-linux-x64 --outfile mi-herramienta-linux ./cli.ts
+bun build --compile --target=bun-windows-x64 --outfile mi-herramienta.exe ./cli.ts
+bun build --compile --target=bun-darwin-arm64 --outfile mi-herramienta-mac ./cli.ts
+
+# Ejecutar el binario (no requiere Bun instalado)
+./mi-herramienta --entorno production
+
+# ===== DENO: compilar a ejecutable =====
+deno compile --allow-all --output mi-herramienta ./cli.ts
+
+# Cross-compilation
+deno compile --target x86_64-unknown-linux-gnu --output mi-herramienta-linux ./cli.ts
+deno compile --target x86_64-pc-windows-msvc   --output mi-herramienta.exe   ./cli.ts
+deno compile --target aarch64-apple-darwin      --output mi-herramienta-mac   ./cli.ts
+```
+
+---
+
+## 9. 🧪 Testing Integrado
+
+```typescript
+// Bun: test runner nativo (sin instalar Jest/Vitest)
+// archivo: mi-script.test.ts
+
+import { expect, test, describe, beforeAll, afterAll } from "bun:test";
+
+describe("procesarCSV", () => {
+    beforeAll(async () => {
+        // Setup
+    });
+
+    test("debe retornar array vacío para archivo vacío", async () => {
+        const resultado = await procesarCSV("");
+        expect(resultado).toBeArrayOfSize(0);
+    });
+
+    test("debe contar filas correctamente", async () => {
+        const csv = "nombre,email\nJuan,juan@e.com\nAna,ana@e.com";
+        const resultado = await procesarCSV(csv);
+        expect(resultado).toHaveLength(2);
+        expect(resultado[0].nombre).toBe("Juan");
+    });
+});
+
+// Ejecutar tests
+// bun test
+// bun test --watch
+// bun test --coverage
+
+// Deno: test runner nativo
+// archivo: mi-script_test.ts
+import { assertEquals, assertExists } from "https://deno.land/std/assert/mod.ts";
+
+Deno.test("suma correctamente", () => {
+    assertEquals(1 + 1, 2);
+});
+
+Deno.test("fetch de la API", async () => {
+    const datos = await obtenerDatos();
+    assertExists(datos.id);
+});
+
+// deno test --allow-net
+```
+
+---
+
+## 10. ⚠️ Errores Comunes y Pitfalls
+
+* **Olvidar `await` en operaciones asíncronas**: El scripting JS/TS es async-first. Sin `await`, la promesa queda sin resolver y el script puede terminar antes de que la operación complete.
+  * ❌ `Bun.write("file.txt", "data")` → ✅ `await Bun.write("file.txt", "data")`
+
+* **Permisos en Deno sin flags**: Un script Deno que hace `fetch` falla si no se ejecuta con `--allow-net`. En producción usa `--allow-net=api.ejemplo.com` (dominio específico) en lugar de `--allow-all`.
+
+* **Diferencia entre `$\`cmd\`.text()` y `.stdout` en Bun**: `text()` retorna la salida como string ya resuelta. `.stdout` es un `ReadableStream`. Para capturar como string siempre usa `.text()` o `.lines()`.
+
+* **`import.meta.url` en lugar de `__dirname`**: En módulos ESM no existe `__dirname`. Usa `path.dirname(new URL(import.meta.url).pathname)`.
+
+* **zx: `$.verbose = true` por defecto**: zx imprime todos los comandos ejecutados. Útil para debugging pero verboso en producción — desactívalo con `$.verbose = false`.
+
+* **Compatibilidad de módulos Node en Deno**: No todos los módulos de npm funcionan en Deno. Usa el registro `npm:` (`import express from "npm:express"`) para compatibilidad selectiva.
+
+---
+
+## 11. 💡 Buenas Prácticas y Consejos Pro
+
+* **Bun para scripts locales de DevOps**: Ideal para reemplazar scripts Bash complejos donde quieres tipado estático, manejo de errores robusto y acceso a librerías npm.
+
+* **Deno para herramientas CLI distribuibles**: El sistema de permisos y la compilación a ejecutables hacen que Deno sea excelente para distribuir herramientas CLI sin dependencias.
+
+* **Usa `zx` cuando necesites migrar scripts Bash a JS**: La sintaxis de template literals imita Bash y facilita la migración incremental.
+
+* **TypeScript estricto desde el inicio**: Agrega `"strict": true` en `tsconfig.json`. El overhead de tipado se paga por sí solo en la reducción de bugs en scripts de automatización críticos.
+
+* **Valida variables de entorno al inicio del script con zod**:
+```typescript
+import { z } from "zod";
+const env = z.object({
+    DATABASE_URL: z.string().url(),
+    API_TOKEN: z.string().min(10),
+    NODE_ENV: z.enum(["development", "production", "test"]),
+}).parse(process.env);
+```
+
+* **Usa `AbortController` para timeouts**:
+```typescript
+const controller = new AbortController();
+const timeout = setTimeout(() => controller.abort(), 10_000);
+try {
+    const resp = await fetch(url, { signal: controller.signal });
+} finally {
+    clearTimeout(timeout);
+}
+```
+
+---
+
+Este cheatsheet proporciona una referencia exhaustiva de **scripting moderno con JavaScript y TypeScript usando Bun, Deno y zx**, cubriendo desde la instalación y el Bun Shell hasta las APIs de sistema de archivos, HTTP nativo, compilación a ejecutables autónomos y las mejores prácticas para crear scripts de automatización tipados, robustos y multiplataforma.
