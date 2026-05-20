@@ -1,0 +1,581 @@
+---
+title: "Perl"
+description: "Perl es el lenguaje pionero del scripting de administración de sistemas Unix, legendario por su procesamiento de texto y expresiones regulares avanzadas. Fundamental para mantener infraestructura legacy."
+createdAt: 2026-05-20
+updatedAt: 2026-05-20
+tags: [perl, scripting, linux, regex, text-processing, sysadmin, legacy]
+icon: "🐪"
+---
+
+# 🐪 Perl — Cheatsheet Completo 🐪
+
+**Perl** (Practical Extraction and Report Language) fue creado por Larry Wall en 1987 y se convirtió en el lenguaje de referencia para la administración de sistemas Unix, el procesamiento de archivos de texto, la generación de reportes y el scripting de red antes de la popularización de Python. Con el lema *"There's more than one way to do it"* (TMTOWTDI), Perl es famoso por su potentísimo sistema de expresiones regulares (que sirvió de base a las PCRE usadas en casi todos los lenguajes modernos), su versatilidad en el procesamiento de registros y campos, y su presencia ubicua en servidores Linux de producción, sistemas de monitoreo, pipelines de bioinformática y código heredado de las eras 90s-2000s. Saber leer y mantener Perl es una habilidad valiosa en cualquier equipo de operaciones o SRE.
+
+---
+
+## 1. 🌟 Conceptos Clave y Fundamentos
+
+* **Tres tipos de variables (sigils)**: Los sigils (`$`, `@`, `%`) identifican el tipo de variable. `$` para escalares, `@` para arrays, `%` para hashes. El sigil cambia dependiendo del contexto de acceso.
+* **Contexto (escalar vs lista)**: Perl evalúa expresiones diferente según el contexto. En contexto escalar, `@array` retorna su longitud. En contexto lista, retorna sus elementos.
+* **Variable implícita `$_`**: El comodín de Perl. Muchas funciones y construcciones actúan sobre `$_` si no se especifica una variable: `while (<>)` guarda cada línea en `$_`.
+* **`<>` (diamond operator)**: Lee desde STDIN o desde los archivos pasados como argumentos. La base de los filtros Unix en Perl.
+* **CPAN**: El repositorio de módulos Perl más grande del mundo (Comprehensive Perl Archive Network). Contiene módulos para prácticamente cualquier tarea.
+* **`use strict; use warnings;`**: Dos pragmas fundamentales que hacen Perl más seguro y menos propenso a bugs. Siempre al inicio del script.
+* **Expresiones regulares integradas**: Las regex son ciudadanos de primera clase en Perl, no solo librerías. Operadores `=~`, `s///`, `m//`, `tr///`.
+* **`chomp`**: Elimina el caracter de nueva línea al final de un string. Operación ubicua al leer líneas de archivos.
+* **Listas y arrays**: En Perl, las listas son la secuencia fundamental de valores. Los arrays (`@`) son contenedores de listas.
+* **`wantarray()`**: Función que indica si el contexto actual es escalar o lista. Útil para escribir funciones polimórficas.
+
+---
+
+## 2. 🛠️ Instalación y Configuración
+
+### 2.1. Instalación
+
+```bash
+# La mayoría de sistemas Unix/Linux ya tienen Perl instalado
+perl --version    # perl 5.x.x
+
+# macOS (via Homebrew para versión moderna)
+brew install perl
+
+# Ubuntu/Debian
+sudo apt-get install perl cpanminus
+
+# Windows — Strawberry Perl
+# Descargar de https://strawberryperl.com/
+
+# cpanm — gestor de módulos moderno (más simple que cpan)
+curl -L https://cpanmin.us | perl - App::cpanminus
+# O via apt: sudo apt-get install cpanminus
+
+# Instalar módulos
+cpanm JSON
+cpanm LWP::Simple      # HTTP client básico
+cpanm LWP::UserAgent   # HTTP client completo
+cpanm File::Find::Rule # Búsqueda de archivos avanzada
+cpanm Text::CSV        # Procesamiento CSV
+cpanm YAML::Tiny       # Parsing YAML
+```
+
+### 2.2. Estructura Mínima de Script
+
+```perl
+#!/usr/bin/env perl
+use strict;    # Previene variables sin declarar, referencias simbólicas
+use warnings;  # Activa todos los avisos de potenciales errores
+use utf8;      # El código fuente está en UTF-8
+
+# Módulos estándar
+use File::Basename qw(basename dirname);
+use File::Path qw(make_path remove_tree);
+use File::Copy qw(copy move);
+use Cwd qw(getcwd abs_path);
+use POSIX qw(floor ceil);
+use Scalar::Util qw(looks_like_number blessed reftype);
+
+# Constantes (con el módulo constant)
+use constant {
+    VERSION  => '1.0.0',
+    MAX_LINEAS => 10_000,
+};
+
+# Tu código aquí
+
+exit 0;  # Código de salida explícito (0 = éxito)
+```
+
+---
+
+## 3. 📝 Variables y Tipos de Datos
+
+```perl
+use strict;
+use warnings;
+
+# ===== ESCALARES ($) =====
+# Un escalar puede contener un número, string, referencia o undef
+my $nombre  = "Perl";
+my $version = 5.36;
+my $activo  = 1;      # Perl no tiene tipo boolean; usa 1 (true) y 0/"" (false)
+my $vacio   = undef;  # Equivalente a nil/null/None
+
+# Contexto numérico vs string: Perl convierte automáticamente
+my $numero = "42abc";
+print $numero + 1;    # 43 (contexto numérico, toma el número inicial)
+print "0" + 0;        # 0
+print "hola" == 0;    # 1 (warning: "hola" es 0 en contexto numérico)
+
+# Comparaciones: DISTINTAS para números y strings
+# Números: ==  !=  <  >  <=  >=  <=>
+# Strings:  eq  ne lt  gt  le  ge   cmp
+print (5 == 5);         # 1 (true)
+print ("abc" eq "abc"); # 1 (true)
+print (5 <=> 3);        # 1 (positivo: izquierda mayor)
+print ("a" cmp "b");    # -1 (negativo: izquierda menor)
+
+# Operadores de string
+my $concat = "Hola, " . "Perl!";  # Concatenación con .
+my $rep     = "ab" x 3;           # Repetición: "ababab"
+my $longitud = length($nombre);    # 4
+
+# Funciones de string
+my $upper = uc("hola");           # "HOLA"
+my $lower = lc("HOLA");           # "hola"
+my $ucfirst = ucfirst("hola");    # "Hola"
+my $stripped = $nombre;
+$stripped =~ s/^\s+|\s+$//g;     # Trim (no hay función nativa)
+my @partes = split(/,/, "a,b,c"); # ["a", "b", "c"]
+my $unido  = join("-", @partes);  # "a-b-c"
+my $substr = substr($nombre, 0, 3); # "Per"
+my $indice = index($nombre, "rl");  # 2 (posición de "rl")
+
+# ===== ARRAYS (@) =====
+my @frutas = ("manzana", "pera", "uva");
+my @numeros = (1..10);    # Rango: 1, 2, 3, ..., 10
+
+# Acceso (índice 0-based, con $ porque se accede a un escalar)
+print $frutas[0];    # manzana
+print $frutas[-1];   # uva (último)
+print scalar @frutas; # 3 (longitud del array en contexto escalar)
+print $#frutas;       # 2 (índice del último elemento)
+
+# Modificación
+push @frutas, "kiwi";        # Agrega al final
+my $ultimo = pop @frutas;    # Extrae del final
+unshift @frutas, "cereza";   # Agrega al inicio
+my $primero = shift @frutas; # Extrae del inicio
+splice(@frutas, 1, 1);       # Elimina 1 elemento en posición 1
+
+# Operaciones
+my @ordenado    = sort @frutas;
+my @ordenado_n  = sort { $a <=> $b } @numeros;  # Numérico
+my @revertido   = reverse @frutas;
+my @unicos      = do { my %vistos; grep { !$vistos{$_}++ } @frutas };
+
+# ===== HASHES (%) =====
+my %config = (
+    host => "localhost",
+    port => 5432,
+    ssl  => 1,
+);
+
+# Acceso (con $ porque se accede a un escalar)
+print $config{host};      # localhost
+print $config{"port"};    # 5432
+
+# Operaciones
+$config{db} = "produccion";  # Agregar clave
+delete $config{ssl};          # Eliminar clave
+exists $config{host};         # 1 (verificar si existe)
+defined $config{host};        # 1 (verificar si no es undef)
+
+my @claves   = keys %config;    # Lista de claves
+my @valores  = values %config;  # Lista de valores
+my @pares    = each %config;    # Par (clave, valor) — para iteración
+```
+
+---
+
+## 4. 🔄 Control de Flujo
+
+```perl
+# ===== IF / ELSIF / ELSE =====
+my $temp = 25;
+
+if ($temp > 35) {
+    print "Peligroso\n";
+} elsif ($temp > 25) {
+    print "Caluroso\n";
+} elsif ($temp > 15) {
+    print "Agradable\n";
+} else {
+    print "Frio\n";
+}
+
+# Forma postfix (muy idiomática en Perl)
+print "Caluroso\n"  if $temp > 25;
+print "Frio\n"      unless $temp > 15;  # unless = if not
+
+# ===== BUCLES =====
+# while
+my $i = 0;
+while ($i < 5) {
+    print "$i\n";
+    $i++;
+}
+
+# until (mientras NO sea verdadero)
+until ($i >= 10) {
+    $i++;
+}
+
+# for (estilo C)
+for (my $j = 0; $j < 5; $j++) {
+    print "$j\n";
+}
+
+# foreach (el más idiomático en Perl)
+foreach my $fruta (@frutas) {
+    print "$fruta\n";
+}
+
+# foreach con $_ implícito
+foreach (@frutas) {
+    print "$_\n";   # $_ es la variable implícita
+}
+# O aún más corto:
+print "$_\n" for @frutas;
+
+# Modificadores de bucle
+next;    # Siguiente iteración (como continue)
+last;    # Salir del bucle (como break)
+redo;    # Reiniciar la iteración actual (sin re-evaluar la condición)
+
+# ===== GIVEN/WHEN (switch) — experimental, evitar en Perl moderno =====
+# Usa if/elsif o un hash de dispatch en su lugar:
+my %acciones = (
+    start   => sub { print "Iniciando...\n" },
+    stop    => sub { print "Deteniendo...\n" },
+    restart => sub { print "Reiniciando...\n" },
+);
+my $accion = "start";
+$acciones{$accion}->() if exists $acciones{$accion};
+```
+
+---
+
+## 5. 🔍 Expresiones Regulares — El Poder de Perl
+
+Las regex son el corazón de Perl. La mayoría de las implementaciones modernas de regex (PCRE) se basan en las de Perl.
+
+```perl
+my $texto = "Error en línea 42: archivo no encontrado";
+
+# Coincidencia (operador =~)
+if ($texto =~ /Error/) {
+    print "Se encontró un error\n";
+}
+
+# Coincidencia case-insensitive (flag i)
+if ($texto =~ /error/i) { ... }
+
+# Captura de grupos con () — guardados en $1, $2, $3...
+if ($texto =~ /línea (\d+): (.+)/) {
+    my $linea  = $1;   # "42"
+    my $mensaje = $2;  # "archivo no encontrado"
+    print "Línea: $linea, Error: $mensaje\n";
+}
+
+# Captura nombrada (Perl 5.10+)
+if ($texto =~ /línea (?<num>\d+): (?<msg>.+)/) {
+    print "Línea: $+{num}, Mensaje: $+{msg}\n";
+}
+
+# Sustitución (operador s///)
+(my $limpio = $texto) =~ s/Error/ALERTA/g;
+$texto =~ s/\d+/NUM/g;   # Reemplazar todos los números
+$texto =~ s/^\s+|\s+$//g; # Trim
+
+# Sustitución con evaluación de código (flag e)
+$texto =~ s/(\d+)/$1 * 2/ge;  # Doblar todos los números
+
+# Transliteración (operador tr/// o y///)
+(my $contar = $texto) =~ tr/a-z//;  # Cuenta caracteres (retorna el número)
+$texto =~ tr/a-z/A-Z/;              # Convertir a mayúsculas
+
+# Modo global — capturar todas las coincidencias
+my @numeros_encontrados = ($texto =~ /(\d+)/g);
+print "Números: @numeros_encontrados\n";
+
+# Modificadores de regex
+# /i   Case-insensitive
+# /g   Global (todas las coincidencias)
+# /m   Multiline (^ y $ coinciden con inicio/fin de cada línea)
+# /s   Single-line (. coincide con \n también)
+# /x   Extended (permite espacios y comentarios dentro de la regex)
+# /e   Evaluate (evalúa el reemplazo como código)
+
+# Regex extendida (más legible con /x)
+my $email_regex = qr/
+    ^               # Inicio del string
+    [\w.+-]+        # Parte local del email
+    @               # Arroba
+    [\w-]+          # Dominio
+    (?:\.[\w-]+)*   # Subdominios opcionales
+    \.[\w]{2,}      # TLD
+    $               # Fin del string
+/xi;
+
+if ($input =~ $email_regex) {
+    print "Email válido\n";
+}
+```
+
+---
+
+## 6. 📁 Procesamiento de Archivos
+
+```perl
+use strict;
+use warnings;
+
+# ===== LEER ARCHIVO LÍNEA A LÍNEA =====
+open(my $fh, "<", "archivo.txt") or die "No se puede abrir: $!";
+while (my $linea = <$fh>) {
+    chomp $linea;  # Eliminar \n al final
+    print "$linea\n";
+}
+close $fh;
+
+# Patrón con $_ implícito (muy común en scripts Perl)
+open(my $fh2, "<", "log.txt") or die $!;
+while (<$fh2>) {
+    chomp;
+    next unless /ERROR/;     # Saltar líneas sin ERROR
+    print "Error: $_\n";
+}
+close $fh2;
+
+# ===== ESCRIBIR ARCHIVO =====
+open(my $out, ">", "output.txt") or die "No se puede escribir: $!";
+print $out "Línea 1\n";
+print $out "Línea 2\n";
+close $out;
+
+# Append (agregar al final)
+open(my $append_fh, ">>", "log.txt") or die $!;
+print $append_fh "[" . localtime() . "] Nueva entrada\n";
+close $append_fh;
+
+# ===== LEER TODO EL ARCHIVO =====
+my $contenido = do { local $/; open my $f, "<", "archivo.txt"; <$f> };
+# $/ es el separador de entrada (normalmente \n). Poniendo undef, se lee todo.
+
+# ===== DIAMOND OPERATOR — filtro universal =====
+# Lee de STDIN o de archivos pasados como argumentos:
+# perl script.pl archivo1.txt archivo2.txt
+# o: cat archivo.txt | perl script.pl
+while (<>) {
+    chomp;
+    s/error/ERROR/gi;    # Transformar
+    print "$_\n";
+}
+
+# ===== PROCESAMIENTO IN-PLACE (como sed -i) =====
+# perl -i.bak -pe 's/foo/bar/g' archivo.txt
+# -i.bak: in-place con backup .bak
+# -p: imprime cada línea después de procesar
+# -e: ejecuta el código
+
+# ===== MANEJO DE ARCHIVOS Y DIRECTORIOS =====
+use File::Find;
+use File::Path qw(make_path);
+use File::Copy qw(copy move);
+
+# Encontrar archivos recursivamente
+File::Find::find(
+    sub {
+        return unless -f && /\.log$/;  # -f = es archivo, patrón de nombre
+        print "Encontrado: $File::Find::name\n";
+    },
+    "/var/log"
+);
+
+# Crear directorio recursivo
+make_path("logs/2024/enero") or die "No se puede crear: $!";
+
+# Copiar y mover
+copy("origen.txt", "destino.txt") or die "No se puede copiar: $!";
+move("viejo.txt", "nuevo.txt")    or die "No se puede mover: $!";
+
+# Stat del archivo
+my @stat = stat("archivo.txt");
+my $tamaño  = $stat[7];   # Tamaño en bytes
+my $mtime   = $stat[9];   # Tiempo de modificación (epoch)
+print "Modificado: " . localtime($mtime) . "\n";
+
+# Test operators — verificar propiedades de archivos
+-e "archivo.txt"   # existe
+-f "archivo.txt"   # es un archivo regular
+-d "/directorio"   # es un directorio
+-r "archivo.txt"   # es legible
+-w "archivo.txt"   # es escribible
+-s "archivo.txt"   # tamaño en bytes (truthy si > 0)
+-z "archivo.txt"   # tamaño es 0
+```
+
+---
+
+## 7. 🔧 Subrutinas y Módulos
+
+```perl
+# Subrutina básica
+sub saludar {
+    my ($nombre) = @_;    # Los argumentos siempre están en @_
+    $nombre //= "Mundo";  # // = defined-or (Perl 5.10+)
+    return "Hola, $nombre!";
+}
+print saludar("Perl");   # Hola, Perl!
+print saludar();          # Hola, Mundo!
+
+# Múltiples valores de retorno
+sub estadisticas {
+    my @datos = @_;
+    my $suma   = 0;
+    $suma += $_ for @datos;
+    my $media  = $suma / scalar @datos;
+    my $min    = (sort { $a <=> $b } @datos)[0];
+    my $max    = (sort { $b <=> $a } @datos)[0];
+    return ($suma, $media, $min, $max);
+}
+my ($total, $prom, $minimo, $maximo) = estadisticas(3, 1, 4, 1, 5, 9, 2, 6);
+
+# Referencias (para pasar estructuras complejas)
+my @array = (1, 2, 3);
+my $ref_array = \@array;    # Referencia a array
+push @$ref_array, 4;        # Deref con @$
+print $ref_array->[0];      # Acceso: 1
+
+my %hash = (a => 1);
+my $ref_hash = \%hash;       # Referencia a hash
+$ref_hash->{b} = 2;          # Acceso: 2
+
+# Subrutina anónima (ref a código)
+my $duplicar = sub { return $_[0] * 2 };
+print $duplicar->(5);        # 10
+
+# map, grep, sort con bloques
+my @cuadrados = map { $_ ** 2 } @array;
+my @pares     = grep { $_ % 2 == 0 } @array;
+my @ord       = sort { $b <=> $a } @array;   # Descendente
+```
+
+---
+
+## 8. ⚙️ One-Liners de Perl para Sysadmin
+
+```bash
+# -n: procesar líneas sin imprimir automáticamente
+# -p: procesar líneas imprimiendo automáticamente
+# -e: ejecutar código
+# -i: in-place (modifica archivo)
+# -a: autosplit (divide $_ en @F por whitespace)
+# -F: define el separador para -a
+
+# Imprimir líneas con un patrón (como grep)
+perl -ne 'print if /ERROR/' log.txt
+
+# Eliminar líneas vacías
+perl -ne 'print if /\S/' archivo.txt
+
+# Contar líneas con patrón
+perl -ne '$c++ if /ERROR/; END { print "$c errores\n" }' log.txt
+
+# Sustitución in-place (como sed -i)
+perl -i.bak -pe 's/version: 1\.0/version: 2.0/g' config.yaml
+
+# Imprimir la N-ésima columna (como awk '{print $2}')
+perl -ane 'print "$F[1]\n"' datos.txt          # Segunda columna (índice 0-based)
+perl -F',' -ane 'print "$F[0]\n"' datos.csv   # Primera columna de CSV
+
+# Sumar una columna numérica
+perl -ane '$s += $F[2]; END { print "Total: $s\n" }' datos.txt
+
+# Imprimir líneas entre dos patrones
+perl -ne 'print if /INICIO/../FIN/' archivo.txt
+
+# Eliminar líneas duplicadas (preservando orden)
+perl -ne 'print unless $vistos{$_}++' archivo.txt
+
+# Invertir el orden de las líneas (como tac)
+perl -e 'print reverse <>' archivo.txt
+
+# Extraer emails de un texto
+perl -nE 'say $& while /[\w.+-]+@[\w-]+\.[\w.]+/g' archivo.txt
+
+# Formatear CSV a tabla alineada
+perl -F',' -lane 'printf "%-20s %-15s %s\n", @F' datos.csv
+
+# Generar contraseña aleatoria de 16 caracteres
+perl -e 'my @chars = ("a".."z","A".."Z","0".."9"); print join("", map { $chars[rand @chars] } 1..16), "\n"'
+
+# Renombrar archivos en lote (equivale a rename en bash)
+perl -e 'rename $_, s/\.txt$/.bak/r for glob "*.txt"'
+```
+
+---
+
+## 9. 🌐 Networking con LWP
+
+```perl
+use LWP::UserAgent;
+use JSON;
+use HTTP::Request;
+
+# Crear agente HTTP
+my $ua = LWP::UserAgent->new(
+    timeout    => 30,
+    agent      => "MiScript/1.0",
+);
+$ua->default_header("Authorization" => "Bearer $ENV{TOKEN}");
+
+# GET request
+my $resp = $ua->get("https://api.github.com/users/perl");
+if ($resp->is_success) {
+    my $datos = decode_json($resp->decoded_content);
+    print "Nombre: $datos->{name}\n";
+    print "Repos: $datos->{public_repos}\n";
+} else {
+    die "HTTP error: " . $resp->status_line;
+}
+
+# POST con JSON
+my $req = HTTP::Request->new(
+    POST => "https://api.ejemplo.com/eventos",
+    ["Content-Type" => "application/json"],
+    encode_json({ tipo => "deploy", version => "1.0" })
+);
+my $resp2 = $ua->request($req);
+print $resp2->decoded_content;
+```
+
+---
+
+## 10. ⚠️ Errores Comunes y Pitfalls
+
+* **No usar `use strict; use warnings;`**: Perl sin estas dos pragmas es un lenguaje totalmente diferente — propenso a errores silenciosos. Siempre inclúyelas.
+
+* **Confundir operadores de comparación numérica y string**: `"10" == "9abc"` es **verdadero** (ambas se convierten a 10 y 9 respectivamente — ¡no!). `"10" == 10` sí es correcto. Para comparar strings, usa `eq`, `ne`, `lt`, `gt`.
+
+* **Olvidar `chomp` al leer líneas de archivo**: `<$fh>` incluye el `\n` al final. Sin `chomp`, los strings nunca coincidirán con lo esperado.
+
+* **El contexto escalar vs lista**: `my @arr = (1, 2, 3); my $n = @arr` — `$n` es `3` (longitud), no el array. Este cambio de contexto sorprende constantemente.
+
+* **`die` sin `$!` o `$@`**: Al usar `open() or die "Error"`, incluye `$!` para mostrar el error del sistema: `die "No se puede abrir archivo: $!"`.
+
+* **Modificar un hash mientras se itera con `each`**: Puede causar comportamiento indefinido. Itera sobre `keys %hash` y accede por clave.
+
+* **Referencias sin dereferenciar**: `print @{$ref}` no es lo mismo que `print $ref`. La primera imprime el contenido; la segunda, la dirección de memoria del array.
+
+---
+
+## 11. 💡 Buenas Prácticas y Consejos Pro
+
+* **`use strict; use warnings;` en TODOS los scripts**: Sin negociación. Estas dos líneas detectan el 80% de los bugs comunes de Perl.
+
+* **Usa `//` (defined-or) en lugar de `||`** para valores por defecto: `my $x = $val // "defecto"`. Con `||`, si `$val` es `0` o `""` (strings vacíos), usará el defecto — probablemente no lo quieres.
+
+* **`Carp` en lugar de `die` en módulos**: `Carp::croak()` reporta el error en el punto de llamada al módulo, no en el interior del módulo. Mucho más útil para debugging.
+
+* **CPAN es tu amigo**: Antes de escribir algo desde cero, busca en CPAN. Módulos como `Text::CSV`, `DBI` (DB abstracta), `Storable`, `Data::Dumper`, `List::Util` resuelven problemas comunes de forma robusta y probada.
+
+* **`Data::Dumper` para debugging**: `use Data::Dumper; print Dumper(\%hash);` es el `console.log(JSON.stringify())` de Perl.
+
+* **Documenta con POD**: Perl tiene su propio sistema de documentación embebida (Plain Old Documentation). Usa `=head1`, `=head2`, `=over` / `=item`, `=back` para documentar módulos y scripts.
+
+* **`perl -c script.pl`**: Comprueba la sintaxis del script sin ejecutarlo. Ideal como paso de validación en CI/CD antes de desplegar scripts Perl.
+
+---
+
+Este cheatsheet proporciona una referencia exhaustiva de **Perl para administración de sistemas y scripting**, cubriendo desde los tipos de datos con sigils, el poder de las expresiones regulares integradas, el procesamiento de archivos línea a línea, one-liners para sysadmin, networking con LWP, hasta las mejores prácticas para escribir Perl moderno y mantenible en entornos de producción.
