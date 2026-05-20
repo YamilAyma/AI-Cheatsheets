@@ -1,0 +1,668 @@
+---
+title: "AppleScript y JXA"
+description: "AppleScript y JavaScript for Automation (JXA) son los lenguajes nativos de macOS para automatizar aplicaciones, controlar el sistema operativo y orquestar flujos de trabajo entre apps."
+createdAt: 2026-05-20
+updatedAt: 2026-05-20
+tags: [applescript, jxa, macos, automatizacion, scripting, osx, workflow]
+icon: "🍎"
+---
+
+# 🍎 AppleScript y JXA — Cheatsheet Completo 🍎
+
+**AppleScript** es el lenguaje de automatización nativo de macOS desde 1993, con una sintaxis diseñada para parecerse al inglés natural y describir instrucciones hacia las aplicaciones del sistema. **JavaScript for Automation (JXA)** es la alternativa moderna introducida en OS X Yosemite (10.10), que permite usar JavaScript estándar como lenguaje de scripting del sistema en lugar de la sintaxis de AppleScript. Ambos lenguajes acceden al mismo framework de **Open Scripting Architecture (OSA)** de macOS y pueden automatizar prácticamente cualquier aplicación que soporte el diccionario AppleScript: Finder, Safari, Mail, Calendar, Notes, Numbers, Pages, Keynote, iTerm2, y miles de aplicaciones de terceros. Son fundamentales para crear flujos de trabajo de productividad avanzados, automatizar tareas repetitivas del sistema y orquestar la interacción entre múltiples aplicaciones de macOS.
+
+---
+
+## 1. 🌟 Conceptos Clave y Fundamentos
+
+* **Open Scripting Architecture (OSA)**: El framework de macOS que permite que las aplicaciones expongan su funcionalidad a lenguajes de scripting. Una app que soporta OSA tiene un "diccionario AppleScript".
+* **Diccionario de la aplicación**: La documentación de todos los objetos, comandos y propiedades que una app expone a AppleScript/JXA. Se consulta en Script Editor (Archivo → Abrir diccionario).
+* **Objeto de aplicación (`Application`)**: El punto de entrada para interactuar con cualquier app. En AppleScript: `tell application "Finder"`. En JXA: `Application("Finder")`.
+* **`tell` block**: En AppleScript, establece el contexto de la aplicación destino para los comandos del bloque.
+* **System Events**: Aplicación especial de macOS que permite controlar elementos de UI de cualquier aplicación, incluso las que no tienen diccionario AppleScript propio.
+* **`do shell script`**: Comando de AppleScript para ejecutar comandos Bash/Zsh y capturar su salida como string. El puente entre AppleScript y el shell Unix.
+* **Script Editor**: La IDE nativa de macOS para editar y ejecutar scripts AppleScript y JXA (en Applications → Utilities).
+* **osascript**: Herramienta de línea de comandos para ejecutar scripts AppleScript y JXA directamente desde Terminal.
+* **Automation**: En JXA, el objeto global que da acceso a las funcionalidades de automatización equivalentes a AppleScript.
+* **Accessibility Inspector**: Herramienta de macOS para inspeccionar la jerarquía de accesibilidad de cualquier aplicación (útil para System Events UI scripting).
+
+---
+
+## 2. 🛠️ Herramientas y Entorno
+
+### 2.1. Script Editor y osascript
+
+```bash
+# Ejecutar AppleScript desde Terminal
+osascript -e 'tell application "Finder" to activate'
+osascript mi_script.applescript
+
+# Ejecutar JXA desde Terminal
+osascript -l JavaScript -e 'Application("Finder").activate()'
+osascript -l JavaScript mi_script.js
+
+# Mostrar notificación desde Terminal
+osascript -e 'display notification "Deploy completado" with title "CI/CD" sound name "Glass"'
+
+# Ejecutar con shebang (AppleScript)
+#!/usr/bin/osascript
+tell application "Finder" to activate
+
+# Ejecutar con shebang (JXA)
+#!/usr/bin/osascript -l JavaScript
+Application("Finder").activate()
+
+# chmod +x script.applescript && ./script.applescript
+```
+
+### 2.2. Estructura Básica de un Script
+
+```applescript
+-- AppleScript: comentarios con --
+(*
+    Comentario
+    multilínea
+*)
+
+-- Variables en AppleScript
+set miVariable to "valor"
+set numero to 42
+set lista to {1, 2, 3, "cuatro"}
+set registroHash to {nombre:"Ana", edad:28}
+
+-- Mostrar resultado
+return "valor de retorno"
+```
+
+```javascript
+// JXA: sintaxis JavaScript estándar
+// Comentarios normales de JS
+
+// OJO: No todas las APIs de Node.js están disponibles en JXA
+// JXA es JavaScript del motor JavaScriptCore, no Node.js
+
+const app = Application.currentApplication();
+app.includeStandardAdditions = true;  // Habilitar comandos estándar
+
+// Variables normales de JavaScript
+const nombre = "JXA";
+let contador = 0;
+const lista = [1, 2, 3, "cuatro"];
+```
+
+---
+
+## 3. 🗣️ AppleScript — Sintaxis Fundamental
+
+```applescript
+-- ===== VARIABLES =====
+set nombre to "macOS"
+set version to 14.0
+set activo to true
+set nada to missing value  -- Equivalente a null/nil
+
+-- ===== STRINGS =====
+set saludo to "Hola, " & nombre & "!"  -- Concatenación con &
+set longitud to length of saludo       -- Longitud del string
+set mayusculas to (name of (info for file "POSIX file ~")) -- (ejemplo)
+
+-- ===== LISTAS (Arrays) =====
+set frutas to {"manzana", "pera", "uva", "kiwi"}
+set primera to item 1 of frutas          -- "manzana" (índice 1-based)
+set ultima to last item of frutas         -- "kiwi"
+set mitad to items 2 thru 3 of frutas    -- {"pera", "uva"}
+set cuenta to count of frutas             -- 4
+set nuevaLista to frutas & {"mango"}      -- Agregar elemento (crea nueva lista)
+
+-- ===== REGISTROS (Objetos/Diccionarios) =====
+set persona to {nombre:"Luis", edad:30, activo:true}
+set nom to nombre of persona   -- "Luis"
+set e to edad of persona       -- 30
+
+-- ===== OPERADORES =====
+-- Comparación
+5 = 5        -- true (igual)
+5 ≠ 4        -- true (distinto) o: 5 is not 4
+10 > 5       -- true
+10 ≥ 10      -- true (mayor o igual)
+"abc" comes before "xyz"   -- true (comparación de strings)
+"abc" contains "b"         -- true
+
+-- Lógicos
+true and false   -- false
+true or false    -- true
+not true         -- false
+
+-- ===== CONDICIONALES =====
+set temperatura to 25
+
+if temperatura > 35 then
+    display dialog "Peligroso"
+else if temperatura > 25 then
+    display dialog "Caluroso"
+else if temperatura > 15 then
+    display dialog "Agradable"
+else
+    display dialog "Frío"
+end if
+
+-- ===== BUCLES =====
+-- repeat ... times
+repeat 3 times
+    say "Hola"
+end repeat
+
+-- repeat with (for each)
+repeat with fruta in frutas
+    log fruta  -- Imprime en la consola de Script Editor
+end repeat
+
+-- repeat with (rango numérico)
+repeat with i from 1 to 10 by 2
+    log i  -- 1, 3, 5, 7, 9
+end repeat
+
+-- repeat while
+set contador to 0
+repeat while contador < 5
+    set contador to contador + 1
+end repeat
+
+-- ===== FUNCIONES (Handlers) =====
+on saludar(nombre)
+    return "Hola, " & nombre & "!"
+end saludar
+
+set resultado to saludar("AppleScript")
+display dialog resultado
+```
+
+---
+
+## 4. 🔗 Tell Blocks — Controlando Aplicaciones
+
+```applescript
+-- ===== ESTRUCTURA BÁSICA DEL TELL BLOCK =====
+tell application "NombreAplicación"
+    -- Comandos enviados a la aplicación
+    activate   -- Traer al frente
+end tell
+
+-- Tell anidado
+tell application "Finder"
+    tell window 1
+        set current view to icon view
+    end tell
+end tell
+
+-- ===== FINDER =====
+tell application "Finder"
+    activate
+    
+    -- Obtener carpeta actual del Finder
+    set carpetaActual to target of front Finder window
+    
+    -- Abrir archivo o carpeta
+    open POSIX file "/Users/usuario/Documentos"
+    
+    -- Obtener archivos del escritorio
+    set archivosEscritorio to every file of desktop
+    set cantidadArchivos to count of archivosEscritorio
+    
+    -- Crear carpeta nueva
+    make new folder at desktop with properties {name:"Mi Nueva Carpeta"}
+    
+    -- Duplicar archivo
+    duplicate file "informe.pdf" of desktop to folder "Backup" of desktop
+    
+    -- Mover a la Papelera
+    move file "temporal.txt" of desktop to trash
+    
+    -- Vaciar papelera
+    empty trash
+    
+    -- Obtener ruta POSIX de un elemento
+    set posixRuta to POSIX path of (desktop as alias)
+end tell
+
+-- ===== SAFARI =====
+tell application "Safari"
+    activate
+    
+    -- Abrir URL en pestaña actual
+    open location "https://developer.apple.com"
+    
+    -- Obtener URL de la pestaña activa
+    set urlActual to URL of current tab of window 1
+    
+    -- Obtener título de la página
+    set tituloActual to name of current tab of window 1
+    
+    -- Abrir nueva pestaña
+    tell window 1
+        set newTab to make new tab
+        set current tab to newTab
+        open location "https://applescript.net" in newTab
+    end tell
+    
+    -- Ejecutar JavaScript en la página
+    do JavaScript "document.title" in current tab of window 1
+end tell
+
+-- ===== MAIL =====
+tell application "Mail"
+    -- Crear y enviar email
+    set nuevoMensaje to make new outgoing message with properties {
+        subject: "Reporte Automático",
+        content: "Adjunto el reporte diario generado automáticamente.",
+        visible: true
+    }
+    
+    tell nuevoMensaje
+        make new to recipient with properties {
+            name: "Destinatario",
+            address: "destino@empresa.com"
+        }
+        
+        make new attachment with properties {
+            file name: (POSIX file "/tmp/reporte.pdf")
+        }
+    end tell
+    
+    send nuevoMensaje
+end tell
+```
+
+---
+
+## 5. 🖥️ System Events — Automatización de UI
+
+`System Events` es el puente para controlar la UI de aplicaciones que no tienen diccionario AppleScript propio.
+
+```applescript
+-- Requerido: Habilitar "Accessibility" para Script Editor en:
+-- Ajustes del Sistema → Privacidad y Seguridad → Accesibilidad
+
+tell application "System Events"
+    -- ===== PROCESOS =====
+    -- Obtener proceso de aplicación activa
+    set procesoActivo to first application process whose frontmost is true
+    set nombreApp to name of procesoActivo
+    
+    -- Enviar teclas (keystroke)
+    tell process "Finder"
+        keystroke "q" using command down   -- Cmd+Q (Salir)
+        keystroke "n" using {command down} -- Cmd+N
+        key code 36                         -- Return (por código de tecla)
+        key code 48 using shift down        -- Shift+Tab
+    end tell
+    
+    -- ===== CONTROLES DE UI =====
+    tell application process "TextEdit"
+        -- Navegar jerarquía de UI
+        set ventana to window "Untitled"
+        set area to scroll area 1 of ventana
+        set texto to text area 1 of area
+        
+        -- Hacer clic en un botón
+        click button "OK" of ventana
+        
+        -- Establecer valor de un campo
+        set value of text field 1 of ventana to "Nuevo texto"
+        
+        -- Seleccionar item de menú
+        click menu item "Save..." of menu "File" of menu bar 1
+        
+        -- Obtener todos los elementos de UI
+        set elementos to UI elements of ventana
+    end tell
+    
+    -- ===== MENÚS =====
+    tell application process "Finder"
+        -- Seleccionar comando de menú por nombre
+        click menu item "Get Info" of menu "File" of menu bar 1
+        
+        -- Navegar submenús
+        click menu item "Services" of menu "Finder" of menu bar 1
+        -- Luego click en el submenú
+    end tell
+    
+    -- ===== CLIC EN COORDENADAS =====
+    click at {500, 300}   -- Clic en posición absoluta de pantalla
+    
+    -- ===== ARRASTRAR =====
+    drag from {100, 200} to {500, 200}
+end tell
+```
+
+---
+
+## 6. 🐚 do shell script — Puente con el Terminal
+
+```applescript
+-- Ejecutar comando Bash y capturar salida
+set salida to do shell script "ls -la ~/Desktop"
+display dialog salida
+
+-- Con variables
+set directorio to POSIX path of (path to desktop)
+set archivos to do shell script "find " & quoted form of directorio & " -name '*.pdf'"
+
+-- Como administrador (requiere contraseña de usuario)
+do shell script "softwareupdate -l" with administrator privileges
+
+-- Convertir ruta HFS+ de macOS a POSIX
+set rutaHFS to (path to desktop folder) as text  -- "Macintosh HD:Users:usuario:Desktop:"
+set rutaPOSIX to POSIX path of rutaHFS            -- "/Users/usuario/Desktop/"
+
+-- Y a la inversa
+set archivoAlias to (POSIX file "/Users/usuario/Desktop/doc.pdf") as alias
+
+-- Ejemplos prácticos
+-- Obtener fecha en formato ISO
+set fecha to do shell script "date +%Y-%m-%d"
+
+-- Obtener IP local
+set ip to do shell script "ipconfig getifaddr en0"
+
+-- Verificar si un proceso está corriendo
+set estaEjecutando to do shell script "pgrep -x 'Docker' > /dev/null 2>&1 && echo 'si' || echo 'no'"
+
+-- Ejecutar script Python
+set resultado to do shell script "python3 ~/scripts/procesar.py"
+
+-- Git operations
+do shell script "cd ~/proyecto && git pull --rebase"
+
+-- Subir notificación via terminal tool
+do shell script "terminal-notifier -title 'Script' -message 'Completado'"
+```
+
+---
+
+## 7. ⚡ JXA — JavaScript for Automation
+
+```javascript
+// ===== CONFIGURACIÓN INICIAL =====
+const app = Application.currentApplication();
+app.includeStandardAdditions = true;  // Habilitar displayDialog, say, etc.
+
+// ===== DIALÓGOS =====
+app.displayDialog("Hola desde JXA!", {
+    defaultAnswer: "Mundo",
+    buttons: ["Cancelar", "OK"],
+    defaultButton: "OK"
+});
+
+const respuesta = app.displayDialog("¿Cómo te llamas?", {
+    defaultAnswer: "",
+    buttons: ["Cancelar", "OK"],
+    defaultButton: "OK"
+});
+const nombre = respuesta.textReturned;
+app.displayAlert(`Hola, ${nombre}!`);
+
+// ===== NOTIFICACIONES =====
+app.displayNotification("Proceso completado", {
+    withTitle: "Mi Script",
+    subtitle: "Éxito",
+    soundName: "Glass"
+});
+
+// ===== FINDER =====
+const Finder = Application("Finder");
+Finder.activate();
+
+// Obtener archivos del escritorio
+const archivos = Finder.desktop.files();
+archivos.forEach(archivo => {
+    console.log(archivo.name());
+});
+
+// Abrir carpeta
+Finder.open(Path("/Users/usuario/Documentos"));
+
+// Crear carpeta
+Finder.make({
+    new: "folder",
+    at: Finder.desktop(),
+    withProperties: { name: "Nueva Carpeta" }
+});
+
+// ===== SAFARI =====
+const Safari = Application("Safari");
+Safari.activate();
+
+// Obtener URL actual
+const url = Safari.windows[0].currentTab.url();
+console.log(url);
+
+// Abrir nueva pestaña
+Safari.windows[0].make({ new: "tab" });
+Safari.windows[0].currentTab.url = "https://developer.apple.com";
+
+// Ejecutar JS en la página
+const titulo = Safari.doJavaScript("document.title", {
+    in: Safari.windows[0].currentTab()
+});
+
+// ===== SHELL COMMANDS =====
+app.doShellScript("ls ~/Desktop");
+const ip = app.doShellScript("ipconfig getifaddr en0");
+console.log("IP:", ip);
+
+// ===== SYSTEM EVENTS (JXA) =====
+const SE = Application("System Events");
+
+// Keystroke
+const proceso = SE.applicationProcesses.byName("Finder");
+proceso.keyDown({ using: "command down" });  // Mantener Cmd
+proceso.keystroke("n");                       // Cmd+N
+proceso.keyUp({ using: "command down" });
+
+// Click en elemento UI
+const ventana = proceso.windows[0];
+ventana.buttons.byName("OK").click();
+
+// ===== SCRIPT DE AUTOMATIZACIÓN COMPLETO =====
+function procesarDocumentos() {
+    const Finder = Application("Finder");
+    const app = Application.currentApplication();
+    app.includeStandardAdditions = true;
+    
+    // Seleccionar carpeta
+    const carpetaSeleccionada = app.chooseFolder({
+        withPrompt: "Selecciona la carpeta con documentos PDF"
+    });
+    
+    // Obtener todos los PDFs
+    const carpeta = Finder.folders[carpetaSeleccionada.toString()];
+    const pdfs = carpeta.files().filter(f => f.name().endsWith(".pdf"));
+    
+    app.displayDialog(`Encontrados ${pdfs.length} PDFs. ¿Procesar?`, {
+        buttons: ["Cancelar", "Procesar"],
+        defaultButton: "Procesar"
+    });
+    
+    pdfs.forEach((pdf, i) => {
+        // Notificar progreso
+        app.displayNotification(`Procesando ${i + 1}/${pdfs.length}: ${pdf.name()}`, {
+            withTitle: "Procesador PDF"
+        });
+        
+        // Ejecutar script de conversión
+        app.doShellScript(`python3 ~/scripts/convertir_pdf.py "${pdf.posixPath()}"`);
+    });
+    
+    app.displayAlert("Procesamiento completado!");
+}
+
+procesarDocumentos();
+```
+
+---
+
+## 8. 📱 Aplicaciones de Productividad Populares
+
+```applescript
+-- ===== CALENDAR (iCal) =====
+tell application "Calendar"
+    -- Crear evento
+    tell calendar "Trabajo"
+        make new event with properties {
+            summary: "Reunión de equipo",
+            start date: date "Tuesday, January 14, 2025 at 10:00:00 AM",
+            end date: date "Tuesday, January 14, 2025 at 11:00:00 AM",
+            location: "Sala A"
+        }
+    end tell
+    
+    -- Obtener eventos del día
+    set hoy to current date
+    set events of today to every event of calendar "Trabajo" whose start date ≥ hoy
+end tell
+
+-- ===== NOTES =====
+tell application "Notes"
+    -- Crear nota
+    make new note at folder "General" of account "iCloud" with properties {
+        name: "Ideas de automatización",
+        body: "<div>Lista de tareas pendientes:</div><ul><li>Automatizar reportes</li></ul>"
+    }
+    
+    -- Obtener todas las notas
+    set misNotas to every note
+    repeat with nota in misNotas
+        log name of nota
+    end repeat
+end tell
+
+-- ===== MESSAGES (iMessage/SMS) =====
+tell application "Messages"
+    -- Enviar mensaje (requiere permisos)
+    set destinatario to buddy "+34600000000" of (first service whose service type is iMessage)
+    send "Hola, esto es un mensaje automático." to destinatario
+end tell
+
+-- ===== KEYNOTE =====
+tell application "Keynote"
+    -- Abrir presentación
+    open POSIX file "/Users/usuario/presentacion.key"
+    
+    tell front document
+        -- Exportar a PDF
+        export to POSIX file "/Users/usuario/presentacion.pdf" as PDF
+        
+        -- Obtener número de diapositivas
+        set numSlides to count of slides
+    end tell
+end tell
+
+-- ===== NUMBERS =====
+tell application "Numbers"
+    open POSIX file "/Users/usuario/datos.numbers"
+    
+    tell front document
+        tell sheet 1
+            tell table 1
+                -- Leer valor de celda
+                set valor to value of cell "B2"
+                
+                -- Escribir valor en celda
+                set value of cell "C2" to valor * 1.21  -- Calcular con IVA
+            end tell
+        end tell
+    end tell
+    
+    save front document
+end tell
+```
+
+---
+
+## 9. 🔔 Notificaciones y Diálogos
+
+```applescript
+-- ===== DISPLAY DIALOG =====
+-- Diálogo simple
+display dialog "¿Deseas continuar?"
+
+-- Con botones personalizados
+set respuesta to display dialog "¿Guardar cambios?" buttons {"No guardar", "Cancelar", "Guardar"} default button "Guardar"
+set botonPresionado to button returned of respuesta
+
+-- Con campo de texto
+set entrada to display dialog "Introduce tu nombre:" default answer "Usuario" with title "Identificación"
+set nombre to text returned of entrada
+
+-- Con icono
+display dialog "Error crítico detectado." with icon stop
+display dialog "Advertencia." with icon caution
+display dialog "Información." with icon note
+
+-- ===== DISPLAY ALERT =====
+display alert "Alerta de Sistema" message "El disco está casi lleno." as critical
+
+-- ===== NOTIFICACIÓN DEL SISTEMA =====
+display notification "El backup completó con éxito" with title "Backup Manager" subtitle "15 archivos copiados" sound name "Glass"
+
+-- ===== CHOOSE FROM LIST =====
+set opcion to choose from list {"Opción A", "Opción B", "Opción C"} with title "Selección" with prompt "Elige una opción:"
+if opcion is false then error "Cancelado"
+set opcionElegida to item 1 of opcion
+
+-- ===== CHOOSE FILE / FOLDER =====
+set archivoElegido to choose file with prompt "Selecciona el archivo a procesar:" of type {"pdf", "docx"}
+set carpetaElegida to choose folder with prompt "Selecciona la carpeta destino:"
+
+-- ===== VOZ (Text to Speech) =====
+say "El proceso ha finalizado exitosamente"
+say "Error en el sistema" using "Alex" speaking rate 150 pitch 50
+```
+
+---
+
+## 10. ⚠️ Errores Comunes y Pitfalls
+
+* **Permisos de Accesibilidad**: El UI scripting con `System Events` requiere que la app (Script Editor, Terminal, etc.) tenga permisos de Accesibilidad en Ajustes del Sistema → Privacidad y Seguridad → Accesibilidad. Sin esto, los scripts fallan silenciosamente o lanzan errores de permisos.
+
+* **Rutas HFS+ vs POSIX**: AppleScript usa rutas HFS+ (`"Macintosh HD:Users:usuario:"`) internamente, pero la mayoría de comandos del shell y las APIs modernas usan rutas POSIX (`"/Users/usuario/"`). Usa `POSIX path of` y `POSIX file` para convertir entre formatos.
+
+* **Bloqueo de UI durante ejecución**: `display dialog` bloquea el hilo principal. Para scripts largos, considera ejecutar con `osascript` desde Terminal en segundo plano o usar JXA con callbacks.
+
+* **Versiones de macOS**: Las APIs de AppleScript cambian entre versiones de macOS. Un script que funciona en Ventura puede fallar en Sequoia si Apple modifica los diccionarios de las apps.
+
+* **`tell application` activa la app**: `tell application "Finder"` puede traer Finder al frente si no está activo. Usa `tell application "Finder" to set la_ruta to (POSIX path of desktop)` sin activar explícitamente si no lo necesitas.
+
+* **Strings multilínea en AppleScript**: Para insertar un salto de línea en AppleScript, usa el carácter `return` o `linefeed`: `set texto to "Línea 1" & return & "Línea 2"`.
+
+* **JXA: No es Node.js**: JXA usa JavaScriptCore (el motor de Safari/WebKit), no V8/Node.js. No puedes usar `require`, `import`, `fetch` nativo, ni módulos npm. El ámbito de APIs disponibles es limitado al framework OSA.
+
+---
+
+## 11. 💡 Buenas Prácticas y Consejos Pro
+
+* **Consulta el diccionario de cada app**: Script Editor → Archivo → Abrir diccionario. Es la documentación oficial de lo que cada aplicación expone a AppleScript. Es tu mejor herramienta de referencia.
+
+* **Usa `try...on error...end try` para manejar errores**:
+  ```applescript
+  try
+      tell application "Finder" to open folder "carpeta_inexistente"
+  on error mensaje número numeroError
+      display dialog "Error " & numeroError & ": " & mensaje
+  end try
+  ```
+
+* **JXA para lógica compleja, AppleScript para interacción con apps**: JXA es más potente para lógica de programación compleja (arrays, objetos, funciones). AppleScript suele ser más readable para comandos de aplicaciones.
+
+* **Combina con `do shell script`**: Para operaciones donde ni AppleScript ni JXA son suficientes, delega a scripts Bash, Python o cualquier herramienta de línea de comandos.
+
+* **Automator como alternativa visual**: Para workflows simples, Automator (también nativo en macOS) puede ser más rápido. Puede embeber AppleScript/JXA como pasos dentro de workflows visuales.
+
+* **Shortcuts.app (macOS 13+)**: La aplicación Atajos de teclado de iOS llega a macOS y puede ejecutar AppleScript. Considera Shortcuts para automatizaciones que requieren integración con Siri o menu bar.
+
+* **`log` para debugging en Script Editor**: En Script Editor, `log "mensaje de debug"` imprime en el panel de mensajes (no lanza diálogos). Equivale a `console.log` para debugging sin interrumpir el flujo.
+
+---
+
+Este cheatsheet proporciona una referencia exhaustiva de **AppleScript y JavaScript for Automation (JXA)**, cubriendo desde la sintaxis fundamental de ambos lenguajes, la interacción con aplicaciones nativas de macOS (Finder, Safari, Mail, Calendar, Notes, Numbers, Keynote), el poderoso UI scripting con System Events, el puente hacia el shell Unix con `do shell script`, el sistema de diálogos y notificaciones, hasta las mejores prácticas para crear scripts de automatización robustos y mantenibles en el ecosistema macOS.
