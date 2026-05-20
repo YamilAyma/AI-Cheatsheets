@@ -1,0 +1,675 @@
+---
+title: "PowerShell"
+description: "PowerShell es el shell multiplataforma y lenguaje de scripting orientado a objetos de Microsoft, estándar para la automatización de sistemas Windows y DevOps en la nube."
+createdAt: 2026-05-20
+updatedAt: 2026-05-20
+tags: [powershell, scripting, windows, devops, automatizacion, cli]
+icon: "🖥️"
+---
+
+# 🖥️ PowerShell — Cheatsheet Completo 🖥️
+
+**PowerShell** es el shell de línea de comandos y lenguaje de scripting desarrollado por Microsoft que opera sobre .NET. A diferencia de shells Unix (Bash, Zsh) que pasan cadenas de texto entre comandos, PowerShell transmite **objetos .NET reales** a través de sus pipelines, lo que permite manipular datos estructurados con enorme precisión. Disponible en Windows (desde XP), Linux y macOS a través de **PowerShell Core (v6+)**, es el estándar de la industria para la automatización de infraestructura en entornos Microsoft Azure, Active Directory y DevOps empresariales.
+
+---
+
+## 1. 🌟 Conceptos Clave y Fundamentos
+
+PowerShell tiene una filosofía radicalmente diferente a los shells tradicionales. Estos son sus pilares fundamentales:
+
+* **Todo es un Objeto**: Los comandos no devuelven texto, devuelven objetos .NET con propiedades y métodos. `Get-Process` devuelve objetos `System.Diagnostics.Process`, no líneas de texto.
+* **Pipeline basado en Objetos**: El operador `|` pasa objetos completos entre comandos. Puedes filtrar por propiedad, ordenar, agrupar y formatear sin parsing de texto.
+* **Cmdlets (Verb-Noun)**: Los comandos de PowerShell siguen el patrón `Verbo-Sustantivo` (`Get-Item`, `Set-Content`, `Remove-Service`). Esto hace que el lenguaje sea extremadamente predecible y autodescriptivo.
+* **Verbos Aprobados**: PowerShell tiene una lista oficial de verbos (`Get`, `Set`, `New`, `Remove`, `Start`, `Stop`, `Invoke`, `Test`, `Out`...) para mantener consistencia.
+* **Aliases**: Muchos cmdlets tienen aliases cortos para compatibilidad (`ls` = `Get-ChildItem`, `cd` = `Set-Location`, `cat` = `Get-Content`).
+* **Módulos**: Unidades de extensión de PowerShell (`.psm1`, `.psd1`). Se instalan desde la PowerShell Gallery con `Install-Module`.
+* **Perfiles**: Scripts que se ejecutan al iniciar PowerShell. Equivalente a `.bashrc`. Ruta: `$PROFILE`.
+* **Execution Policy**: Política de seguridad que controla qué scripts pueden ejecutarse (`Restricted`, `RemoteSigned`, `Unrestricted`, `Bypass`).
+* **$ErrorActionPreference**: Variable global que define el comportamiento ante errores (`Stop`, `Continue`, `SilentlyContinue`, `Inquire`).
+* **Streams**: PowerShell tiene múltiples streams de salida: Success (1), Error (2), Warning (3), Verbose (4), Debug (5), Information (6).
+
+---
+
+## 2. 🛠️ Instalación y Configuración Inicial
+
+### 2.1. Instalación de PowerShell Core (Multiplataforma)
+
+```powershell
+# Windows — via winget
+winget install --id Microsoft.PowerShell --source winget
+
+# macOS — via Homebrew
+brew install --cask powershell
+
+# Ubuntu/Debian
+sudo apt-get install -y powershell
+
+# Verificar versión instalada
+$PSVersionTable.PSVersion
+```
+
+### 2.2. Perfil y Configuración
+
+```powershell
+# Ver ruta del perfil activo
+$PROFILE
+
+# Crear perfil si no existe
+if (-not (Test-Path $PROFILE)) {
+    New-Item -ItemType File -Path $PROFILE -Force
+}
+
+# Editar el perfil en el editor predeterminado
+notepad $PROFILE   # Windows
+code $PROFILE      # VS Code (recomendado)
+
+# Recargar perfil sin reiniciar la sesión
+. $PROFILE
+```
+
+### 2.3. Execution Policy
+
+```powershell
+# Ver política actual
+Get-ExecutionPolicy
+
+# Establecer política para el usuario actual (recomendado para desarrollo)
+Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
+
+# Políticas disponibles:
+# Restricted     — No permite scripts (default en Windows)
+# RemoteSigned   — Scripts locales sí, remotos deben estar firmados
+# Unrestricted   — Permite todos (advertencia en scripts remotos)
+# Bypass         — Sin restricciones ni advertencias (usar con cuidado)
+```
+
+---
+
+## 3. 📝 Variables y Tipos de Datos
+
+### 3.1. Declaración de Variables
+
+```powershell
+# Variables se declaran con $ y son tipadas dinámicamente
+$nombre = "PowerShell"
+$version = 7.4
+$esActivo = $true
+
+# Tipado explícito
+[string]$texto = "Hola"
+[int]$numero = 42
+[bool]$bandera = $false
+[datetime]$fecha = Get-Date
+
+# Variables especiales
+$null          # Valor nulo
+$true / $false # Booleanos
+$_             # Variable de pipeline (objeto actual)
+$?             # Estado del último comando (True/False)
+$LASTEXITCODE  # Código de salida del último proceso externo
+$PSVersionTable# Información de la versión de PowerShell
+$env:PATH      # Variables de entorno (acceso via $env:NOMBRE)
+```
+
+### 3.2. Strings
+
+```powershell
+# Comillas simples: literal (sin interpolación)
+$literal = 'El valor es $version'   # Salida: El valor es $version
+
+# Comillas dobles: interpolación de variables
+$interpolado = "Versión: $version"   # Salida: Versión: 7.4
+
+# Here-String multilínea
+$bloque = @"
+Esto es un
+texto multilínea con $nombre
+y variables interpoladas.
+"@
+
+# Métodos de string (.NET)
+"powershell".ToUpper()           # POWERSHELL
+"  hola  ".Trim()                # hola
+"uno,dos,tres".Split(",")        # Array: uno, dos, tres
+"hello world".Replace("o", "0")  # hell0 w0rld
+"PowerShell".Contains("Shell")   # True
+"hola".PadLeft(10, "*")          # ******hola
+```
+
+### 3.3. Arrays y Hashtables
+
+```powershell
+# Array
+$frutas = @("manzana", "pera", "uva")
+$frutas[0]              # manzana
+$frutas[-1]             # uva (último elemento)
+$frutas.Count           # 3
+$frutas += "kiwi"       # Agregar elemento
+$frutas[1..3]           # Slice: pera, uva, kiwi
+
+# Array tipado
+[int[]]$numeros = 1, 2, 3, 4, 5
+
+# Hashtable (diccionario)
+$config = @{
+    Host    = "localhost"
+    Port    = 5432
+    DB      = "produccion"
+    SSL     = $true
+}
+$config["Host"]           # localhost
+$config.Port              # 5432 (acceso con punto)
+$config["User"] = "admin" # Agregar clave
+$config.Remove("SSL")     # Eliminar clave
+$config.Keys              # Ver todas las claves
+$config.Values            # Ver todos los valores
+
+# PSCustomObject (objeto estructurado, más potente que hashtable)
+$servidor = [PSCustomObject]@{
+    Nombre   = "web-01"
+    IP       = "192.168.1.10"
+    Puerto   = 80
+}
+$servidor.Nombre  # web-01
+```
+
+---
+
+## 4. 🔄 Control de Flujo
+
+### 4.1. Condicionales
+
+```powershell
+# If / ElseIf / Else
+$temperatura = 25
+
+if ($temperatura -gt 30) {
+    Write-Host "Hace calor"
+} elseif ($temperatura -gt 20) {
+    Write-Host "Temperatura agradable"
+} else {
+    Write-Host "Hace frío"
+}
+
+# Operadores de comparación (¡NO uses == en PowerShell!)
+# -eq   Equal (igual)
+# -ne   Not Equal (distinto)
+# -gt   Greater Than (mayor que)
+# -ge   Greater or Equal (mayor o igual)
+# -lt   Less Than (menor que)
+# -le   Less or Equal (menor o igual)
+# -like Wildcard match   ("PowerShell" -like "Power*")
+# -match Regex match     ("abc123" -match "\d+")
+# -in   Está en array    (5 -in @(1,3,5,7))
+# -contains Array contiene ("hola" -in $array)
+
+# Switch statement
+switch ($temperatura) {
+    { $_ -gt 35 }  { "Peligroso"; break }
+    { $_ -gt 25 }  { "Caluroso"; break }
+    { $_ -gt 15 }  { "Agradable"; break }
+    Default         { "Frío" }
+}
+```
+
+### 4.2. Bucles
+
+```powershell
+# ForEach-Object (pipeline)
+1..10 | ForEach-Object { Write-Host "Número: $_" }
+
+# foreach (clásico)
+$servidores = @("web-01", "web-02", "db-01")
+foreach ($server in $servidores) {
+    Write-Host "Procesando: $server"
+}
+
+# for (estilo C)
+for ($i = 0; $i -lt 5; $i++) {
+    Write-Host "Iteración $i"
+}
+
+# while
+$contador = 0
+while ($contador -lt 3) {
+    Write-Host "Contador: $contador"
+    $contador++
+}
+
+# do-while (ejecuta al menos una vez)
+do {
+    $entrada = Read-Host "Introduce un número (0 para salir)"
+} while ($entrada -ne "0")
+
+# Controles de flujo
+break     # Salir del bucle
+continue  # Siguiente iteración
+return    # Salir de función/script
+```
+
+---
+
+## 5. 🔧 Funciones y Parámetros
+
+### 5.1. Definición de Funciones
+
+```powershell
+# Función básica
+function Saludar {
+    param (
+        [string]$Nombre = "Mundo"  # Parámetro con valor predeterminado
+    )
+    Write-Output "Hola, $Nombre!"
+}
+
+Saludar                   # Hola, Mundo!
+Saludar -Nombre "DevOps"  # Hola, DevOps!
+
+# Función avanzada con CmdletBinding (añade -Verbose, -Debug, -ErrorAction, etc.)
+function Get-InfoServidor {
+    [CmdletBinding()]
+    param (
+        [Parameter(Mandatory = $true, ValueFromPipeline = $true)]
+        [string]$NombreServidor,
+
+        [Parameter()]
+        [ValidateRange(1, 65535)]
+        [int]$Puerto = 80,
+
+        [switch]$MostrarDetalles  # Switch: presente = $true, ausente = $false
+    )
+
+    process {
+        Write-Verbose "Consultando $NombreServidor:$Puerto..."
+        
+        [PSCustomObject]@{
+            Servidor = $NombreServidor
+            Puerto   = $Puerto
+            Estado   = "OK"
+        }
+    }
+}
+
+# Uso
+"web-01", "web-02" | Get-InfoServidor -Puerto 443 -Verbose
+```
+
+### 5.2. Retorno de Valores
+
+```powershell
+# PowerShell retorna CUALQUIER cosa que no sea capturada
+function Sumar {
+    param([int]$a, [int]$b)
+    return $a + $b  # Explícito
+}
+
+# Sin return explícito también funciona
+function Multiplicar {
+    param([int]$a, [int]$b)
+    $a * $b  # Esto también se devuelve
+}
+
+$resultado = Sumar 3 5   # $resultado = 8
+```
+
+---
+
+## 6. 🚿 El Pipeline de Objetos
+
+El pipeline es la característica más poderosa de PowerShell. A diferencia de Bash, pasa **objetos completos**, no texto.
+
+```powershell
+# Ver propiedades de los objetos devueltos
+Get-Process | Get-Member
+
+# Seleccionar propiedades específicas
+Get-Process | Select-Object Name, CPU, WorkingSet -First 10
+
+# Filtrar objetos (Where-Object / ?)
+Get-Service | Where-Object { $_.Status -eq "Running" }
+Get-Process | Where-Object { $_.CPU -gt 10 }
+
+# Ordenar (Sort-Object)
+Get-Process | Sort-Object CPU -Descending | Select-Object -First 5
+
+# Agrupar (Group-Object)
+Get-Service | Group-Object Status
+
+# Medir (Measure-Object)
+Get-Process | Measure-Object WorkingSet -Sum -Average -Maximum
+
+# Formatear salida
+Get-Process | Format-Table Name, CPU, Id -AutoSize
+Get-Service | Format-List Name, Status, StartType
+
+# Exportar resultados
+Get-Process | Export-Csv -Path "procesos.csv" -NoTypeInformation
+Get-Process | Export-Clixml -Path "procesos.xml"
+Get-Process | ConvertTo-Json | Out-File "procesos.json"
+
+# Leer desde CSV y procesar como objetos
+Import-Csv "servidores.csv" | Where-Object { $_.Estado -eq "activo" }
+```
+
+---
+
+## 7. 📁 Sistema de Archivos y Rutas
+
+```powershell
+# Navegación
+Set-Location "C:\Users"    # cd
+Get-Location               # pwd — devuelve objeto, no string
+Push-Location "C:\temp"    # Guarda ubicación actual y cambia
+Pop-Location               # Vuelve a la ubicación guardada
+
+# Listar contenido
+Get-ChildItem              # ls / dir
+Get-ChildItem -Recurse -Filter "*.log"  # Buscar archivos .log recursivamente
+Get-ChildItem -Hidden      # Mostrar archivos ocultos
+
+# Crear / Eliminar
+New-Item -ItemType Directory -Path "C:\temp\logs"   # mkdir
+New-Item -ItemType File -Path ".\config.json"
+Remove-Item ".\archivo.txt"
+Remove-Item ".\carpeta" -Recurse -Force   # Equivale a rm -rf
+
+# Copiar / Mover
+Copy-Item ".\origen.txt" ".\destino.txt"
+Copy-Item ".\src" ".\backup" -Recurse
+Move-Item ".\archivo.txt" ".\archivos\"
+
+# Leer / Escribir contenido
+Get-Content ".\log.txt"                    # cat
+Get-Content ".\log.txt" -Tail 50           # tail -n 50
+Get-Content ".\log.txt" -Wait              # tail -f (follow)
+Set-Content ".\archivo.txt" "Nuevo texto"  # Sobreescribir
+Add-Content ".\archivo.txt" "Línea extra"  # Append
+
+# Propiedades de archivos
+Get-Item ".\archivo.txt" | Select-Object Name, Length, LastWriteTime
+
+# Test de existencia
+Test-Path "C:\Windows\System32"  # True/False
+```
+
+---
+
+## 8. 🌐 Redes y API REST
+
+```powershell
+# HTTP Request básico (GET)
+$respuesta = Invoke-RestMethod -Uri "https://api.github.com/users/octocat"
+$respuesta.name          # Nombre del usuario
+$respuesta.public_repos  # Número de repositorios
+
+# POST con body JSON
+$body = @{
+    titulo  = "Nuevo post"
+    cuerpo  = "Contenido del post"
+    usuarioId = 1
+} | ConvertTo-Json
+
+$resultado = Invoke-RestMethod `
+    -Method POST `
+    -Uri "https://jsonplaceholder.typicode.com/posts" `
+    -ContentType "application/json" `
+    -Body $body
+
+# Con headers de autenticación
+$headers = @{
+    "Authorization" = "Bearer $TOKEN"
+    "Accept"        = "application/json"
+}
+
+Invoke-RestMethod -Uri "https://api.ejemplo.com/recursos" -Headers $headers
+
+# Invoke-WebRequest (más control que Invoke-RestMethod)
+$response = Invoke-WebRequest -Uri "https://ejemplo.com"
+$response.StatusCode    # 200
+$response.Headers       # Headers de respuesta
+$response.Content       # Body como string
+
+# Ping
+Test-Connection -ComputerName "google.com" -Count 3
+Test-NetConnection -ComputerName "google.com" -Port 443  # Test de puerto
+```
+
+---
+
+## 9. ⚙️ Procesos y Servicios del Sistema
+
+```powershell
+# Gestión de procesos
+Get-Process                              # Listar todos los procesos
+Get-Process -Name "chrome"               # Buscar por nombre
+Start-Process "notepad.exe"              # Iniciar proceso
+Stop-Process -Name "chrome" -Force       # Terminar proceso
+Wait-Process -Name "msiexec"             # Esperar a que termine
+
+# Ejecutar comando externo y capturar salida
+$salida = git status 2>&1               # Capturar stdout y stderr
+$codigo = $LASTEXITCODE                  # Código de retorno
+
+# Ejecutar con Start-Process y esperar
+Start-Process "msiexec.exe" -ArgumentList "/i", "setup.msi", "/quiet" -Wait
+
+# Gestión de servicios (Windows)
+Get-Service                              # Listar todos los servicios
+Get-Service -Name "wuauserv"             # Windows Update
+Start-Service -Name "Spooler"            # Iniciar servicio
+Stop-Service -Name "Spooler"             # Detener servicio
+Restart-Service -Name "W32Time"          # Reiniciar servicio
+Set-Service -Name "Spooler" -StartupType Automatic  # Cambiar tipo de inicio
+
+# Trabajos en segundo plano (Jobs)
+$job = Start-Job { Start-Sleep 10; "Proceso completado" }
+Get-Job                                  # Ver todos los jobs
+Receive-Job -Job $job                    # Obtener resultado
+Wait-Job -Job $job                       # Esperar a que termine
+Remove-Job -Job $job                     # Eliminar job
+
+# Registro de Eventos (Event Log)
+Get-EventLog -LogName System -Newest 20
+Get-EventLog -LogName Application -EntryType Error -Newest 50
+```
+
+---
+
+## 10. 🔐 Manejo de Credenciales y Seguridad
+
+```powershell
+# Solicitar credenciales de forma segura (no como texto plano)
+$credencial = Get-Credential
+# Muestra un diálogo gráfico para introducir usuario y contraseña
+
+$credencial.UserName     # Usuario
+$credencial.Password     # SecureString (nunca texto plano en memoria)
+$credencial.GetNetworkCredential().Password  # Solo para uso interno (texto)
+
+# Crear SecureString desde texto (para scripts automatizados)
+$password = ConvertTo-SecureString "MiPassword123" -AsPlainText -Force
+$cred = New-Object PSCredential ("usuario", $password)
+
+# Cifrar texto con DPAPI (solo el usuario actual puede descifrarlo)
+$textoSeguro = ConvertTo-SecureString "secreto" -AsPlainText -Force
+$encrypted = $textoSeguro | ConvertFrom-SecureString
+# Guardar $encrypted en archivo o variable de entorno
+
+# Recuperar texto cifrado
+$recovered = ConvertTo-SecureString $encrypted
+$recoveredText = [Runtime.InteropServices.Marshal]::PtrToStringAuto(
+    [Runtime.InteropServices.Marshal]::SecureStringToBSTR($recovered)
+)
+
+# Variables de entorno para secretos (mejor práctica en CI/CD)
+$token = $env:MI_TOKEN_SECRETO
+if (-not $token) { throw "MI_TOKEN_SECRETO no está definido" }
+```
+
+---
+
+## 11. 📦 Módulos y PowerShell Gallery
+
+```powershell
+# Buscar módulos en la galería oficial
+Find-Module -Name "*azure*"
+Find-Module -Name "Pester" -Repository PSGallery
+
+# Instalar módulo
+Install-Module -Name "Az" -Scope CurrentUser -Force
+Install-Module -Name "Pester" -MinimumVersion "5.0"
+
+# Listar módulos instalados
+Get-Module -ListAvailable
+Get-InstalledModule
+
+# Importar módulo en la sesión actual
+Import-Module Az.Accounts
+Import-Module .\MiModuloPersonalizado.psm1
+
+# Actualizar módulo
+Update-Module -Name "Az"
+
+# Desinstalar módulo
+Uninstall-Module -Name "Az"
+
+# Crear módulo básico (MiModulo.psm1)
+# --- MiModulo.psm1 ---
+function Get-Saludo {
+    param([string]$Nombre = "Mundo")
+    "Hola, $Nombre desde el módulo!"
+}
+Export-ModuleMember -Function Get-Saludo
+
+# --- MiModulo.psd1 (manifest) ---
+# New-ModuleManifest -Path "MiModulo.psd1" -RootModule "MiModulo.psm1" -Author "Tu Nombre"
+```
+
+---
+
+## 12. 🚀 PowerShell Remoto (PSRemoting)
+
+```powershell
+# Habilitar PSRemoting (solo Windows, requiere admin)
+Enable-PSRemoting -Force
+
+# Sesión remota interactiva
+Enter-PSSession -ComputerName "servidor-01" -Credential (Get-Credential)
+# Ahora estás en la sesión remota...
+Exit-PSSession   # Volver a la sesión local
+
+# Ejecutar comando en máquina remota
+Invoke-Command -ComputerName "servidor-01" -ScriptBlock {
+    Get-Service | Where-Object Status -eq "Stopped"
+}
+
+# Ejecutar en múltiples máquinas en paralelo
+$servidores = @("web-01", "web-02", "web-03")
+Invoke-Command -ComputerName $servidores -ScriptBlock {
+    [PSCustomObject]@{
+        Servidor  = $env:COMPUTERNAME
+        Uptime    = (Get-Date) - (gcim Win32_OperatingSystem).LastBootUpTime
+        DiskFree  = (Get-PSDrive C).Free / 1GB
+    }
+}
+
+# Sesión persistente (más eficiente para múltiples comandos)
+$sesion = New-PSSession -ComputerName "servidor-01"
+Invoke-Command -Session $sesion { Import-Module ActiveDirectory }
+Invoke-Command -Session $sesion { Get-ADUser -Filter * | Select-Object Name }
+Remove-PSSession -Session $sesion
+```
+
+---
+
+## 13. 🧪 Manejo de Errores
+
+```powershell
+# Try / Catch / Finally
+try {
+    $resultado = Invoke-RestMethod -Uri "https://api.invalida.xyz/datos"
+    Write-Host "Datos obtenidos: $($resultado.Count) registros"
+} catch [System.Net.WebException] {
+    Write-Error "Error de red: $($_.Exception.Message)"
+} catch {
+    # Catch genérico — $_ contiene el ErrorRecord
+    Write-Error "Error inesperado: $($_.Exception.Message)"
+    Write-Error "En línea: $($_.InvocationInfo.ScriptLineNumber)"
+} finally {
+    Write-Host "Bloque finally siempre se ejecuta"
+}
+
+# -ErrorAction por comando
+Get-Item ".\archivo_inexistente.txt" -ErrorAction SilentlyContinue
+Get-Item ".\archivo_critico.txt"     -ErrorAction Stop  # Convierte error en excepción
+
+# $ErrorActionPreference global
+$ErrorActionPreference = "Stop"  # Todos los errores se convierten en excepciones
+
+# $Error — array de todos los errores de la sesión
+$Error[0]         # Error más reciente
+$Error[0].Exception.Message
+$Error.Clear()    # Limpiar historial de errores
+
+# Validar antes de ejecutar (patrón recomendado)
+if (-not (Test-Path ".\config.json")) {
+    throw "El archivo de configuración no existe"
+}
+```
+
+---
+
+## 14. ⚠️ Errores Comunes y Pitfalls
+
+* **Usar `==` en lugar de `-eq`**: En PowerShell, `==` no existe. Siempre usa `-eq`, `-ne`, `-gt`, etc.
+  * ❌ `if ($a == $b)` → ✅ `if ($a -eq $b)`
+
+* **Concatenar en el pipeline con `+`**: El `+` concatena arrays en lugar de filtrar.
+  * ❌ `Get-Process + Get-Service` → ✅ `@(Get-Process; Get-Service)`
+
+* **No capturar salida de cmdlets**: Si no asignas la salida a una variable, PowerShell la imprime en pantalla.
+  * ❌ `New-Item .\archivo.txt` (muestra objeto en pantalla) → ✅ `$item = New-Item .\archivo.txt` o `New-Item .\archivo.txt | Out-Null`
+
+* **Confundir `Write-Host` con `Write-Output`**: `Write-Host` solo imprime en pantalla y **no puede ser capturado ni redirigido**. Usar `Write-Output` o simplemente poner el valor.
+  * ❌ `$dato = Write-Host "Hola"` → `$dato` será `$null`
+  * ✅ `$dato = Write-Output "Hola"` → `$dato` será `"Hola"`
+
+* **Scripts firmados y Execution Policy**: Scripts descargados de internet fallarán con `RemoteSigned`. Desbloquear con `Unblock-File .\script.ps1`.
+
+* **Modificar arrays en bucle**: Modificar un array mientras se itera sobre él causa comportamiento impredecible. Crea una copia primero.
+  * ✅ `$copia = $array.Clone(); foreach ($item in $copia) { ... }`
+
+* **`$null` en comparaciones**: Siempre pon `$null` en el lado izquierdo de comparaciones.
+  * ❌ `$objeto -eq $null` puede fallar si `$objeto` es un array.
+  * ✅ `$null -eq $objeto`
+
+* **Llamadas a funciones sin paréntesis en argumentos**: Los argumentos van separados por espacios, NO por comas como en C#.
+  * ❌ `Saludar("Juan", "Pérez")` → ✅ `Saludar -Nombre "Juan"`
+
+---
+
+## 15. 💡 Buenas Prácticas y Consejos Pro
+
+* **Usa `[CmdletBinding()]` siempre en funciones avanzadas**: Esto activa `-Verbose`, `-Debug`, `-ErrorAction` y `-WhatIf` automáticamente.
+
+* **Aprovecha `-WhatIf`**: Muchos cmdlets destructivos soportan `-WhatIf`. Simula el comando sin ejecutarlo: `Remove-Item . -Recurse -WhatIf`.
+
+* **Prefer `Write-Verbose` sobre `Write-Host`**: Permite activar/desactivar mensajes de diagnóstico sin modificar el código: `Get-Datos -Verbose`.
+
+* **Valida parámetros con atributos**: Usa `[ValidateNotNullOrEmpty()]`, `[ValidateRange(1,100)]`, `[ValidateSet("dev","staging","prod")]` en los parámetros.
+
+* **Usa `Out-GridView` para exploración interactiva**: `Get-Process | Out-GridView` abre una ventana con filtros y búsqueda visual (solo Windows GUI).
+
+* **Crea objetos con `[PSCustomObject]@{}`**: Es mucho más rápido y legible que `New-Object PSObject -Property @{}`.
+
+* **Usa `Select-Object -ExpandProperty` en lugar de `.NombrePropiedad`**: Para obtener el valor puro de una propiedad al final de un pipeline sin perder los beneficios del pipeline.
+
+* **Almacena secretos en variables de entorno o en el Credential Store del sistema**: Nunca en texto plano en scripts.
+
+* **Usa Pester para tests unitarios de scripts**: El framework de testing estándar de PowerShell.
+
+* **Aprovecha la Tab Completion y `Show-Command`**: En lugar de adivinar parámetros, usa `Show-Command Get-ChildItem` para ver todos los parámetros con un formulario gráfico.
+
+---
+
+Este cheatsheet proporciona una referencia exhaustiva de **PowerShell**, cubriendo desde la sintaxis fundamental y el pipeline orientado a objetos hasta el scripting avanzado con manejo de errores, módulos, administración remota, y seguridad, junto con las mejores prácticas para escribir scripts de nivel profesional en entornos Windows y multiplataforma.
