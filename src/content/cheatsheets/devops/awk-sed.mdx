@@ -1,0 +1,464 @@
+---
+title: "AWK & SED"
+description: "AWK y SED son las herramientas clásicas de procesamiento de texto y edición de flujos en Unix/Linux, fundamentales en cualquier pipeline de automatización con Bash."
+createdAt: 2026-05-20
+updatedAt: 2026-05-20
+tags: [awk, sed, scripting, linux, bash, text-processing, devops]
+icon: "🔍"
+---
+
+# 🔍 AWK & SED — Cheatsheet Completo 🔍
+
+**AWK** y **SED** son las herramientas de procesamiento de texto más poderosas del ecosistema Unix, disponibles en prácticamente todos los sistemas GNU/Linux, macOS y BSD. **SED** (Stream EDitor) es un editor de flujos que aplica transformaciones a cada línea de texto mediante expresiones regulares. **AWK** es un lenguaje de programación completo orientado al procesamiento de registros y campos de texto estructurado. Juntas, son los pilares de cualquier pipeline de automatización, análisis de logs y manipulación de datos en la línea de comandos.
+
+---
+
+## 1. 🌟 Conceptos Clave y Fundamentos
+
+### 1.1. SED — Conceptos Base
+
+* **Stream Editor**: Procesa texto línea a línea desde stdin o archivos. No modifica el archivo original a menos que se use `-i`.
+* **Ciclo de Ejecución**: Para cada línea, SED la carga en el **espacio de patrón** (pattern space), aplica los comandos y la imprime automáticamente al final del ciclo.
+* **Espacio de retención (Hold Space)**: Área de almacenamiento secundaria donde se puede guardar texto entre ciclos de líneas.
+* **Dirección**: Especifica en qué líneas actúa un comando. Puede ser un número de línea, una regex, o un rango (`/inicio/,/fin/`).
+* **-n (silencioso)**: Suprime la impresión automática. Úsalo con `p` para imprimir solo lo que quieres.
+
+### 1.2. AWK — Conceptos Base
+
+* **Registro (Record)**: Por defecto, cada línea del archivo es un registro. Separador: `RS` (Record Separator, por defecto `\n`).
+* **Campo (Field)**: Cada token separado por el separador de campo. `$1`, `$2`, ..., `$NF`. Separador: `FS` (Field Separator, por defecto espacio/tab).
+* **`$0`**: El registro completo (toda la línea actual).
+* **`NR`**: Número del registro actual (número de línea global).
+* **`NF`**: Número de campos en el registro actual.
+* **`FNR`**: Número de registro dentro del archivo actual (útil con múltiples archivos).
+* **Bloque `BEGIN`**: Código que se ejecuta UNA VEZ antes de procesar cualquier línea.
+* **Bloque `END`**: Código que se ejecuta UNA VEZ después de procesar todas las líneas.
+* **Patrón**: Condición que debe cumplir un registro para que se ejecute la acción asociada.
+
+---
+
+## 2. 🛠️ Sintaxis Básica
+
+### 2.1. Sintaxis de SED
+
+```bash
+# Forma general
+sed [opciones] 'comando' archivo(s)
+sed [opciones] -f script.sed archivo(s)
+
+# Opciones esenciales
+# -n    Supprime la salida automática (modo silencioso)
+# -e    Permite múltiples expresiones en la misma invocación
+# -i    Edición in-place (modifica el archivo directamente)
+# -i.bak  In-place con backup (sufijo .bak)
+# -E    Usa ERE (Extended Regular Expressions), equivale a -r en GNU sed
+
+# Estructura de un comando SED
+# [dirección][!]comando[argumentos]
+
+# Ejemplos de direcciones:
+# 3           Solo la línea 3
+# $           Última línea
+# 1,5         Líneas 1 a 5 (rango)
+# /patrón/    Líneas que coincidan con el patrón
+# /ini/,/fin/ Rango entre dos patrones
+# 1~2         Líneas impares (GNU sed): línea 1, 3, 5...
+# 0~2         Líneas pares (GNU sed): línea 2, 4, 6...
+```
+
+### 2.2. Sintaxis de AWK
+
+```bash
+# Forma general
+awk [opciones] 'programa' archivo(s)
+awk [opciones] -f script.awk archivo(s)
+
+# Opciones esenciales
+# -F ':'   Define el separador de campo
+# -v var=valor  Define una variable antes de procesar
+
+# Estructura de un programa AWK
+# patrón { acción }
+
+awk 'BEGIN { ... } /patrón/ { acción } END { ... }' archivo
+
+# Separador de campo
+awk -F ':' '{ print $1 }' /etc/passwd   # Separador ':'
+awk -F ',' '{ print $2, $3 }' data.csv  # CSV separado por comas
+```
+
+---
+
+## 3. 📝 SED — Sustitución de Texto
+
+El comando `s` (substitute) es el más usado de SED.
+
+```bash
+# Sintaxis: s/patrón/reemplazo/flags
+# Flags: g (global), i (case-insensitive), p (print si coincide), N (N-ésima ocurrencia)
+
+# Reemplazar primera ocurrencia por línea
+sed 's/error/ERROR/' log.txt
+
+# Reemplazar TODAS las ocurrencias (flag g)
+sed 's/foo/bar/g' archivo.txt
+
+# Case-insensitive
+sed 's/error/ALERTA/gi' log.txt
+
+# Solo imprimir líneas modificadas (combinado con -n y p)
+sed -n 's/error/ERROR/gp' log.txt
+
+# Sustitución solo en rango de líneas
+sed '5,10s/texto/TEXTO/g' archivo.txt
+
+# Sustitución solo en líneas que coincidan con patrón
+sed '/^#/s/.*/#---COMENTARIO ARCHIVADO---/' config.txt
+
+# Usar delimitadores alternativos (útil con rutas)
+sed 's|/usr/local|/opt|g' paths.txt
+sed 's,/home/usuario,/home/nuevo,g' paths.txt
+
+# Grupos de captura y referencias a grupos (\1, \2, etc.)
+# Intercambiar nombre y apellido (Juan García -> García, Juan)
+sed 's/\([A-Za-z]*\) \([A-Za-z]*\)/\2, \1/' nombres.txt
+
+# Con ERE (-E) la sintaxis es más limpia
+sed -E 's/([A-Za-z]+) ([A-Za-z]+)/\2, \1/' nombres.txt
+
+# Reemplazar espacios múltiples por uno solo
+sed 's/  */ /g' archivo.txt
+sed -E 's/ +/ /g' archivo.txt   # ERE más clara
+
+# Eliminar texto (reemplazar por nada)
+sed 's/comentario//' archivo.txt    # Eliminar primera ocurrencia
+sed 's/<[^>]*>//g' pagina.html      # Eliminar tags HTML
+sed 's/[[:space:]]*$//' archivo.txt # Eliminar espacios al final de línea
+```
+
+---
+
+## 4. ✂️ SED — Eliminación, Inserción y Selección de Líneas
+
+```bash
+# Eliminar líneas (comando d)
+sed '3d' archivo.txt         # Eliminar línea 3
+sed '1,5d' archivo.txt       # Eliminar líneas 1 a 5
+sed '$d' archivo.txt         # Eliminar última línea
+sed '/patrón/d' archivo.txt  # Eliminar líneas que coincidan
+sed '/^$/d' archivo.txt      # Eliminar líneas vacías
+sed '/^[[:space:]]*$/d' archivo.txt  # Eliminar líneas en blanco (con espacios)
+sed '/^#/d' config.txt       # Eliminar comentarios
+
+# Negación con !: actúa en las que NO coinciden
+sed '/importante/!d' log.txt  # Mantener solo líneas con 'importante'
+
+# Imprimir líneas específicas (con -n)
+sed -n '5p' archivo.txt       # Imprimir solo línea 5
+sed -n '10,20p' archivo.txt   # Imprimir líneas 10 a 20
+sed -n '/inicio/,/fin/p' archivo.txt  # Imprimir entre dos patrones
+
+# Insertar texto (comando i = antes, a = después)
+sed '3i\Nueva línea antes de la 3' archivo.txt
+sed '3a\Nueva línea después de la 3' archivo.txt
+sed '/patrón/a\Texto insertado después del patrón' archivo.txt
+
+# Cambiar líneas completas (comando c)
+sed '5c\Esta línea reemplaza la línea 5' archivo.txt
+
+# Duplicar líneas (comando p sin -n)
+sed '/importante/p' archivo.txt   # Duplica líneas que coincidan
+
+# Edición in-place con backup
+sed -i.bak 's/version: 1.0/version: 2.0/g' config.yaml
+# Crea config.yaml.bak y modifica config.yaml
+```
+
+---
+
+## 5. 🧮 AWK — Procesamiento de Campos y Columnas
+
+```bash
+# Imprimir campos específicos
+awk '{ print $1 }' archivo.txt         # Primera columna
+awk '{ print $NF }' archivo.txt        # Última columna
+awk '{ print $1, $3 }' archivo.txt     # Columnas 1 y 3
+awk '{ print NR, $0 }' archivo.txt     # Numerar líneas
+
+# Separador de campo personalizado
+awk -F ':' '{ print $1, $7 }' /etc/passwd   # Usuario y shell
+awk -F ',' '{ print $1, $2 }' datos.csv     # Columnas de CSV
+awk -F '\t' '{ print $2 }' datos.tsv        # TSV
+
+# Cambiar el separador de salida (OFS — Output Field Separator)
+awk -F ',' 'BEGIN { OFS="|" } { print $1, $2, $3 }' datos.csv
+
+# Reformatear con printf
+awk -F ':' '{ printf "%-20s %s\n", $1, $7 }' /etc/passwd
+# Salida alineada: columna usuario de 20 caracteres, luego shell
+
+# Calcular longitud y manipular strings
+awk '{ print length($0), $0 }' archivo.txt  # Longitud de cada línea
+awk '{ print toupper($1) }' archivo.txt     # Primera columna en mayúsculas
+awk '{ print tolower($2) }' archivo.txt     # Segunda columna en minúsculas
+awk '{ gsub(/patrón/, "reemplazo"); print }' archivo.txt  # Global substitution
+
+# Reordenar o construir nueva estructura
+awk -F ',' '{ print $3 "," $1 "," $2 }' datos.csv  # Reordenar columnas
+```
+
+---
+
+## 6. 🔎 AWK — Filtrado y Patrones
+
+```bash
+# Filtrar líneas por patrón (regex)
+awk '/error/' log.txt                # Líneas con 'error'
+awk '!/^#/' config.txt               # Líneas que NO empiezan con #
+awk '/inicio/,/fin/' archivo.txt     # Rango de patrones
+
+# Filtrar por condición en campo (más potente)
+awk '$3 > 100' datos.txt             # Tercera columna mayor a 100
+awk '$2 == "activo"' usuarios.csv    # Segunda columna igual a "activo"
+awk 'NF > 3' archivo.txt             # Líneas con más de 3 campos
+awk 'NR >= 10 && NR <= 20' log.txt   # Líneas 10 a 20
+
+# Combinar múltiples condiciones
+awk '$1 == "ERROR" && $3 > 500' log.txt
+awk '/timeout/ || /connection refused/' log.txt
+
+# Filtrar columnas vacías o nulas
+awk '$2 != ""' archivo.txt           # Segunda columna no vacía
+awk 'NF == 5' archivo.txt            # Líneas con exactamente 5 campos
+
+# Extraer campo específico de línea con patrón
+awk '/^Version:/ { print $2 }' package.json
+awk -F '=' '/^PORT/ { print $2 }' .env   # Leer valor del .env
+```
+
+---
+
+## 7. 📊 AWK — Cálculos y Agregaciones
+
+```bash
+# Sumar una columna numérica
+awk '{ suma += $3 } END { print "Total:", suma }' ventas.csv
+
+# Contar líneas que cumplen una condición
+awk '/ERROR/ { count++ } END { print "Errores:", count }' log.txt
+
+# Calcular promedio
+awk '{ suma += $2; n++ } END { print "Promedio:", suma/n }' datos.txt
+
+# Valor máximo y mínimo
+awk 'NR==1 { max=$1; min=$1 }
+     { if ($1 > max) max=$1; if ($1 < min) min=$1 }
+     END { print "Max:", max, "Min:", min }' numeros.txt
+
+# Contar ocurrencias de cada valor (frecuencia)
+awk '{ count[$1]++ } END { for (k in count) print count[k], k }' log.txt | sort -rn
+
+# Agrupar y sumar por categoría
+awk -F ',' '{ ventas[$1] += $3 }
+             END { for (cat in ventas) print cat, ventas[cat] }' ventas.csv
+
+# Desviación estándar
+awk '{ x += $1; x2 += $1^2; n++ }
+     END { media = x/n; print "Desv. est.:", sqrt(x2/n - media^2) }' datos.txt
+```
+
+---
+
+## 8. ⚡ One-Liners Esenciales
+
+Estos comandos de una sola línea resuelven problemas comunes del día a día:
+
+```bash
+# ===== SED ONE-LINERS =====
+
+# Eliminar líneas vacías
+sed '/^$/d' archivo.txt
+
+# Eliminar espacios al inicio y final de cada línea (trim)
+sed 's/^[[:space:]]*//;s/[[:space:]]*$//' archivo.txt
+
+# Convertir CRLF (Windows) a LF (Unix)
+sed 's/\r//' archivo.txt
+# O in-place:
+sed -i 's/\r//' archivo.txt
+
+# Numerar líneas (alternativa a nl)
+sed = archivo.txt | sed 'N;s/\n/\t/'
+
+# Imprimir entre dos patrones (inclusivo)
+sed -n '/INICIO/,/FIN/p' archivo.txt
+
+# Insertar línea en blanco cada N líneas
+sed 'n;G' archivo.txt    # Línea en blanco cada 2 líneas
+
+# Invertir el orden de las líneas
+sed -n '1!G;h;$p' archivo.txt
+
+# Eliminar comentarios y líneas vacías de un archivo de configuración
+sed '/^[[:space:]]*#/d;/^$/d' config.txt
+
+# Reemplazar primera línea del archivo
+sed '1s/.*/NUEVA PRIMERA LÍNEA/' archivo.txt
+
+# ===== AWK ONE-LINERS =====
+
+# Imprimir número de líneas (como wc -l)
+awk 'END { print NR }' archivo.txt
+
+# Imprimir línea más larga
+awk '{ if (length > max) { max = length; linea = $0 } } END { print linea }' archivo.txt
+
+# Eliminar columna N (ej: eliminar columna 2)
+awk '{ $2=""; print }' datos.txt
+
+# Imprimir columnas en orden inverso
+awk '{ for(i=NF; i>=1; i--) printf "%s%s", $i, (i>1?OFS:"\n") }' datos.txt
+
+# Sumar todos los números de un archivo
+awk '{ for(i=1;i<=NF;i++) total+=$i } END { print total }' datos.txt
+
+# Eliminar líneas duplicadas (manteniendo orden, a diferencia de sort -u)
+awk '!visto[$0]++' archivo.txt
+
+# Extraer columna N de un CSV con cabecera
+awk -F ',' 'NR==1 { for(i=1;i<=NF;i++) if($i=="email") col=i } NR>1 { print $col }' datos.csv
+
+# Imprimir líneas entre la N y la M
+awk 'NR>=10 && NR<=20' archivo.txt
+
+# Convertir CSV a JSON básico
+awk -F ',' 'NR==1 { split($0,header,",") }
+            NR>1  { printf "{"; for(i=1;i<=NF;i++) printf "\"%s\":\"%s\"%s",header[i],$i,(i<NF?",":""); print "}" }' datos.csv
+```
+
+---
+
+## 9. 🔗 Combinando SED y AWK en Pipelines
+
+```bash
+# Extraer errores de Apache log y contar por IP
+grep "ERROR" access.log | awk '{ print $1 }' | sort | uniq -c | sort -rn | head -20
+
+# Limpiar CSV: eliminar comillas, espacios extra, y extraer columnas
+sed 's/"//g' datos.csv | awk -F ',' '{ print $1, $4 }'
+
+# Procesar archivo de configuración: extraer solo valores activos
+grep -v '^#' config.txt | sed '/^$/d' | awk -F '=' '{ print $1, "=", $2 }'
+
+# Análisis de log de Nginx: top 10 IPs por peticiones
+awk '{ print $1 }' access.log | sort | uniq -c | sort -rn | head -10
+
+# Extraer y formatear tiempos de respuesta de log
+awk '/request_time/ { match($0, /request_time=([0-9.]+)/, arr); print arr[1] }' app.log | \
+    awk '{ s+=$1; n++ } END { printf "Promedio: %.3fs\n", s/n }'
+
+# Comparar dos columnas de dos archivos diferentes
+awk 'FNR==NR { a[$1]=$2; next } { if ($1 in a) print $1, a[$1], $2 }' archivo1.txt archivo2.txt
+
+# Generar reporte de errores agrupado por hora
+awk '/ERROR/ { match($0, /\[([0-9]{2}):[0-9]{2}:[0-9]{2}\]/, t); errores[t[1]]++ }
+     END { for (h in errores) printf "Hora %s: %d errores\n", h, errores[h] }' app.log | sort
+
+# Reemplazar variables de entorno en una plantilla
+sed "s/\${APP_VERSION}/$APP_VERSION/g;s/\${APP_PORT}/$APP_PORT/g" template.yaml
+```
+
+---
+
+## 10. 🎯 Expresiones Regulares en SED y AWK
+
+```bash
+# Clases de caracteres POSIX (portables entre sistemas)
+# [[:alpha:]]  Letras (a-z, A-Z)
+# [[:digit:]]  Dígitos (0-9)
+# [[:alnum:]]  Alfanumérico
+# [[:space:]]  Espacios y tabs
+# [[:upper:]]  Mayúsculas
+# [[:lower:]]  Minúsculas
+# [[:punct:]]  Signos de puntuación
+# [[:blank:]]  Espacio y tab (solo)
+
+# Anclas
+# ^  Inicio de línea
+# $  Fin de línea
+# \b Frontera de palabra (AWK: \< inicio, \> fin)
+
+# Cuantificadores (ERE con -E en sed, AWK los soporta de forma nativa)
+# *   Cero o más
+# +   Uno o más
+# ?   Cero o uno
+# {n} Exactamente n veces
+# {n,m} Entre n y m veces
+
+# Ejemplos prácticos
+# Validar formato IP (básico)
+awk '/^([0-9]{1,3}\.){3}[0-9]{1,3}$/ { print "IP válida:", $0 }' ips.txt
+
+# Extraer emails
+grep -oE '[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}' archivo.txt
+
+# Extraer URLs
+sed -n 's/.*\(https\?:\/\/[^ ]*\).*/\1/p' archivo.txt
+
+# Extraer números de versión semver
+awk 'match($0, /[0-9]+\.[0-9]+\.[0-9]+/, arr) { print arr[0] }' CHANGELOG.md
+
+# Validar fechas formato YYYY-MM-DD
+awk '/^[0-9]{4}-[0-9]{2}-[0-9]{2}$/ { print "Fecha válida:", $0 }' fechas.txt
+```
+
+---
+
+## 11. ⚠️ Errores Comunes y Pitfalls
+
+* **No usar `-i` sin backup en producción**: `sed -i 's/a/b/g' archivo_critico.txt` modifica el archivo de forma irreversible. Siempre usa `-i.bak` en scripts de producción o crea un backup primero.
+  * ✅ `sed -i.bak 's/a/b/g' archivo.txt`
+
+* **Confundir BRE y ERE en SED**: Por defecto, SED usa BRE (Basic Regular Expressions). En BRE, `+`, `?`, `|`, `{n}` deben escaparse: `\+`, `\?`, `\|`, `\{n\}`. Con `-E` activas ERE y la sintaxis es más natural.
+  * ❌ `sed 's/[0-9]+/NUM/'` (no funciona en BRE)
+  * ✅ `sed -E 's/[0-9]+/NUM/'`
+
+* **División por cero en AWK**: Si calculas promedios u otras divisiones, verifica que el divisor no sea cero.
+  * ✅ `END { if (n > 0) print suma/n; else print "Sin datos" }`
+
+* **`$0` en AWK se regenera al modificar campos**: Cuando asignas `$2 = "nuevo"`, AWK reconstruye `$0` usando OFS. Si OFS es un espacio y el separador original era tab, pierdes el formato original.
+  * ✅ Establece `BEGIN { OFS="\t" }` antes de modificar campos.
+
+* **Olvidar que AWK compara como string por defecto**: `$1 > 10` se evalúa como string si `$1` contiene letras. Asegúrate de que los campos sean numéricos o usa `int($1) > 10`.
+
+* **Glob de archivos en SED**: `sed 's/a/b/' *.txt` funciona, pero si hay demasiados archivos supera el límite del shell. Usa `find . -name "*.txt" | xargs sed -i 's/a/b/g'`.
+
+* **Diferencias entre GNU sed y BSD sed (macOS)**: En macOS, `sed -i` requiere un argumento de sufijo obligatorio. `-i ''` para sin backup o `-i .bak` para backup.
+  * macOS: `sed -i '' 's/a/b/g' archivo.txt`
+  * Linux:  `sed -i 's/a/b/g' archivo.txt`
+
+* **`print` vs `printf` en AWK**: `print` agrega `ORS` (output record separator, por defecto `\n`) automáticamente. `printf` no agrega nada — debes gestionar `\n` manualmente.
+
+---
+
+## 12. 💡 Buenas Prácticas y Consejos Pro
+
+* **Prueba antes de modificar in-place**: Ejecuta el comando SED sin `-i` primero para revisar que la salida es correcta. Agrega `-i` solo cuando estés seguro.
+
+* **Usa variables AWK en `BEGIN`** para hacer tus scripts configurables sin hardcodear valores: `awk -v umbral=100 '$3 > umbral { print }'`.
+
+* **Combina `sed` y `awk` con `xargs` para procesamiento masivo**: `find . -name "*.log" | xargs awk '/ERROR/ { count++ } END { print FILENAME, count }'`.
+
+* **Usa `gawk` (GNU AWK) para features avanzados**: Arrays multidimensionales (`arr[key1,key2]`), funciones de tiempo (`systime()`, `strftime()`), y soporte nativo de Unicode son exclusivos de `gawk`.
+
+* **`mawk` para rendimiento máximo en scripts de big data**: `mawk` es 2-10x más rápido que `gawk` para pipelines de procesamiento masivo de texto. Úsalo cuando el rendimiento es crítico.
+
+* **Aprovecha `FNR` vs `NR` con múltiples archivos**: `NR` cuenta líneas globalmente; `FNR` reinicia por archivo. `awk 'FNR==NR { ... } FNR!=NR { ... }' file1 file2` es el patrón clásico para hacer joins de archivos.
+
+* **Documenta tus one-liners complejos**: AWK permite escribir código en múltiples líneas con `-f script.awk`. Un script de AWK bien comentado de 20 líneas es infinitamente más mantenible que un one-liner de 200 caracteres.
+
+* **Para transformaciones muy complejas, considera Python**: Si el one-liner de AWK se extiende a más de 5 líneas, a veces es más legible y mantenible usar `python3 -c "..."` o un script Python completo.
+
+---
+
+Este cheatsheet proporciona una referencia exhaustiva de **AWK y SED**, cubriendo desde los conceptos fundamentales de ambas herramientas hasta patrones avanzados de procesamiento de texto, expresiones regulares POSIX, one-liners esenciales para el día a día y las mejores prácticas para escribir pipelines de texto robustos y portables en sistemas Unix/Linux.
