@@ -1,0 +1,568 @@
+---
+title: "Ruby para Automatización"
+description: "Ruby como lenguaje de scripting y automatización de sistemas: bloques, iteradores, manipulación de archivos, regex, CLI con Thor/OptionParser y scripting para infraestructura."
+createdAt: 2026-05-20
+updatedAt: 2026-05-20
+tags: [ruby, scripting, automatizacion, rake, cli, devops, infraestructura]
+icon: "💎"
+---
+
+# 💎 Ruby para Automatización y Scripting — Cheatsheet Completo 💎
+
+**Ruby** es un lenguaje orientado a objetos con una filosofía centrada en la felicidad del programador, diseñado por Yukihiro Matsumoto ("Matz") en 1995. Su sintaxis expresiva y su sistema de bloques e iteradores lo hacen extraordinariamente elegante para la automatización. Es el lenguaje detrás de herramientas de infraestructura fundamentales: **Vagrant** (virtualización), **Chef** (gestión de configuración), **Puppet** (infraestructura como código), **Capistrano** (despliegues remotos), y por supuesto **Ruby on Rails**. Dominar Ruby scripting significa escribir scripts de automatización que leen más como especificaciones en inglés que como código.
+
+---
+
+## 1. 🌟 Conceptos Clave y Fundamentos
+
+* **Todo es un objeto**: En Ruby, absolutamente todo es un objeto — incluyendo números, strings, booleanos y `nil`. `1.class` devuelve `Integer`. `nil.nil?` devuelve `true`.
+* **Bloques (`do...end` / `{ }`)**: Fragmentos de código que se pasan a métodos. Son la característica más distintiva y poderosa de Ruby. Todo iterador acepta un bloque.
+* **`yield`**: Palabra clave que invoca el bloque que se pasó al método actual.
+* **Procs y Lambdas**: Bloques guardados en variables. `Proc.new { |x| x * 2 }` o `lambda { |x| x * 2 }` o la sintaxis corta `->(x) { x * 2 }`.
+* **Símbolos (`:nombre`)**: Identificadores inmutables e internados. Más eficientes que strings como claves de hash. `:nombre == :nombre` (misma referencia en memoria).
+* **Open Classes**: Puedes añadir métodos a cualquier clase, incluyendo las nativas (`String`, `Integer`, `Array`). Esto se llama "monkey patching".
+* **Mixins con `include`**: Ruby no tiene herencia múltiple, pero los módulos permiten compartir comportamiento entre clases sin herencia.
+* **`nil` vs `false`**: Solo `nil` y `false` son falsy en Ruby. `0`, `""`, `[]` son **truthy** (diferente de Python/JS).
+* **Sintaxis opcional**: Los paréntesis en llamadas a métodos son opcionales. Los últimos paréntesis en `puts("hola")` pueden omitirse: `puts "hola"`.
+* **Rake**: El sistema de tareas de Ruby (Make de Ruby), fundamental para scripts de automatización complejos.
+
+---
+
+## 2. 🛠️ Instalación y Entorno
+
+### 2.1. Instalación
+
+```bash
+# macOS (via Homebrew + rbenv para gestión de versiones)
+brew install rbenv ruby-build
+rbenv install 3.3.0
+rbenv global 3.3.0
+
+# Ubuntu/Debian
+sudo apt-get install rbenv
+rbenv install 3.3.0
+
+# Windows (via RubyInstaller)
+# Descargar desde https://rubyinstaller.org/
+
+# Verificar
+ruby --version    # ruby 3.3.x
+gem --version     # RubyGems version
+
+# Instalar gemas (paquetes)
+gem install rake
+gem install thor       # Framework para CLIs
+gem install httparty   # HTTP Client
+gem install dotenv     # Variables de entorno desde .env
+gem install tty-prompt # Prompts interactivos de terminal
+```
+
+### 2.2. Estructura de Script
+
+```ruby
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+# Encoding: UTF-8
+
+# El magic comment 'frozen_string_literal: true' hace que todos los string
+# literales del archivo sean inmutables (mejor rendimiento y menos bugs).
+
+require "json"
+require "pathname"
+require "optparse"
+
+# Constantes en SCREAMING_SNAKE_CASE
+BASE_DIR = Pathname.new(__FILE__).dirname.freeze
+VERSION  = "1.0.0".freeze
+
+def main
+  # Lógica principal
+  puts "Script iniciado (v#{VERSION})"
+end
+
+# Solo ejecutar si se llama directamente (no si es requerido como librería)
+main if __FILE__ == $PROGRAM_NAME
+# Alternativa: main if $PROGRAM_NAME == __FILE__
+```
+
+---
+
+## 3. 📝 Variables y Tipos
+
+```ruby
+# Tipos de variables por convención de nombre
+local_variable = "valor"     # Variable local (scope del bloque actual)
+$variable_global = "global"  # Variable global (evitar en lo posible)
+@variable_instancia = "inst" # Variable de instancia (dentro de clases)
+@@variable_clase = "clase"   # Variable de clase
+CONSTANTE = "constante"      # Constante (en mayúsculas)
+
+# Tipos básicos
+entero      = 42
+flotante    = 3.14
+booleano    = true
+nulo        = nil
+simbolo     = :nombre_simbolo
+rango       = (1..10)         # Rango inclusivo: 1, 2, ..., 10
+rango_excl  = (1...10)        # Rango exclusivo: 1, 2, ..., 9
+
+# String
+simple  = "interpolación: #{entero * 2}"   # "interpolación: 84"
+literal = 'sin interpolación: #{entero}'   # Sin evaluar
+heredoc = <<~TEXTO
+  String multilínea
+  con indentación limpia
+  gracias al operador <<~
+TEXTO
+
+# Métodos de String
+"  hola mundo  ".strip          # "hola mundo"
+"hola mundo".split(" ")         # ["hola", "mundo"]
+"hola".upcase                   # "HOLA"
+"HOLA".downcase                 # "hola"
+"hola mundo".capitalize         # "Hola mundo"
+"hola".include?("ola")          # true
+"hola".gsub("o", "0")          # "h0la"
+"hola".start_with?("ho")        # true
+"abc".chars                     # ["a", "b", "c"]
+"hola\nmundo\n".chomp           # Eliminar \n al final
+"  ".empty?                     # false (" " no es vacío)
+"".empty?                       # true
+
+# Symbol to Proc (idioma muy común en Ruby)
+["hola", "mundo"].map(&:upcase)  # ["HOLA", "MUNDO"]
+# Equivale a: .map { |s| s.upcase }
+```
+
+---
+
+## 4. 📦 Arrays y Hashes
+
+```ruby
+# ===== ARRAYS =====
+frutas = ["manzana", "pera", "uva"]
+numeros = [1, 2, 3, 4, 5]
+mixto   = [1, "dos", :tres, nil, true]
+
+# Acceso
+frutas[0]      # "manzana"
+frutas[-1]     # "uva" (último)
+frutas[0..1]   # ["manzana", "pera"] (slice con rango)
+frutas.first   # "manzana"
+frutas.last    # "uva"
+frutas.sample  # Elemento aleatorio
+
+# Modificación
+frutas.push("kiwi")         # Agrega al final
+frutas << "mango"           # Alias de push
+frutas.unshift("cereza")    # Agrega al inicio
+frutas.pop                  # Elimina y retorna el último
+frutas.shift                # Elimina y retorna el primero
+frutas.delete("pera")       # Elimina por valor
+frutas.uniq                 # Elimina duplicados
+frutas.compact              # Elimina nils
+frutas.flatten              # Aplana arrays anidados
+frutas.sort                 # Ordena
+frutas.reverse              # Invierte
+
+# Consultas
+frutas.length               # 3 (o .size o .count)
+frutas.include?("uva")      # true
+frutas.empty?               # false
+frutas.any?  { |f| f.start_with?("m") }  # true
+frutas.all?  { |f| f.length > 2 }        # true
+frutas.none? { |f| f == "piña" }         # true
+frutas.count { |f| f.length > 4 }        # Contar con condición
+
+# ===== HASHES =====
+config = {
+    host:   "localhost",    # Símbolo como clave (forma moderna)
+    port:   5432,
+    "user" => "admin",      # String como clave (forma antigua)
+}
+
+config[:host]         # "localhost"
+config["user"]        # "admin"
+config.key?(:port)    # true
+config.value?(5432)   # true
+config.keys           # [:host, :port, "user"]
+config.values         # ["localhost", 5432, "admin"]
+config.merge(ssl: true)      # Nuevo hash con clave adicional
+config.merge!(ssl: true)     # Modifica el hash in-place
+config.select { |k, v| v.is_a?(String) }  # Filtrar por tipo de valor
+config.map { |k, v| [k, v.to_s] }.to_h    # Transformar valores
+config.each_with_object({}) { |(k, v), h| h[v] = k }  # Invertir hash
+```
+
+---
+
+## 5. 🔄 Iteradores y Bloques
+
+Los iteradores con bloques son la firma de Ruby. Son más expresivos y seguros que los bucles for tradicionales.
+
+```ruby
+numeros = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+
+# each — iterar sin transformar
+numeros.each { |n| print "#{n} " }   # 1 2 3 4 5 6 7 8 9 10
+
+# map (alias: collect) — transformar cada elemento
+cuadrados = numeros.map { |n| n ** 2 }
+# [1, 4, 9, 16, 25, 36, 49, 64, 81, 100]
+
+# select (alias: filter) — filtrar elementos
+pares = numeros.select { |n| n.even? }   # [2, 4, 6, 8, 10]
+impares = numeros.reject { |n| n.even? } # [1, 3, 5, 7, 9]
+
+# reduce (alias: inject) — acumular en un valor
+suma  = numeros.reduce(0) { |acc, n| acc + n }  # 55
+suma2 = numeros.reduce(:+)                       # 55 (más idiomático)
+producto = numeros.reduce(:*)                    # 3628800
+
+# find (alias: detect) — primer elemento que cumple condición
+primero_par = numeros.find { |n| n > 5 && n.even? }  # 6
+
+# each_with_index — iterar con índice
+frutas.each_with_index do |fruta, i|
+    puts "#{i + 1}. #{fruta}"
+end
+
+# each_with_object — acumular en un objeto dado
+resultado = numeros.each_with_object([]) do |n, acc|
+    acc << n * 2 if n.odd?
+end
+# [2, 6, 10, 14, 18]
+
+# group_by — agrupar en hash
+por_paridad = numeros.group_by { |n| n.even? ? :par : :impar }
+# { impar: [1,3,5,7,9], par: [2,4,6,8,10] }
+
+# flat_map — map + flatten
+palabras = [["hola", "mundo"], ["ruby", "rocks"]]
+todas = palabras.flat_map { |lista| lista.map(&:upcase) }
+# ["HOLA", "MUNDO", "RUBY", "ROCKS"]
+
+# sort_by — ordenar por criterio
+usuarios = [{nombre: "Ana", edad: 28}, {nombre: "Luis", edad: 22}]
+por_edad = usuarios.sort_by { |u| u[:edad] }
+
+# times, upto, downto — rangos de repetición
+3.times { |i| puts "Iteración #{i}" }   # 0, 1, 2
+1.upto(5) { |n| print "#{n} " }         # 1 2 3 4 5
+5.downto(1) { |n| print "#{n} " }       # 5 4 3 2 1
+(1..10).step(2) { |n| print "#{n} " }   # 1 3 5 7 9
+```
+
+---
+
+## 6. 🔧 Definición de Métodos y Bloques Propios
+
+```ruby
+# Método básico
+def saludar(nombre = "Mundo")
+    "Hola, #{nombre}!"   # El valor de la última expresión se retorna
+end
+puts saludar           # Hola, Mundo!
+puts saludar("Ruby")   # Hola, Ruby!
+
+# Método con bloque (yield)
+def medir
+    inicio = Time.now
+    resultado = yield   # Ejecuta el bloque pasado al método
+    fin = Time.now
+    puts "Tiempo: #{(fin - inicio).round(3)}s"
+    resultado
+end
+
+datos = medir { cargar_archivo_grande }
+
+# Verificar si se pasó un bloque
+def opcional
+    if block_given?
+        yield "valor"
+    else
+        "sin bloque"
+    end
+end
+
+# Capturar bloque como Proc (&block)
+def ejecutar_despues(espera, &bloque)
+    sleep espera
+    bloque.call
+end
+ejecutar_despues(1) { puts "1 segundo después" }
+
+# Parámetros keyword (nombrados), disponibles desde Ruby 2.0
+def conectar(host:, port: 5432, ssl: false)
+    puts "Conectando a #{host}:#{port} (SSL: #{ssl})"
+end
+conectar(host: "localhost", ssl: true)
+
+# Parámetros variádicos
+def sumar(*numeros)
+    numeros.reduce(0, :+)
+end
+puts sumar(1, 2, 3, 4, 5)   # 15
+
+# Splat operator para expandir arrays
+args = [3, 4, 5]
+puts sumar(*args)   # 15
+```
+
+---
+
+## 7. 📁 Sistema de Archivos y Shell
+
+```ruby
+require "fileutils"
+require "pathname"
+
+# Pathname (orientado a objetos, recomendado)
+ruta = Pathname.new("/home/usuario/proyectos")
+archivo = Pathname.new("config.yaml")
+
+# Unir rutas
+completa = ruta / "mi-proyecto" / "src"   # Usando el operador /
+
+# Operaciones con Pathname
+ruta.exist?          # true/false
+ruta.file?           # false (es directorio)
+ruta.directory?      # true
+ruta.basename        # Pathname("proyectos")
+ruta.extname         # ".yaml" (del archivo)
+ruta.dirname         # Directorio padre
+
+# Listar archivos
+Pathname.new(".").children.each { |f| puts f }
+Pathname.new(".").glob("**/*.rb") { |f| puts f }
+
+# Leer y escribir
+contenido = File.read("config.yaml")
+File.write("output.txt", "Contenido\n")
+File.open("log.txt", "a") { |f| f.puts "Nueva entrada" }  # Append
+
+# FileUtils — operaciones de sistema de archivos de alto nivel
+FileUtils.mkdir_p "logs/2024/enero"     # mkdir -p
+FileUtils.cp "origen.txt", "destino/"   # cp
+FileUtils.cp_r "src/", "backup/"        # cp -r
+FileUtils.mv "viejo.txt", "nuevo.txt"   # mv
+FileUtils.rm "temporal.txt"             # rm
+FileUtils.rm_rf "directorio/"           # rm -rf (con cuidado!)
+
+# Dir.glob — buscar archivos con patrones
+Dir.glob("**/*.log").each { |f| puts f }
+Dir.glob("src/**/*.{rb,rake}").sort
+
+# Ejecutar comandos del sistema
+system("git status")                    # Retorna true/false
+output = `git log --oneline -5`        # Retorna la salida como string
+output = %x(git log --oneline -5)      # Equivalente con %x()
+puts $?.exitstatus                      # Código de retorno del último comando
+
+# Popen3 para capturar stdout y stderr por separado
+require "open3"
+stdout, stderr, status = Open3.capture3("npm", "test")
+puts "OK" if status.success?
+puts "Tests fallaron:\n#{stderr}" unless status.success?
+
+# stdin, stdout, stderr como streams
+Open3.popen3("git", "log", "--oneline") do |stdin, stdout, stderr, wait_thr|
+    stdout.each_line { |linea| puts linea }
+    puts "Código: #{wait_thr.value.exitstatus}"
+end
+```
+
+---
+
+## 8. 🎯 Rake — Automatización de Tareas
+
+```ruby
+# Rakefile — archivo de tareas (equivale al Makefile en Ruby)
+
+require "rake/clean"
+
+# Tarea simple
+task :build do
+    puts "Compilando..."
+    system("gcc -o app main.c") or raise "Compilación fallida"
+end
+
+# Tarea con descripción
+desc "Ejecutar suite de tests"
+task :test do
+    sh "rspec spec/"  # sh lanza error automáticamente si falla
+end
+
+# Tarea con dependencias
+desc "Deploy completo"
+task deploy: [:build, :test] do
+    puts "Desplegando..."
+    sh "rsync -avz dist/ usuario@servidor:/var/www/app/"
+end
+
+# Tarea por defecto
+task default: :test
+
+# Namespace para organizar tareas
+namespace :db do
+    desc "Ejecutar migraciones"
+    task :migrate do
+        sh "rails db:migrate"
+    end
+
+    desc "Rollback de última migración"
+    task :rollback do
+        sh "rails db:rollback"
+    end
+end
+
+# Parámetros en tareas
+task :crear_usuario, [:nombre, :email] do |t, args|
+    puts "Creando usuario: #{args.nombre} (#{args.email})"
+end
+# Uso: rake crear_usuario[Juan,juan@ejemplo.com]
+
+# FileTask — tarea orientada a archivos (solo ejecuta si el archivo cambió)
+file "output.min.js" => "output.js" do
+    sh "uglifyjs output.js -o output.min.js"
+end
+```
+
+---
+
+## 9. 🖥️ CLI con OptionParser
+
+```ruby
+require "optparse"
+
+opciones = {
+    entorno:  "development",
+    verbose:  false,
+    puerto:   3000,
+}
+
+OptionParser.new do |opts|
+    opts.banner = "Uso: script.rb [opciones] <archivo>"
+
+    opts.on("-e", "--entorno ENV", ["development", "staging", "production"],
+            "Entorno objetivo") do |env|
+        opciones[:entorno] = env
+    end
+
+    opts.on("-p", "--puerto N", Integer, "Puerto del servidor") do |n|
+        opciones[:puerto] = n
+    end
+
+    opts.on("-v", "--[no-]verbose", "Modo detallado") do |v|
+        opciones[:verbose] = v
+    end
+
+    opts.on_tail("-h", "--help", "Mostrar esta ayuda") do
+        puts opts
+        exit
+    end
+
+    opts.on_tail("--version", "Mostrar versión") do
+        puts VERSION
+        exit
+    end
+end.parse!
+
+# ARGV ahora contiene los argumentos posicionales restantes
+archivo = ARGV.first
+raise "Se requiere un archivo" unless archivo
+
+puts "Procesando #{archivo} en #{opciones[:entorno]}:#{opciones[:puerto]}"
+puts "Modo verbose: #{opciones[:verbose]}"
+```
+
+---
+
+## 10. 🌐 HTTP con Net::HTTP y HTTParty
+
+```ruby
+require "net/http"
+require "json"
+require "uri"
+
+# Net::HTTP — librería estándar (sin dependencias)
+uri = URI("https://api.github.com/users/rails")
+respuesta = Net::HTTP.start(uri.host, uri.port, use_ssl: true) do |http|
+    solicitud = Net::HTTP::Get.new(uri)
+    solicitud["Accept"] = "application/json"
+    solicitud["Authorization"] = "Bearer #{ENV['GITHUB_TOKEN']}"
+    http.request(solicitud)
+end
+datos = JSON.parse(respuesta.body)
+puts datos["name"]
+
+# HTTParty — más expresivo (gem install httparty)
+require "httparty"
+
+class GithubAPI
+    include HTTParty
+    base_uri "https://api.github.com"
+    headers "Authorization" => "Bearer #{ENV['GITHUB_TOKEN']}",
+            "Accept"        => "application/json"
+
+    def self.usuario(nombre)
+        get("/users/#{nombre}")
+    end
+
+    def self.crear_repo(datos)
+        post("/user/repos", body: datos.to_json)
+    end
+end
+
+usuario = GithubAPI.usuario("rails")
+puts usuario["name"]
+puts usuario.code     # 200
+puts usuario.success? # true
+```
+
+---
+
+## 11. ⚠️ Errores Comunes y Pitfalls
+
+* **`0`, `""`, `[]` son truthy en Ruby**: A diferencia de Python y JavaScript, en Ruby solo `nil` y `false` son falsy. `if 0` ejecuta el bloque. Esto sorprende constantemente a programadores de otros lenguajes.
+
+* **Modificar arrays mientras se itera con `each`**: No lances `delete` dentro de un `each`. Usa `reject!` o crea un nuevo array con `select`/`reject`.
+
+* **Strings mutables por defecto**: Sin `# frozen_string_literal: true`, las strings en Ruby son mutables. Esto puede causar bugs sutiles cuando el mismo objeto string se modifica en varios lugares.
+
+* **`Array()` vs `.to_a`**: `Array(nil)` retorna `[]`, `nil.to_a` también, pero `Array("texto")` retorna `["texto"]` mientras que `"texto".to_a` no existe en Ruby moderno.
+
+* **`==` vs `.equal?`**: `==` compara valor (contenido). `.equal?` compara identidad de objeto (misma referencia en memoria).
+
+* **`system` vs backticks vs `Open3`**: `system` retorna `true`/`false` y muestra la salida en terminal. Backticks `` `cmd` `` captura la salida pero no el stderr. `Open3.capture3` es lo correcto para capturar ambos.
+
+* **`require` vs `require_relative`**: `require "mi_lib"` busca en `$LOAD_PATH`. `require_relative "mi_lib"` busca relativo al archivo actual. Para archivos propios, siempre usa `require_relative`.
+
+---
+
+## 12. 💡 Buenas Prácticas y Consejos Pro
+
+* **Usa `frozen_string_literal: true` en todos los scripts**: Mejora el rendimiento y previene mutaciones accidentales de strings.
+
+* **Prefiere métodos de Enumerable sobre bucles manuales**: `map`, `select`, `reduce`, `find`, `group_by` producen código más declarativo y mantenible que `each` con acumuladores manuales.
+
+* **Usa `Pathname` en lugar de `File` y `Dir`**: La API orientada a objetos de Pathname es más legible y componible.
+
+* **`pp` para debugging de estructuras**: `pp objeto` es como `p` pero con pretty-printing de hashes y arrays anidados.
+
+* **Rake para orquestar tareas complejas**: Si tu script bash crece más allá de 50 líneas de lógica de control, migra a un Rakefile con tareas bien definidas y documentadas.
+
+* **Guard para desarrollo interactivo**: `gem install guard` — ejecuta tests automáticamente cuando cambias archivos. Vital para el ciclo TDD.
+
+* **Aprovecha el método `tap`** para debugging sin romper cadenas de métodos:
+
+```ruby
+resultado = [1, 2, 3]
+    .map { |n| n * 2 }
+    .tap { |arr| puts "Tras map: #{arr.inspect}" }
+    .select { |n| n > 3 }
+```
+
+---
+
+Este cheatsheet proporciona una referencia exhaustiva de **Ruby para scripting y automatización**, cubriendo desde los fundamentos del lenguaje, bloques e iteradores idiomáticos, hasta la manipulación del sistema de archivos, ejecución de comandos del sistema con Open3, construcción de CLIs con OptionParser, automatización de tareas con Rake y las mejores prácticas para escribir scripts Ruby robustos y expresivos.
