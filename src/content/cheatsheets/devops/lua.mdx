@@ -1,0 +1,604 @@
+---
+title: "Lua"
+description: "Lua es el lenguaje de scripting embebido más rápido y ligero del mundo. Fundamental para extender Neovim, Nginx (OpenResty), Redis, motores de videojuegos y sistemas embebidos."
+createdAt: 2026-05-20
+updatedAt: 2026-05-20
+tags: [lua, scripting, embebido, neovim, nginx, redis, automatizacion]
+icon: "🌙"
+---
+
+# 🌙 Lua — Cheatsheet Completo 🌙
+
+**Lua** (del portugués, "Luna") es un lenguaje de programación ligero, de alto rendimiento y fácilmente embebible, diseñado en la PUC-Río (Brasil) en 1993. Su filosofía central es la **minimalismo potente**: una sintaxis limpia, una sola estructura de datos universal (la `table`), y un tamaño de intérprete de apenas ~280 KB. Lua es el lenguaje de scripting embebido más ampliamente adoptado en el mundo de los videojuegos (Roblox, World of Warcraft, Defold), servidores web (OpenResty/Nginx), bases de datos (Redis), editores (Neovim), y sistemas embebidos de baja potencia. Su curva de aprendizaje es extremadamente suave, pero su potencia real emerge cuando dominas las `tables`, los `metatables` y las `coroutines`.
+
+---
+
+## 1. 🌟 Conceptos Clave y Fundamentos
+
+* **Tipado dinámico**: Las variables no tienen tipo; los **valores** tienen tipo. Una variable puede contener cualquier tipo en cualquier momento.
+* **Ocho tipos primitivos**: `nil`, `boolean`, `number`, `string`, `function`, `table`, `userdata`, `thread`.
+* **`nil`**: El valor de ausencia. Una variable no declarada devuelve `nil`. Asignar `nil` a una variable la elimina efectivamente.
+* **`table`**: La única estructura de datos del lenguaje. Puede comportarse como array, diccionario, objeto, namespace, módulo o clase — todo depende de cómo la uses.
+* **Indexación base-1**: A diferencia de C, Python o JavaScript, los arrays en Lua empiezan en el índice `1`.
+* **Strings inmutables**: Las cadenas en Lua son inmutables e internadas (coercitioned). Lua las reutiliza en memoria si son iguales.
+* **Ámbito de variables (scope)**: Las variables son **globales** por defecto. Usa `local` para limitar el ámbito. Siempre prefieres `local`.
+* **`#` operador longitud**: Devuelve la longitud de un string (en bytes) o el límite de secuencia de una tabla (el mayor índice entero consecutivo).
+* **Coerción entre tipos**: Lua convierte automáticamente entre strings y numbers en operaciones aritméticas (`"10" + 5 = 15`).
+* **Múltiples retornos**: Las funciones pueden retornar múltiples valores sin necesidad de estructuras intermedias.
+* **Metatables**: Mecanismo de metaprogramación que permite sobrecargar operadores y comportamientos de tables (base del OOP en Lua).
+* **Coroutines**: Hilos cooperativos (no preemptivos). Son la base de la programación asíncrona en Lua.
+
+---
+
+## 2. 🛠️ Instalación y Entorno
+
+### 2.1. Instalación
+
+```bash
+# macOS
+brew install lua
+brew install luarocks    # Gestor de paquetes (equivale a pip/npm)
+
+# Ubuntu/Debian
+sudo apt-get install lua5.4 luarocks
+
+# Windows (via Scoop)
+scoop install lua
+scoop install luarocks
+
+# Verificar instalación
+lua -v                   # Lua 5.4.x
+luarocks --version
+
+# Instalar paquetes
+luarocks install penlight   # Librería de utilidades generales
+luarocks install luasocket  # Networking
+luarocks install inspect    # Debugging / pretty-print de tablas
+```
+
+### 2.2. Ejecutar Scripts
+
+```bash
+# Ejecutar script
+lua mi_script.lua
+
+# REPL interactivo
+lua
+
+# Con shebang (Unix)
+#!/usr/bin/env lua
+# chmod +x script.lua && ./script.lua
+
+# Ejecutar string directamente
+lua -e 'print("Hola desde la terminal")'
+
+# Cargar archivo y luego entrar en REPL
+lua -i mi_script.lua
+```
+
+---
+
+## 3. 📝 Sintaxis y Variables
+
+```lua
+-- Comentario de una sola línea
+--[[
+    Comentario
+    multilínea
+--]]
+
+-- Variables locales (SIEMPRE preferir local)
+local nombre = "Lua"
+local version = 5.4
+local activo = true
+local nada = nil
+
+-- Variables globales (evitar en lo posible)
+MI_CONSTANTE = "valor global"
+_G["otra_global"] = 42   -- Acceso explícito a la tabla global
+
+-- Múltiples asignaciones
+local x, y, z = 1, 2, 3
+local a, b = b, a         -- Swap sin variable temporal
+
+-- Tipos
+print(type(42))          -- number
+print(type("hola"))      -- string
+print(type(true))        -- boolean
+print(type(nil))         -- nil
+print(type({}))          -- table
+print(type(print))       -- function
+
+-- Strings
+local simple = 'Comillas simples'
+local doble = "Comillas dobles"
+local largo = [[
+    String multilínea
+    sin interpolación
+]]
+
+-- Concatenación con ..
+local saludo = "Hola, " .. nombre .. "!"
+local con_numero = "Versión: " .. 5.4  -- Coerción automática a string
+
+-- Longitud con #
+print(#"Lua")    -- 3
+print(#nombre)   -- 3
+```
+
+---
+
+## 4. 🔢 Números y Operadores
+
+```lua
+-- Lua 5.3+: dos subtipos numéricos
+local entero = 42           -- integer (int64)
+local flotante = 3.14       -- float (double)
+local hex = 0xFF            -- 255 en hexadecimal
+local cientifico = 1.5e3    -- 1500.0
+
+-- Operadores aritméticos
+print(10 + 3)   -- 13
+print(10 - 3)   -- 7
+print(10 * 3)   -- 30
+print(10 / 3)   -- 3.3333... (siempre flotante en Lua 5.3+)
+print(10 // 3)  -- 3 (división entera — floor division)
+print(10 % 3)   -- 1 (módulo)
+print(2 ^ 10)   -- 1024.0 (potencia, siempre flotante)
+print(-10)      -- -10 (negación unaria)
+
+-- Operadores de comparación
+print(10 == 10)  -- true
+print(10 ~= 9)   -- true (distinto de, NO es !=)
+print(10 > 5)    -- true
+print(10 >= 10)  -- true
+
+-- Operadores lógicos
+print(true and false)  -- false
+print(true or false)   -- true
+print(not true)        -- false
+
+-- AND y OR retornan uno de sus operandos (no necesariamente boolean)
+-- Esto habilita el patrón idiomático:
+local valor = x or "predeterminado"  -- Si x es nil/false, usa "predeterminado"
+local seguro = a and a.propiedad     -- Si a es nil, evita el error de acceder a nil
+
+-- math standard library
+math.floor(3.7)   -- 3
+math.ceil(3.2)    -- 4
+math.sqrt(16)     -- 4.0
+math.abs(-5)      -- 5
+math.max(1, 5, 3) -- 5
+math.min(1, 5, 3) -- 1
+math.random()     -- float entre 0 y 1
+math.random(10)   -- entero entre 1 y 10
+math.random(5, 15)-- entero entre 5 y 15
+math.pi           -- 3.14159...
+```
+
+---
+
+## 5. 📋 Tables: La Estructura Universal
+
+La `table` es la única estructura de datos en Lua. Puede usarse como array, mapa, objeto, módulo y clase.
+
+```lua
+-- ===== COMO ARRAY (secuencia) =====
+local frutas = {"manzana", "pera", "uva"}  -- Índices 1, 2, 3
+
+-- Acceso (base-1!)
+print(frutas[1])   -- manzana
+print(frutas[#frutas])  -- uva (último elemento)
+
+-- Agregar al final
+table.insert(frutas, "kiwi")     -- Agrega al final: índice 4
+table.insert(frutas, 2, "mango") -- Inserta en posición 2
+
+-- Eliminar
+table.remove(frutas)    -- Elimina el último
+table.remove(frutas, 1) -- Elimina el primero
+
+-- Unir elementos
+print(table.concat(frutas, ", "))  -- manzana, pera, uva
+
+-- ===== COMO DICCIONARIO (mapa) =====
+local config = {
+    host = "localhost",
+    port = 5432,
+    ssl  = true,
+}
+
+-- Acceso con . (clave-string sin espacios)
+print(config.host)     -- localhost
+
+-- Acceso con [] (cualquier clave)
+print(config["port"])  -- 5432
+
+-- Agregar / modificar
+config.db = "produccion"
+config["user"] = "admin"
+
+-- Eliminar
+config.ssl = nil   -- Asignar nil = eliminar la clave
+
+-- ===== MIXTO (array + mapa) =====
+local servidor = {
+    "web-01",          -- [1]
+    "web-02",          -- [2]
+    name = "cluster",  -- clave string
+    activo = true,
+}
+
+-- ===== ITERAR TABLES =====
+-- ipairs: solo parte de array (índices enteros consecutivos, 1..N)
+for i, v in ipairs(frutas) do
+    print(i, v)
+end
+
+-- pairs: todos los pares clave-valor (incluyendo hash part)
+for clave, valor in pairs(config) do
+    print(clave, valor)
+end
+
+-- Iterar array manualmente
+for i = 1, #frutas do
+    print(frutas[i])
+end
+```
+
+---
+
+## 6. 🔄 Control de Flujo
+
+```lua
+-- ===== IF / ELSEIF / ELSE =====
+local temperatura = 25
+
+if temperatura > 35 then
+    print("Peligroso")
+elseif temperatura > 25 then
+    print("Caluroso")
+elseif temperatura > 15 then
+    print("Agradable")
+else
+    print("Frío")
+end
+
+-- No existe switch/case — usa if/elseif o tabla de dispatch
+
+-- ===== WHILE =====
+local i = 0
+while i < 5 do
+    i = i + 1
+    print("i =", i)
+end
+
+-- ===== REPEAT / UNTIL (ejecuta al menos una vez) =====
+local entrada
+repeat
+    io.write("Ingresa un número mayor a 0: ")
+    entrada = tonumber(io.read())
+until entrada and entrada > 0
+
+-- ===== FOR NUMÉRICO =====
+-- for variable = inicio, fin, paso do
+for i = 1, 10 do
+    print(i)   -- 1, 2, 3, ..., 10
+end
+
+for i = 10, 1, -2 do
+    print(i)   -- 10, 8, 6, 4, 2
+end
+
+-- ===== CONTROL DE FLUJO DENTRO DE BUCLES =====
+for i = 1, 20 do
+    if i % 2 == 0 then
+        -- No existe continue en Lua nativo (solo goto en 5.2+)
+        goto continuar
+    end
+    print("Impar:", i)
+    ::continuar::   -- Etiqueta para goto
+end
+
+-- break: salir del bucle inmediatamente
+for i = 1, 100 do
+    if i > 5 then break end
+    print(i)
+end
+```
+
+---
+
+## 7. 🔧 Funciones
+
+```lua
+-- Función básica
+local function saludar(nombre)
+    return "Hola, " .. (nombre or "Mundo") .. "!"
+end
+print(saludar("Lua"))  -- Hola, Lua!
+print(saludar())       -- Hola, Mundo!
+
+-- Múltiples valores de retorno
+local function minmax(lista)
+    local min, max = lista[1], lista[1]
+    for _, v in ipairs(lista) do
+        if v < min then min = v end
+        if v > max then max = v end
+    end
+    return min, max
+end
+
+local minimo, maximo = minmax({5, 2, 8, 1, 9, 3})
+print(minimo, maximo)   -- 1    9
+
+-- Funciones variadicas (...  = varargs)
+local function sumar(...)
+    local args = {...}
+    local total = 0
+    for _, v in ipairs(args) do
+        total = total + v
+    end
+    return total
+end
+print(sumar(1, 2, 3, 4, 5))  -- 15
+
+-- Funciones como valores de primera clase
+local operaciones = {
+    suma  = function(a, b) return a + b end,
+    resta = function(a, b) return a - b end,
+}
+print(operaciones.suma(3, 4))   -- 7
+print(operaciones.resta(10, 3)) -- 7
+
+-- Closures: funciones que capturan variables del scope externo
+local function contador(inicio)
+    local n = inicio or 0
+    return function()
+        n = n + 1
+        return n
+    end
+end
+
+local contadorA = contador(0)
+local contadorB = contador(100)
+print(contadorA())  -- 1
+print(contadorA())  -- 2
+print(contadorB())  -- 101
+print(contadorA())  -- 3 (independiente de B)
+```
+
+---
+
+## 8. 🏗️ OOP con Metatables
+
+Lua no tiene clases nativas, pero su sistema de metatables permite implementar OOP de forma idiomática y eficiente.
+
+```lua
+-- Definir una "clase" con metatables
+local Rectangulo = {}
+Rectangulo.__index = Rectangulo  -- El metatable busca métodos en Rectangulo
+
+-- Constructor (función de fábrica)
+function Rectangulo.nuevo(ancho, alto)
+    local self = {
+        ancho = ancho,
+        alto  = alto,
+    }
+    return setmetatable(self, Rectangulo)
+end
+
+-- Métodos
+function Rectangulo:area()
+    -- self se pasa automáticamente con la sintaxis de :
+    return self.ancho * self.alto
+end
+
+function Rectangulo:perimetro()
+    return 2 * (self.ancho + self.alto)
+end
+
+function Rectangulo:__tostring()
+    return string.format("Rectangulo(%dx%d)", self.ancho, self.alto)
+end
+
+-- Uso
+local r = Rectangulo.nuevo(5, 3)
+print(r:area())        -- 15
+print(r:perimetro())   -- 16
+print(tostring(r))     -- Rectangulo(5x3)
+
+-- Herencia
+local Cuadrado = setmetatable({}, { __index = Rectangulo })
+Cuadrado.__index = Cuadrado
+
+function Cuadrado.nuevo(lado)
+    local self = Rectangulo.nuevo(lado, lado)  -- Reutilizar constructor padre
+    return setmetatable(self, Cuadrado)
+end
+
+function Cuadrado:esCuadrado()
+    return true
+end
+
+local c = Cuadrado.nuevo(4)
+print(c:area())         -- 16 (heredado de Rectangulo)
+print(c:esCuadrado())   -- true
+
+-- ===== OPERADORES SOBRECARGADOS (Metamétodos) =====
+Rectangulo.__add = function(a, b)
+    return Rectangulo.nuevo(a.ancho + b.ancho, math.max(a.alto, b.alto))
+end
+
+Rectangulo.__eq = function(a, b)
+    return a.ancho == b.ancho and a.alto == b.alto
+end
+
+local r1 = Rectangulo.nuevo(3, 4)
+local r2 = Rectangulo.nuevo(5, 6)
+local r3 = r1 + r2   -- Usa __add: Rectangulo(8x6)
+```
+
+---
+
+## 9. 🔀 Coroutines
+
+Las coroutines de Lua son hilos cooperativos (multitarea sin preempción), ideales para generadores, máquinas de estado y simulación de async/await.
+
+```lua
+-- Crear una coroutine
+local co = coroutine.create(function(a, b)
+    print("Inicio:", a, b)          -- Inicio: 10 20
+    local c = coroutine.yield(a + b)  -- Pausa y retorna 30, espera el próximo resume
+    print("Continuando con:", c)    -- Continuando con: 100
+    return "finalizado"
+end)
+
+-- Estado: suspended, running, dead, normal
+print(coroutine.status(co))   -- suspended
+
+-- Reanudar la coroutine
+local ok, val = coroutine.resume(co, 10, 20)
+print(ok, val)  -- true  30   (ok=true porque no hubo error, val=30 del yield)
+
+local ok2, val2 = coroutine.resume(co, 100)  -- Continúa, pasa 100 al yield
+print(ok2, val2)  -- true  finalizado
+
+print(coroutine.status(co))  -- dead (terminó)
+
+-- Patrón Generador con coroutines
+local function rango(desde, hasta, paso)
+    paso = paso or 1
+    return coroutine.wrap(function()
+        for i = desde, hasta, paso do
+            coroutine.yield(i)
+        end
+    end)
+end
+
+for n in rango(1, 10, 2) do
+    io.write(n .. " ")   -- 1 3 5 7 9
+end
+```
+
+---
+
+## 10. 🌐 Lua en Entornos Reales
+
+### 10.1. Neovim (init.lua)
+
+```lua
+-- ~/.config/nvim/init.lua
+
+-- Configuración básica
+vim.opt.number = true           -- Mostrar números de línea
+vim.opt.relativenumber = true   -- Números relativos
+vim.opt.tabstop = 4
+vim.opt.shiftwidth = 4
+vim.opt.expandtab = true
+
+-- Mapeos de teclas
+vim.keymap.set('n', '<leader>ff', ':Telescope find_files<CR>', { noremap = true })
+vim.keymap.set('n', '<C-s>', ':w<CR>', { desc = "Guardar archivo" })
+
+-- Definir autocmd
+vim.api.nvim_create_autocmd("BufWritePre", {
+    pattern = "*.lua",
+    callback = function() vim.lsp.buf.format() end,
+    desc = "Formatear Lua al guardar",
+})
+```
+
+### 10.2. OpenResty / Nginx
+
+```lua
+-- nginx.conf + contenido lua
+-- content_by_lua_block { ... }
+
+-- Acceder a request
+local method = ngx.req.get_method()      -- GET, POST, etc.
+local uri    = ngx.var.uri
+local args   = ngx.req.get_uri_args()    -- Tabla con query params
+
+-- Escribir respuesta
+ngx.header["Content-Type"] = "application/json"
+ngx.say('{"status": "ok", "uri": "' .. uri .. '"}')
+ngx.exit(200)
+
+-- Hacer subrequest HTTP (non-blocking)
+local res = ngx.location.capture("/api/usuario", { method = ngx.HTTP_GET })
+if res.status == 200 then
+    ngx.say(res.body)
+end
+```
+
+### 10.3. Redis (scripting con EVAL)
+
+```lua
+-- Script Redis ejecutado con EVAL "script" numkeys key [key ...] arg [arg ...]
+
+-- Incrementar contador con lógica condicional
+local clave = KEYS[1]
+local limite = tonumber(ARGV[1])
+local actual = tonumber(redis.call("GET", clave)) or 0
+
+if actual >= limite then
+    return redis.error_reply("Límite de tasa excedido")
+end
+
+redis.call("INCR", clave)
+redis.call("EXPIRE", clave, 60)  -- TTL de 60 segundos
+return actual + 1
+```
+
+---
+
+## 11. ⚠️ Errores Comunes y Pitfalls
+
+* **Variables globales accidentales**: Olvidar `local` crea variables globales que contaminan el entorno. Usa `local` siempre.
+  * ❌ `resultado = calcular()` → ✅ `local resultado = calcular()`
+
+* **Índices base-1**: Venir de Python o JavaScript y asumir que los arrays empiezan en 0 causa bugs sutiles. En Lua: `tabla[1]` es el primer elemento.
+
+* **`#` no es confiable para tablas con "agujeros"**: `#` retorna el límite de la secuencia, pero si una tabla tiene `nil` en medio (ej: `{1, nil, 3}`), el resultado es indefinido. Para tablas con agujeros, mantén un contador manual.
+
+* **Comparación de tables por referencia**: `{} == {}` es `false` porque compara las referencias en memoria, no el contenido. Debes iterar y comparar manualmente.
+
+* **`and`/`or` no retornan boolean**: `10 and "texto"` retorna `"texto"` (el segundo operando). Esto puede ser útil (patrón `or` para valores por defecto) pero también causa bugs si esperas `true`/`false`.
+
+* **`string.format` vs concatenación en bucles**: La concatenación con `..` en un bucle largo es O(n²) porque Lua crea una nueva string en cada iteración. Usa `table.concat` para construir strings grandes.
+
+* **Coroutines no son hilos del SO**: No aprovechan múltiples núcleos. Para paralelismo real, usa múltiples estados Lua o una librería como `lua-lanes`.
+
+* **Metatables y la trampa del `__index` circular**: Si el metatable de una tabla apunta a sí misma y no existe el campo buscado, puede crear ciclos de búsqueda infinitos.
+
+---
+
+## 12. 💡 Buenas Prácticas y Consejos Pro
+
+* **Siempre `local`**: Define todas las variables y funciones con `local`. Evita contaminar el namespace global. Usa `_G` deliberadamente solo cuando necesitas una variable genuinamente global.
+
+* **Precarga de funciones estándar como locales en hot paths**:
+  ```lua
+  local floor = math.floor   -- ~5% más rápido en bucles críticos
+  local format = string.format
+  ```
+
+* **Usa `table.concat` para construir strings, no `..`**:
+  ```lua
+  local partes = {}
+  for i = 1, 1000 do partes[i] = tostring(i) end
+  local resultado = table.concat(partes, ", ")
+  ```
+
+* **`inspect.lua` para debugging de tablas**: La función `print()` de Lua no serializa tablas. Usa `inspect` (via LuaRocks) para pretty-printing durante el desarrollo.
+
+* **Separa datos y comportamiento**: Usa modules (tablas con funciones) para organizar tu código. Un archivo Lua que termina con `return M` (donde `M` es la tabla del módulo) es el patrón de módulo estándar.
+
+* **Usa `pcall` y `xpcall` para manejar errores**: Lua no tiene try/catch nativo; `pcall(func, args)` retorna `status, resultado` donde `status` es `false` si hubo error.
+
+* **Aprovecha la introspección**: `type()`, `tostring()`, y las funciones de la librería `debug` son útiles para logging y desarrollo de frameworks genéricos.
+
+---
+
+Este cheatsheet proporciona una referencia exhaustiva de **Lua**, cubriendo desde los fundamentos del lenguaje y la tabla como estructura universal, hasta el sistema de OOP con metatables, coroutines para programación asíncrona cooperativa, y la integración práctica en entornos reales como Neovim, OpenResty y Redis.
