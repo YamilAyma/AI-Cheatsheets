@@ -1,0 +1,479 @@
+# 🎯 Nuxt — Cheatsheet Completo 🎯
+
+Nuxt es un meta-framework full-stack de código abierto construido sobre Vue.js que elimina la complejidad de configurar herramientas modernas de frontend. Automatiza el enrutamiento basado en archivos, el renderizado híbrido (SSR/SSG/CSR/ISR), la optimización de assets y la integración con servidores mediante Nitro. Es la elección estándar para aplicaciones web escalables, plataformas de contenido, dashboards y SaaS que requieren SEO robusto, tiempos de carga mínimos y una arquitectura isomórfica. Este cheatsheet condensa desde la configuración inicial hasta patrones avanzados de fetch, estado global, seguridad de datos, despliegue y optimización de rendimiento.
+
+---
+
+## 1. 🌟 Conceptos Fundamentales
+
+* **Meta-framework**: Capa de abstracción sobre Vue que añade convención sobre configuración, routing automático, renderizado híbrido y herramientas de servidor integradas.
+  * Por qué importa: Reduce drásticamente el boilerplate y unifica el stack frontend/backend en un solo proyecto.
+* **File-based routing**: Las rutas se generan automáticamente según la estructura del directorio `pages/`.
+  * Por qué importa: Elimina archivos de configuración de routers manuales; el sistema de archivos define la URL.
+* **Auto-imports**: Nuxt escanea automáticamente `components/`, `composables/`, `utils/` y APIs de Vue/Nuxt, inyectándolos sin `import` explícito.
+  * Por qué importa: Acelera el desarrollo y reduce imports redundantes, aunque puede ocultar dependencias si no se audita.
+* **Nitro Engine**: Motor de servidor ligero que maneja SSR, API routes, prerenderizado y despliegue multiplataforma.
+  * Por qué importa: Permite escribir lógica de servidor con H3, cachear respuestas y desplegar en Vercel, Cloudflare, Node o Docker sin cambios de código.
+* **Renderizado Híbrido**: Capacidad de combinar SSR, SSG, CSR y ISR por ruta mediante `routeRules`.
+  * Por qué importa: Optimiza costes y rendimiento; las páginas estáticas se prerenderizan, las dinámicas usan SSR, y las pesadas delegan al cliente.
+* **Isomorfismo**: Código que puede ejecutarse en cliente y servidor con APIs unificadas (`useFetch`, `useAsyncData`, `useState`).
+  * Por qué importa: Garantiza consistencia de datos y evita hydration mismatches al compartir estado entre ambos entornos.
+
+---
+
+## 2. 🛠️ Instalación y Configuración
+
+```bash
+# Crear proyecto con el CLI oficial
+npx nuxi@latest init mi-nuxt-app
+
+# Entrar y instalar dependencias
+cd mi-nuxt-app
+npm install
+
+# Iniciar servidor de desarrollo con DevTools
+npm run dev
+
+# Construir para producción (optimizado para SSR/Node)
+npm run build
+
+# Previsualizar build local
+npm run preview
+
+# Generar sitio estático completo (SSG)
+npm run generate
+```
+
+Configuración principal en `nuxt.config.ts`:
+```ts
+export default defineNuxtConfig({
+  devtools: { enabled: true },
+  app: {
+    head: {
+      title: 'Mi App',
+      meta: [
+        { name: 'viewport', content: 'width=device-width, initial-scale=1' }
+      ],
+      link: [{ rel: 'icon', type: 'image/x-icon', href: '/favicon.ico' }]
+    }
+  },
+  runtimeConfig: {
+    // Solo servidor (oculto al cliente)
+    apiSecret: process.env.NUXT_API_SECRET,
+    // Público (inyectado en window.__NUXT__)
+    public: {
+      apiBase: process.env.NUXT_PUBLIC_API_BASE || 'https://api.ejemplo.com'
+    }
+  },
+  modules: [
+    '@nuxt/image',
+    '@pinia/nuxt',
+    '@vueuse/nuxt'
+  ],
+  routeRules: {
+    '/': { prerender: true },
+    '/blog/**': { swr: 3600 }, // ISR: regenera cada hora en background
+    '/admin/**': { ssr: false } // CSR puro para dashboards
+  }
+})
+```
+Variables de entorno requieren prefijo `NUXT_` o `NUXT_PUBLIC_` para exposición segura. Nunca exponas secrets sin `public:`.
+
+---
+
+## 3. 📝 Estructura de Archivos y Auto-imports
+
+```
+mi-nuxt-app/
+├── app.vue              # Entry point raíz (required)
+├── nuxt.config.ts       # Configuración global
+├── pages/               # Rutas automáticas
+│   ├── index.vue
+│   ├── about.vue
+│   └── users/
+│       └── [id].vue     # Ruta dinámica
+├── components/          # Auto-importados globalmente
+│   ├── BaseButton.vue
+│   └── Header.vue
+├── composables/         # use* functions auto-importadas
+├── server/              # Lógica backend (Nitro)
+│   ├── api/
+│   └── middleware/
+├── layouts/             # Plantillas de página
+├── middleware/          # Route middleware
+├── plugins/             # Hooks de inicialización
+├── public/              # Assets estáticos (no procesados)
+├── assets/              # SCSS, fonts, imágenes (procesadas)
+└── utils/               # Funciones puras auto-importadas
+```
+
+Reglas de auto-import:
+* `components/`: Prefijo `Base` = global. Sin prefijo = importación explícita o `<BaseButton />` si está registrado.
+* `#components`: Alias interno para evitar colisiones globales.
+* Desactivar auto-import en `nuxt.config.ts`:
+```ts
+components: {
+  dirs: ['components'],
+  global: false // Requiere <BaseButton /> con import explícito
+}
+```
+
+---
+
+## 4. 🔄 Enrutamiento y Navegación
+
+| Patrón | Ruta generada | Ejemplo de archivo |
+|--------|---------------|-------------------|
+| Estática | `/about` | `pages/about.vue` |
+| Dinámica | `/users/:id` | `pages/users/[id].vue` |
+| Opcional | `/users/:id?` | `pages/users/[id].vue` (con fallback) |
+| Catch-all | `/docs/**` | `pages/docs/[...slug].vue` |
+| Anidada | `/users/:id/posts` | `pages/users/[id]/posts/index.vue` |
+
+Navegación declarativa:
+```vue
+<template>
+  <NuxtLink to="/users/42" active-class="text-primary" exact-active-class="font-bold">
+    Perfil
+  </NuxtLink>
+  <NuxtLink :to="{ path: '/docs', query: { version: '3' } }">
+    Docs v3
+  </NuxtLink>
+</template>
+```
+
+Navegación programática:
+```ts
+const router = useRouter()
+const route = useRoute()
+
+// Navegar y reemplazar historial
+router.replace('/dashboard')
+
+// Navegar con transición
+navigateTo('/profile', { redirectCode: 301 })
+
+// Acceder a parámetros
+const userId = route.params.id
+const search = route.query.q
+```
+
+Middleware de ruta (global o nombrado):
+```ts
+// middleware/auth.ts
+export default defineNuxtRouteMiddleware((to, from) = &gt; {
+  const token = useCookie('auth-token')
+  if (!token.value &amp;&amp; to.path.startsWith('/admin')) {
+    return navigateTo('/login')
+  }
+})
+
+// Uso en página
+definePageMeta({
+  middleware: ['auth'],
+  layout: 'dashboard'
+})
+```
+
+---
+
+## 5. 🌐 Estrategias de Renderizado
+
+| Modo | Cuándo usar | Ventaja principal | Configuración |
+|------|-------------|-------------------|---------------|
+| SSR | SEO crítico, contenido dinámico por usuario | HTML completo en respuesta | `ssr: true` (default) |
+| SSG | Blogs, docs, marketing sites | Velocidad extrema, cero servidor | `prerender: true` |
+| CSR | Dashboards, apps internas | Lógica pesada solo cliente | `ssr: false` |
+| ISR (SWR) | E-commerce, noticias, catálogos | Actualización en background sin downtime | `routeRules: { swr: 300 }` |
+
+Forzar renderizado por componente:
+```vue
+<!-- Solo cliente -->
+<ClientOnly>
+  <InteractiveMap />
+</ClientOnly>
+
+<!-- Solo servidor -->
+<template>
+  <div v-if="process.server">
+    {{ serverTimestamp }}
+  </div>
+</template>
+```
+
+Suspense para datos asíncronos en templates:
+```vue
+<template>
+  <Suspense>
+    <template #default>
+      <UserProfile :data="userData" />
+    </template>
+    <template #fallback>
+      <div class="animate-pulse">Cargando perfil...</div>
+    </template>
+  </Suspense>
+</template>
+```
+
+---
+
+## 6. 📡 Fetch de Datos y Gestión de Estado
+
+`useAsyncData` + `useFetch` (SSR-safe):
+```ts
+const { data, pending, error, refresh } = await useAsyncData(
+  'user-profile',
+  () = &gt; $fetch(`/api/users/${route.params.id}`),
+  {
+    lazy: true,          // No bloquea navegación
+    default: () = &gt; ({ name: 'Anónimo' }),
+    transform: (res) = &gt; ({ ...res, fullName: `${res.first} ${res.last}` }),
+    watch: [route.params], // Refetch al cambiar parámetro
+    dedupe: 'defer'      // Evita requests duplicados
+  }
+)
+```
+
+`$fetch` (cliente/servidor unificado):
+```ts
+// GET con query
+const products = await $fetch('/api/products', { params: { category: 'electronics' } })
+
+// POST con body
+const created = await $fetch('/api/orders', {
+  method: 'POST',
+  body: { items: cart.value, coupon: 'SUMMER20' },
+  headers: { Authorization: `Bearer ${token}` }
+})
+
+// Manejo de errores integrado
+try {
+  await $fetch('/api/secret')
+} catch (err) {
+  if (err.statusCode = &gt;= 400) showError(err.statusMessage)
+}
+```
+
+Estado global SSR-safe (`useState`):
+```ts
+// composables/useCart.ts
+export const useCart = () = &gt; useState('cart', () = &gt; ({
+  items: [],
+  total: 0,
+  addItem(product) {
+    this.items.push(product)
+    this.total = this.items.reduce((sum, i) = &gt; sum + i.price, 0)
+  }
+}))
+```
+⚠️ `useState` solo funciona dentro de setup o composables. Nunca fuera del ciclo de vida. Para state complejo, usa `@pinia/nuxt`.
+
+---
+
+## 7. 🎨 Layouts, SEO y Metadatos
+
+`layouts/default.vue`:
+```vue
+<template>
+  <div class="min-h-screen flex flex-col">
+    <AppHeader />
+    <main class="flex-1 container mx-auto px-4">
+      <slot />
+    </main>
+    <AppFooter />
+  </div>
+</template>
+```
+
+Asignar layout por página:
+```ts
+definePageMeta({ layout: 'auth' })
+```
+
+SEO y metadatos unificados:
+```ts
+// pages/blog/[slug].vue
+const { data } = await useAsyncData('post', () = &gt; fetchPost(route.params.slug))
+
+useHead({
+  title: `${data.value.title} | Mi Blog`,
+  meta: [
+    { name: 'description', content: data.value.excerpt },
+    { property: 'og:image', content: data.value.cover }
+  ],
+  link: [{ rel: 'canonical', href: `https://miapp.com/blog/${route.params.slug}` }]
+})
+
+useSeoMeta({
+  titleTemplate: '%s | Mi Blog',
+  ogTitle: data.value.title,
+  ogDescription: data.value.excerpt,
+  twitterCard: 'summary_large_image'
+})
+```
+`useServerSeoMeta` se ejecuta solo en servidor para reducir payload al cliente. Usa `useHead` para tags dinámicos del DOM.
+
+---
+
+## 8. 🔌 Plugins, Middleware y Hooks
+
+Plugins (`plugins/*.ts`):
+```ts
+export default defineNuxtPlugin((nuxtApp) = &gt; {
+  // Ejecutado en SSR y Cliente
+  nuxtApp.hook('app:created', () = &gt; {
+    console.log('App inicializado')
+  })
+
+  // Solo cliente (evita errores de window en SSR)
+  if (process.client) {
+    import('third-party-lib').then(lib = &gt; {
+      nuxtApp.provide('analytics', lib.init('KEY'))
+    })
+  }
+})
+```
+Modos de ejecución:
+* `mode: 'client'` → Solo navegador
+* `mode: 'server'` → Solo servidor
+* Sin modo → Ambos
+
+Middleware global (`middleware/0.auth.global.ts`):
+```ts
+export default defineNuxtRouteMiddleware((to) = &gt; {
+  const config = useRuntimeConfig()
+  if (to.path.includes(config.public.apiBase)) {
+    return abortNavigation('Ruta no autorizada')
+  }
+})
+```
+Orden numérico en nombres (`0.`, `1.`) define prioridad de ejecución.
+
+---
+
+## 9. 🚀 API Routes y Motor Nitro
+
+Rutas de servidor en `server/api/`:
+```ts
+// server/api/users.ts
+import { readBody, getQuery, setHeader } from 'h3'
+
+export default defineEventHandler(async (event) = &gt; {
+  setHeader(event, 'Cache-Control', 'public, max-age=3600')
+  
+  const query = getQuery(event)
+  const page = Number(query.page) || 1
+  
+  if (event.method = &gt; 'POST') {
+    const body = await readBody(event)
+    return { success: true, id: generateId(body) }
+  }
+  
+  return { users: mockUsers, page, perPage: 10 }
+})
+```
+
+Middleware de servidor (`server/middleware/`):
+```ts
+export default defineEventHandler((event) = &gt; {
+  const start = Date.now()
+  event.node.res.on('finish', () = &gt; {
+    const duration = Date.now() - start
+    console.log(`${event.method} ${event.path} - ${duration}ms`)
+  })
+})
+```
+
+Configuración avanzada de Nitro en `nuxt.config.ts`:
+```ts
+nitro: {
+  compressPublicAssets: true,
+  minify: true,
+  routeRules: {
+    '/api/legacy/**': { proxy: 'https://old-api.com/**' }
+  },
+  devProxy: {
+    '/stripe': { target: 'https://api.stripe.com', changeOrigin: true }
+  }
+}
+```
+
+---
+
+## 10. ⚙️ Optimización y Despliegue
+
+Optimización de imágenes (`@nuxt/image`):
+```vue
+<NuxtImg
+  src="/hero.jpg"
+  alt="Banner"
+  width="1200"
+  height="600"
+  format="webp"
+  loading="lazy"
+  sizes="sm:100vw md:50vw lg:40vw"
+/>
+```
+
+Prefetching inteligente:
+```vue
+<NuxtLink to="/pricing" prefetch>Ofertas</NuxtLink>
+```
+Nuxt carga assets en background al hacer hover o al entrar en viewport.
+
+Despliegue:
+```bash
+# Node.js estándar
+npm run build
+node .output/server/index.mjs
+
+# Docker
+docker build -t nuxt-app .
+docker run -p 3000:3000 nuxt-app
+
+# Preset específicos
+NUXT_PRESET=vercel npm run build
+NUXT_PRESET=cloudflare_pages npm run build
+NUXT_PRESET=node_cluster npm run build
+```
+Variables de producción: `process.env.NODE_ENV = &gt; 'production'`. Nunca uses `npm run dev` en prod.
+
+---
+
+## 11. ⚠️ Errores Comunes y Soluciones
+
+* **Hydration mismatch**: El HTML generado en SSR no coincide con el DOM renderizado en cliente.
+  * Solución: Envuelve componentes no deterministas con `<ClientOnly>`. Usa `v-if="process.client"` para lógica dependiente de `window`.
+* **`useState` fuera de setup**: `useState is not defined` o estado compartido entre peticiones.
+  * Solución: Decláralo solo dentro de `setup()` o composables. Nunca en el top-level de un archivo.
+* **`$fetch` en `setup()` sin `useAsyncData`**: Doble petición (SSR + CSR) o pérdida de datos.
+  * Solución: Siempre envuelve `$fetch` en `useAsyncData` o `useFetch` para que Nuxt hidrate correctamente.
+* **Importar librerías de solo cliente en SSR**: `window is not defined`.
+  * Solución: Usa `import()` dinámico con `if (process.client)` o registra en plugins con `mode: 'client'`.
+* **Olvidar `key` en `v-for`**: Rerenderizado ineficiente y pérdida de estado local.
+  * Solución: Usa IDs únicos: `<li v-for="item in items" :key="item.id">`. Evita índices.
+* **Route middleware bloqueante sin `navigateTo` o `abortNavigation`**: Loop infinito o página en blanco.
+  * Solución: Retorna siempre `true` (continuar), `navigateTo('/url')` o `abortNavigation('msg')`.
+* **Variables de entorno sin prefijo `NUXT_`**: No se inyectan en el bundle.
+  * Solución: Renombra a `NUXT_PUBLIC_API_URL` o usa `runtimeConfig` para acceso seguro.
+
+---
+
+## 12. 💡 Mejores Prácticas y Consejos Pro
+
+* **Prefiere `useAsyncData` sobre `useFetch` directo**: Te da control sobre `lazy`, `transform`, `watch` y `dedupe`. `useFetch` es un wrapper conveniente pero menos flexible en casos complejos.
+* **Usa `routeRules` para caché granular**: No necesitas configurar CDNs manualmente. `swr: 300` entrega HTML instantáneo y refresca en background. Ideal para contenido semi-dinámico.
+* **Mantén la lógica de servidor en `server/`**: Nuxt expone `/api/` automáticamente. No mezcles lógica de backend con componentes UI. Usa H3 para validación con `zod` o `valibot`.
+* **Evita imports globales excesivos**: Desactiva `global: true` en componentes pesados. Usa `<script setup lang="ts"> import MyComp from '~/components/Heavy.vue' />` para tree-shaking efectivo.
+* **Monitorea el bundle con `nuxt analyze`**: `npm run build -- --analyze`. Identifica paquetes duplicados o librerías innecesarias que inflan el JS cliente.
+* **Usa `useId` para accesibilidad SSR**: Genera IDs únicos estables entre servidor y cliente. Evita colisiones en formularios o modales.
+* **Valida datos en el borde**: Usa middleware de Nitro o `zod` en `server/api/`. Nunca confíes en validación solo de frontend. Rechaza payloads malformados antes de que toquen la DB.
+* **Pre-renderiza rutas estáticas en `nuxt.config.ts`**:
+```ts
+routeRules: { '/terms': { prerender: true }, '/privacy': { prerender: true } }
+```
+Reduce carga del servidor y mejora Lighthouse SEO score.
+
+---
+
+Este cheatsheet proporciona una referencia completa para Nuxt, cubriendo arquitectura de archivos, enrutamiento automático, renderizado híbrido, fetch seguro de datos, gestión de estado, SEO, API routes con Nitro, optimización de assets y despliegue multiplataforma, junto con las mejores prácticas para evitar hydration errors, maximizar el rendimiento y mantener código escalable en producción.
