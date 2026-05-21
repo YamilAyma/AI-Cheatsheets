@@ -1,0 +1,241 @@
+# 🎯 Patrón Singleton — Cheatsheet Completo 🎯
+
+El patrón **Singleton** es un patrón creacional estructural que garantiza que una clase tenga **exactamente una instancia** en todo el ciclo de vida de un ámbito definido, y proporciona un **punto de acceso global** a dicha instancia. Nace para coordinar recursos compartidos, centralizar configuraciones inmutables o gestionar sistemas donde la multiplicidad de objetos rompería la coherencia del dominio. Este cheatsheet desglosa la intención arquitectónica real del patrón, sus mecanismos de implementación multi-paradigma, implicaciones en testing y mantenibilidad, variantes seguras para entornos concurrentes, y alternativas modernas que mitigan sus riesgos inherentes de acoplamiento oculto y estado global no controlado.
+
+---
+
+## 1. 🌟 Conceptos Fundamentales
+
+* **Restricción de Instancia Única**: El patrón impone una regla inquebrantable: solo puede existir un objeto activo por ámbito de ejecución (proceso, request, sesión o tenant).
+  * Por qué importa: Evita duplicación de recursos costosos (pools de conexiones, buffers de E/S, cachés en memoria) y garantiza que todas las partes del sistema lean/escriban sobre el mismo estado.
+* **Constructor Privado o Oculto**: La creación directa (`new Clase()`) se bloquea a nivel de lenguaje o convención. Solo la propia clase o su contenedor puede instanciarla.
+  * Por qué importa: Centraliza el control del ciclo de vida y evita instancias huérfanas que violarían la invariante de unicidad.
+* **Punto de Acceso Global Estático**: Un método o propiedad pública (ej. `getInstance()`, `Instance`, `.current`) actúa como fachada única para obtener la referencia.
+  * Por qué importa: Elimina la necesidad de inyectar o pasar referencias manualmente a través de capas profundas, simplificando la arquitectura en sistemas monolíticos o de bajo acoplamiento temporal.
+* **Scope de Vida Explícito**: Un singleton no es necesariamente "global para siempre". Puede ser por proceso, por request HTTP, por sesión de usuario, o por tenant en sistemas multi-tenant.
+  * Por qué importa: En arquitecturas modernas (SSR, edge computing, serverless), un scope incorrecto filtra datos entre usuarios o genera memory leaks. Definir el ámbito es parte del contrato del patrón.
+* **Inicialización Diferida (Lazy) vs Anticipada (Eager)**: Lazy crea la instancia bajo demanda; eager la crea al cargar el módulo o iniciar la aplicación.
+  * Por qué importa: Lazy ahorra memoria y tiempo de arranque si el recurso nunca se usa. Eager elimina condiciones de carrera en entornos multi-hilo y hace que los fallos de configuración ocurran al inicio, no en producción.
+* **Responsabilidad Única del Acceso**: El Singleton solo gestiona **creación, unicidad y acceso**. No debe contener lógica de negocio compleja.
+  * Por qué importa: Mezclar coordinación y reglas de dominio crea el antipatrón "God Object". Delega la lógica a servicios inyectados o componentes especializados.
+
+---
+
+## 2. 📐 Estructura Lógica y Contrato de Implementación
+
+El contrato mínimo del patrón sigue tres reglas inmutables, independientemente del lenguaje:
+
+1. **Estado interno privado**: Almacena la referencia única en un campo estático o de módulo.
+2. **Instanciación controlada**: El constructor es privado, protegido o reemplazado por una función de fábrica interna.
+3. **Acceso sincronizado**: El punto de entrada retorna siempre la misma referencia, gestionando la creación si aún no existe.
+
+Diagrama conceptual de flujo:
+```text
+Cliente &gt; llama a Singleton.getInstance()
+           &gt; Verifica: ¿instancia existe?
+           &gt; Sí: retorna referencia existente
+           &gt; No: crea instancia, almacena en campo estático, retorna referencia
+           &gt; Todas las llamadas posteriores obtienen la misma dirección de memoria
+```
+
+Estructura mínima en pseudocódigo OO:
+```java
+public class Singleton {
+    private static Singleton instance;
+    private Singleton() { /* Inicialización privada */ }
+
+    public static Singleton getInstance() {
+        if (instance == null) {
+            instance = new Singleton();
+        }
+        return instance;
+    }
+}
+```
+En entornos concurrentes, esta versión básica falla. Se requiere sincronización, bloqueo por verificación doble, o inicialización estática del runtime. La elección depende del modelo de ejecución del lenguaje.
+
+---
+
+## 3. 🔄 Variantes de Inicialización y Modelos de Concurrencia
+
+| Variante | Mecanismo | Ventaja | Riesgo / Costo |
+|----------|-----------|---------|----------------|
+| **Eager (Estática)** | Instancia creada al cargar la clase/módulo. | Thread-safe por defecto en runtimes modernos. Cero overhead en acceso. | Consume memoria al inicio aunque nunca se use. |
+| **Lazy Básico** | `if (instance == null) instance = new();` | Ahorro de recursos si no se usa. | No es thread-safe. Condiciones de carrera en multi-hilo. |
+| **Double-Checked Locking** | Verificación rápida + bloque sincronizado + verificación interna. | Seguro y eficiente. Minimiza contención de hilos. | Complejidad aumentada. Requiere `volatile` o equivalente en algunos lenguajes. |
+| **Holder/Inner Class** | Clase interna estática que instancia al ser referenciada. | Lazy + thread-safe sin `synchronized` explícito. | Depende del cargador de clases del runtime. Menos legible. |
+| **Enum (Java)** | `enum Singleton { INSTANCE; }` | Thread-safe, serializable, reflexión bloqueada por diseño. | Limitado a Java/Kotlin. No soporta parámetros de construcción complejos. |
+| **Cache de Módulo (JS/Python/Go)** | `export const x = new X()` o `x = X()` a nivel de módulo. | Garantizado por especificación del loader. Simple y performante. | Dificulta mocking en tests. Recarga manual necesaria en algunos entornos. |
+
+Implementación segura con Double-Checked Locking (C#/Java-like):
+```csharp
+public sealed class ConnectionPool {
+    private static volatile ConnectionPool _instance;
+    private static readonly object _lock = new object();
+    private readonly List&lt;Connection&gt; _pool = new List&lt;Connection&gt;();
+
+    private ConnectionPool() {
+        // Inicialización costosa: validar creds, abrir sockets, warm-up
+        _pool.AddRange(CreateConnections(10));
+    }
+
+    public static ConnectionPool Instance {
+        get {
+            if (_instance == null) {
+                lock (_lock) {
+                    if (_instance == null) {
+                        _instance = new ConnectionPool();
+                    }
+                }
+            }
+            return _instance;
+        }
+    }
+}
+```
+Nota de concurrencia: El primer `if` evita el bloqueo en accesos posteriores. El segundo `if` dentro del `lock` garantiza que solo un hilo inicialice. `volatile` previene reordenamiento de instrucciones por el compilador/CPU.
+
+---
+
+## 4. 🌍 Implementación por Paradigma y Ecosistema
+
+El patrón se adapta al modelo de ejecución del entorno. No todas las implementaciones requieren clases.
+
+### 4.1. Paradigma Orientado a Objetos (TypeScript / C# / Java)
+Uso de campo estático privado + getter. Requiere control explícito de ciclo de vida.
+```ts
+export class EventDispatcher {
+  private static _instance: EventDispatcher;
+  private listeners = new Map&lt;string, Set&lt;Function&gt;&gt;();
+
+  private constructor() {}
+
+  public static getInstance(): EventDispatcher {
+    if (!EventDispatcher._instance) {
+      EventDispatcher._instance = new EventDispatcher();
+    }
+    return EventDispatcher._instance;
+  }
+
+  public on(event: string, handler: Function) {
+    if (!this.listeners.has(event)) this.listeners.set(event, new Set());
+    this.listeners.get(event)!.add(handler);
+  }
+}
+```
+
+### 4.2. Paradigma de Módulos (JavaScript ESM / Python)
+El runtime garantiza una única evaluación del módulo. La instancia es el valor exportado.
+```js
+// logger.mjs
+let _instance = null;
+
+export function getGlobalLogger() {
+  if (!_instance) {
+    _instance = createLogger({ level: 'info', output: './app.log' });
+  }
+  return _instance;
+}
+
+// Alternativa más simple (inmediata al import)
+export const config = loadConfig('/etc/app/config.yml');
+```
+Ventaja: Cero boilerplate. Desventaja: El estado es compartido implícitamente; reiniciarlo en tests requiere `import()` dinámico o limpieza manual.
+
+### 4.3. Paradigma Funcional / Paso de Estado
+En lugar de ocultar estado global, se pasa explícitamente un contexto inmutable o se usa un monad `Reader`/`State`.
+```rust
+// Rust: Contexto pasado explícitamente, sin singleton oculto
+pub struct AppContext {
+    pub db_pool: Arc&lt;DbPool&gt;,
+    pub cache: Arc&lt;Cache&gt;,
+}
+
+// La "instancia única" se crea en main y se mueve/clona por referencias compartidas
+fn handle_request(ctx: Arc&lt;AppContext&gt;, req: HttpRequest) {
+    let pool = ctx.db_pool.clone(); // Acceso seguro, sin global estático
+}
+```
+Ventaja: Testabilidad extrema, sin efectos secundarios ocultos. Desventaja: Boilerplate inicial mayor.
+
+---
+
+## 5. 🎯 Casos de Uso Legítimos vs Antipatrones
+
+| ✅ Uso Legítimo | ❌ Antipatrón / Abuso |
+|----------------|----------------------|
+| **Pool de conexiones**: Un solo grupo gestiona sockets a BD/Redis. Multiplicarlos satura el servidor. | **God Object**: Un singleton que valida usuarios, renderiza UI, calcula impuestos y envía emails. |
+| **Logger centralizado**: Unifica formato, nivel de verbosity y destino de salida. | **Estado global mutable no sincronizado**: Carrito de compras compartido sin locks en entornos concurrentes. |
+| **Cache de configuración**: Lee archivo/env una vez, expone valores inmutables. | **Service Locator disfrazado**: Oculta dependencias reales del constructor, rompiendo el principio de inversión de dependencias. |
+| **Coordinador de hardware**: Acceso exclusivo a puerto serial, GPU o dispositivo IoT. | **Session management per-process en SSR**: Un singleton de sesión mezcla datos de múltiples usuarios en el mismo servidor Node. |
+| **Registro de métricas**: Buffer único que agrega contadores y los exporta periódicamente. | **Singleton por default**: Usarlo "porque es fácil acceder desde cualquier lado", sin justificación arquitectónica. |
+
+Regla de selección: Si la eliminación del singleton permite instanciar múltiples objetos funcionales sin romper la lógica del sistema, probablemente no necesitas el patrón. Úsalo solo cuando la **unicidad es una restricción del dominio o del recurso**, no una conveniencia de acceso.
+
+---
+
+## 6. 🧪 Impacto en Testing, Mantenibilidad y Arquitectura
+
+* **Acoplamiento Oculto**: Las clases que llaman `Singleton.getInstance()` declaran una dependencia invisible. No aparece en la firma del constructor.
+  * Consecuencia: Difícil refactorizar. El análisis de dependencias estáticas falla. El código se vuelve rígido.
+* **Dificultad para Mocking**: Reemplazar un singleton en tests requiere sobrescribir el campo estático o usar librerías de reflexión.
+  * Solución: Expón un setter interno solo para tests (`setInstanceForTesting()`), o mejor, inyecta una interfaz.
+* **Estado Persistente entre Tests**: Si un test modifica el singleton y no se limpia, afecta a la suite completa.
+  * Solución: Implementa `reset()`, `clear()`, o `dispose()`. Ejecuta en `afterEach`. Idealmente, aisla el entorno de prueba con inyección.
+* **Violación de Single Responsibility**: El singleton coordina creación, pero también suele acumular lógica de negocio por inercia.
+  * Solución: Mantén el singleton como "fábrica + caché". Delega procesamiento a componentes con inyección explícita.
+* **Portabilidad y Reutilización**: Librerías que exponen singletons globales son difíciles de integrar en aplicaciones que ya gestionan su propio ciclo de vida.
+  * Solución: Permite inyección externa. Si no hay inyectado, usa fallback al singleton. Ej: `new Service(container ? container.get('x') : GlobalX.instance)`.
+
+---
+
+## 7. 🔀 Alternativas Modernas y Evolución del Patrón
+
+* **Inyección de Dependencias (DI)**: Contenedores (`Inversify`, `NestJS`, `Spring`, `tsyringe`) gestionan singletons con scope explícito (`Singleton`, `RequestScoped`, `Transient`).
+  * Ventaja: Mocking trivial, ciclo de vida controlado, grafo de dependencias visible.
+* **Monostate (Estado Compartido)**: Múltiples instancias, pero todas compienen el mismo estado interno estático.
+  * Ventaja: Se comporta como singleton pero permite herencia y polimorfismo. Desventaja: Confusión semántica.
+* **Registry / Locator Pattern**: Mapa centralizado de instancias registradas explícitamente.
+  * Ventaja: Flexibilidad total, múltiples implementaciones por clave. Desventaja: Se convierte en un singleton si no se gestiona con cuidado.
+* **Context/Scope Objects**: Pasa un objeto de contexto inmutable o mutable a través de la pila de ejecución.
+  * Ventaja: Thread-safe, explícito, fácil de auditar. Desventaja: Requiere disciplina arquitectónica.
+* **Event-Driven / PubSub**: Reemplaza coordinación centralizada con emisión/escucha de eventos.
+  * Ventaja: Desacoplamiento temporal y espacial. Desventaja: Traza de ejecución más compleja de depurar.
+
+Cuándo migrar: Si el singleton crece &gt; 300 líneas, tiene &gt; 5 responsabilidades, o causa flaky tests en CI/CD, refactoriza hacia DI o Context passing.
+
+---
+
+## 8. ⚠️ Errores Comunes y Soluciones
+
+* **Condición de carrera en inicialización lazy**: Dos hilos entran al `if`, crean dos instancias. La segunda sobrescribe la primera o genera recursos duplicados.
+  * Fix: Usa `volatile` + doble verificación, inicialización estática del runtime, o `lazy` del lenguaje (`Lazy&lt;T&gt;` en C#, `sync.Once` en Go, `std::call_once` en C++).
+* **Filtrado de datos en SSR/Edge**: Un singleton mantiene estado de usuario A y lo retorna a usuario B en la siguiente petición.
+  * Fix: Define scope por request. Usa `AsyncLocal` (C#), `HttpContext.Items` (ASP.NET), o contenedores DI con `RequestScoped`. Nunca estado mutable global en runtimes multi-tenant.
+* **Serialización clona la instancia**: Deserializar un singleton crea una segunda instancia, rompiendo la invariante.
+  * Fix: Implementa `readResolve()` (Java), marca campos como `[NonSerialized]`, o usa `enum` para serialización nativa.
+* **Reflexión invoca constructor privado**: Frameworks de test o DI bypassean la visibilidad y crean instancias adicionales.
+  * Fix: Lanza excepción en constructor si `instance != null`. En Java/C#, usa SecurityManager o atributos de restricción si el entorno lo permite.
+* **Olvidar liberación de recursos**: Conexiones, streams o timers activos impiden la recolección de basura al finalizar la app.
+  * Fix: Expón `dispose()`, `close()`, o `shutdown()`. Registra el método en `atexit`, `shutdown hooks`, o `finally` del contenedor.
+* **Uso como contenedor de configuración mutable**: Cambiar `Singleton.config.apiKey = 'x'` en runtime crea efectos secundarios impredecibles.
+  * Fix: Configura inmutable al inicio. Si necesitas recarga, usa `ConfigSnapshot` con versión o recarga completa con validación atómica.
+
+---
+
+## 9. 💡 Mejores Prácticas y Consejos
+
+* **Prefiere Inyección de Dependencias con Scope Singleton**: Los contenedores DI manejan la creación, el ciclo de vida y el mocking. Tu código solo consume interfaces, no accede a estáticos.
+* **Documenta el Scope de Vida Explícitamente**: Indica en comentarios o docs si el singleton es `Process`, `Request`, `Session` o `Tenant`. Esto evita bugs críticos en arquitecturas modernas.
+* **Haz las Dependencias Visibles**: Si una clase usa un singleton, declara la dependencia en el constructor. Usa el singleton como valor por defecto, no como hardcode interno.
+* **Inmutabilidad por Defecto**: Expón solo getters o métodos funcionales. Si el estado debe mutar, hazlo mediante acciones atómicas (`update()`, `dispatch()`) y registra cambios para auditoría.
+* **Evita Lógica de Negocio**: Un singleton debe ser un **coordinador de acceso**, no un procesador de reglas. Delega complejidad a servicios con responsabilidad única.
+* **Implementa `reset()` para Entornos de Prueba**: Facilita el aislamiento de tests sin recurrir a reflexión agresiva o recarga de módulos.
+* **Monitorea el Ciclo de Vida**: En aplicaciones de larga ejecución, registra métricas de creación, uso y disposición. Un singleton que nunca se libera es una fuga de memoria garantizada.
+* **Considera el Patrón `Lazy` del Lenguaje**: C#, Rust, Go y Kotlin ofrecen primitivas seguras para inicialización diferida thread-safe. Úsalas en lugar de reinventar locking manual.
+* **Valida en Tiempo de Compilación**: Usa analizadores estáticos o linters para detectar accesos directos a `getInstance()` en capas de dominio. Fuerza la inyección en la capa de aplicación.
+* **No lo uses "por si acaso"**: La tentación de centralizar "por facilidad" es el origen de arquitecturas rígidas. Aplica el patrón solo cuando la unicidad sea una **restricción inmutable del sistema**, no una conveniencia de implementación.
+
+---
+
+Este cheatsheet proporciona una referencia arquitectónica completa para el patrón Singleton, cubriendo su intención estructural, variantes de inicialización seguras para concurrencia, implementación multi-paradigma, impacto real en testing y mantenibilidad, alternativas modernas como inyección de dependencias y paso de contexto, errores frecuentes en producción y estrategias de mitigación. Úsalo como guía para decidir cuándo la unicidad es una necesidad del dominio, cómo implementarla sin introducir acoplamiento oculto, y cuándo migrar hacia patrones más escalables y testeables.
