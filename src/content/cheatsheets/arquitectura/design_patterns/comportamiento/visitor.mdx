@@ -1,0 +1,269 @@
+# 🎯 Patrón Visitor — Cheatsheet Completo 🎯
+
+El patrón **Visitor** es un patrón de comportamiento que separa algoritmos de las estructuras de objetos sobre las que operan, permitiendo añadir nuevas operaciones sin modificar las clases de los elementos visitados. Utiliza un mecanismo de **doble despacho** para que el algoritmo se ejecute correctamente según el tipo concreto del elemento y el visitante, cumpliendo el principio Open/Closed para operaciones nuevas mientras mantiene la estructura de objetos estable. Nace para resolver la explosión de métodos en clases de dominio, facilitar traversals complejos (ASTs, gráficos de escena, sistemas de archivos, estructuras de documentos) y centralizar lógica transversal (serialización, renderizado, análisis, optimización, validación) sin contaminar los modelos de negocio. Este cheatsheet desglosa la intención arquitectónica real, contratos de doble despacho seguro, implementaciones multi-paradigma, variantes dinámicas y jerárquicas, impacto en rendimiento y mantenibilidad, trampas de violación de encapsulamiento y acoplamiento cruzado, y criterios estrictos para decidir cuándo la separación operación-estructura es una necesidad del dominio y no una complejidad innecesaria que degrada la legibilidad o el rendimiento.
+
+---
+
+## 1. 🌟 Conceptos Fundamentales
+
+* **Elemento (Element)**: Interfaz o clase base que declara `accept(visitor)`. Permite que un visitante se inyecte a sí mismo en el objeto para ejecutar operaciones específicas.
+  * Por qué importa: Establece el punto de entrada para la doble dispersión. Sin `accept()`, el visitante no puede acceder al tipo concreto de forma segura.
+* **Elemento Concreto (ConcreteElement)**: Implementación específica que contiene la lógica de dominio y datos. Su `accept()` llama a `visitor.visitConcreteElement(this)`.
+  * Por qué importa: Garantiza que el visitante reciba la referencia exacta del tipo, habilitando el despacho dinámico correcto.
+* **Visitante (Visitor)**: Interfaz que declara un método `visit()` sobrecargado para cada tipo de elemento concreto (ej. `visitA(ElementA)`, `visitB(ElementB)`).
+  * Por qué importa: Define el contrato de operaciones externas. Permite añadir nuevos visitantes sin tocar los elementos.
+* **Visitante Concreto (ConcreteVisitor)**: Implementación que contiene la lógica real de la operación (renderizar, serializar, validar, calcular métricas).
+  * Por qué importa: Encapsula un algoritmo completo y aislado. Se puede intercambiar, testear y versionar independientemente de la estructura.
+* **Doble Despacho (Double Dispatch)**: Mecanismo que resuelve el tipo de objeto en runtime dos veces: primero por el elemento (`accept`), luego por el visitante (`visit`).
+  * Por qué importa: Simula despacho múltiple en lenguajes de despacho simple (Java, C#, TS). Es el núcleo que diferencia Visitor de Strategy o Command.
+* **Separación Operación-Estructura**: Los elementos modelan qué son. Los visitantes modelan qué se hace con ellos.
+  * Por qué importa: Cumple Single Responsibility y Open/Closed para operaciones nuevas. Evita que las clases de dominio acumulen lógica transversal.
+* **Estado del Visitante**: Puede ser stateless (puro, transformaciones) o stateful (acumula resultados, contadores, árboles intermedios).
+  * Por qué importa: Define reutilización y concurrencia. Los stateless son seguros globalmente; los stateful requieren instanciación por traversal o scope explícito.
+* **Trade-off Estabilidad vs. Extensibilidad**: Visitor brilla cuando la estructura de elementos es estable pero se necesitan muchas operaciones. Si los elementos cambian frecuentemente, el patrón se vuelve costoso.
+  * Por qué importa: La decisión arquitectónica depende de la tasa de cambio. Visitor no es mágico; es una compensación deliberada.
+* **Orden de Traversal**: Define la secuencia en que los nodos son visitados (pre-order, post-order, BFS, DFS). El visitante puede controlarla o delegarla al elemento.
+  * Por qué importa: Afecta resultados acumulativos, detección temprana de errores y rendimiento. Debe documentarse explícitamente en el contrato.
+
+---
+
+## 2. 📐 Estructura Lógica y Doble Despacho
+
+La arquitectura sigue un flujo estricto de auto-registro y redirección. El patrón garantiza que la operación correcta se ejecute para la combinación exacta de elemento y visitante.
+
+```text
+               Cliente
+                  │
+                  ▼ crea y pasa visitante
+            Elemento (Interfaz)
+         +---------------------------+
+         | accept(visitor): void     |
+         +---------------------------+
+                  ▲ redirige a visitor.visit(this)
+            Visitante (Interfaz)
+         +---------------------------+
+         | visitA(ElementA): void    |
+         | visitB(ElementB): void    |
+         +---------------------------+
+            ▲ implementa
+   ConcreteVisitor
+   [Lógica de operación para A y B]
+```
+
+Flujo de ejecución garantizado:
+1. Cliente instancia `ConcreteVisitor` con configuración o estado inicial.
+2. Cliente invoca `element.accept(visitor)` sobre la raíz o colección.
+3. El elemento concreto ejecuta su `accept()`, llamando a `visitor.visitConcreteElement(this)`.
+4. El runtime resuelve la sobrecarga correcta según el tipo real de `this` y el visitante.
+5. El visitante ejecuta la lógica específica, accede a datos del elemento (vía getters o campos públicos) y opcionalmente recurre a hijos.
+6. El resultado se acumula en el visitante o se retorna. El elemento nunca conoce la lógica interna del visitante.
+
+Contrato mínimo en pseudocódigo tipado:
+```typescript
+interface Visitor {
+  visitText(text: TextElement): void;
+  visitImage(image: ImageElement): void;
+}
+
+interface Element {
+  accept(visitor: Visitor): void;
+}
+
+class TextElement implements Element {
+  constructor(public content: string) {}
+  accept(visitor: Visitor): void { visitor.visitText(this); }
+}
+
+class ImageElement implements Element {
+  constructor(public src: string, public width: number) {}
+  accept(visitor: Visitor): void { visitor.visitImage(this); }
+}
+
+class HTMLRenderer implements Visitor {
+  visitText(text: TextElement): void { console.log(`&lt;p&gt;${text.content}&lt;/p&gt;`); }
+  visitImage(img: ImageElement): void { console.log(`&lt;img src="${img.src}" width="${img.width}" /&gt;`); }
+}
+```
+Regla inquebrantable: El método `accept()` **nunca** debe implementar lógica de negocio ni condicionar por tipo. Solo debe delegar a `visitor.visitX(this)`. Si rompe esto, el doble despacho colapsa y el patrón pierde su propósito.
+
+---
+
+## 3. 🛠️ Implementación Multi-Paradigma
+
+El patrón se adapta al modelo de tipado y al estilo de dispatch del entorno. No requiere necesariamente herencia clásica ni sobrecarga explícita.
+
+### 3.1. POO Clásica con Sobrecarga (TypeScript / Java / C#)
+Uso de interfaces explícitas, métodos `accept()` y sobrecarga de `visit()`. Ideal para ASTs, documentos o gráficos de escena.
+```java
+public interface Visitor {
+    void visitCircle(Circle c);
+    void visitRectangle(Rectangle r);
+}
+
+public interface Shape {
+    void accept(Visitor v);
+}
+
+public class Circle implements Shape {
+    private double radius;
+    public void accept(Visitor v) { v.visitCircle(this); }
+    public double getRadius() { return radius; }
+}
+
+public class AreaCalculator implements Visitor {
+    private double totalArea = 0;
+    public void visitCircle(Circle c) { totalArea += Math.PI * c.getRadius() * c.getRadius(); }
+    public void visitRectangle(Rectangle r) { totalArea += r.getWidth() * r.getHeight(); }
+    public double getTotal() { return totalArea; }
+}
+```
+
+### 3.2. Enfoque Funcional / Pattern Matching (Rust / Scala / Kotlin / TS 4.8+)
+Se reemplaza doble despacho por tipos algebraicos y `match` exhaustivo. Eliminación de boilerplate de interfaces.
+```rust
+pub enum Node {
+    Text(String),
+    Image { src: String, alt: String },
+    Group(Vec&lt;Node&gt;),
+}
+
+pub struct XmlSerializer;
+
+impl XmlSerializer {
+    pub fn serialize(&amp;self, node: &amp;Node) -&gt; String {
+        match node {
+            Node::Text(content) =&gt; format!("&lt;text&gt;{content}&lt;/text&gt;"),
+            Node::Image { src, alt } =&gt; format!("&lt;img src='{src}' alt='{alt}'/&gt;"),
+            Node::Group(children) =&gt; {
+                let inner: String = children.iter().map(|n| self.serialize(n)).collect();
+                format!("&lt;group&gt;{inner}&lt;/group&gt;")
+            }
+        }
+    }
+}
+```
+Ventaja: Exhaustividad en compilación, cero casts, más seguro. Desventaja: Añadir nuevo nodo requiere actualizar todos los visitantes (match expressions), rompiendo Open/Closed para estructura nueva.
+
+### 3.3. Visitor Genérico / Tipo-Seguro (Generics / Type Guards)
+Para lenguajes sin sobrecarga nativa o cuando se requiere type-safety estricto.
+```typescript
+interface Visitor&lt;T&gt; {
+  visit(type: string, element: Element): T;
+}
+
+function renderElement(el: Element, visitor: Visitor&lt;string&gt;): string {
+  if (el.type === "text") return visitor.visit("text", el);
+  if (el.type === "image") return visitor.visit("image", el);
+  throw new Error("Unknown element type");
+}
+```
+
+### 3.4. Visitor Dinámico / Reflexivo (Metaprogramming)
+Útil cuando los tipos de elementos se cargan en runtime o son dinámicos. Usa reflexión o mapas de handlers.
+```python
+class DynamicVisitor:
+    def __init__(self):
+        self.handlers = {}
+
+    def register(self, cls_name, handler):
+        self.handlers[cls_name] = handler
+
+    def visit(self, element):
+        handler = self.handlers.get(element.__class__.__name__)
+        if not handler:
+            raise NotImplementedError(f"No visitor for {element.__class__.__name__}")
+        return handler(element)
+```
+
+---
+
+## 4. 🔄 Variantes Arquitectónicas y Extensiones
+
+| Variante | Mecanismo | Caso de uso | Trade-off |
+|----------|-----------|-------------|-----------|
+| **Cíclico / Jerárquico** | Visitor visita hijos, hijos aceptan visitor. Recursión controlada. | Árboles DOM, sistemas de archivos, ASTs, gráficos de dependencia. | Riesgo de stack overflow. Requiere gestión de visitados o profundidad máxima. |
+| **Stateless / Puro** | No mantiene estado interno. Retorna resultados o aplica efectos laterales controlados. | Serialización, validación, transformación, pretty-printing. | Reutilizable globalmente, thread-safe. Limitado para operaciones acumulativas complejas. |
+| **Stateful / Acumulador** | Guarda contexto, contadores, buffers o árboles intermedios durante el traversal. | Cálculo de métricas, generación de reportes, optimización de consultas. | Requiere instanciación por traversal. Gestión explícita de reset o scope. |
+| **Reflective / Registro** | Usa reflexión o mapas para resolver `visit()` en runtime sin sobrecarga estática. | Plugins, tipos dinámicos, sistemas de reglas extensibles. | Pérdida de type-safety en compilación. Overhead de lookup y riesgo de errores en runtime. |
+| **Hybrid con Strategy** | Cada `visit()` delega a una estrategia específica para el tipo. | Cuando la lógica varía por contexto además de por tipo. | Doble indirección. Puede oscurecer flujo si no se documenta claramente. |
+| **Short-Circuit / Early Exit** | Visitor retorna flag o lanza excepción controlada para detener traversal. | Búsqueda, validación temprana, parsing con errores fatales. | Rompe flujo completo. Requiere manejo cuidadoso de estado parcialmente procesado. |
+
+---
+
+## 5. 🎯 Cuándo Usar y Cuándo Evitar
+
+| ✅ Usar cuando... | ❌ Evitar cuando... |
+|------------------|-------------------|
+| La estructura de objetos es estable pero necesitas muchas operaciones no relacionadas | Los tipos de elementos cambian frecuentemente. Tendrás que modificar todos los visitantes. |
+| Quieres aislar lógica transversal (serialización, validación, métricas) de los modelos de dominio | La operación es simple o única por tipo. Usa métodos directos en la clase o funciones auxiliares. |
+| Trabajas con ASTs, parsers, documentos, gráficos de escena o sistemas de archivos | El doble despacho añade overhead crítico en loops tight o sistemas embebidos de baja latencia. |
+| Necesitas cumplir Open/Closed para nuevas operaciones sin tocar código de elementos existente | La exposición de estado interno (getters) rompe encapsulamiento o inmutabilidad requerida. |
+| Requieres traversals complejos con lógica condicional por nodo sin contaminar la estructura | Ya usas pattern matching nativo o frameworks declarativos que manejan traversal automáticamente. |
+
+Comparación rápida con patrones de comportamiento:
+* **Visitor**: Separa algoritmos de estructura estable. Enfocado en doble despacho y múltiples operaciones.
+* **Strategy**: Intercambia algoritmos completos en runtime. Enfocado en variación de lógica, no en traversal estructural.
+* **Command**: Encapsula petición ejecutable. Enfocado en ejecución diferida, undo/redo o encolado.
+* **Composite**: Modela jerarquías parte-todo. Enfocado en uniformidad estructural, no en operaciones externas.
+* **Chain of Responsibility**: Enruta petición hasta handler. Enfocado en secuencialidad y fallback, no en aplicación a todos los nodos.
+
+---
+
+## 6. 🧪 Testing, Mantenibilidad y Arquitectura
+
+* **Aislamiento por Operación**: Prueba cada `ConcreteVisitor` con una estructura fixture conocida. Verifica que visite cada tipo correcto, acumule resultados esperados y respete orden de traversal.
+  * Técnica: Usa espías o fakes. Aserta llamadas a `visitX`, parámetros pasados y estado final del visitante.
+* **Validación de Exhaustividad**: En lenguajes sin match exhaustivo, escribe tests que fallen si un nuevo elemento no es manejado.
+  * Fix: `assert.throws(() =&gt; visitor.visit(unknownElement), /NotImplemented/)`. Valide mensajes y fallback seguro.
+* **Ciclo de Vida y Limpieza**: Si el visitante mantiene buffers, conexiones o referencias, debe implementar `reset()`, `clear()` o `dispose()`.
+* **Refactorización desde Métodos Espagueti**: Identifique clases con `render()`, `serialize()`, `validate()`, `export()` acumulados. Extraiga cada uno a `Visitor`. Delegue vía `accept()`. Deprecar métodos transversales.
+* **Impacto en Rendimiento**: El doble despacho añade 2 saltos de función + lookup de v-table. En CPUs modernas, negligible para &lt; 50k nodos. Solo impacta en traversal masivo o recursión profunda. Profile antes de optimizar.
+* **Gestión de Versiones**: Si añades nuevos elementos, todos los visitantes existentes deben actualizarse. Mantenga interfaces estables. Use adapters internos o visitors base con default implementations.
+* **Visibilidad y APIs Públicas**: Exponga solo `accept()` y `visit()`. Oculte getters internos o use interfaces de solo lectura. Reduzca superficie de modificación accidental.
+* **Documentación de Orden de Traversal**: Especifique explícitamente si es pre-order, post-order, DFS, BFS o custom. Elimine suposiciones implícitas sobre secuencia de visita.
+* **Migración hacia Pattern Matching**: Si el lenguaje lo soporta, reemplace interfaces Visitor por `enum` + `match`. Centralice lógica y elimine boilerplate de doble despacho.
+* **Integración con Observabilidad**: Inyecte correlation IDs, trace spans y métricas por nodo visitado. Centralice telemetría de latencia, fallos y cobertura de tipos en producción.
+
+---
+
+## 7. ⚠️ Errores Comunes y Soluciones
+
+* **Romper Doble Despacho**: `accept()` contiene `if (this instanceof X)` o casteos manuales.
+  * Fix: `accept()` solo debe llamar a `visitor.visitX(this)`. Delegue toda lógica al visitante. Si necesita branching, el diseño está fallando.
+* **Violación de Encapsulamiento**: Visitor accede a campos privados o muta estado interno del elemento directamente.
+  * Fix: Exponga solo lo necesario mediante getters de solo lectura o interfaces inmutables. Nunca permita mutación externa no coordinada.
+* **Explosión de Mantenimiento por Nuevos Elementos**: Añadir `NewElement` requiere modificar 10+ visitantes existentes.
+  * Fix: Use `AbstractVisitor` con implementaciones por defecto (no-op o excepción controlada). Documente contrato de extensión. Evalúe si Visitor es aún adecuado.
+* **State Leakage entre Traversals**: Visitante stateful no se reinicia. Resultados acumulados de ejecución anterior contaminan la nueva.
+  * Fix: Instancie visitante por operación, use `clear()` explícito, o pase contexto inmutable. Nunca reutilice estado mutante sin reset.
+* **Stack Overflow en Estructuras Profundas**: Recursión descontrolada en árboles/graphos masivos sin límite o visited set.
+  * Fix: Implemente traversal iterativo con pila explícita, use visited set para grafos cíclicos, o límite de profundidad con fallback seguro.
+* **Confundir con Strategy o Composite**: Usar Visitor para variar lógica por tipo sin traversal, o para modelar jerarquías sin operaciones externas.
+  * Fix: Si varía algoritmo sin estructura → Strategy. Si modela parte-todo → Composite. Si aplica múltiples operaciones a estructura estable → Visitor.
+* **Falta de Fallback Seguro**: Nuevo tipo no manejado lanza excepción en runtime sin contexto.
+  * Fix: Implemente `visitUnknown()` o use patrón `NullObject`. Loguee tipo faltante y continúe o falle explícitamente según contrato.
+* **Serialización Rota**: Intentar persistir visitante con closures, referencias a contexto o estado mutable complejo.
+  * Fix: Serialize solo DTOs o identificadores. Reconstruya visitante mediante factory. Marque campos transitorios como `transient`/`non-serializable`.
+* **Orden de Traversal Asumido**: Lógica que depende de que A se visite antes que B. Fracilla al cambiar estructura o algoritmo de recorrido.
+  * Fix: No asuma orden. Si es crítico, documente explícitamente y valide en tests. Use traversal custom si la semántica es estricta.
+* **Olvidar `reset()` o Limpieza**: Buffers, logs o contadores crecen indefinidamente en aplicaciones de larga ejecución.
+  * Fix: Implemente ciclo de vida explícito. Valide en tests de integración que múltiples ejecuciones no acumulen estado no deseado.
+
+---
+
+## 8. 💡 Mejores Prácticas y Consejos
+
+* **Prefiera Visitors Stateless por Defecto**: Elimina complejidad de gestión de estado, facilita testing determinista, reuso global y thread-safety.
+* **Documente Orden y Contrato de Visita**: Especifique explícitamente secuencia, getters expuestos, y garantías de inmutabilidad. Elimine suposiciones implícitas.
+* **Use Interfaces Base con Default Implementations**: Para visitantes concretos, herede de `BaseVisitor` con métodos vacíos o que lancen excepción controlada. Reduzca boilerplate al añadir nuevos elementos.
+* **Valide Acceso a Estado Estrictamente**: Exponga solo lo necesario. Prefiera inmutabilidad o snapshots. Nunca permita mutación directa desde el visitante.
+* **Combine con Composite para Estructuras Jerárquicas**: Visitor + Composite es una pareja clásica y poderosa. El composite gestiona árbol, el visitor gestiona operaciones transversales.
+* **Implemente Short-Circuit Controlado**: Permita que el visitor retorne `false` o lance `StopTraversalException` para detener recorrido temprano si es necesario.
+* **Profile antes de Optimizar**: No asuma overhead de doble despacho trivial. Mide allocation por nodo, latencia de traversal y presión en stack/GC. Optimice solo si el profiler lo indica.
+* **Pruebe Casos Límite y Fallos**: Valide estructuras vacías, profundamente anidadas, con ciclos accidentales, con nuevos tipos no manejados y con estado corrupto. Detecte regresiones temprano.
+* **Mantenga Contratos Estables**: Cambiar la firma de `accept()` o `visit()` rompe clientes. Use deprecación controlada, versionado semántico y adapters paralelos.
+* **No lo use "por moda"**: Si la estructura cambia frecuentemente, o solo necesitas 1-2 operaciones, usa métodos directos, pattern matching o funciones auxiliares. La separación innecesaria es deuda técnica de legibilidad y mantenimiento.
+
+---
+
+Este cheatsheet proporciona una referencia arquitectónica completa para el patrón Visitor, cubriendo su intención de comportamiento, contratos de doble despacho seguro, implementación multi-paradigma, variantes jerárquicas y stateless/stateful, impacto real en testing y mantenibilidad, errores frecuentes en producción y estrategias de mitigación, junto con criterios estrictos para decidir cuándo la separación operación-estructura es una necesidad del dominio y cuándo migrar hacia pattern matching nativo, métodos directos o frameworks declarativos más escalables.
