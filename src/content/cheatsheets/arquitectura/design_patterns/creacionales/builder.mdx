@@ -1,0 +1,313 @@
+# 🏗️ Patrón Builder — Cheatsheet Completo 🏗️
+
+El patrón **Builder** es un patrón creacional que separa la construcción de un objeto complejo de su representación final, permitiendo que el mismo proceso de ensamblaje genere diferentes variantes. Resuelve el problema de los constructores telescópicos, centraliza la validación de configuración progresiva y garantiza inmutabilidad en el producto terminado. Nace para dominar la complejidad de inicialización, evitar estados inválidos intermedios y proporcionar APIs legibles para configuraciones extensas. Este cheatsheet cubre la intención arquitectónica real, contratos de construcción paso a paso, implementaciones multi-paradigma, variantes fluent y funcionales, implicaciones en testing y validación, trampas de estado mutable, y criterios estrictos para decidir cuándo la construcción progresiva es una necesidad del dominio y no un sobre-ingeniería que añade fricción innecesaria.
+
+---
+
+## 1. 🌟 Conceptos Fundamentales
+
+* **Separación de Construcción y Representación**: El proceso de ensamblaje se desacopla de la estructura final del objeto.
+  * Por qué importa: Permite reutilizar el mismo flujo de construcción para generar variantes distintas (ej. `PDFReport`, `HTMLReport`, `JSONReport`) sin modificar la lógica de pasos.
+* **Constructor Telescópico Antipatrón**: Múltiples constructores con combinaciones de parámetros opcionales que generan firmas ilegibles, errores silenciosos y mantenimiento costoso.
+  * Por qué importa: El Builder elimina esta complejidad exponencial mediante métodos nombrados y explícitos (`setTitle()`, `addHeader()`, `build()`).
+* **Director (Opcional)**: Clase que orquesta el orden de los pasos del Builder. No conoce el producto concreto, solo el flujo de construcción abstracto.
+  * Por qué importa: Centraliza algoritmos de ensamblaje complejos. Útil cuando el orden de pasos es crítico, se repite en múltiples contextos o requiere validación cruzada.
+* **Builder Interface/Protocolo**: Define los métodos mutables que configuran el estado progresivo y el método final `build()`.
+  * Por qué importa: Establece el contrato de construcción. Permite intercambiar `ConcreteBuilder` sin tocar al cliente ni al Director.
+* **ConcreteBuilder**: Implementación que acumula estado interno y, al llamar `build()`, instancia y retorna el `Product`.
+  * Por qué importa: Encapsula validación, valores por defecto y transformaciones intermedias antes de la creación final.
+* **Product Inmutable**: El objeto resultante no debe permitir mutación después de `build()`. Su estado se congela en el momento de construcción.
+  * Por qué importa: Garantiza seguridad en hilos, elimina efectos secundarios inesperados y facilita caching, serialización y razonamiento determinista.
+* **Validación en `build()`**: La verificación de invariantes y consistencia se ejecuta solo en el paso final, no durante la configuración progresiva.
+  * Por qué importa: Permite configuraciones parciales durante la construcción y falla rápido con mensajes descriptivos si el estado es inválido.
+* **Fluidez vs Seguridad**: Los métodos pueden retornar `this` (fluent) o nuevas instancias (inmutables). La elección dicta el modelo de concurrencia y el overhead de memoria.
+  * Por qué importa: Fluent es legible pero mutante. Inmutable es seguro pero costoso. El contrato debe reflejar el entorno de ejecución real.
+
+---
+
+## 2. 📐 Estructura y Contrato del Patrón
+
+La arquitectura sigue un flujo estricto de acumulación y cierre. El patrón garantiza que ningún producto se instancie en estado inválido.
+
+```text
+        Cliente / Director
+               │
+               ▼ invoca pasos
+          Builder (Interfaz)
+         +-----------------------+
+         | setPartA(): Builder   |
+         | setPartB(): Builder   |
+         | build(): Product      |
+         +-----------------------+
+               ▲
+               | implementa
+        ConcreteBuilderA / ConcreteBuilderB
+         +-----------------------+
+         | estado interno mutable|
+         | build() = &gt; valida +  |
+         | retorna Product       |
+         +-----------------------+
+               │
+               ▼ retorna
+            Product (Inmutable)
+         +-----------------------+
+         | solo getters          |
+         | estado congelado      |
+         +-----------------------+
+```
+
+Flujo de ejecución garantizado:
+1. Cliente o Director instancia `ConcreteBuilder`.
+2. Llama secuencialmente a métodos de configuración (`setX()`, `addY()`).
+3. El Builder acumula estado internamente sin crear el producto aún.
+4. Cliente/Director invoca `build()`.
+5. El Builder valida invariantes, aplica defaults, crea `Product` inmutable.
+6. Retorna producto terminado. El Builder puede reiniciarse o descartarse.
+
+Contrato mínimo en pseudocódigo tipado:
+```typescript
+interface IReportBuilder {
+  setTitle(title: string): IReportBuilder;
+  addSection(name: string, content: string): IReportBuilder;
+  setFooter(footer: string): IReportBuilder;
+  build(): Report;
+}
+
+class PDFReportBuilder implements IReportBuilder {
+  private title = '';
+  private sections: Section[] = [];
+  private footer = '';
+
+  setTitle(title: string): this { this.title = title; return this; }
+  addSection(name: string, content: string): this {
+    this.sections.push({ name, content });
+    return this;
+  }
+  setFooter(footer: string): this { this.footer = footer; return this; }
+
+  build(): Report {
+    if (!this.title) throw new Error('Title is mandatory');
+    if (this.sections.length === 0) throw new Error('At least one section required');
+    // Construcción inmutable: copia defensiva de arrays
+    return new ImmutableReport(this.title, [...this.sections], this.footer);
+  }
+}
+```
+
+---
+
+## 3. 🛠️ Implementación por Paradigma y Ecosistema
+
+El patrón se adapta al modelo de tipado y al estilo de construcción del lenguaje. No requiere necesariamente herencia clásica.
+
+### 3.1. POO Clásica con Builder Estático (Java / TypeScript / C#)
+Uso de clase anidada estática o externa. Ideal para evitar constructores telescópicos y garantizar inmutabilidad estricta.
+```java
+public final class ServerConfig {
+    private final String host;
+    private final int port;
+    private final boolean ssl;
+    private final Duration timeout;
+
+    private ServerConfig(String host, int port, boolean ssl, Duration timeout) {
+        this.host = host;
+        this.port = port;
+        this.ssl = ssl;
+        this.timeout = timeout;
+    }
+
+    public static class Builder {
+        private String host = "localhost";
+        private int port = 8080;
+        private boolean ssl = false;
+        private Duration timeout = Duration.ofSeconds(30);
+
+        public Builder host(String h) { this.host = h; return this; }
+        public Builder port(int p) {
+            if (p < 1 || p > 65535) throw new IllegalArgumentException("Invalid port");
+            this.port = p; return this;
+        }
+        public Builder ssl(boolean s) { this.ssl = s; return this; }
+        public Builder timeout(Duration t) { this.timeout = t; return this; }
+
+        public ServerConfig build() {
+            return new ServerConfig(host, port, ssl, timeout);
+        }
+    }
+}
+// Uso seguro: new ServerConfig.Builder().host("api.example.com").ssl(true).build();
+```
+
+### 3.2. Enfoque Funcional / Composición (JavaScript / Python)
+Se reemplaza herencia por closures o objetos acumuladores. Cada método retorna `this` para encadenamiento seguro.
+```javascript
+function createQuery() {
+  let state = { table: '', conditions: [], orderBy: null, limit: 100 };
+
+  return {
+    from(table) { state.table = table; return this; },
+    where(cond) { state.conditions.push(cond); return this; },
+    orderBy(field) { state.orderBy = field; return this; },
+    build() {
+      if (!state.table) throw new Error('Table is required');
+      // Genera SQL inmutable, no modifica state después de build()
+      const whereClause = state.conditions.length 
+        ? ' WHERE ' + state.conditions.join(' AND ') 
+        : '';
+      return `SELECT * FROM ${state.table}${whereClause}${state.orderBy ? ` ORDER BY ${state.orderBy}` : ''} LIMIT ${state.limit}`;
+    }
+  };
+}
+// Uso: createQuery().from('users').where('active = 1').build();
+```
+
+### 3.3. Generadores / Pipelines (Rust / Go / Kotlin)
+Uso de `into()` patterns, structs con métodos encadenados, o constructores funcionales con validación en tiempo de compilación.
+```rust
+#[derive(Debug)]
+pub struct HttpRequest {
+    method: Method,
+    url: String,
+    headers: Vec&lt;(String, String)&gt;,
+    body: Option&lt;Vec&lt;u8&gt;&gt;,
+}
+
+pub struct RequestBuilder {
+    method: Option&lt;Method&gt;,
+    url: Option&lt;String&gt;,
+    headers: Vec&lt;(String, String)&gt;,
+}
+
+impl RequestBuilder {
+    pub fn new() -&gt; Self { Self { method: None, url: None, headers: vec![] } }
+    pub fn method(mut self, m: Method) -&gt; Self { self.method = Some(m); self }
+    pub fn url(mut self, u: String) -&gt; Self { self.url = Some(u); self }
+    pub fn header(mut self, k: String, v: String) -&gt; Self {
+        self.headers.push((k, v)); self
+    }
+    pub fn build(self) -&gt; Result&lt;HttpRequest, String&gt; {
+        let method = self.method.ok_or("Method required")?;
+        let url = self.url.ok_or("URL required")?;
+        Ok(HttpRequest { method, url, headers: self.headers, body: None })
+    }
+}
+```
+
+### 3.4. Builder con Director (Orquestación Externa)
+El Director conoce la secuencia, no el producto. Útil para pipelines complejos o pasos condicionalmente dependientes.
+```typescript
+class DocumentDirector {
+  constructor(private builder: IDocumentBuilder) {}
+
+  createStandardDoc() {
+    this.builder
+      .setHeader('Confidential')
+      .addTitle('Annual Report')
+      .addSection('Executive Summary', '...')
+      .addSection('Financials', '...')
+      .setFooter('Page 1');
+  }
+
+  createBriefDoc() {
+    this.builder
+      .setHeader('Internal')
+      .addTitle('Status Update')
+      .addSection('Progress', '...');
+    // Nota: omite setFooter() intencionalmente
+  }
+}
+// Cliente: director.createStandardDoc(); const doc = builder.build();
+```
+
+---
+
+## 4. 🔄 Variantes Arquitectónicas y Extensiones
+
+| Variante | Mecanismo | Caso de uso | Trade-off |
+|----------|-----------|-------------|-----------|
+| **Fluent Builder** | Métodos retornan `this` o nueva instancia inmutable para encadenamiento. | APIs legibles, DSLs internos, configuración progresiva. | Puede ocultar errores de orden si no se valida. |
+| **Static Nested Builder** | Clase interna estática dentro del Product. Encapsula visibilidad y acceso directo. | Java/C#/TS, evitar constructores telescópicos. | Aumenta complejidad de archivos. Dificulta testing aislado si es privado. |
+| **Builder con Validación Estricta** | `build()` lanza excepciones si faltan campos obligatorios o valores están fuera de rango. | Configuraciones de infraestructura, payloads de API, reglas de compliance. | Fail-fast puede ser ruidoso si se usa en exploración temprana. |
+| **Builder Inmutable (Funcional)** | Cada método retorna un nuevo Builder con estado copiado. Sin mutación interna. | Concurrencia, sistemas deterministas, replay/debugging seguro. | Overhead de memoria/CPU por copias. Requiere GC eficiente. |
+| **Builder de Serialización** | Construye objetos desde JSON/XML/DB mediante pasos intermedios de parsing. | Deserialización segura, migración de esquemas, validación de contratos. | Lento para payloads grandes. Puede requerir `transient` fields. |
+| **Step-Enforced Builder (Tipado)** | Usa tipos genéricos para obligar pasos obligatorios antes de `build()`. | APIs donde el orden es crítico (ej. `init()` → `configure()` → `start()`). | Complejidad alta en lenguajes sin generics avanzados. |
+
+---
+
+## 5. 🎯 Cuándo Usar y Cuándo Evitar
+
+| ✅ Usar cuando... | ❌ Evitar cuando... |
+|------------------|-------------------|
+| El objeto tiene &gt; 4 parámetros opcionales o combinaciones complejas | El objeto es simple, con 1-2 campos y validación trivial. Usa constructor directo. |
+| Necesitas garantizar inmutabilidad y validación centralizada en `build()` | El rendimiento es crítico en loops tight. El overhead de métodos encadenados impacta. |
+| Quieres evitar el antipatrón de constructores telescópicos | La construcción requiere lógica de negocio compleja. Usa Factory + Strategy. |
+| El orden de configuración es flexible pero debe validarse al final | El Builder acumula estado global mutable que se filtra entre instancias. |
+| Necesitas generar múltiples representaciones desde el mismo flujo | Ya usas un contenedor DI que inyecta objetos completamente configurados. |
+
+Comparación rápida con patrones creacionales:
+* **Builder**: Construye paso a paso. Enfocado en configuración progresiva, validación y inmutabilidad.
+* **Factory Method**: Delega creación a subclases. Enfocado en selección polimórfica de tipo.
+* **Abstract Factory**: Crea familias relacionadas. Enfocado en compatibilidad cruzada de componentes.
+* **Prototype**: Clona instancias existentes. Enfocado en replicación de estado y aislamiento.
+* **Singleton**: Garantiza unicidad. Enfocado en acceso global controlado.
+
+---
+
+## 6. 🧪 Testing, Mantenibilidad y Arquitectura
+
+* **Aislamiento en Tests**: Cada test puede instanciar un Builder fresco. Sin estado compartido, sin `reset()` necesario.
+  * Técnica: `beforeEach(() =&gt; builder = new ConcreteBuilder())`. Garantiza limpieza automática y determinismo.
+* **Validación de `build()`**: Escribe tests que intencionalmente omitan campos obligatorios o usen valores inválidos. Verifica excepciones descriptivas.
+  * Fix: `assert.throws(() =&gt; builder.build(), /Title is mandatory/)`. Valida mensajes, no solo que falle.
+* **Ciclo de Vida y Ownership**: El Builder es efímero. Se descarta tras `build()`. No debe mantener referencias a recursos externos (sockets, archivos, conexiones DB).
+* **Refactorización hacia Inmutabilidad**: Si el Product permite setters después de construcción, el Builder pierde su propósito. Congela el estado con getters de solo lectura.
+* **Impacto en Rendimiento**: El encadenamiento añade llamadas a métodos. En CPUs modernas, la JIT los inlina. Solo impacta en millones de construcciones/seg. En ese caso, usa object pools o builders reutilizables con `reset()`.
+* **Gestión de Versiones**: Si añades nuevos pasos opcionales, el Builder debe mantener compatibilidad hacia atrás. Usa valores por defecto sensibles. Nunca rompa el contrato de `build()`.
+* **Visibilidad y APIs Públicas**: Exponga solo la interfaz del Builder y el Product. Oculte el constructor del Product (privado/paquete). Reduzca la superficie de instanciación inválida.
+* **Director vs Cliente Directo**: El Director es útil cuando la secuencia de pasos es fija y se repite. Si cada cliente configura pasos distintos, omita el Director. Evite acoplamiento innecesario.
+* **Migración desde Constructores Múltiples**: Identifique combinaciones de parámetros. Extraiga obligatorios al constructor del Builder. Convierta opcionales en métodos. Deprecar constructores viejos progresivamente.
+* **Integración con Contenedores DI**: Inyecte factories de Builder en lugar de Builders instanciados. Permita configuración por ambiente (`dev`, `staging`, `prod`) sin tocar código de construcción.
+
+---
+
+## 7. ⚠️ Errores Comunes y Soluciones
+
+* **Olvidar Validar en `build()`**: Campos obligatorios faltantes o valores fuera de rango pasan silenciosamente al Product.
+  * Fix: Lance excepciones explícitas con contexto. Nunca retorne un objeto en estado inconsistente. Use asserts en modo desarrollo.
+* **Builder Mutable Compartido**: Una instancia de Builder se reutiliza entre hilos o requests sin `reset()`, filtrando estado.
+  * Fix: Cree un Builder nuevo por operación o implemente `clear()/reset()` que anule todos los campos internos antes de reuso.
+* **Product Mutable Post-Build**: El cliente llama a setters después de `build()`, rompiendo la garantía de inmutabilidad.
+  * Fix: Elimine setters del Product. Use modificadores funcionales (`withX()`) que retornen nuevas instancias, o lance excepción en setters.
+* **Director Sobre-acoplado**: El Director conoce clases concretas o lógica de negocio específica del dominio.
+  * Fix: El Director solo debe orquestar métodos del Builder Interface. Delegue reglas de dominio a servicios externos.
+* **Encadenamiento que Oculta Errores de Orden**: `builder.setFooter().build()` falla porque `setTitle()` nunca se llamó, pero el error aparece tarde.
+  * Fix: Use validación temprana opcional o builders tipados por fases (`Phase1Builder` → `Phase2Builder` → `FinalBuilder`).
+* **Violación de Single Responsibility en Builder**: El Builder hace parsing de archivos, validación compleja y formateo de salida.
+  * Fix: Separe responsabilidades. Use `ParserBuilder` → `Validator` → `FormatterBuilder`. Mantenga el Builder enfocado en acumulación y construcción.
+* **Confundir con Factory**: Usar `Builder` cuando solo se necesita seleccionar un tipo concreto. Añadir métodos `setEngine()`, `setWheels()` innecesarios.
+  * Fix: Si no hay configuración progresiva ni validación intermedia, use Factory Method o Abstract Factory. No añada fricción donde no hay complejidad.
+* **Serialización Rota**: `build()` retorna un objeto con referencias circulares o campos no serializables.
+  * Fix: Marque campos como `transient` o implemente `writeObject()`/`toJSON()` seguro. Valide estructura antes de serializar.
+* **Estado por Defecto Peligroso**: Usar `null`, `""`, o `0` como defaults silenciosos que el producto acepta pero no maneja bien.
+  * Fix: Use valores explícitos o `Optional`/`Maybe`. Documente claramente qué ocurre si un campo no se configura.
+* **Duplicación de Validación**: Validar en cada método `setX()` y nuevamente en `build()`. Doble costo y mensajes contradictorios.
+  * Fix: Valide rango básico en `setX()`. Valide consistencia cruzada e inmutabilidad solo en `build()`.
+
+---
+
+## 8. 💡 Mejores Prácticas y Consejos
+
+* **Haga el Product Estrictamente Inmutable**: Declare campos como `final`, `readonly` o `private set`. Expóngalos solo mediante getters o propiedades de lectura.
+* **Valide Agresivamente en `build()`**: Rechace configuraciones inválidas con mensajes claros. Fail fast ahorra horas de debugging en producción.
+* **Use Fluent con Cuidado**: El encadenamiento es legible, pero no sacrifique seguridad. Prefiera métodos que retornen nueva instancia si concurrencia es crítica.
+* **Separe Campos Obligatorios de Opcionales**: Pase los obligatorios en el constructor del Builder. Los opcionales van en métodos encadenados. Reduce errores de configuración.
+* **Implemente `reset()` o Reuse con Pool**: En sistemas de alta concurrencia, crear Builders nuevos añade presión al GC. Reutilice instancias limpias con `reset()` explícito.
+* **Documente el Orden de Pasos**: Si el orden importa, documente explícitamente en comentarios o use tipos por fase. Evite suposiciones implícitas.
+* **Evite Lógica de Negocio en el Builder**: El Builder solo debe acumular, validar y construir. Delegue cálculos, llamadas externas o reglas complejas a servicios inyectados.
+* **Pruebe Casos Límite**: Valide `build()` con 0 campos, todos los campos, valores nulos, strings vacíos, límites numéricos y caracteres especiales.
+* **Mantenga Contratos Estables**: Añadir pasos opcionales es seguro. Cambiar firmas o eliminar métodos rompe clientes. Use deprecación controlada y versionado.
+* **No lo use "por moda"**: Si el objeto tiene 2 campos y no requiere validación, use un constructor simple o literal. La abstracción innecesaria es deuda técnica de legibilidad y mantenimiento.
+
+---
+
+Este cheatsheet proporciona una referencia arquitectónica completa para el patrón Builder, cubriendo su intención estructural, contratos de construcción progresiva, implementación multi-paradigma, variantes fluent y funcionales, impacto real en testing y mantenibilidad, errores frecuentes en producción y estrategias de mitigación, junto con criterios estrictos para decidir cuándo la construcción paso a paso es una necesidad del dominio y cuándo migrar hacia factories directas, value objects inmutables o contenedores de inyección más escalables.
