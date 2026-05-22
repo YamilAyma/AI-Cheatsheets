@@ -1,0 +1,294 @@
+# 🔄 Patrón State — Cheatsheet Completo 🔄
+
+El patrón **State** es un patrón de comportamiento que permite a un objeto alterar su comportamiento cuando su estado interno cambia, haciendo que parezca que el objeto cambia de clase. Extrae la lógica condicional dispersa (`if/else`, `switch`) y la encapsula en entidades independientes, cada una representando un estado específico del ciclo de vida. Nace para resolver la complejidad exponencial de máquinas de estado manuales, garantizar transiciones válidas y predecibles, y facilitar la extensión de comportamientos sin tocar el contexto principal. Este cheatsheet desglosa la intención arquitectónica real del patrón, contratos de delegación y transición, implementaciones multi-paradigma, variantes centralizadas vs distribuidas, impacto en concurrencia y testing, trampas de explosión de estados y mutación silenciosa, y criterios estrictos para decidir cuándo la gestión explícita de ciclo de vida es una necesidad del dominio y no un sobre-ingeniería que añade fricción innecesaria.
+
+---
+
+## 1. 🌟 Conceptos Fundamentales
+
+* **Contexto (Context)**: Objeto que mantiene el estado actual y delega todas las solicitudes de dominio a ese estado. Contiene la referencia al `State` activo.
+  * Por qué importa: Desacopla la lógica de negocio de la gestión de ciclo de vida. El contexto solo orquesta, valida invariantes y mantiene referencias compartidas.
+* **Interfaz de Estado (State)**: Contrato que declara los métodos de comportamiento que pueden variar según el ciclo de vida (ej. `play()`, `pause()`, `stop()`, `handleRequest()`).
+  * Por qué importa: Establece uniformidad estructural. Permite intercambiar estados en runtime sin romper la firma pública del contexto.
+* **Estados Concretos (ConcreteStates)**: Implementaciones específicas que encapsulan el comportamiento para un estado determinado. Conocen al contexto para solicitar transiciones.
+  * Por qué importa: Centralizan reglas, validaciones y efectos secundarios propios de una fase. Cumplen Single Responsibility estrictamente.
+* **Delegación Comportamental**: El contexto nunca implementa lógica condicional por estado. Simplemente invoca `state.handleRequest()`.
+  * Por qué importa: Elimina `switch` gigantes, reduce complejidad ciclomática y permite añadir nuevos estados sin modificar código existente (Open/Closed Principle).
+* **Transición Explícita vs Implícita**: Explícita: el estado o un coordinador externo cambia `context.setState()`. Implícita: el contexto detecta cambio y actualiza internamente.
+  * Por qué importa: Define el flujo de control. La transición explícita facilita auditabilidad, testing y validación de guards. La implícita es más compacta pero opaca.
+* **Guards/Condiciones de Transición**: Reglas que validan si un cambio de estado es permitido (ej. `canPlay()`, `isValidTransition(from, to)`).
+  * Por qué importa: Evita transiciones ilegales que corrompen invariantes de negocio. Centraliza validación antes de mutar estado.
+* **Ciclo de Vida Aislado**: Cada estado puede gestionar inicialización, limpieza o métricas específicas al entrar/salir (`onEnter()`, `onExit()`).
+  * Por qué importa: Permite hooks de dominio (logging, notificaciones, reserva de recursos) sin acoplar al contexto ni a otros estados.
+* **Invariantes de Estado**: Propiedades que deben mantenerse verdaderas durante toda la vida del objeto (ej. "reproductor no puede estar playing y paused simultáneamente").
+  * Por qué importa: El patrón State existe para proteger estos invariantes. Cualquier violación debe ser rechazada inmediatamente con error descriptivo.
+
+---
+
+## 2. 📐 Estructura Lógica y Contrato de Transición
+
+La arquitectura sigue un flujo estricto de delegación, evaluación de guards y mutación controlada. El patrón garantiza que el comportamiento varíe predeciblemente según el estado activo, sin lógica dispersa.
+
+```text
+               Cliente
+                  │
+                  ▼ invoca método
+             Contexto
+         +---------------------------+
+         | state: State              |
+         | request(): void           |
+         | setState(newState): void  |
+         +---------------------------+
+                  ▲ delega / cambia
+            State (Interfaz)
+         +---------------------------+
+         | handle(context): void     |
+         +---------------------------+
+            ▲ implementa
+   ConcreteStateA / ConcreteStateB
+   [Valida, ejecuta, solicita transición]
+```
+
+Flujo de ejecución garantizado:
+1. Cliente invoca `context.request(params)`.
+2. Contexto delega inmediatamente a `current.state.handle(context, params)`.
+3. Estado concreto evalúa guards, ejecuta lógica de dominio y registra efectos.
+4. Si la transición es válida, estado invoca `context.setState(newConcreteState)`.
+5. Contexto actualiza referencia interna, opcionalmente ejecuta `onExit()`/`onEnter()`.
+6. Retorna resultado. El cliente nunca conoce qué estado estaba activo ni cómo ocurrió el cambio.
+
+Contrato mínimo en pseudocódigo tipado:
+```typescript
+interface State {
+  handle(context: Context, payload: Payload): void;
+}
+
+class Context {
+  private state: State;
+  
+  constructor(initial: State) {
+    this.state = initial;
+  }
+
+  setState(next: State): void {
+    console.log(`Transici&oacute;n: ${this.state.constructor.name} &rarr; ${next.constructor.name}`);
+    this.state = next;
+  }
+
+  request(payload: Payload): void {
+    this.state.handle(this, payload);
+  }
+}
+
+class IdleState implements State {
+  handle(context: Context, payload: Payload): void {
+    if (payload.type === "START") {
+      console.log("Iniciando proceso...");
+      context.setState(new ActiveState());
+    } else {
+      console.warn("Acci&oacute;n inv&aacute;lida en estado Idle");
+    }
+  }
+}
+```
+Regla inquebrantable: El contexto **nunca** debe contener lógica `if (state === "X")`. Toda decisión de comportamiento debe residir en el estado concreto. Si el contexto decide, el patrón colapsa en condicionales disfrazados.
+
+---
+
+## 3. 🛠️ Implementación por Paradigma y Ecosistema
+
+El patrón se adapta al modelo de tipado y al estilo de gestión de ciclo de vida del entorno. No requiere necesariamente herencia clásica ni interfaces explícitas.
+
+### 3.1. POO Clásica con Delegación (TypeScript / Java / C#)
+Uso de interfaces, clases concretas y transición explícita. Ideal para workflows, editores o sistemas con ciclo de vida definido.
+
+```java
+public interface DocumentState {
+    void save(Document doc);
+    void close(Document doc);
+}
+
+public class DraftState implements DocumentState {
+    public void save(Document doc) {
+        doc.markSaved();
+        doc.setState(new PublishedState());
+    }
+    public void close(Document doc) {
+        doc.setState(new ArchivedState());
+    }
+}
+
+public class Document {
+    private DocumentState state = new DraftState();
+    public void setState(DocumentState s) { this.state = s; }
+    public void save() { state.save(this); }
+}
+// Contexto delgado. Estados encapsulan reglas y transiciones.
+```
+
+### 3.2. Enfoque Funcional / Tablas de Transición (Python / JavaScript / Rust)
+Se reemplaza herencia por mapas de funciones y transiciones declarativas. Cero clases, inmutabilidad preferida.
+
+```python
+from typing import Callable, Dict, Tuple
+
+# (estado_actual, evento) &rarr; (nuevo_estado, accion)
+TRANSITIONS: Dict[Tuple[str, str], Tuple[str, Callable]] = {
+    ("IDLE", "START"): ("ACTIVE", lambda: print("Motor encendido")),
+    ("ACTIVE", "STOP"): ("IDLE", lambda: print("Motor apagado")),
+    ("ACTIVE", "ERROR"): ("FAILURE", lambda: print("Registro de fallo")),
+}
+
+class StateMachine:
+    def __init__(self):
+        self.current = "IDLE"
+
+    def handle(self, event: str):
+        key = (self.current, event)
+        if key not in TRANSITIONS:
+            raise ValueError(f"Transici&oacute;n inv&aacute;lida: {key}")
+        next_state, action = TRANSITIONS[key]
+        action()
+        self.current = next_state
+```
+Ventaja: Declarativo, fácil de auditar, serializable, testable sin mocks complejos. Desventaja: Pérdida de encapsulamiento de lógica compleja si las acciones crecen.
+
+### 3.3. Statecharts / XState (Declarativo &amp; Gráfico)
+Modelado visual con estados jerárquicos, regiones paralelas y guards explícitos. Ideal para UIs complejas, IoT o flujos de aprobación.
+
+```typescript
+import { createMachine } from 'xstate';
+
+const checkoutMachine = createMachine({
+  id: 'checkout',
+  initial: 'idle',
+  states: {
+    idle: {
+      on: { ADD_ITEM: 'cart' }
+    },
+    cart: {
+      on: {
+        CHECKOUT: { target: 'payment', cond: 'hasValidItems' },
+        REMOVE_ALL: 'idle'
+      }
+    },
+    payment: {
+      on: {
+        SUCCESS: 'success',
+        FAILURE: 'cart'
+      }
+    },
+    success: { type: 'final' }
+  }
+}, {
+  guards: { hasValidItems: (ctx) => ctx.items.length &gt; 0 }
+});
+// Máquina ejecutable, inspeccionable, compatible con debugging visual.
+```
+
+### 3.4. Hierarchical / Nested States
+Estados que contienen subestados. La transición a un hijo no sale del padre. Útil para dominios con taxonomías o modos compuestos.
+
+```rust
+pub enum EditorState {
+    Normal { mode: NormalMode },
+    Insert { cursor: usize, buffer: String },
+    Visual { selection: Range },
+}
+
+// Transiciones internas no cambian EditorState, solo el campo mode/selection.
+// Facilita mantener invariantes de "modo raíz" mientras varía subcomportamiento.
+```
+
+---
+
+## 4. 🔄 Variantes Arquitectónicas y Extensiones
+
+| Variante | Mecanismo | Caso de uso | Trade-off |
+|----------|-----------|-------------|-----------|
+| **Centralizada** | Contexto o máquina externa decide transiciones. Estados son puros. | Workflows corporativos, validación cruzada, compliance estricto. | Contexto puede volverse "coordinador pesado" si no se delimita. |
+| **Distribuida** | Cada estado decide a dónde transicionar. | Sistemas reactivos, ediciones interactivas, flujos autónomos. | Riesgo de transiciones circulares o inconsistentes si no se documenta. |
+| **Hierárquica** | Estados anidados. Hijos heredan contexto del padre. | UIs complejas, motores de juego, editores con modos/submodos. | Complejidad de resolución de eventos. Requiere bubbling explícito. |
+| **Parallel/Orthogonal** | Múltiples regiones activas simultáneamente. | Dashboards con filtros + vista + selección, sistemas multi-tenant. | Estado exponencial. Requiere composición cuidadosa y validación cruzada. |
+| **Guarded/Conditional** | Transición sujeta a validación antes de ejecución. | Pagos, aprobaciones, flujos con límites de crédito o permisos. | Overhead de validación. Puede rechazar eventos legítimos si guards son estrictos. |
+| **Immutable/Functional** | Cada transición retorna nuevo estado. Sin mutación. | Redux, Event Sourcing, sistemas deterministas, time-travel debugging. | Presión en GC/memoria. Requiere structural sharing para eficiencia. |
+
+---
+
+## 5. 🎯 Cuándo Usar y Cuándo Evitar
+
+| ✅ Usar cuando... | ❌ Evitar cuando... |
+|------------------|-------------------|
+| El objeto tiene &gt; 3 estados y comportamientos que varían significativamente | Solo 1-2 estados binarios (ej. activo/inactivo). Usa flag booleano o enum simple. |
+| Necesitas eliminar condicionales `switch`/`if` dispersos que crecen con el tiempo | Las transiciones son triviales, nunca cambian y no requieren validación compleja. |
+| Quieres validar guards, auditar transiciones o permitir time-travel/debugging | El rendimiento es crítico en loops tight. La delegación añade latencia inaceptable. |
+| Trabajas con workflows, editores, protocolos de red o máquinas de negocio | El dominio es plano, relacional o no tiene ciclo de vida definido. Usa ORMs o servicios. |
+| Necesitas extensión sin modificar código existente (nuevos estados sin tocar contexto) | Ya usas un framework de statecharts o contenedor que gestiona ciclo de vida nativamente. |
+
+Comparación rápida con patrones de comportamiento:
+* **State**: Cambia comportamiento según ciclo de vida interno. Enfocado en transición y delegates.
+* **Strategy**: Intercambia algoritmos completos en runtime. Enfocado en variación de lógica, no en ciclo de vida.
+* **Memento**: Captura estado para reversión. Enfocado en snapshot, no en ejecución de transiciones.
+* **Observer**: Notifica múltiples consumidores de un cambio. Enfocado en propagación uno-a-muchos.
+* **Mediator**: Centraliza comunicación entre pares. Enfocado en desacoplar objetos que se conocen.
+
+---
+
+## 6. 🧪 Testing, Mantenibilidad y Arquitectura
+
+* **Aislamiento por Estado**: Prueba cada `ConcreteState` con un `MockContext`. Verifica que ejecute lógica correcta, valide guards y solicite transición esperada.
+  * Técnica: Inyecta contexto falso. Aserta llamadas a `setState()`, parámetros pasados y efectos secundarios.
+* **Validación de Transiciones Ilegales**: Escribe tests que invoquen eventos fuera de contexto. Verifique rechazo controlado o fallback seguro.
+  * Fix: `assert.throws(() =&gt; state.handle(ctx, invalidEvent), /InvalidTransition/)`. Valida mensajes y estado post-rechazo.
+* **Ciclo de Vida y Limpieza**: Si los estados alojan recursos (sockets, timers, buffers), deben implementar `onExit()` y liberarlos antes de cambiar.
+* **Refactorización desde Condicionales**: Identifique `if (mode === 'X') ... else if (mode === 'Y')`. Extraiga cada rama a `ConcreteState`. Delegue en contexto. Deprecar branching.
+* **Impacto en Rendimiento**: Delegación añade 1-2 saltos de función/v-table. En CPUs modernas, negligible. Solo impacta en millones de transiciones/seg. En ese caso, evalúe tablas de transición inline o compilación a bytecode.
+* **Gestión de Versiones**: Si añades estados nuevos, mantenga compatibilidad hacia atrás. Use versionado de contexto o flags de feature. Nunca rompa contrato de `handle()`.
+* **Visibilidad y APIs Públicas**: Exponga solo `request()` o `dispatch()`. Oculte `setState()` o transiciones internas en módulos privados. Reduzca superficie de uso indebido.
+* **Documentación de Diagrama de Estados**: Especifique explícitamente estados, eventos, guards y transiciones permitidas. Use notación UML o Statecharts. Elimine suposiciones implícitas.
+* **Migración hacia Máquinas Declarativas**: Si la lógica crece &gt; 5 estados, reemplace implementación manual por XState, Stateless o tabla JSON. Centralice validación.
+* **Integración con Observabilidad**: Inyecte correlation IDs, trace spans y métricas por transición. Centralice telemetría de latencia, rechazos y estado actual en producción.
+
+---
+
+## 7. ⚠️ Errores Comunes y Soluciones
+
+* **God State / Estado Monolítico**: Un solo estado contiene lógica de 3+ fases y decide transiciones complejas.
+  * Fix: Divida por responsabilidad. Cada estado solo maneja su fase y delega validación a guards externos o contexto. Mantenga &lt; 50 líneas.
+* **Transición Olvidada o Implícita Rota**: Evento no manejado en estado actual, pero no se rechaza. Queda en estado inconsistente.
+  * Fix: Implemente fallback explícito o lance `UnhandledEventError`. Nunca ignore eventos silenciosamente. Documente transiciones permitidas.
+* **Referencias Circulares entre Contexto y Estado**: Estado guarda referencia fuerte al contexto y contexto al estado, impidiendo garbage collection.
+  * Fix: Use referencias débiles, pase contexto como parámetro en `handle()`, o use IDs/keys en lugar de referencias directas.
+* **Explosión de Estados por Combinación**: Crear `StateA_B`, `StateA_C`, `StateB_C` para cada combinación de flags.
+  * Fix: Use estados paralelos/ortogonales o tablas de transición. No modele combinatoria como clases. Separe dimensiones independientes.
+* **Confundir con Strategy o Memento**: Usar State para variar algoritmos sin ciclo de vida, o para guardar/restaurar snapshots.
+  * Fix: Si varía lógica completa &rarr; Strategy. Si solo captura estado &rarr; Memento. Si gestiona ciclo de vida y transiciones &rarr; State. No mezcle propósitos.
+* **Mutación Silenciosa de Contexto**: Estado modifica campos internos del contexto sin notificar o validar invariantes.
+  * Fix: Exponga setters controlados o use `setState()` inmutable. Valide invariantes antes y después de mutar. Fail fast con trazabilidad.
+* **Thread-Safety Violada**: Múltiples hilos invocan `handle()` simultáneamente, causando transiciones cruzadas o estado corrupto.
+  * Fix: Use locks, canales atómicos, o modelo de actor. Nunca permita mutación concurrente sin serialización explícita. Documente garantías.
+* **Serialización Rota**: Intentar persistir estado con métodos, closures o referencias a contexto. Imposible restaurar.
+  * Fix: Serialize solo DTOs planos o identificadores (`"Active"`, `"Paused"`). Reconstruya máquina desde fábrica o tabla de transiciones.
+* **Falta de Validación de Guards**: Transición permite ejecución sin verificar prerequisites (ej. "pagar sin validar saldo").
+  * Fix: Implemente `cond` o `guard` explícito antes de transicionar. Use validación en borde. Rechace payload inválido inmediatamente.
+* **Olvidar `onExit()`/`onEnter()`**: Recursos, timers o suscripciones permanecen activos al salir del estado. Fuga silenciosa.
+  * Fix: Implemente hooks de ciclo de vida. Llame explícitamente en `setState()`. Pruebe limpieza con mocks y asserts de conteo.
+
+---
+
+## 8. 💡 Mejores Prácticas y Consejos
+
+* **Prefiera Declaración sobre Implementación Manual**: Cuando &gt; 5 estados, use statecharts, tablas JSON o librerías maduras (XState, Stateless, Python `transitions`). Centralice validación y debugging.
+* **Documente Diagrama de Estados Explícitamente**: Especifique nodos, aristas, eventos y guards. Use notación estándar. Elimine suposiciones implícitas y facilite onboarding.
+* **Valide Guards en Borde, no en Ejecución**: Rechace transiciones inválidas antes de cambiar estado. Fail fast ahorra recursos y simplifica debugging en producción.
+* **Use Contexto Delgado y Estados Autónomos**: Contexto solo delega y mantiene referencia. Estados contienen lógica, validación y solicitud de transición. Cumpla Single Responsibility.
+* **Implemente `onEnter()`/`onExit()` para Hooks**: Gestione logging, reservas de recursos, notificaciones o métricas en transición. Nunca mezcle con lógica de negocio.
+* **Mantenga Transiciones Explícitas y Auditables**: Registre `from`, `to`, `event`, `timestamp`, `userId`. Habilite replay, debugging y compliance sin tocar dominio.
+* **Profile antes de Optimizar**: No asuma overhead de delegación trivial. Mide latency por transición, allocation y GC pressure. Optimice solo si el profiler lo indica.
+* **Pruebe Transiciones, no solo Estados**: Valide secuencias válidas, ilegales, concurrentes y con guards fallidos. Detecte order-dependencies y state-leaks temprano.
+* **Mantenga Contratos Estables**: Cambiar la firma de `handle()` o eventos rompe clientes. Use deprecación controlada, versionado semántico y adapters paralelos.
+* **No lo use "por moda"**: Si el ciclo de vida es plano, binario o no requiere validación compleja, use enums, flags o servicios directos. La gestión explícita innecesaria es deuda técnica de legibilidad y mantenimiento.
+
+---
+
+Este cheatsheet proporciona una referencia arquitectónica completa para el patrón State, cubriendo su intención de comportamiento, contratos de delegación y transición, implementación multi-paradigma, variantes centralizadas y jerárquicas, impacto real en testing y mantenibilidad, errores frecuentes en producción y estrategias de mitigación, junto con criterios estrictos para decidir cuándo la gestión explícita de ciclo de vida es una necesidad del dominio y cuándo migrar hacia tablas declarativas, statecharts nativos o servicios lineales más escalables.
