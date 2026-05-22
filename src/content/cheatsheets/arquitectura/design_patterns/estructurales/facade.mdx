@@ -1,0 +1,279 @@
+# 🏛️ Patrón Facade — Cheatsheet Completo 🏛️
+
+El patrón **Facade** es un patrón estructural que proporciona una interfaz unificada y simplificada a un subsistema complejo, conjunto de librerías o componentes altamente interdependientes. Encapsula la complejidad interna, centraliza la coordinación de flujos y reduce drásticamente el acoplamiento entre el cliente y las APIs subyacentes. Nace para dominar la sobrecarga cognitiva de integración, estandarizar casos de uso recurrentes y aislar la evolución de subsistemas volátiles sin romper contratos de consumo. Este cheatsheet desglosa la intención arquitectónica real del patrón, contratos de delegación segura, implementaciones multi-paradigma, variantes de encapsulamiento y versionado, impacto en testing y rendimiento, trampas de acoplamiento encubierto o "God Object", y criterios estrictos para decidir cuándo la simplificación es una necesidad del dominio y no una capa que oculta capacidades críticas o introduce un cuello de botella arquitectónico.
+
+---
+
+## 1. 🌟 Conceptos Fundamentales
+
+* **Facade (Fachada)**: Punto de entrada único que orquesta llamadas al subsistema. Expone operaciones cohesivas alineadas a casos de uso, no a estructuras internas.
+  * Por qué importa: Reduce la superficie de integración, facilita el aprendizaje del sistema y centraliza cambios evolutivos sin impactar al cliente.
+* **Subsystem Classes**: Componentes técnicos, interdependientes, con APIs de bajo nivel o alta granularidad. Gestionan dominio específico, infraestructura o protocolos.
+  * Por qué importa: Representan la realidad de la complejidad. La Facade los aisla, pero nunca los elimina ni los reemplaza.
+* **Cliente**: Código de aplicación o capa superior que consume exclusivamente la interfaz de la Facade. Desconoce la topología interna del subsistema.
+  * Por qué importa: Mantiene el principio de inversión de dependencias. La lógica de negocio permanece pura, predecible y desacoplada de detalles técnicos.
+* **Coordinación Centralizada**: La Facade valida secuencias, gestiona inicialización, maneja errores cruzados y normaliza respuestas del subsistema.
+  * Por qué importa: Evita que el cliente repita lógica de orquestación, manejo de transacciones o reconciliación de estados en múltiples puntos.
+* **Encapsulamiento vs Ocultación**: La Facade **simplifica**, no **oculta** intencionalmente. Permite acceso directo al subsistema si es estrictamente necesario, pero lo desaconseja arquitectónicamente.
+  * Por qué importa: Facilita escape valves para casos edge sin romper la abstracción principal. Mantiene flexibilidad controlada.
+* **Stateless por Defecto**: La Facade idealmente no mantiene estado compartido entre invocaciones. Si requiere contexto, lo recibe explícitamente por parámetro o scope.
+  * Por qué importa: Garantiza thread-safety, facilita testing determinista y evita fugas de datos entre requests o tenants.
+* **Single Point of Entry**: Unifica autenticación, logging, validación, métricas y manejo de errores en un solo flujo visible y auditable.
+  * Por qué importa: Centraliza observabilidad, simplifica compliance y reduce puntos de fallo dispersos en la integración.
+* **Aislamiento Evolutivo**: El subsistema puede refactorizarse, migrar o escalar internamente mientras la Facade mantenga su contrato público estable.
+  * Por qué importa: Habilita modernización progresiva, migraciones sin downtime y versionado semántico controlado.
+
+---
+
+## 2. 📐 Estructura Lógica y Contrato de Simplificación
+
+La arquitectura sigue un flujo estricto de delegación, validación cruzada y normalización. El patrón garantiza que el cliente interactúe siempre con una API cohesiva, independientemente de la fragmentación interna del subsistema.
+
+```text
+               Cliente
+                  │
+                  ▼ invoca método de alto nivel
+                Facade
+         +---------------------------+
+         | methodA(params): Result   |
+         | methodB(params): Result   |
+         +---------------------------+
+            ▲ delega y coordina
+        +---+---+---+---+
+        |       |       |
+     SubA     SubB    SubC
+   [Auth]  [Storage]  [Notification]
+```
+
+Flujo de ejecución garantizado:
+1. Cliente invoca `facade.executeWorkflow(input)`.
+2. Facade valida entrada, aplica reglas de flujo y determina secuencia de subsistemas.
+3. Invoca `SubA.prepare()`, `SubB.persist()`, `SubC.notify()` en orden coordinado.
+4. Maneja errores parciales, rollback compensatorio o fallbacks según contrato.
+5. Transforma respuestas técnicas a DTOs de dominio y retorna resultado unificado.
+6. Cliente recibe respuesta limpia sin conocer transacciones internas, retries ni mapeos.
+
+Contrato mínimo en pseudocódigo tipado:
+```typescript
+// Subsystem interfaces
+interface PaymentGateway { charge(amount: number): Promise<Receipt>; }
+interface InventoryService { reserve(items: string[]): Promise<void>; }
+interface NotificationChannel { send(userId: string, msg: string): Promise<void>; }
+
+// Facade
+class CheckoutFacade {
+  constructor(
+    private payments: PaymentGateway,
+    private inventory: InventoryService,
+    private notifier: NotificationChannel
+  ) {}
+
+  async processOrder(userId: string, items: string[], total: number): Promise<OrderResult> {
+    // 1. Validación y coordinación
+    await this.inventory.reserve(items);
+    try {
+      const receipt = await this.payments.charge(total);
+      await this.notifier.send(userId, `Pedido confirmado: ${receipt.id}`);
+      return { status: 'SUCCESS', receiptId: receipt.id };
+    } catch (err) {
+      // 2. Manejo compensatorio y normalización
+      await this.inventory.release(items);
+      throw new CheckoutError('Pago fallido. Reserva revertida.', { cause: err });
+    }
+  }
+}
+```
+Regla inquebrantable: La Facade **nunca** debe contener lógica de negocio compleja o reglas de dominio. Solo orquesta, valida flujo, maneja errores cruzados y normaliza respuestas. Delega cálculos y decisiones a servicios inyectados.
+
+---
+
+## 3. 🛠️ Implementación por Paradigma y Ecosistema
+
+El patrón se adapta al modelo de ejecución y al estilo de composición del entorno. No requiere necesariamente herencia clásica.
+
+### 3.1. POO Clásica con Inyección (TypeScript / Java / C#)
+Uso de interfaces explícitas y composición en constructor. Ideal para integrar librerías, drivers o microservicios internos.
+
+```java
+public class DocumentProcessingFacade {
+    private final ParserEngine parser;
+    private final ValidatorEngine validator;
+    private final StorageService storage;
+
+    public DocumentProcessingFacade(ParserEngine parser, ValidatorEngine validator, StorageService storage) {
+        this.parser = parser;
+        this.validator = validator;
+        this.storage = storage;
+    }
+
+    public ProcessedDocument process(InputStream input, String format) throws ProcessingException {
+        Document doc = parser.parse(input, format);
+        if (!validator.isValid(doc)) throw new ValidationException("Schema violation");
+        String id = storage.persist(doc);
+        return new ProcessedDocument(id, doc.getMetadata());
+    }
+}
+// Cliente inyecta implementaciones por ambiente (local, staging, prod) sin cambiar la Facade.
+```
+
+### 3.2. Enfoque Funcional / Módulos (JavaScript / Python)
+Se reemplaza clase por función pura o closure que orquesta importaciones. Composición mediante pipelines.
+
+```python
+def create_processing_facade(parser, validator, storage):
+    async def process_stream(stream: BinaryIO, schema: str) -> dict:
+        doc = await parser.parse(stream, schema)
+        errors = validator.validate(doc)
+        if errors:
+            raise ValueError(f"Validation failed: {errors}")
+        doc_id = await storage.save(doc)
+        return {"id": doc_id, "status": "completed", "meta": doc["metadata"]}
+    return {"process_stream": process_stream}
+
+# Uso: facade = create_processing_facade(JSONParser, PydanticValidator, S3Storage)
+# result = await facade["process_stream"](file, "report_v2")
+```
+Ventaja: Zero boilerplate, fácil mocking, composición declarativa. Desventaja: Pérdida de validación estática si no se usa `typing.Protocol` o `TypeScript`.
+
+### 3.3. API Gateway / Middleware Chain (Go / Rust / Node)
+Agregación de servicios externos, normalización de respuestas y manejo de timeouts centralizado.
+
+```go
+type UserManagementFacade struct {
+    AuthClient    *auth.Service
+    ProfileClient *profile.Service
+    AuditClient   *audit.Service
+}
+
+func (f *UserManagementFacade) RegisterUser(ctx context.Context, req RegisterRequest) (*UserDTO, error) {
+    // Coordinación con timeouts y context cancellation
+    authRes, err := f.AuthClient.CreateCredentials(ctx, req.Email, req.Password)
+    if err != nil {
+        return nil, fmt.Errorf("auth failed: %w", err)
+    }
+    profileRes, err := f.ProfileClient.CreateProfile(ctx, authRes.UserID, req.Details)
+    if err != nil {
+        f.AuthClient.RollbackCredentials(ctx, authRes.UserID) // Compensatory
+        return nil, fmt.Errorf("profile failed: %w", err)
+    }
+    f.AuditClient.Log(ctx, "user.registered", authRes.UserID)
+    return &UserDTO{ID: authRes.UserID, Email: req.Email}, nil
+}
+```
+
+### 3.4. Dynamic/Schema-Driven (Metaprogramming / Reflection)
+Generación automática de fachadas desde contratos OpenAPI, GraphQL schemas o archivos de configuración.
+
+```typescript
+// Auto-genera métodos facade desde un registro de subsistemas
+function createSchemaFacade(subsystems: Record<string, any>) {
+  const facade: any = {};
+  for (const [name, methods] of Object.entries(subsystems)) {
+    for (const [method, fn] of Object.entries(methods as Record<string, Function>)) {
+      facade[`${name}_${method}`] = (...args: any[]) => {
+        try {
+          const result = fn(...args);
+          return { status: 'ok', data: result };
+        } catch (err) {
+          return { status: 'error', message: err.message };
+        }
+      };
+    }
+  }
+  return facade;
+}
+// Útil para SDKs dinámicos, plugins o integración con APIs versionadas.
+```
+
+---
+
+## 4. 🔄 Variantes Arquitectónicas y Extensiones
+
+| Variante | Mecanismo | Caso de uso | Trade-off |
+|----------|-----------|-------------|-----------|
+| **Transparente** | Permite acceso directo al subsistema si el cliente lo requiere explícitamente. | Migraciones progresivas, escape valves para casos edge. | Rompe encapsulamiento parcial. Requiere documentación clara de límites. |
+| **Opaca/Estricta** | Bloquea acceso interno. Solo expone la fachada. | APIs públicas, compliance estricto, entornos multi-tenant. | Menos flexibilidad. Puede forzar workarounds si la fachada es incompleta. |
+| **Stateful/Contextual** | Mantiene configuración o sesión entre llamadas (`init()`, `configure()`, `execute()`). | Conexiones persistentes, pipelines con estado, workflows multi-step. | Complejidad de ciclo de vida. Requiere `dispose()` explícito y gestión de concurrencia. |
+| **Facade de Módulo/Paquete** | `index.ts` o `__init__.py` que expone API pública y oculta módulos internos. | Librerías, SDKs, paquetes internos en monorepos. | Riesgo de circular dependencies si no se gestiona la topología de imports. |
+| **Facade Evolutiva/Versionada** | Soporta múltiples versiones del subsistema simultáneamente mediante routing interno. | Migraciones sin downtime, A/B testing de proveedores, compatibilidad legacy. | Overhead de mantenimiento. Requiere tests de regresión por versión. |
+| **Facade + Adapter Híbrido** | Simplifica + traduce incompatibilidades de API o protocolos. | Integración de vendors con contratos divergentes bajo una API cohesiva. | Doble responsabilidad. Puede violar Single Responsibility si no se delimita. |
+
+---
+
+## 5. 🎯 Cuándo Usar y Cuándo Evitar
+
+| ✅ Usar cuando... | ❌ Evitar cuando... |
+|------------------|-------------------|
+| Integrar subsistemas complejos, librerías terceras o microservicios fragmentados | El subsistema ya expone una API simple y cohesiva. Usa referencia directa. |
+| Necesitas estandarizar flujos recurrentes (checkout, onboarding, sync, export) | Requieres flexibilidad máxima y el cliente debe orquestar pasos manualmente. |
+| Quieres aislar la evolución interna del subsistema sin romper contratos de consumo | La Facade se convierte en cuello de botella de rendimiento o punto único de fallo. |
+| Necesitas centralizar logging, métricas, validación cruzada o manejo de errores | Ya usas un contenedor DI avanzado que gestiona composición y proxies automáticamente. |
+| Trabajas con bounded contexts, API boundaries o módulos de alta cohesión interna | La abstracción oculta capacidades críticas y fuerza al cliente a hacer workarounds complejos. |
+
+Comparación rápida con patrones estructurales y de comportamiento:
+* **Facade**: Simplifica y unifica subsistemas complejos. Enfocado en reducción de acoplamiento y superficie de integración.
+* **Adapter**: Traduce interfaces incompatibles existentes. Corrección post-factum.
+* **Mediator**: Centraliza comunicación entre pares/colaboradores. Enfocado en desacoplar objetos que se conocen entre sí.
+* **Proxy**: Controla acceso, añade lógica pre/post o gestiona ciclo de vida. Enfocado en interceptación transparente.
+* **Strategy**: Intercambia algoritmos/comportamiento dinámicamente. Enfocado en variación de lógica, no en simplificación estructural.
+
+---
+
+## 6. 🧪 Testing, Mantenibilidad y Arquitectura
+
+* **Aislamiento en Tests**: Mockea cada subsistema individualmente. Verifica que la Facade coordine correctamente, maneje errores parciales y retorne DTOs válidos.
+  * Técnica: Usa fixtures controlados, aserta orden de llamadas, validación de compensatorios y normalización de respuestas.
+* **Validación de Contratos Cruzados**: Escribe tests que invoquen cada método facade con payloads límite, nulos, estructuras vacías y errores simulados de subsistemas.
+  * Fix: `assert.throws(() => facade.process(invalidData), /ValidationError/)`. Valida mensajes y estructura, no solo que falle.
+* **Ciclo de Vida y Ownership**: Si la Facade mantiene conexiones, pools o sesiones, debe implementar `dispose()`, `close()` o `cancel()` y propagarlo a subsistemas.
+* **Refactorización hacia Inyección**: Reemplace instanciación manual por contenedores DI. Permita configuración por ambiente sin tocar código de orquestación.
+* **Impacto en Rendimiento**: La indirección añade 1-2 saltos de función. En CPUs modernas, la JIT los absorbe. Solo impacta si valida/transforma excesivamente o serializa payloads grandes. Profile antes de optimizar.
+* **Gestión de Versiones**: Cuando la Facade evoluciona, mantenga contratos estables. Use `FacadeV2` paralelo hasta la migración. Nunca rompa la firma pública sin deprecación controlada.
+* **Visibilidad y APIs Públicas**: Exponga solo métodos cohesivos por caso de uso. Oculte helpers internos, mappers y validadores en módulos privados. Reduzca superficie de uso indebido.
+* **Documentación de Límites**: Especifique explícitamente qué hace la Facade, qué no hace, y cuándo acceder directamente al subsistema es válido. Elimine suposiciones implícitas.
+* **Migración desde Uso Directo**: Identifique llamadas dispersas a subsistemas. Envuelva en Facade. Inyecte dependencias. Deprecar acceso directo progresivamente con linters o warnings.
+* **Integración con Observabilidad**: Inyecte correlation IDs, trace IDs y métricas en la entrada/salida. Centralice telemetría sin tocar lógica de coordinación.
+
+---
+
+## 7. ⚠️ Errores Comunes y Soluciones
+
+* **God Object / Fat Facade**: Acumula lógica de negocio, validación compleja, persistencia o reglas de dominio.
+  * Fix: Delegue cálculos y decisiones a servicios inyectados. La Facade solo orquesta, valida flujo y normaliza respuestas. Mantenga < 50-100 líneas por método.
+* **Facade Permeable (Leaky Abstraction)**: Expone tipos, errores o estructuras internas del subsistema al cliente.
+  * Fix: Capture excepciones técnicas, mapee a errores de dominio, y nunca rethrow raw exceptions. Mantenga el contrato puro y predecible.
+* **Error Swallowing Silencioso**: Captura fallos del subsistema y retorna `null`, `undefined` o estado vacío sin contexto.
+  * Fix: Propague errores con causa (`{ cause: err }`), use `Result`/`Either` patterns, o lance excepciones de dominio descriptivas. Fail fast con trazabilidad.
+* **Acoplamiento Rígido a Clases Concretas**: La Facade referencia implementaciones específicas en lugar de interfaces.
+  * Fix: Inyecte contratos (`IPayment`, `IStorage`). Permita mockear, reemplazar y testear aisladamente. Cumpla Dependency Inversion Principle.
+* **State Leakage entre Requests**: Configuración o caché compartido que filtra datos entre usuarios o tenants.
+  * Fix: Pase contexto explícitamente por parámetro o scope. Nunca estado global sin control. Use `AsyncLocal`, `HttpContext.Items` o factories por request.
+* **Over-Abstraction que Oculta Capacidades**: La Facade no expone métodos necesarios, forzando al cliente a hacer workarounds o acceder directamente al subsistema.
+  * Fix: Audit casos de uso reales. Exponga métodos cohesivos faltantes. Documente límites y escape valves. Evite simplificación excesiva.
+* **Confundir con Proxy o Mediator**: Usar Facade para control de acceso, lazy loading o centralizar comunicación entre pares.
+  * Fix: Si controla acceso/ciclo → Proxy. Si desacopla colaboradores → Mediator. Si simplifica subsistema complejo → Facade. No mezcle propósitos.
+* **Serialización Rota**: Intentar serializar la Facade o sus respuestas sin considerar referencias a subsistemas o métodos no serializables.
+  * Fix: Retorne solo DTOs planos o identificadores. Reconstruya contexto al deserializar. Marque referencias internas como `transient`/`non-serializable`.
+* **Falta de Validación de Entrada/Flujo**: Asume que el subsistema maneja validación, pero falla en producción por orden incorrecto o parámetros inválidos.
+  * Fix: Valide contratos en bordes de la Facade. Use schemas (`zod`, `Pydantic`, `valibot`). Rechace payloads malformados inmediatamente.
+* **Olvidar Propagar `dispose()`/`cancel()`**: Recursos abiertos en subsistemas no se liberan al terminar el flujo facade.
+  * Fix: Implemente cleanup explícito. Propague en orden inverso al invocation. Use `try/finally`, `using` o context managers.
+
+---
+
+## 8. 💡 Mejores Prácticas y Consejos
+
+* **Mantenga la Facade Delgada y Delegante**: Orqueste, no implemente. Delegue lógica de negocio a servicios inyectados con responsabilidad única.
+* **Valide Contratos en Bordes**: Rechace payloads malformados inmediatamente. Normalice errores del subsistema a mensajes de dominio claros y auditables.
+* **Prefiera Stateless por Defecto**: Si requiere contexto, páselo explícitamente. Evite estado compartido entre invocaciones para garantizar concurrencia segura.
+* **Documente Límites y Escape Valves**: Especifique qué hace, qué no hace, y cuándo acceder directamente al subsistema es arquitectónicamente válido.
+* **Use Inyección de Dependencias Estricta**: Inyecte interfaces, no implementaciones. Permita mockear, reemplazar y configurar por ambiente sin tocar código.
+* **Implemente Manejo Compensatorio Explícito**: Si un paso falla después de mutar estado, reverta o notifique. No asuma atomicidad sin confirmación.
+* **Pruebe Flujos, no solo Unidades**: Valide coordinaciones completas, errores parciales, timeouts y fallbacks. Detecte order-dependencies y state-leaks temprano.
+* **Mantenga Contratos Estables**: Cambiar la firma pública rompe todos los clientes. Use deprecación controlada, versionado semántico y fachadas paralelas.
+* **Monitoree Latencia y Tasa de Error**: Registre métricas de coordinación. Detecte degradación de subsistemas, cuellos de botella en validación o serialización pesada.
+* **No lo use "por moda"**: Si el subsistema es simple, estable o ya expone una API cohesiva, úselo directo. La capa de simplificación innecesaria es deuda técnica de rendimiento y mantenimiento.
+
+---
+
+Este cheatsheet proporciona una referencia arquitectónica completa para el patrón Facade, cubriendo su intención estructural, contratos de delegación segura, implementación multi-paradigma, variantes de encapsulamiento y versionado, impacto real en testing y mantenibilidad, errores frecuentes en producción y estrategias de mitigación, junto con criterios estrictos para decidir cuándo la simplificación de subsistemas es una necesidad del dominio y cuándo migrar hacia inyección directa, proxies controlados o contenedores de composición más escalables.
