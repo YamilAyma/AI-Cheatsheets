@@ -1,0 +1,277 @@
+# 🎭 Patrón Template Method — Cheatsheet Completo 🎭
+
+El patrón **Template Method** es un patrón de comportamiento que define el esqueleto de un algoritmo en una clase base, delegando la implementación de ciertos pasos a subclases concretas. Permite que las subclases redefinan pasos específicos sin alterar la estructura general del flujo, garantizando invarianzas, evitando duplicación de código y aplicando inversión de control a nivel algorítmico. Nace para resolver la fragmentación de lógica repetitiva en procesadores, frameworks, pipelines de ETL, workflows de negocio y sistemas de importación/exportación, donde el orden de ejecución es crítico pero los detalles de implementación varían por contexto, formato o proveedor. Este cheatsheet desglosa la intención arquitectónica real del patrón, contratos de flujo invariante y pasos extensibles, implementaciones multi-paradigma, variantes con ganchos y validación cruzada, impacto en testing y mantenibilidad, trampas del problema de la clase base frágil y violación de LSP, y criterios estrictos para decidir cuándo la orquestación algorítmica es una necesidad del dominio y no una jerarquía rígida que degrada la flexibilidad o introduce acoplamiento peligroso.
+
+---
+
+## 1. 🌟 Conceptos Fundamentales
+
+* **Template Method (Método Plantilla)**: Método en la clase base que orquesta el flujo completo del algoritmo. Define el orden de pasos, validaciones y manejo de errores. Normalmente se declara `final` o `sealed`.
+  * Por qué importa: Garantiza que la estructura del algoritmo nunca se rompa, independientemente de cómo las subclases implementen sus pasos. Centraliza la lógica invariante.
+* **Clase Abstracta/Base**: Contiene el método plantilla y declara los métodos primitivos u hooks que las subclases deben o pueden implementar.
+  * Por qué importa: Establece el contrato de extensión. Define qué es obligatorio, qué es opcional y qué no debe tocarse.
+* **Métodos Primitivos/Abstractos**: Pasos del algoritmo que no tienen implementación en la base. Las subclases están obligadas a definirlos.
+  * Por qué importa: Fuerzan la personalización crítica. Sin ellos, el algoritmo no puede ejecutarse correctamente.
+* **Ganchos (Hooks)**: Métodos con implementación por defecto (usualmente vacía o neutra) que las subclases pueden sobrescribir opcionalmente.
+  * Por qué importa: Habilitan puntos de extensión sin obligar a implementar lógica innecesaria. Ideales para logging, validaciones extra o limpieza condicional.
+* **Principio de Hollywood**: "No nos llames, nosotros te llamaremos". La base controla el flujo y decide cuándo invocar los pasos de las subclases.
+  * Por qué importa: Invierte el control de ejecución. Evita que las subclases orquesten el flujo, manteniendo la integridad del algoritmo central.
+* **Inversión de Control Algorítmica**: El contexto de ejecución (qué se hace y en qué orden) pertenece a la base. La implementación (cómo se hace) pertenece a las subclases.
+  * Por qué importa: Separa estructura de detalle. Permite añadir nuevos comportamientos sin modificar código existente, cumpliendo Open/Closed.
+* **Flujo Invariante vs Pasos Variables**: El orden de pasos, validaciones pre/post y manejo de errores son fijos. La extracción, transformación o persistencia varían.
+  * Por qué importa: Evita duplicación de código de coordinación. Centraliza contratos de ejecución mientras delega especificidad.
+
+---
+
+## 2. 📐 Estructura y Contrato del Patrón
+
+La arquitectura sigue un flujo estricto de orquestación, delegación controlada y ejecución predecible. El patrón garantiza que el algoritmo se resuelva correctamente, aplicando validaciones y hooks en los puntos definidos por la clase base.
+
+```text
+               Cliente
+                  │
+                  ▼ invoca método público
+          Clase Abstracta (Base)
+         +---------------------------+
+         | templateMethod(): void    |
+         |   &gt; preCheck()            |
+         |   &gt; stepA() (abstracto)   |
+         |   &gt; hookB() (opcional)    |
+         |   &gt; stepC() (abstracto)   |
+         |   &gt; postProcess()         |
+         +---------------------------+
+                  ▲ delega
+        +---------+---------+
+        |                   |
+  SubclaseA           SubclaseB
+  [Implementa]        [Implementa]
+```
+
+Flujo de ejecución garantizado:
+1. Cliente invoca `base.templateMethod(input)`.
+2. La clase base ejecuta validaciones iniciales (`preCheck()`).
+3. Invoca `stepA()` (implementado por la subclase).
+4. Ejecuta `hookB()` (por defecto vacío, sobrescrito opcionalmente).
+5. Invoca `stepC()` (implementado por la subclase).
+6. Aplica `postProcess()` y retorna resultado.
+7. El cliente nunca ve el orden interno. Solo interactúa con la fachada pública.
+
+Contrato mínimo en pseudocódigo tipado:
+```typescript
+abstract class DataProcessor {
+  // Método plantilla: flujo invariante, final para evitar sobrescritura
+  public async process(raw: string): Promise&lt;ProcessedResult&gt; {
+    this.validateInput(raw);
+    const parsed = this.parse(raw);
+    this.transform(parsed);
+    this.logHook(); // Gancho opcional
+    const result = this.persist(parsed);
+    return this.formatOutput(result);
+  }
+
+  // Pasos obligatorios
+  protected abstract parse(raw: string): DataModel;
+  protected abstract persist(data: DataModel): Result;
+
+  // Ganchos opcionales
+  protected transform(data: DataModel): void {}
+  protected logHook(): void {}
+
+  // Lógica invariante
+  private validateInput(raw: string): void {
+    if (!raw.trim()) throw new Error("Input vacío");
+  }
+  private formatOutput(res: Result): ProcessedResult { return { ...res, ts: Date.now() }; }
+}
+```
+Regla inquebrantable: El método plantilla **nunca** debe ser sobrescribible por subclases. Si una subclase puede alterar el orden o saltar pasos, el patrón colapsa en flujo no determinista y pierde su propósito de orquestación segura.
+
+---
+
+## 3. 🛠️ Implementación por Paradigma y Ecosistema
+
+El patrón se adapta al modelo de ejecución y al estilo de composición del entorno. No requiere necesariamente herencia clásica ni interfaces explícitas.
+
+### 3.1. POO Clásica con Herencia Controlada (TypeScript / Java / C#)
+Uso de clases abstractas, métodos `final`/`sealed` y delegación explícita. Ideal para pipelines de datos, parsers o workflows de negocio.
+
+```java
+public abstract class ReportGenerator {
+    // Template Method: flujo fijo
+    public final void generate(ReportContext ctx) {
+        prepareEnvironment(ctx);
+        fetchData(ctx);
+        renderTemplate(ctx);
+        attachFooterHook(ctx);
+        export(ctx);
+    }
+
+    protected abstract void fetchData(ReportContext ctx);
+    protected abstract void export(ReportContext ctx);
+    protected void prepareEnvironment(ReportContext ctx) { /* default */ }
+    protected void attachFooterHook(ReportContext ctx) { /* vacío por defecto */ }
+    private void renderTemplate(ReportContext ctx) { /* invariante */ }
+}
+// Subclase concreta solo implementa pasos abstractos.
+```
+
+### 3.2. Enfoque Funcional / Composición de HOFs (JavaScript / Python / Rust)
+Se reemplaza herencia por funciones de orden superior que reciben callbacks o pasos como parámetros. Composición declarativa sin clases.
+
+```python
+from typing import Callable, Protocol, Any
+
+class PipelineSteps(Protocol):
+    def extract(self, source: str) -&gt; dict: ...
+    def validate(self, data: dict) -&gt; dict: ...
+    def load(self, data: dict) -&gt; None: ...
+
+def run_template(steps: PipelineSteps, source: str) -&gt; None:
+    raw = steps.extract(source)
+    clean = steps.validate(raw)
+    steps.load(clean)
+    print("Pipeline completado")
+
+# Uso: inyección de comportamiento sin herencia
+class CSVSteps:
+    def extract(self, s): return parse_csv(s)
+    def validate(self, d): return sanitize(d)
+    def load(self, d): return db_insert(d)
+
+run_template(CSVSteps(), "data.csv")
+```
+Ventaja: Flexibilidad máxima, cero acoplamiento de herencia, fácil mocking. Desventaja: Pérdida de validación estática de flujo si no se usa tipado estricto o contratos explícitos.
+
+### 3.3. Traits / Mixins / Módulos (Rust / JavaScript / Python)
+Composición de comportamientos mediante mixins o traits que inyectan pasos en una estructura base. Útil cuando la herencia múltiple o la composición explícita es preferible.
+
+```rust
+pub trait Extractor { fn extract(&amp;self, src: &amp;str) -&gt; Vec&lt;Row&gt;; }
+pub trait Validator { fn validate(&amp;self, rows: &amp;[Row]) -&gt; Vec&lt;Row&gt;; }
+pub trait Loader { fn load(&amp;self, rows: &amp;[Row]) -&gt; Result&lt;(), Error&gt;; }
+
+pub struct Pipeline&lt;E: Extractor, V: Validator, L: Loader&gt; {
+    extractor: E, validator: V, loader: L,
+}
+
+impl&lt;E, V, L&gt; Pipeline&lt;E, V, L&gt; {
+    pub fn execute(&amp;self, src: &amp;str) -&gt; Result&lt;(), Error&gt; {
+        let data = self.extractor.extract(src);
+        let clean = self.validator.validate(&amp;data);
+        self.loader.load(&amp;clean)
+    }
+}
+// Composición estática en tiempo de compilación. Cero herencia.
+```
+
+### 3.4. Frameworks & Middleware Chains (Node.js / Express / Spring)
+El patrón se materializa en pipelines de middleware donde el framework define el flujo y el desarrollador inyecta handlers.
+
+```javascript
+function createOrchestrator(...handlers) {
+  return async function template(ctx) {
+    ctx.start = Date.now();
+    for (const handler of handlers) {
+      await handler(ctx);
+      if (ctx.aborted) throw new Error("Pipeline abortado");
+    }
+    ctx.latency = Date.now() - ctx.start;
+    return ctx.response;
+  };
+}
+// El framework controla orden, timing y manejo de errores.
+// El usuario solo proporciona pasos específicos.
+```
+
+---
+
+## 4. 🔄 Variantes Arquitectónicas y Extensiones
+
+| Variante | Mecanismo | Caso de uso | Trade-off |
+|----------|-----------|-------------|-----------|
+| **Con Hooks Explícitos** | Métodos vacíos por defecto que subclases sobrescriben opcionalmente. | Logging, validación extra, métricas, limpieza condicional. | Puede generar código espurio si se sobrescriben sin necesidad. |
+| **Sin Hooks / Estricto** | Solo métodos abstractos obligatorios. Flujo rígido y predecible. | Procesadores de pagos, parsers críticos, compliance estricto. | Menos flexibilidad. Requiere nueva subclase para cualquier variación. |
+| **Con Validación Centralizada** | `preCheck()` y `postCheck()` validan invariantes antes/después de pasos variables. | Workflows financieros, importación de datos sensibles, auditoría. | Overhead de validación. Puede rechazar entradas válidas si es demasiado estricto. |
+| **Async/Reactive** | Método plantilla maneja promesas, observables o streams. | ETL asíncrono, procesamiento de archivos grandes, integración con APIs. | Complejidad de manejo de errores y cancellation tokens. |
+| **Parameterized Template** | Recibe configuración en constructor o método para ajustar comportamiento interno. | Parsers con dialectos, renderizadores con temas, exporters con formatos. | Flexibilidad alta. Riesgo de complejidad si hay &gt; 5 parámetros. |
+| **Hybrid con Strategy** | La base delega un paso completo a una estrategia inyectada en lugar de herencia. | Cuando la variación es ortogonal a la jerarquía o se requiere runtime swapping. | Doble indirección. Puede oscurecer el flujo si no se documenta. |
+
+---
+
+## 5. 🎯 Cuándo Usar y Cuándo Evitar
+
+| ✅ Usar cuando... | ❌ Evitar cuando... |
+|------------------|-------------------|
+| El orden de ejecución es crítico y no debe alterarse por subclases | El flujo es simple o lineal. Usa funciones secuenciales directas. |
+| Quieres eliminar duplicación de código de coordinación en múltiples procesadores | Necesitas cambiar el orden de pasos en runtime. Usa Strategy o Chain of Responsibility. |
+| Trabajas con frameworks, pipelines de ETL, importadores/exportadores o parsers | La jerarquía de herencia crece exponencialmente y genera el "Fragile Base Class Problem". |
+| Requieres validaciones invariantes, logging centralizado o manejo de errores predecibles | Ya usas un contenedor DI o orquestador declarativo (XState, temporal.io, Airflow). |
+| Quieres cumplir Open/Closed sin tocar código de orquestación existente | La flexibilidad de pasos es tan alta que la herencia se vuelve una camisa de fuerza. |
+
+Comparación rápida con patrones de comportamiento:
+* **Template Method**: Define flujo fijo, delega implementación a subclases. Enfocado en orquestación algorítmica por herencia.
+* **Strategy**: Intercambia algoritmos completos en runtime. Enfocado en variación de lógica, no en flujo fijo.
+* **Chain of Responsibility**: Enruta petición hasta handler. Enfocado en secuencialidad y fallback, no en esqueleto invariante.
+* **Visitor**: Externaliza operaciones sobre estructura estable. Enfocado en múltiples traversals sin modificar nodos.
+* **Facade**: Simplifica subsistemas complejos. Enfocado en reducción de acoplamiento, no en extensión algorítmica.
+
+---
+
+## 6. 🧪 Testing, Mantenibilidad y Arquitectura
+
+* **Aislamiento del Flujo**: Prueba el método plantilla con mocks de pasos abstractos. Verifica que se invoquen en orden correcto, con parámetros esperados y que hooks se ejecuten en los puntos definidos.
+  * Técnica: Usa spies o fakes. Aserta secuencia de llamadas, validación de pre/post y manejo de errores.
+* **Validación de Subclases**: Escribe tests que verifiquen que cada subclase cumple el contrato sin romper invariantes. Prueba entradas límite, nulas o malformadas.
+  * Fix: `assert.strictEqual(mockExtractCallCount, 1)`. Valide que `templateMethod()` lance error controlado si un paso falla.
+* **Ciclo de Vida y Recursos**: Si los pasos abren conexiones, archivos o buffers, la clase base debe gestionar `try/finally` o context managers para garantizar cleanup.
+* **Refactorización desde Duplicación**: Identifique bloques `if/else` repetidos con mismo orden pero distinta lógica interna. Extraiga flujo a clase abstracta. Convierta ramas en subclases. Deprecar branching.
+* **Impacto en Rendimiento**: La herencia añade lookup de v-table. En CPUs modernas, negligible. Solo impacta si el método plantilla valida excesivamente o serializa payloads grandes. Profile antes de optimizar.
+* **Gestión de Versiones**: Si añades nuevos pasos u hooks, mantenga compatibilidad hacia atrás. Use versiones de contrato o flags. Nunca rompa firma de métodos abstractos sin migrador.
+* **Visibilidad y APIs Públicas**: Exponga solo `templateMethod()`. Oculte pasos internos en `protected`/`private`. Reduzca superficie de uso indebido y acoplamiento accidental.
+* **Documentación de Puntos de Extensión**: Especifique explícitamente qué métodos son obligatorios, cuáles opcionales, y qué invariantes deben respetarse. Elimine suposiciones implícitas.
+* **Migración hacia Composición**: Si la jerarquía crece &gt; 5 niveles o genera acoplamiento rígido, reemplace herencia por inyección de funciones/estrategias. Centralice orquestación.
+* **Integración con Observabilidad**: Inyecte correlation IDs, trace spans y métricas por paso. Centralice telemetría de latencia, fallos y tasa de éxito por tipo de subclase.
+
+---
+
+## 7. ⚠️ Errores Comunes y Soluciones
+
+* **Problema de la Clase Base Frágil**: Cambiar un método privado o hook rompe subclases existentes en producción.
+  * Fix: Documente contrato de extensión explícitamente. Use versionado, deprecación controlada y tests de integración por subclase. Nunca modifique flujo sin análisis de impacto.
+* **Sobrescribir el Método Plantilla**: Subclase redefine `templateMethod()`, alterando orden o saltando validaciones.
+  * Fix: Declare el método `final`, `sealed` o no sobrescribible. Lance excepción si el lenguaje no lo soporta. Valide en tests estáticos o linters.
+* **Hooks Sobrecargados**: Subclase implementa lógica de negocio compleja en `logHook()` o `preCheck()`.
+  * Fix: Los hooks solo deben contener comportamiento transversal (logging, métricas, flags). Delegue reglas de dominio a servicios inyectados o pasos abstractos dedicados.
+* **Acoplamiento Rígido a Implementación Interna**: Subclase depende de campos privados de la base para funcionar.
+  * Fix: Exponga solo lo necesario mediante getters controlados o pase contexto explícitamente. Nunca dependa de estado interno no documentado.
+* **Confundir con Strategy o Command**: Usar Template Method para variar algoritmos completos o para encolar peticiones.
+  * Fix: Si varía lógica completa &rarr; Strategy. Si encapsula petición ejecutable &rarr; Command. Si define flujo fijo con pasos extensibles &rarr; Template Method.
+* **Violación de Liskov Substitution Principle**: Subclase lanza excepción en paso obligatorio o cambia tipo de retorno.
+  * Fix: Mantenga firmas idénticas. Use contratos, pre/post condiciones o asserts en tests de integración. Si un paso no aplica, use Null Object o hook vacío, no excepción.
+* **Falta de Validación de Invariantes**: El flujo asume que los pasos cumplen contratos, pero fallan en producción por datos corruptos.
+  * Fix: Implemente `preCheck()` y `postCheck()` en la base. Valide esquemas (`zod`, `Pydantic`, `valibot`). Fail fast con trazabilidad.
+* **Serialización Rota**: Intentar persistir la clase base o subclase con métodos, closures o referencias a contexto.
+  * Fix: Serialize solo DTOs o identificadores. Reconstruya pipeline mediante factory o registry. Nunca serialice funciones o estado mutable.
+* **Olvidar Manejo de Errores Centralizado**: Un paso lanza excepción no capturada, dejando recursos abiertos o estado inconsistente.
+  * Fix: Envuelva pasos en `try/catch/finally` en el método plantilla. Implemente rollback compensatorio o cleanup explícito. Propague error de dominio.
+* **Explosión de Subclases por Combinación**: Crear `CsvToJsonValidator`, `XmlToCsvValidator`, `JsonToXmlValidator` para cada variante.
+  * Fix: Separe dimensiones independientes. Use composición de pasos (Strategy por paso) en lugar de herencia cruzada. Evite combinatoria en clases.
+
+---
+
+## 8. 💡 Mejores Prácticas y Consejos
+
+* **Declare el Método Plantilla como `final`/`sealed`**: Bloquee sobrescritura para garantizar flujo invariante. Es la regla de oro del patrón.
+* **Documente Puntos de Extensión Explícitamente**: Especifique qué es obligatorio, qué opcional, y qué invariantes deben respetarse. Elimine suposiciones implícitas.
+* **Prefiera Hooks para Comportamiento Transversal**: Logging, métricas, validaciones extra o limpieza condicional. Nunca lógica de dominio compleja.
+* **Valide Contratos en Bordes**: Rechace payloads malformados antes de ejecutar pasos. Fail fast ahorra recursos y simplifica debugging en producción.
+* **Use Composición cuando la Jerarquía Crezca**: Si &gt; 5 subclases o acoplamiento rígido, reemplace herencia por inyección de funciones/estrategias. Centralice orquestación en función pura.
+* **Separe Invariante de Variable Estrictamente**: La base solo orquesta, valida y maneja errores. Las subclases solo implementan pasos específicos. Nunca mezcle responsabilidades.
+* **Implemente Cleanup Centralizado**: Asegure que `finally` o context managers liberen recursos. Evite fugas en sistemas de larga ejecución.
+* **Profile antes de Optimizar**: No asuma overhead de herencia trivial. Mide allocation, latency y GC pressure. Optimice solo si el profiler lo indica.
+* **Pruebe Flujos Completos, no solo Pasos**: Valide secuencias válidas, ilegales, con hooks vacíos y con excepciones en pasos intermedios. Detecte order-dependencies temprano.
+* **No lo use "por moda"**: Si el flujo es simple, no requiere validación invariante o ya se gestiona con composición declarativa, use funciones directas. La orquestación por herencia innecesaria es deuda técnica de legibilidad y mantenimiento.
+
+---
+
+Este cheatsheet proporciona una referencia arquitectónica completa para el patrón Template Method, cubriendo su intención de comportamiento, contratos de flujo invariante y pasos extensibles, implementación multi-paradigma, variantes con ganchos y validación cruzada, impacto real en testing y mantenibilidad, errores frecuentes en producción y estrategias de mitigación, junto con criterios estrictos para decidir cuándo la orquestación algorítmica es una necesidad del dominio y cuándo migrar hacia composición funcional, inyección de estrategias o frameworks declarativos más escalables.
