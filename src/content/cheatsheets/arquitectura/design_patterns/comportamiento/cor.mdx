@@ -1,0 +1,288 @@
+# 🎯 Patrón Chain of Responsibility — Cheatsheet Completo 🎯
+
+El patrón **Chain of Responsibility (CoR)** es un patrón de comportamiento que desacopla el emisor de una petición de sus receptores potenciales, permitiendo que múltiples objetos tengan la oportunidad de manejarla en una cadena secuencial. La petición recorre la cadena hasta que un handler la procesa explícitamente, la transforma, la rechaza o la deja pasar al siguiente eslabón. Nace para eliminar acoplamiento rígido `if/else` o `switch` gigante, habilitar procesamiento dinámico de reglas, validar flujos complejos y soportar fallbacks controlados sin modificar la lógica de envío. Este cheatsheet desglosa la intención arquitectónica real del patrón, contratos de propagación segura, implementaciones multi-paradigma, variantes sincrónicas/asincrónicas y de prioridad, impacto en observabilidad y debugging, trampas de mutación cruzada y bucles infinitos, y criterios estrictos para decidir cuándo el enrutamiento desacoplado es una necesidad del dominio y no una cadena de indirecciones que degrada la trazabilidad o el rendimiento.
+
+---
+
+## 1. 🌟 Conceptos Fundamentales
+
+* **Handler (Manejador)**: Interfaz o clase base que declara el método de procesamiento y la referencia al siguiente eslabón de la cadena.
+  * Por qué importa: Establece el contrato uniforme. Permite intercambiar, reordenar o extender handlers sin tocar el cliente ni la lógica de envío.
+* **ConcreteHandler**: Implementación específica que evalúa si puede procesar la petición. Si la maneja, termina o continúa; si no, la delega explícitamente.
+  * Por qué importa: Encapsula una responsabilidad única (validación, autorización, transformación, logging, fallback). Cumple Single Responsibility Principle.
+* **Client (Cliente)**: Inicia la petición y la envía al primer handler de la cadena. Desconoce quién la procesará finalmente.
+  * Por qué importa: Mantiene inversión de dependencias. La lógica de negocio solo conoce el punto de entrada, no la topología interna.
+* **Request/Context (Petición/Contexto)**: Objeto inmutable o mutable que transporta datos, metadatos, estado de validación o correlación a través de la cadena.
+  * Por qué importa: Define el payload que fluye. Su diseño dicta si la cadena es funcional (inmutable) o imperativa (mutación progresiva).
+* **Propagación y Condición de Terminación**: La cadena debe definir claramente cuándo se detiene: primer match, match múltiple, o fin de cadena con fallback.
+  * Por qué importa: Evita peticiones perdidas o procesamiento infinito. La semántica de terminación es parte del contrato arquitectónico.
+* **Encadenamiento Explícito vs Implícito**: Explícito usa `setNext()` o inyección en constructor. Implícito usa registro centralizado o resolución dinámica.
+  * Por qué importa: El explícito es predecible y fácil de auditar. El implícito es flexible pero requiere gestión de orden, prioridad y resolución segura.
+* **Inmutabilidad del Contexto**: Cada handler recibe una copia o snapshot, no mutando el original. O bien, muta intencionalmente con contrato documentado.
+  * Por qué importa: La mutación silenciosa corrompe handlers posteriores. La inmutabilidad garantiza determinismo, testing aislado y seguridad en concurrencia.
+* **Observabilidad por Eslabón**: Cada handler debe registrar entrada, decisión (handled/passed), tiempo de ejecución y errores de forma estandarizada.
+  * Por qué importa: La cadena es opaca por diseño. Sin trazabilidad, depurar peticiones perdidas o comportamientos erróneos se vuelve imposible en producción.
+
+---
+
+## 2. 📐 Estructura Lógica y Contrato de Propagación
+
+La arquitectura sigue un flujo estricto de evaluación secuencial y delegación controlada. El patrón garantiza que la petición nunca quede en un estado indefinido y que la responsabilidad se resuelva o delegue explícitamente.
+
+```text
+               Cliente
+                  │
+                  ▼ envía petición
+            Handler A (Primer eslabón)
+         +---------------------------+
+         | handle(request): Result   |
+         | setNext(handler): void    |
+         +---------------------------+
+                  ▲ delega si no maneja
+                  │
+            Handler B → Handler C → ... → Handler N (Fallback/Default)
+```
+
+Flujo de ejecución garantizado:
+1. Cliente instancia o inyecta la cadena. Envía `request` al primer handler.
+2. Handler A evalúa condición (`canHandle(request)`).
+3. Si puede procesar: ejecuta lógica, marca como manejada, retorna resultado o continúa según variante.
+4. Si no puede: invoca `next.handle(request)` o retorna control a la cadena.
+5. El proceso se repite hasta que un handler la procesa, se alcanza el fallback, o la cadena termina.
+6. El cliente recibe respuesta o error estandarizado. Nunca ve la topología interna.
+
+Contrato mínimo en pseudocódigo tipado:
+```typescript
+interface Handler {
+  setNext(next: Handler): Handler;
+  handle(request: Request): Response;
+}
+
+abstract class BaseHandler implements Handler {
+  protected next?: Handler;
+  setNext(next: Handler): Handler { this.next = next; return next; }
+  abstract handle(request: Request): Response;
+  protected passToNext(request: Request): Response {
+    if (!this.next) throw new UnhandledRequestError('Cadena terminada sin handler');
+    return this.next.handle(request);
+  }
+}
+
+class AuthHandler extends BaseHandler {
+  handle(request: Request): Response {
+    if (!request.token) throw new AuthError('Token requerido');
+    request.user = verifyToken(request.token);
+    return this.passToNext(request); // Continúa cadena
+  }
+}
+
+class ValidationHandler extends BaseHandler {
+  handle(request: Request): Response {
+    const errors = validateSchema(request.body);
+    if (errors.length) throw new ValidationError(errors);
+    return this.passToNext(request);
+  }
+}
+
+// Construcción: auth.setNext(validation).setNext(process);
+```
+Regla inquebrantable: La cadena **nunca** debe permitir que una petición desaparezca silenciosamente. Siempre debe existir un fallback explícito o una excepción controlada si ningún handler la procesa.
+
+---
+
+## 3. 🛠️ Implementación por Paradigma y Ecosistema
+
+El patrón se adapta al modelo de ejecución y al estilo de composición del entorno. No requiere necesariamente herencia clásica ni punteros explícitos.
+
+### 3.1. POO Clásica con Enlace Explícito (TypeScript / Java / C#)
+Uso de referencias `next` y delegación controlada. Ideal para validación, autorización o pipelines de procesamiento.
+
+```java
+public abstract class Middleware {
+    protected Middleware next;
+    public Middleware chain(Middleware next) { this.next = next; return next; }
+    public abstract void handle(Context ctx);
+    protected void forward(Context ctx) { if (next != null) next.handle(ctx); }
+}
+
+public class RateLimitMiddleware extends Middleware {
+    public void handle(Context ctx) {
+        if (ctx.getRequestsPerMinute() > LIMIT) throw new TooManyRequestsException();
+        forward(ctx);
+    }
+}
+// Uso: rateLimit.chain(auth).chain(validation).chain(router);
+```
+
+### 3.2. Enfoque Funcional / Pipeline (JavaScript / Python / Rust)
+Se reemplaza herencia por arrays de funciones y `reduce`. Composición declarativa y sin estado compartido.
+
+```python
+from typing import Callable, Any
+from functools import reduce
+
+def compose_chain(*handlers: Callable[[Any], Any]) -> Callable[[Any], Any]:
+    def pipeline(ctx: Any) -> Any:
+        return reduce(lambda c, h: h(c), handlers, ctx)
+    return pipeline
+
+def auth(ctx: dict) -> dict:
+    if not ctx.get("token"): raise ValueError("Missing token")
+    ctx["user"] = decode(ctx["token"])
+    return ctx
+
+def validate(ctx: dict) -> dict:
+    if not ctx.get("email"): raise ValueError("Email required")
+    return ctx
+
+chain = compose_chain(auth, validate, process_order)
+result = chain({"token": "...", "email": "a@b.com"})
+```
+Ventaja: Inmutabilidad, cero boilerplate, fácil testing. Desventaja: Pérdida de validación estática si no se usa tipado estricto.
+
+### 3.3. Middleware Asíncrono / `next()` Pattern (Node.js / Express / Koa)
+Control explícito de flujo con `await next()`. Permite lógica pre/post y manejo de errores centralizado.
+
+```javascript
+function createAsyncChain(...middlewares) {
+  return async (context) => {
+    let index = 0;
+    const dispatch = async () => {
+      if (index >= middlewares.length) return;
+      const middleware = middlewares[index++];
+      await middleware(context, dispatch);
+    };
+    await dispatch();
+  };
+}
+
+// Uso:
+const chain = createAsyncChain(
+  async (ctx, next) => { ctx.start = Date.now(); await next(); ctx.latency = Date.now() - ctx.start; },
+  async (ctx, next) => { if (!ctx.auth) throw new Error('Unauthorized'); await next(); },
+  async (ctx) => { ctx.response = await fetchData(ctx.query); }
+);
+```
+
+### 3.4. Registro Dinámico con Prioridad (Rule Engines / Event Systems)
+Handlers se registran con condiciones o pesos. El motor resuelve orden y ejecuta hasta match o fin.
+
+```rust
+#[derive(Clone)]
+pub struct Rule {
+    pub priority: u8,
+    pub predicate: Box<dyn Fn(&Request) -> bool + Send + Sync>,
+    pub handler: Box<dyn Fn(&mut Request) -> Result<Action, Error> + Send + Sync>,
+}
+
+pub struct ChainEngine {
+    rules: Vec<Rule>,
+}
+
+impl ChainEngine {
+    pub fn add(&mut self, rule: Rule) { self.rules.push(rule); }
+    pub fn execute(&self, req: &mut Request) -> Result<Action, Error> {
+        let mut sorted = self.rules.clone();
+        sorted.sort_by_key(|r| r.priority);
+        for rule in sorted {
+            if (rule.predicate)(req) {
+                return (rule.handler)(req);
+            }
+        }
+        Err(Error::Unhandled)
+    }
+}
+```
+
+---
+
+## 4. 🔄 Variantes Arquitectónicas y Extensiones
+
+| Variante | Mecanismo | Caso de uso | Trade-off |
+|----------|-----------|-------------|-----------|
+| **Strict/First-Match** | Se detiene en el primer handler que procesa. | Autorización, routing, validación temprana. | Imposible aplicar múltiples transformaciones o logs post-proceso. |
+| **Pass-Through/Logging** | Todos los handlers se ejecutan secuencialmente. | Auditing, métricas, sanitización de datos, caching. | Overhead acumulado. Requiere gestión de errores por eslabón. |
+| **Priority/Weighted** | Orden dinámico por prioridad, no por inserción. | Rule engines, filtros de spam, políticas de compliance. | Complejidad de resolución. Riesgo de starvation si prioridades colisionan. |
+| **Async/Concurrent** | Handlers se ejecutan en paralelo o con `await next()`. | Procesamiento de requests HTTP, ETL, validación distribuida. | Complejidad de race conditions, backpressure y cancellation tokens. |
+| **Conditional Branching** | Handler decide si bifurca, salta o termina cadena. | Workflows de negocio, aprobaciones, state machines. | Difícil de depurar. Requiere diagramas de flujo explícitos. |
+| **Fallback/Default** | Último eslabón maneja lo no cubierto. | APIs públicas, migraciones legacy, routing por defecto. | Puede enmascarar configuraciones erróneas si no se loguea. |
+
+---
+
+## 5. 🎯 Cuándo Usar y Cuándo Evitar
+
+| ✅ Usar cuando... | ❌ Evitar cuando... |
+|------------------|-------------------|
+| Múltiples objetos pueden manejar una petición y el orden es flexible o configurable | Solo hay 1-2 rutas de procesamiento. Usa `if/else` o Strategy directo. |
+| Necesitas desacoplar el emisor de receptores concretos | La cadena crece > 10 handlers y la trazabilidad se vuelve imposible sin tooling. |
+| Quieres añadir validación, logging, auth o transformación sin modificar lógica central | El rendimiento es crítico en loops tight. La iteración secuencial añade latencia. |
+| Trabajas con middlewares, pipelines de ETL, rule engines o flujos de aprobación | La lógica de cada handler depende fuertemente del estado interno de otros. |
+| Necesitas fallbacks controlados o migración progresiva de reglas | Ya usas un contenedor DI con interceptores automáticos o AOP nativo del framework. |
+
+Comparación rápida con patrones de comportamiento:
+* **Chain of Responsibility**: Propaga petición hasta que un handler la procesa. Enfocado en enrutamiento y desacoplamiento.
+* **Decorator**: Envuelve y extiende comportamiento acumulativamente. Enfocado en extensión transparente.
+* **Observer**: Notifica a múltiples suscriptores simultáneamente. Enfocado en broadcasting, no en routing secuencial.
+* **Command**: Encapsula petición como objeto ejecutable. Enfocado en historial, undo/redo o cola de tareas.
+* **Strategy**: Intercambia algoritmo completo en runtime. Enfocado en variación de lógica, no en propagación.
+
+---
+
+## 6. 🧪 Testing, Mantenibilidad y Arquitectura
+
+* **Aislamiento en Tests**: Prueba cada handler individualmente con contextos controlados. Verifica que `canHandle` retorne correctamente y que `handle` no mute estado inesperadamente.
+  * Técnica: Usa fixtures, mocks para `next`, y asertos de inmutabilidad o mutación intencional.
+* **Validación de Flujos Completos**: Escribe tests que invoquen la cadena con payloads válidos, inválidos, límite y sin handler matching.
+  * Fix: `assert.throws(() => chain.handle(badCtx), /ValidationError/)`. Valida mensajes, no solo que falle.
+* **Ciclo de Vida y Referencias Circulares**: La cadena debe ser un DAG. Nunca permitir `A.next = B; B.next = A;`.
+* **Refactorización desde `switch` Gigante**: Identifique ramas condicionales dispersas. Extraiga cada rama a `ConcreteHandler`. Envuelva en cadena. Deprecar branching progresivamente.
+* **Impacto en Rendimiento**: Cada handler añade evaluación + delegación. En CPUs modernas, negligible para < 20 handlers. Solo impacta en miles de requests/seg o cadenas > 50 eslabones. Profile antes de optimizar.
+* **Gestión de Versiones**: Si se añaden handlers, mantenga compatibilidad hacia atrás. Use versionado de context o flags de feature. Nunca rompa contrato de `handle()`.
+* **Visibilidad y APIs Públicas**: Exponga solo `chain.execute()` o `pipeline.run()`. Oculte handlers internos. Reduzca superficie de uso indebido.
+* **Documentación de Orden y Terminación**: Especifique explícitamente secuencia, condiciones de stop, y fallback. Elimine suposiciones implícitas.
+* **Migración desde Acceso Directo**: Identifique lógica condicional acoplada. Envuelva en handlers. Inyecte cadena. Deprecar `if/else` con linters.
+* **Integración con Observabilidad**: Inyecte correlation IDs, trace spans y métricas por handler. Centralice telemetría sin tocar lógica de routing.
+
+---
+
+## 7. ⚠️ Errores Comunes y Soluciones
+
+* **Petición Perdida (Unhandled Request)**: Ningún handler procesa la petición y la cadena retorna `null`/`undefined` silenciosamente.
+  * Fix: Implemente `DefaultHandler` o lance `UnhandledRequestError` explícito. Nunca retorne vacío sin loguear.
+* **Bucle Infinito / Referencia Circular**: `A.next = B; B.next = A;` o handler se llama a sí mismo recursivamente.
+  * Fix: Valide topología en construcción. Use builders que detecten ciclos. Documente orden de inserción.
+* **Mutación Cruzada de Contexto**: Handler A muta campo que Handler B espera inmutable. Comportamiento errático.
+  * Fix: Use context inmutable (`Object.freeze`, `copy.deepcopy`, `clone`). Si mutación es necesaria, documente contrato y use snapshots.
+* **Degradación por Longitud Excesiva**: Cadena > 50 handlers sin profiling. Latencia acumulada y debugging imposible.
+  * Fix: Agrupe lógica relacionada en handlers cohesivos. Use prioridad o routing condicional. Profile y split si es crítico.
+* **Supresión Silenciosa de Errores**: `try/catch` en handler que no rethrow, ocultando fallos al siguiente eslabón o cliente.
+  * Fix: Propague excepciones o use `Result`/`Either`. Documente política de errores. Fail fast con trazabilidad.
+* **Confundir con Decorator o Observer**: Usar CoR para añadir comportamiento acumulativo o broadcast a múltiples listeners.
+  * Fix: Si extiende interfaz transparente → Decorator. Si notifica a muchos → Observer. Si enruta hasta handler → CoR. No mezcle propósitos.
+* **Hardcoding de Orden**: Inserción manual `a.setNext(b).setNext(c)` sin validación o configuración.
+  * Fix: Use builders, archivos de config, o registro con prioridad. Valide secuencia en startup.
+* **State Leakage entre Requests**: Handlers compiten por estado estático o caché global entre peticiones concurrentes.
+  * Fix: Pase contexto explícitamente por parámetro. Nunca estado global sin control. Use factories por request o scope DI.
+* **Falta de Validación de Entrada**: Handler asume formato correcto, falla en producción por campos nulos o tipos inválidos.
+  * Fix: Valide contratos en bordes. Use schemas (`zod`, `Pydantic`, `valibot`). Rechace payloads malformados inmediatamente.
+* **Olvidar Propagar `next()` o Retorno**: Handler procesa pero no llama al siguiente ni retorna, rompiendo cadena.
+  * Fix: Use linters o tests de integración que verifiquen propagación. Documente contrato de continuación explícitamente.
+
+---
+
+## 8. 💡 Mejores Prácticas y Consejos
+
+* **Prefiera Context Inmutable por Defecto**: Elimina complejidad de mutación cruzada, facilita testing determinista y evita fugas entre peticiones.
+* **Documente Orden y Condición de Terminación**: Especifique explícitamente secuencia, reglas de stop, y fallback. Elimine suposiciones implícitas.
+* **Use Builders o Registro Configurado**: Evite hardcoding de `setNext()`. Permita carga desde config, DI o archivos de reglas. Valide topología en startup.
+* **Valide Contratos en Bordes**: Rechace payloads malformados o contextos inválidos inmediatamente. Fail fast ahorra horas de debugging en producción.
+* **Implemente DefaultHandler o Fallback Explícito**: Nunca deje peticiones en limbo. Loguee fallbacks para detectar reglas faltantes o configuraciones erróneas.
+* **Mantenga Liskov Substitution Principle Estricto**: Trate siempre como `Handler`. Evite `instanceof`, downcasts o checks de identidad que rompan abstracción.
+* **Profile antes de Desplegar**: No asuma overhead trivial. Mide latency por handler, allocation y GC pressure. Optimice solo si el profiler lo indica.
+* **Pruebe Flujos de Falla, no solo Éxito**: Valide cadenas rotas, handlers faltantes, timeouts, circuit open y recuperación. Detecte order-dependencies temprano.
+* **Mantenga Contratos Estables**: Cambiar la firma de `handle()` o `setNext()` rompe clientes. Use deprecación controlada, versionado semántico y handlers paralelos.
+* **No lo use "por moda"**: Si la lógica es lineal, predecible y no requiere desacoplamiento, use funciones directas o Strategy. La cadena innecesaria es deuda técnica de legibilidad y mantenimiento.
+
+---
+
+Este cheatsheet proporciona una referencia arquitectónica completa para el patrón Chain of Responsibility, cubriendo su intención de comportamiento, contratos de propagación segura, implementación multi-paradigma, variantes sincrónicas/asincrónicas y de prioridad, impacto real en testing y mantenibilidad, errores frecuentes en producción y estrategias de mitigación, junto con criterios estrictos para decidir cuándo el enrutamiento desacoplado es una necesidad del dominio y cuándo migrar hacia pipelines funcionales, rule engines configurables o interceptores nativos más escalables.
