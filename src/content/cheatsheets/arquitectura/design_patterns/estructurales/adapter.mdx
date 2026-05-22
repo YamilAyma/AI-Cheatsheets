@@ -1,0 +1,311 @@
+# 🎯 Patrón Adapter — Cheatsheet Completo 🎯
+
+El patrón **Adapter** es un patrón estructural que permite la cooperación entre objetos con interfaces incompatibles, actuando como un traductor o puente que convierte las llamadas de un contrato a otro. Resuelve problemas de integración con sistemas legacy, librerías de terceros, APIs versionadas o componentes con semánticas divergentes, sin modificar el código fuente de ninguna de las partes. Nace para preservar la inversión en código existente, unificar múltiples proveedores bajo una interfaz homogénea y aislar la lógica de negocio de los detalles de integración externa. Este cheatsheet cubre la intención arquitectónica real, contratos de traducción seguros, implementaciones multi-paradigma, variantes de composición y delegación, impacto en testing y rendimiento, trampas de abstracción permeable, y criterios estrictos para decidir cuándo la adaptación es una necesidad del dominio y no una capa innecesaria que oculta incompatibilidades críticas.
+
+---
+
+## 1. 🌟 Conceptos Fundamentales
+
+* **Target (Objetivo)**: Interfaz o contrato que el cliente espera utilizar. Define los métodos, firmas y comportamientos estándar del sistema actual.
+  * Por qué importa: Establece el límite de abstracción. El cliente solo depende de esta interfaz, nunca de implementaciones externas.
+* **Adaptee (Adaptado)**: Clase, servicio o API existente con una interfaz incompatible o semánticamente distinta. Contiene la funcionalidad real que se necesita aprovechar.
+  * Por qué importa: Representa la realidad del ecosistema (legacy, vendor, protocolo). No puede ni debe modificarse directamente.
+* **Adapter (Adaptador)**: Componente que implementa `Target` y contiene una referencia a `Adaptee`. Traduce llamadas, mapea parámetros y normaliza respuestas.
+  * Por qué importa: Centraliza la lógica de conversión. Cambiar de proveedor o versión solo requiere sustituir el adaptador, no reescribir la aplicación.
+* **Cliente**: Código que invoca métodos de `Target` sin conocimiento del `Adaptee` ni del proceso de adaptación.
+  * Por qué importa: Mantiene el principio de inversión de dependencias. La lógica de negocio permanece pura, predecible y testeable.
+* **Composición vs Herencia**: El adaptador puede usar herencia (Class Adapter) o contener al `Adaptee` como campo (Object Adapter).
+  * Por qué importa: La composición es preferida en la mayoría de lenguajes modernos. Permite adaptar múltiples fuentes, evita acoplamiento rígido y cumple el principio de sustitución de Liskov.
+* **Traducción de Semántica**: No solo cambia nombres de métodos. Mapea tipos, normaliza errores, ajusta paginación, transforma zonas horarias o adapta convenciones de serialización.
+  * Por qué importa: La incompatibilidad rara vez es solo nominal. El adaptador debe manejar diferencias estructurales y de comportamiento para garantizar coherencia.
+* **Aislamiento de Cambios Externos**: Cuando `Adaptee` evoluciona (breaking changes, deprecaciones), solo el `Adapter` requiere actualización.
+  * Por qué importa: Contiene el impacto de migraciones. El resto del sistema sigue funcionando mientras se despliega la nueva versión del adaptador.
+
+---
+
+## 2. 📐 Estructura y Contrato de Traducción
+
+La arquitectura sigue un flujo estricto de delegación y mapeo. El patrón garantiza que el cliente interactúe siempre con un contrato estable, independientemente de la complejidad del sistema externo.
+
+```text
+         Cliente
+            │
+            ▼ invoca
+         Target (Interfaz)
+        +---------------------+
+        | request(): Response |
+        +---------------------+
+            ▲
+            | implementa
+          Adapter
+        +---------------------+
+        | adaptee: Adaptee    |
+        | request()           |
+        |   &gt; adapta params   |
+        |   &gt; delega a adaptee|
+        |   &gt; normaliza result|
+        +---------------------+
+            │ delega
+            ▼
+         Adaptee (Sistema Externo)
+        +---------------------+
+        | specificCall(): Raw |
+        +---------------------+
+```
+
+Flujo de ejecución garantizado:
+1. Cliente invoca `target.request(data)`.
+2. `Adapter` recibe la llamada, valida y transforma `data` al formato esperado por `Adaptee`.
+3. `Adapter` invoca `adaptee.specificCall(transformedData)`.
+4. `Adaptee` retorna respuesta cruda o con estructura distinta.
+5. `Adapter` normaliza errores, mapea campos y ajusta tipos.
+6. Retorna `Response` compatible con `Target`. El cliente nunca ve la lógica de conversión.
+
+Contrato mínimo en pseudocódigo tipado:
+```typescript
+// Target: Lo que el sistema espera
+interface PaymentGateway {
+  process(amount: number, currency: string): Promise&lt;Transaction&gt;;
+}
+
+// Adaptee: Librería de terceros legacy
+class LegacyStripeSDK {
+  createCharge(opts: { cents: number; curr: string }): Promise&lt;RawCharge&gt; {
+    // SDK antiguo, usa centavos y códigos distintos
+  }
+}
+
+// Adapter: Traductor seguro
+class StripeAdapter implements PaymentGateway {
+  constructor(private sdk: LegacyStripeSDK) {}
+
+  async process(amount: number, currency: string): Promise&lt;Transaction&gt; {
+    // 1. Validación y mapeo
+    const opts = { cents: Math.round(amount * 100), curr: currency.toUpperCase() };
+    
+    // 2. Delegación
+    const raw = await this.sdk.createCharge(opts);
+    
+    // 3. Normalización
+    return {
+      id: raw.charge_id,
+      status: raw.status === 'success' ? 'COMPLETED' : 'FAILED',
+      amount: raw.amount_cents / 100,
+      timestamp: new Date(raw.created_at)
+    };
+  }
+}
+```
+Regla inquebrantable: El `Adapter` nunca debe exponer el `Adaptee` directamente. Toda interacción debe pasar por la traducción. Si se filtra la referencia, el patrón pierde su propósito de aislamiento.
+
+---
+
+## 3. 🛠️ Implementación por Paradigma y Ecosistema
+
+El patrón se adapta al modelo de tipos y al estilo de integración del entorno. No requiere necesariamente herencia clásica.
+
+### 3.1. POO Clásica con Delegación (TypeScript / Java / C#)
+Uso de composición explícita. Ideal para aislar SDKs, drivers o APIs REST con contratos divergentes.
+
+```java
+public interface DatabaseDriver {
+    ResultSet executeQuery(String sql) throws SQLException;
+}
+
+public class PostgreSQLAdapter implements DatabaseDriver {
+    private final org.postgresql.ds.PGPoolingDataSource pool;
+
+    public PostgreSQLAdapter(PGPoolingDataSource pool) {
+        this.pool = pool;
+    }
+
+    @Override
+    public ResultSet executeQuery(String sql) throws SQLException {
+        // Traduce contrato genérico a implementación específica
+        Connection conn = pool.getConnection();
+        PreparedStatement stmt = conn.prepareStatement(sql);
+        return stmt.executeQuery(); // Delegación controlada
+    }
+}
+// Cliente usa DatabaseDriver sin conocer PostgreSQL ni JDBC directo.
+```
+
+### 3.2. Enfoque Funcional / Closures (JavaScript / Python)
+Se reemplaza herencia por funciones de orden superior o objetos inmutables que mapean entradas/salidas.
+
+```javascript
+// Adaptee: API REST v1 (snake_case, status string)
+const legacyApi = {
+  fetchUser: async (id) =&gt; ({ data: { first_name: "Ana", status: "active" } })
+};
+
+// Adapter: Traductor funcional
+function createUserAdapter(api) {
+  return {
+    getUser: async (id) =&gt; {
+      const res = await api.fetchUser(id);
+      // Mapeo seguro y transformación
+      return {
+        fullName: `${res.data.first_name} ${res.data.last_name || ""}`,
+        isActive: res.data.status === "active",
+        metadata: { source: "legacy_v1" }
+      };
+    }
+  };
+}
+
+// Uso: const modernApi = createUserAdapter(legacyApi);
+// modernApi.getUser(42).then(console.log);
+```
+Ventaja: Extensión sin boilerplate. Desventaja: Pérdida de validación estática si no se usa `typescript` o `typing.Protocol`.
+
+### 3.3. Traits / Interfaces Estrictas (Rust / Go)
+Uso de traits o interfaces para definir el contrato de adaptación. Garantía en tiempo de compilación.
+
+```rust
+// Target contract
+pub trait NotificationService {
+    fn send(&amp;self, to: &amp;str, msg: &amp;str) -&gt; Result&lt;(), String&gt;;
+}
+
+// Adaptee: Third-party crate
+pub struct SlackClient {
+    webhook_url: String,
+}
+
+impl SlackClient {
+    pub fn post_to_channel(&amp;self, channel: &amp;str, text: &amp;str) -&gt; Result&lt;(), reqwest::Error&gt; {
+        // Lógica interna del crate
+        Ok(())
+    }
+}
+
+// Adapter implementation
+pub struct SlackAdapter {
+    client: SlackClient,
+    default_channel: String,
+}
+
+impl NotificationService for SlackAdapter {
+    fn send(&amp;self, _to: &amp;str, msg: &amp;str) -&gt; Result&lt;(), String&gt; {
+        self.client
+            .post_to_channel(&amp;self.default_channel, msg)
+            .map_err(|e| e.to_string())
+    }
+}
+```
+
+### 3.4. Wrapper de API / Versionado
+Se usa para migrar entre versiones sin romper clientes existentes. El adaptador coexiste hasta la deprecación completa.
+
+```typescript
+class APIv2Adapter implements APIv1Contract {
+  constructor(private v2Client: APIClient) {}
+
+  async getUsers(page: number): Promise&lt;UserList&gt; {
+    // v1 usa offset, v2 usa cursor-based pagination
+    const cursor = page &gt; 1 ? this.encodeCursor(page) : undefined;
+    const v2Response = await this.v2Client.fetchUsers({ cursor, limit: 50 });
+    
+    return {
+      users: v2Response.items,
+      total: v2Response.meta.total,
+      // Adapta estructura de error v2 a formato v1 esperado
+      error: v2Response.meta.hasError ? v2Response.meta.errors[0].message : null
+    };
+  }
+}
+```
+
+---
+
+## 4. 🔄 Variantes Arquitectónicas y Extensiones
+
+| Variante | Mecanismo | Caso de uso | Trade-off |
+|----------|-----------|-------------|-----------|
+| **Object Adapter** | Composición + delegación. Contiene referencia al `Adaptee`. | Integración de SDKs, APIs REST, drivers. | Ligeramente más verboso. Requiere forwarding explícito. |
+| **Class Adapter** | Herencia múltiple o mix-in. El `Adapter` extiende `Target` y `Adaptee`. | Lenguajes que lo permiten (C++, Python mix-ins). | Acoplamiento rígido. Dificulta testing y evolución independiente. |
+| **Bidireccional** | Traduce en ambas direcciones (`A &gt; B` y `B &gt; A`). | Sincronización de datos, bridges entre sistemas legacy y modernos. | Complejidad exponencial. Riesgo de loops de traducción o inconsistencia. |
+| **Default / Pluggable** | Adaptador con valores por defecto. Permite registrar múltiples `Adaptee` en runtime. | Plugins, proveedores de pago, auth providers (OAuth, SAML, LDAP). | Overhead de registro. Requiere validación de contratos en carga. |
+| **API Wrapper / Facade Hybrid** | Adapta múltiples endpoints en una interfaz cohesiva de alto nivel. | Unificar microservicios, SDKs fragmentados o protocolos mixtos (gRPC/REST). | Puede violar Single Responsibility si acumula demasiada lógica de mapeo. |
+| **Lazy / Proxy Adapter** | Inicializa `Adaptee` solo cuando se invoca el primer método. | Recursos costosos, conexiones pesadas, carga bajo demanda. | Retrasa fallos de configuración. Dificulta diagnóstico temprano. |
+
+---
+
+## 5. 🎯 Cuándo Usar y Cuándo Evitar
+
+| ✅ Usar cuando... | ❌ Evitar cuando... |
+|------------------|-------------------|
+| Integras librerías, SDKs o APIs con contratos incompatibles con tu dominio | El `Adaptee` ya cumple el contrato esperado. Usa la referencia directa. |
+| Necesitas unificar múltiples proveedores bajo una interfaz única | La traducción es trivial (solo renombra 1-2 métodos). Usa alias o wrappers simples. |
+| Migra gradualmente de un sistema legacy a uno moderno sin downtime | El adaptador requiere lógica de negocio compleja o validaciones cruzadas extensas. |
+| Aíslas tu código de breaking changes de vendors externos | El overhead de indirección impacta rendimiento en loops de alta frecuencia (ej. trading, gaming). |
+| Normalizas formatos de datos, errores o convenciones de paginación | Ya usas un contenedor DI con factories dinámicas que gestionan la selección. |
+
+Comparación rápida con patrones estructurales:
+* **Adapter**: Traduce interfaces incompatibles. Enfocado en compatibilidad y aislamiento de vendors.
+* **Facade**: Simplifica interfaces complejas. Enfocado en reducir acoplamiento y exponer APIs de alto nivel.
+* **Decorator**: Añade comportamiento dinámicamente. Enfocado en extensión sin modificar estructura base.
+* **Bridge**: Separa abstracción de implementación. Enfocado en variación independiente en dos dimensiones.
+* **Proxy**: Controla acceso o añade lógica pre/post. Enfocado en seguridad, caching o lazy loading.
+
+---
+
+## 6. 🧪 Testing, Mantenibilidad y Arquitectura
+
+* **Aislamiento en Tests**: El `Adapter` es el punto ideal para mocks. Prueba el mapeo de entrada/salida sin tocar el `Adaptee` real.
+  * Técnica: Inyecta un `MockAdaptee` que retorna payloads controlados. Verifica que `Adapter` transforme correctamente formatos y errores.
+* **Validación de Contratos**: Escribe tests de integración que invoquen cada método del `Target` con datos límite, nulos, estructuras vacías y errores simulados.
+  * Fix: `assert.throws(() = &gt; adapter.process(invalidData), /ValidationError/)`. Valida mensajes, no solo que falle.
+* **Ciclo de Vida y Ownership**: El `Adapter` debe gestionar conexiones, timeouts y reconexiones del `Adaptee`. Nunca delegue gestión de recursos críticos al cliente.
+* **Refactorización hacia Inyección**: Reemplace instanciación manual por contenedores DI. Permita configuración por ambiente (`staging`, `prod`) sin tocar código de adaptación.
+* **Impacto en Rendimiento**: La delegación añade 1-2 saltos de función. En CPUs modernas, la JIT los inlina. Solo impacta en millones de llamadas/seg. En ese caso, evalúe caching de respuestas o adaptadores inline.
+* **Gestión de Versiones**: Cuando `Adaptee` evoluciona, mantenga la interfaz `Target` estable. Use `AdapterV2` paralelo hasta la migración completa. Nunca rompa el contrato de `Target`.
+* **Visibilidad y APIs Públicas**: Exponga solo `Target`. Oculte `Adapter` y `Adaptee` en módulos internos. Reduzca la superficie de uso indebido y acoplamiento accidental.
+* **Documentación de Mapeo**: Especifique explícitamente en comentarios o docs qué campos se transforman, cómo se manejan errores, y qué convenciones se aplican (zonas horarias, decimales, enums).
+* **Migración desde Uso Directo**: Identifique llamadas a `Adaptee` en el código. Extraiga lógica de negocio. Envuelva en `Adapter`. Deprecar acceso directo progresivamente.
+* **Integración con Circuit Breakers**: Envuelva el `Adapter` con patrones de resiliencia (`retry`, `fallback`, `timeout`). Aísle fallos de proveedores externos sin propagar al cliente.
+
+---
+
+## 7. ⚠️ Errores Comunes y Soluciones
+
+* **Abstracción Permeable (Leaky Adapter)**: El `Adapter` expone tipos, errores o estructuras internas del `Adaptee`.
+  * Fix: Capture excepciones del `Adaptee`, mapee a errores de dominio, y nunca rethrow raw exceptions. Mantenga el contrato puro.
+* **Lógica de Negocio en el Adaptador**: El `Adapter` calcula descuentos, valida reglas de negocio o decide flujos.
+  * Fix: El `Adapter` solo traduce y delega. Delegue validaciones y reglas a servicios inyectados. Mantenga responsabilidad única.
+* **Acoplamiento Rígido por Herencia**: Usar `Class Adapter` en lenguajes que no soportan herencia múltiple o mix-ins seguros.
+  * Fix: Prefiera composición. Inyecte `Adaptee` en constructor. Permite mockear, reemplazar y testear aisladamente.
+* **Fallos Silenciosos en Mapeo**: Campos faltantes, tipos incorrectos o fechas mal formateadas pasan sin validación.
+  * Fix: Valide estructura de respuesta antes de retornar. Use schemas (`zod`, `valibot`, `Pydantic`) o asserts en modo desarrollo.
+* **Timeouts y Retries No Gestionados**: El `Adapter` delega sin controlar latencia, reintentos o fallos de red.
+  * Fix: Envuelva llamadas con `AbortController`, `retry` policies, o circuit breakers. Documente SLA esperado en contratos.
+* **Duplicación de Adaptadores**: Múltiples `Adapter` para el mismo `Adaptee` en distintos módulos. Inconsistencia de mapeo.
+  * Fix: Centralice en un módulo compartido. Registre en DI contenedor. Valide que solo exista una implementación por `Target`.
+* **Confundir con Facade**: Usar `Adapter` para simplificar APIs complejas en lugar de traducir interfaces incompatibles.
+  * Fix: Si el `Adaptee` ya es compatible pero es complejo, use Facade. Si los contratos no coinciden, use Adapter. No mezcle propósitos.
+* **Serialización Rota**: El `Adapter` retorna objetos con referencias circulares o campos no serializables.
+  * Fix: Implemente `toJSON()`/`toString()` seguro. Valide estructura antes de exponer. Marque campos internos como `transient`.
+* **Estado por Defecto Peligroso**: Usar `null`, `""`, o `0` como fallbacks que el sistema acepta pero maneja incorrectamente.
+  * Fix: Use `Optional`/`Maybe`, lance `DomainError`, o retorne valores explícitos. Documente comportamiento de fallback.
+* **Olvidar Invalidar Caché Interno**: El `Adapter` cachea respuestas del `Adaptee` y no invalida cuando cambian datos remotos.
+  * Fix: Use TTL explícito, invalide por evento, o evite cache en adaptadores síncronos. Prefiera cache en capa de aplicación.
+
+---
+
+## 8. 💡 Mejores Prácticas y Consejos
+
+* **Prefiera Composición sobre Herencia**: La delegación explícita es más testeable, flexible y segura. Evite acoplamiento rígido y permita reemplazo dinámico.
+* **Valide Agresivamente en los Bordes**: Rechace payloads malformados inmediatamente. Fail fast ahorra horas de debugging en producción.
+* **Separe Traducción de Lógica**: El `Adapter` solo mapea, transforma y delega. Delegue cálculos, reglas de dominio y orquestación a servicios inyectados.
+* **Documente el Contrato de Mapeo**: Especifique qué campos se transforman, cómo se manejan errores, y qué convenciones se aplican. Elimine suposiciones implícitas.
+* **Use Schemas para Validación**: `zod`, `valibot`, `Pydantic` o equivalentes garantizan que las respuestas del `Adaptee` cumplan el contrato antes de retornar.
+* **Implemente Circuit Breakers y Retries**: Aísle fallos de proveedores externos. Evite propagar timeouts o errores 5xx al cliente final.
+* **Pruebe Casos Límite y Errores**: Valide respuestas vacías, nulas, campos faltantes, límites numéricos, caracteres especiales y errores simulados del `Adaptee`.
+* **Mantenga Contratos Estables**: Cambiar la firma de `Target` rompe todos los clientes. Use deprecación controlada, versionado semántico y adapters paralelos.
+* **Monitoree Latencia y Tasa de Error**: Registre métricas de adaptación. Detecte degradación de proveedores, mapeos rotos o cuellos de botella en traducción.
+* **No lo use "por conveniencia"**: Si el `Adaptee` ya es compatible, úselo directo. La capa de adaptación innecesaria es deuda técnica de rendimiento y mantenimiento.
+
+---
+
+Este cheatsheet proporciona una referencia arquitectónica completa para el patrón Adapter, cubriendo su intención estructural, contratos de traducción seguros, implementación multi-paradigma, variantes de composición y delegación, impacto real en testing y mantenibilidad, errores frecuentes en producción y estrategias de mitigación, junto con criterios estrictos para decidir cuándo la adaptación es una necesidad del dominio y cuándo migrar hacia fachadas, proxies o inyección de dependencias más escalables.
