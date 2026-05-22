@@ -1,0 +1,300 @@
+# 🎯 Patrón Strategy — Cheatsheet Completo 🎯
+
+El patrón **Strategy** es un patrón de comportamiento que define una familia de algoritmos intercambiables, los encapsula y los hace sustituibles en tiempo de ejecución sin alterar el código del cliente que los utiliza. Extrae la lógica condicional dispersa (`if/else`, `switch` gigante) y la delega a componentes autónomos, cumpliendo el principio Open/Closed y permitiendo que el contexto varíe su comportamiento mediante composición en lugar de herencia rígida. Nace para resolver la complejidad exponencial de flujos de negocio dinámicos, habilitar la selección de algoritmos por configuración, entorno o prioridad, y facilitar el testing aislado de reglas críticas. Este cheatsheet desglosa la intención arquitectónica real del patrón, contratos de delegación segura, implementaciones multi-paradigma, variantes parametrizadas y dinámicas, impacto en rendimiento y mantenibilidad, trampas de acoplamiento encubierto y explosión de estrategias, y criterios estrictos para decidir cuándo la variación algorítmica es una necesidad del dominio y no una capa de indirección que degrada la trazabilidad o introduce overhead innecesario.
+
+---
+
+## 1. 🌟 Conceptos Fundamentales
+
+* **Contexto (Context)**: Objeto de dominio que mantiene una referencia a una `Strategy` y delega la ejecución del algoritmo variable. No conoce los detalles internos de la implementación seleccionada.
+  * Por qué importa: Desacopla la lógica invariante del flujo principal de la lógica variable. Permite cambiar comportamiento sin tocar código de negocio existente.
+* **Strategy (Interfaz)**: Contrato que declara el método de ejecución común (ej. `execute()`, `calculate()`, `process()`). Todos los algoritmos deben cumplirlo.
+  * Por qué importa: Establece sustituibilidad total. El contexto solo depende de esta interfaz, nunca de clases concretas.
+* **ConcreteStrategy**: Implementación específica que encapsula un algoritmo, regla o política completa. Puede recibir configuración, contexto o dependencias externas.
+  * Por qué importa: Centraliza responsabilidad única. Facilita testing aislado, versionado de reglas y hot-swapping sin afectar al resto del sistema.
+* **Composición sobre Herencia**: Reemplaza `extends` por `has-a` + delegación explícita. El contexto contiene la estrategia, no hereda de ella.
+  * Por qué importa: Evita jerarquías frágiles, permite cambio dinámico en runtime y cumple Liskov Substitution Principle estrictamente.
+* **Selección en Runtime**: La estrategia se asigna mediante constructor, setter, contenedor DI, o resolución por contexto/configuración.
+  * Por qué importa: Habilita feature flags, A/B testing, routing por tenant o entorno, y migración progresiva sin downtime.
+* **Estado Independiente vs Compartido**: La estrategia puede ser stateless (pura, determinista) o stateful (mantiene caché, contadores, sesión).
+  * Por qué importa: Define seguridad en concurrencia y ciclo de vida. Las estrategias stateless son reutilizables globalmente; las stateful requieren scope acotado o fábrica por request.
+* **Separación de Flujo y Lógica**: El contexto orquesta pasos, valida invariantes y maneja errores cruzados. La estrategia solo ejecuta el algoritmo específico.
+  * Por qué importa: Mantiene el contexto delgado y predecible. Evita que la lógica de dominio se mezcle con reglas de cálculo o transformación.
+* **Open/Closed Principle**: Añadir nueva estrategia no requiere modificar el contexto ni otras estrategias. Solo se registra la nueva implementación.
+  * Por qué importa: Reduce riesgo de regresión, facilita code review, y habilita extensibilidad por plugins o módulos externos.
+
+---
+
+## 2. 📐 Estructura Lógica y Contrato de Delegación
+
+La arquitectura sigue un flujo estricto de selección, inyección y delegación. El patrón garantiza que el comportamiento variable se resuelva de forma predecible, segura y reemplazable sin tocar el núcleo del sistema.
+
+```text
+               Cliente
+                  │
+                  ▼ configura / inyecta
+             Contexto
+         +---------------------------+
+         | strategy: Strategy        |
+         | setStrategy(s): void      |
+         | execute(params): Result   |
+         +---------------------------+
+                  ▲ delega
+            Strategy (Interfaz)
+         +---------------------------+
+         | execute(params): Result   |
+         +---------------------------+
+            ▲ implementa
+   ConcreteStrategyA / ConcreteStrategyB
+   [Algoritmo específico, reglas, transformaciones]
+```
+
+Flujo de ejecución garantizado:
+1. Cliente o contenedor DI instancia `ConcreteStrategy` con configuración o dependencias necesarias.
+2. Inyecta la estrategia en el contexto mediante constructor o `setStrategy()`.
+3. Cliente invoca `context.execute(input)`.
+4. Contexto valida precondiciones, registra métricas y delega a `strategy.execute(input)`.
+5. Estrategia aplica algoritmo, retorna resultado o lanza error de dominio controlado.
+6. Contexto post-procesa, formatea respuesta y retorna al cliente. El cliente nunca conoce la implementación activa.
+
+Contrato mínimo en pseudocódigo tipado:
+```typescript
+// Interfaz estable
+interface DiscountStrategy {
+  apply(total: number, customer: Customer): number;
+}
+
+// Contexto delgado
+class CheckoutProcessor {
+  private discount: DiscountStrategy;
+
+  constructor(discount: DiscountStrategy) {
+    this.discount = discount;
+  }
+
+  setDiscountStrategy(next: DiscountStrategy): void {
+    this.discount = next;
+  }
+
+  process(cart: CartItem[], customer: Customer): CheckoutResult {
+    const subtotal = cart.reduce((sum, i) =&gt; sum + i.price, 0);
+    const finalTotal = this.discount.apply(subtotal, customer);
+    return { subtotal, discountApplied: subtotal - finalTotal, finalTotal };
+  }
+}
+
+// Estrategias concretas
+class PercentageDiscount implements DiscountStrategy {
+  constructor(private percent: number) {}
+  apply(total: number): number { return total * (1 - this.percent / 100); }
+}
+
+class TieredDiscount implements DiscountStrategy {
+  apply(total: number, customer: Customer): number {
+    if (customer.tier === 'GOLD' &amp;&amp; total &gt; 500) return total - 100;
+    if (customer.tier === 'SILVER' &amp;&amp; total &gt; 200) return total - 30;
+    return total;
+  }
+}
+```
+Regla inquebrantable: La estrategia **nunca** debe orquestar flujos completos ni acceder a infraestructura externa directamente. Solo transforma datos o aplica reglas. Delega persistencia, logging o notificaciones a servicios inyectados o al contexto.
+
+---
+
+## 3. 🛠️ Implementación por Paradigma y Ecosistema
+
+El patrón se adapta al modelo de tipado y al estilo de composición del entorno. No requiere necesariamente herencia clásica ni interfaces explícitas en todos los lenguajes.
+
+### 3.1. POO Clásica con Inyección (TypeScript / Java / C#)
+Uso de interfaces explícitas, clases concretas y delegación en constructor. Ideal para cálculos, validaciones o políticas de negocio.
+
+```java
+public interface TaxCalculator {
+    BigDecimal calculate(BigDecimal amount, String region);
+}
+
+public class EuVatCalculator implements TaxCalculator {
+    public BigDecimal calculate(BigDecimal amount, String region) {
+        BigDecimal rate = lookupRate(region);
+        return amount.multiply(rate);
+    }
+}
+
+public class InvoiceService {
+    private final TaxCalculator calculator;
+    public InvoiceService(TaxCalculator calc) { this.calculator = calc; }
+    
+    public Invoice generate(Order order) {
+        BigDecimal tax = calculator.calculate(order.total(), order.region());
+        return new Invoice(order, tax);
+    }
+}
+// Cambio en runtime: service.setCalculator(new UsSalesTaxCalculator());
+```
+
+### 3.2. Enfoque Funcional / HOFs (JavaScript / Python / Rust)
+Se reemplaza herencia por funciones de orden superior o closures. Composición mediante mapas o pipelines.
+
+```python
+from typing import Callable, Dict
+
+# Estrategias como funciones puras
+def flat_discount(total: float) -&gt; float:
+    return total - 20.0 if total &gt; 100 else total
+
+def vip_percentage(total: float) -&gt; float:
+    return total * 0.85
+
+# Registro dinámico
+STRATEGIES: Dict[str, Callable[[float], float]] = {
+    "FLAT": flat_discount,
+    "VIP_PERCENTAGE": vip_percentage,
+}
+
+def apply_discount(strategy_name: str, total: float) -&gt; float:
+    if strategy_name not in STRATEGIES:
+        raise ValueError(f"Estrategia desconocida: {strategy_name}")
+    return STRATEGIES[strategy_name](total)
+```
+Ventaja: Zero boilerplate, fácil serialización, testing determinista. Desventaja: Pérdida de validación estática si no se usa `typing.Protocol` o TypeScript.
+
+### 3.3. Contenedores DI / Policy Resolution (NestJS / Spring / .NET Core)
+La estrategia se resuelve por clave, entorno o configuración. El contenedor gestiona ciclo de vida y scope.
+
+```csharp
+public interface ICompressionStrategy {
+    byte[] Compress(byte[] input);
+}
+
+public class BrotliStrategy : ICompressionStrategy { /* ... */ }
+public class GzipStrategy : ICompressionStrategy { /* ... */ }
+
+// Registro condicional
+builder.Services.AddSingleton&lt;ICompressionStrategy&gt;(sp =&gt; {
+    var config = sp.GetRequiredService&lt;IConfiguration&gt;();
+    return config["COMPRESSION_ALGO"] == "BROTLI" 
+        ? new BrotliStrategy() 
+        : new GzipStrategy();
+});
+
+// Inyección automática
+public class FileService {
+    private readonly ICompressionStrategy _strategy;
+    public FileService(ICompressionStrategy strategy) { _strategy = strategy; }
+}
+```
+
+### 3.4. Registro Dinámico / Plugin System
+Permite cargar estrategias en runtime desde módulos externos, archivos de configuración o base de datos.
+
+```typescript
+const strategies = new Map&lt;string, Strategy&gt;();
+
+function register(id: string, impl: Strategy) {
+  if (strategies.has(id)) throw new Error(`Estrategia duplicada: ${id}`);
+  strategies.set(id, impl);
+}
+
+function getStrategy(id: string): Strategy {
+  const impl = strategies.get(id);
+  if (!impl) throw new Error(`Estrategia no registrada: ${id}`);
+  return impl;
+}
+
+// Carga modular
+register("fraud-detection-v2", new MLBasedFraudDetector());
+register("fraud-detection-legacy", new RuleBasedFraudDetector());
+```
+
+---
+
+## 4. 🔄 Variantes Arquitectónicas y Extensiones
+
+| Variante | Mecanismo | Caso de uso | Trade-off |
+|----------|-----------|-------------|-----------|
+| **Stateless/Pura** | Sin estado interno. Solo transforma entrada en salida. | Cálculos matemáticos, validaciones, transformaciones de datos. | Reutilizable globalmente, thread-safe, fácil de cachear. |
+| **Stateful/Contextual** | Mantiene caché, contadores o sesión por request/usuario. | Rate-limiting, scoring adaptativo, recomendaciones personalizadas. | Requiere gestión de ciclo de vida, invalidación y scope acotado. |
+| **Parametrizada** | Recibe configuración en constructor o método `execute()`. | Algoritmos con umbrales ajustables, políticas de retry con backoff. | Flexibilidad alta. Riesgo de complejidad si hay &gt; 5 parámetros. |
+| **Chain/Composite** | Combina múltiples estrategias secuencial o condicionalmente. | Pipelines de validación, reglas de negocio anidadas, scoring ponderado. | Overhead de iteración. Puede oscurecer trazabilidad si no se loguea. |
+| **Template Method Hybrid** | Estrategia define solo pasos variables. Contexto orquesta flujo fijo. | Procesadores de pagos, workflows de onboarding, generadores de reportes. | Acoplamiento parcial entre flujo y algoritmo. Requiere contratos claros. |
+| **Config-Driven/Rule Engine** | Selección por JSON/YAML/DB. Resolución dinámica sin código. | Sistemas multi-tenant, feature flags, A/B testing, compliance variable. | Pérdida de tipado fuerte. Depuración compleja en producción. |
+
+---
+
+## 5. 🎯 Cuándo Usar y Cuándo Evitar
+
+| ✅ Usar cuando... | ❌ Evitar cuando... |
+|------------------|-------------------|
+| Necesitas variar algoritmos, reglas o políticas sin modificar contexto | Solo tienes 1-2 variantes estáticas. Usa llamada directa o función simple. |
+| Quieres eliminar `switch`/`if` gigantes que crecen con el tiempo | La lógica es trivial, nunca cambia y no requiere testing aislado. |
+| Requieres selección dinámica por entorno, tenant, feature flag o configuración | El rendimiento es crítico en loops tight. La delegación añade overhead inaceptable. |
+| Trabajas con cálculos, validaciones, transformaciones o políticas de negocio | Ya usas un contenedor DI avanzado que gestiona inyección condicional automáticamente. |
+| Quieres cumplir Open/Closed y facilitar extensión por plugins o módulos | La estrategia acumula lógica de dominio, persistencia o orquestación compleja. |
+
+Comparación rápida con patrones de comportamiento:
+* **Strategy**: Intercambia algoritmos completos en runtime. Enfocado en variación de lógica, no en ciclo de vida.
+* **State**: Cambia comportamiento según estado interno del objeto. Enfocado en transición y guards.
+* **Command**: Encapsula petición ejecutable. Enfocado en ejecución diferida, undo/redo o encolado.
+* **Template Method**: Define esqueleto de algoritmo, delega pasos a subclases. Enfocado en extensión vertical por herencia.
+* **Chain of Responsibility**: Enruta petición hasta handler. Enfocado en secuencialidad y fallback, no en reemplazo algorítmico.
+
+---
+
+## 6. 🧪 Testing, Mantenibilidad y Arquitectura
+
+* **Aislamiento en Tests**: Prueba cada estrategia con inputs controlados y asserts de salida. Mockea dependencias externas.
+  * Técnica: Usa fixtures deterministas. Aserta transformación exacta, manejo de bordes y lanzamiento de errores controlados.
+* **Validación de Inyección Dinámica**: Escribe tests que cambien estrategia en runtime. Verifique que el contexto delegue correctamente y retorne resultados distintos.
+  * Fix: `assert.strictEqual(ctx.execute(data), strategyAExpected)`. Valide comportamiento post-cambio.
+* **Ciclo de Vida y Ownership**: Si la estrategia abre recursos (conexiones, archivos, streams), debe implementar `dispose()`, `close()` o `cancel()` y propagarlo.
+* **Refactorización desde Condicionales**: Identifique `if (type === 'A') ... else if (type === 'B')`. Extraiga cada rama a `ConcreteStrategy`. Inyecte en contexto. Deprecar branching.
+* **Impacto en Rendimiento**: Delegación añade 1-2 saltos de función/v-table. En CPUs modernas, negligible para &lt; 100k invocaciones. Solo impacta en hot paths críticos. Profile antes de optimizar.
+* **Gestión de Versiones**: Si añades estrategias nuevas, mantenga compatibilidad hacia atrás. Use versionado de contrato o flags. Nunca rompa firma de `execute()`.
+* **Visibilidad y APIs Públicas**: Exponga solo `execute()` o `process()`. Oculte implementación concreta en módulos internos o factories. Reduzca superficie de uso indebido.
+* **Documentación de Contrato de Entrada/Salida**: Especifique tipos, rangos, errores lanzados y garantías de idempotencia. Elimine suposiciones implícitas.
+* **Migración hacia DI/Registry**: Si crece &gt; 5 estrategias, centralice registro en contenedor o mapa. Elimine `switch` de selección manual. Valide resolución en startup.
+* **Integración con Observabilidad**: Inyecte correlation IDs, métricas por estrategia y latencia. Detecte degradación, cuellos de botella o estrategias no utilizadas.
+
+---
+
+## 7. ⚠️ Errores Comunes y Soluciones
+
+* **God Strategy / Estrategia Monolítica**: Una sola clase contiene lógica de 3+ variantes con branching interno.
+  * Fix: Divida por responsabilidad. Cada estrategia solo maneja su algoritmo. Mantenga &lt; 50 líneas. Cumpla Single Responsibility.
+* **Acoplamiento Encubierto al Contexto**: Estrategia lee/muta campos internos del contexto o accede a infraestructura directamente.
+  * Fix: Pase solo datos necesarios como parámetro. Inyecte servicios externos. Nunca referencie `this.context` o globales.
+* **Selección Rota en Runtime**: Cambio de estrategia no se aplica por referencia stale, caché o scope incorrecto.
+  * Fix: Use inmutabilidad o setter explícito. Valide que `strategy !== oldStrategy`. Documente ciclo de cambio.
+* **Excepciones Silenciadas**: `try/catch` en estrategia que no rethrow, ocultando fallos al contexto.
+  * Fix: Propague errores de dominio o use `Result`/`Either`. Documente política de errores. Fail fast con trazabilidad.
+* **Confundir con State o Template Method**: Usar Strategy para gestionar ciclo de vida o para definir esqueleto de algoritmo con herencia.
+  * Fix: Si varía por estado interno &rarr; State. Si hereda flujo fijo &rarr; Template Method. Si reemplaza algoritmo completo &rarr; Strategy.
+* **State Leakage entre Requests**: Estrategia comparte caché o contadores sin control entre tenants o hilos.
+  * Fix: Instancie por request/scope, use inmutabilidad, o pase contexto explícitamente. Nunca estado global sin validación.
+* **Serialización Rota**: Intentar persistir estrategia con métodos, closures o referencias a servicios.
+  * Fix: Serialize solo identificadores (`"VIP_PERCENTAGE"`). Reconstruya mediante factory o registry. Nunca serialice funciones.
+* **Falta de Validación de Input**: Estrategia asume formato correcto, falla en producción por nulos o tipos inválidos.
+  * Fix: Valide contratos en borde. Use schemas (`zod`, `Pydantic`, `valibot`). Rechace payloads malformados inmediatamente.
+* **Over-Engineering Innecesario**: Crear interfaz + 3 clases para lógica que cabe en una función pura de 5 líneas.
+  * Fix: Reserve Strategy para algoritmos complejos, variables o testeables aisladamente. Para simples, use funciones o mapas.
+* **Olvidar Documentar Garantías**: No especificar si es idempotente, thread-safe o requiere cleanup. Comportamiento impredecible.
+  * Fix: Documente contrato explícitamente. Añada asserts en tests. Valide en code review antes de merge.
+
+---
+
+## 8. 💡 Mejores Prácticas y Consejos
+
+* **Prefiera Estrategias Stateless por Defecto**: Elimina complejidad de gestión de estado, facilita caching, testing determinista y reuso global.
+* **Valide Contratos en Bordes**: Rechace payloads malformados o contextos inválidos inmediatamente. Fail fast ahorra horas de debugging en producción.
+* **Use DI o Registry Centralizado**: Evite `switch` de selección manual. Permita carga por configuración, entorno o plugin. Valide resolución en startup.
+* **Separe Flujo y Lógica Estrictamente**: Contexto orquesta, valida y maneja errores. Estrategia solo transforma o calcula. Nunca mezcle responsabilidades.
+* **Implemente Cleanup Explícito**: Asegure que `dispose()`, `close()`, o `cancel()` liberen recursos. Evite fugas en sistemas de larga ejecución.
+* **Mantenga Interfaz Estable y Mínima**: Declare solo `execute()` o `process()`. Evite añadir métodos que rompan sustituibilidad o acoplen al contexto.
+* **Profile antes de Optimizar**: No asuma overhead de delegación trivial. Mide allocation, latency y GC pressure. Optimice solo si el profiler lo indica.
+* **Pruebe Flujos de Falla, no solo Éxito**: Valide inputs límite, nulos, excepciones lanzadas, cambio en runtime y estrategias no registradas. Detecte regresiones temprano.
+* **Documente Contrato de Idempotencia y Thread-Safety**: Especifique explícitamente si puede reejecutarse sin efectos duplicados y si es segura para concurrencia.
+* **No lo use "por moda"**: Si la lógica es fija, simple o no requiere extensión dinámica, use funciones directas o mapas. La abstracción innecesaria es deuda técnica de legibilidad y mantenimiento.
+
+---
+
+Este cheatsheet proporciona una referencia arquitectónica completa para el patrón Strategy, cubriendo su intención de comportamiento, contratos de delegación segura, implementación multi-paradigma, variantes parametrizadas y dinámicas, impacto real en testing y mantenibilidad, errores frecuentes en producción y estrategias de mitigación, junto con criterios estrictos para decidir cuándo la variación algorítmica es una necesidad del dominio y cuándo migrar hacia funciones puras, mapas de resolución o contenedores de inyección más escalables.
