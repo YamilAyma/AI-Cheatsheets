@@ -1,0 +1,310 @@
+# 🎯 Patrón Memento — Cheatsheet Completo 🎯
+
+El patrón **Memento** es un patrón de comportamiento que permite capturar y externalizar el estado interno de un objeto sin violar su encapsulamiento, de modo que el objeto pueda ser restaurado a ese estado en un momento posterior. Resuelve problemas de deshacer/rehacer, puntos de guardado, rollback transaccional y versionado de configuración, manteniendo estricta separación entre la lógica de estado y la gestión de historial. Nace para evitar la exposición de detalles internos, prevenir acoplamiento rígido entre orquestadores y modelos de dominio, y habilitar mecanismos de reversión deterministas en sistemas interactivos, editores, flujos de aprobación o motores de simulación. Este cheatsheet desglosa la intención arquitectónica real del patrón, contratos de inmutabilidad y opacidad, implementaciones multi-paradigma, variantes diferenciales y serializables, impacto en memoria y concurrencia, trampas de restauración parcial y fuga de referencias, y criterios estrictos para decidir cuándo la externalización de estado es una necesidad del dominio y no un mecanismo pesado que degrada el rendimiento o rompe invariantes de negocio.
+
+---
+
+## 1. 🌟 Conceptos Fundamentales
+
+* **Originator (Creador)**: Objeto de dominio que conoce su propio estado interno y es el único responsable de crear y restaurar `Memento`s.
+  * Por qué importa: Mantiene la encapsulación. Solo el originador decide qué datos exponer, cómo serializarlos y cómo reconstruirse sin depender de estructuras externas.
+* **Memento (Testigo/Snapshot)**: Contenedor inmutable que almacena una copia del estado en un instante específico. No contiene lógica de negocio ni permite mutación.
+  * Por qué importa: Garantiza predictibilidad y reversión segura. Su opacidad evita que el `Caretaker` corrompa el estado por manipulación accidental o intencional.
+* **Caretaker (Guardián)**: Componente que gestiona el ciclo de vida de los mementos (almacenar, recuperar, limpiar historial). Desconoce la estructura interna del estado.
+  * Por qué importa: Centraliza la gestión de historial sin acoplarse al dominio. Implementa políticas de retención, paginación o compresión sin tocar el modelo.
+* **Interfaz Estrecha vs Ancha (Narrow vs Wide)**: Estrecha expone solo métodos de gestión (`save()`, `restore()`). Ancha permite inspección o comparación de estados.
+  * Por qué importa: Define el nivel de opacidad. La interfaz estrecha maximiza encapsulamiento; la ancha facilita debugging o merge de estados pero aumenta superficie de ataque.
+* **Inmutabilidad del Snapshot**: Una vez creado, el memento nunca muta. Representa un punto fijo en el tiempo del originador.
+  * Por qué importa: Evita efectos secundarios cruzados. Permite caching seguro, comparación determinista y reversión fiable en entornos concurrentes.
+* **Separación de Estado y Comportamiento**: El memento solo guarda datos. El originador contiene lógica. El caretaker contiene historial.
+  * Por qué importa: Cumple Single Responsibility. Facilita testing aislado, migración de esquemas y optimización de almacenamiento por capa.
+* **Restauración Atómica**: `restore()` debe aplicar el estado completo o fallar completamente. No debe dejar el originador en estado híbrido o inconsistente.
+  * Por qué importa: Garantiza integridad de invariantes. Evita corrupción silenciosa que se manifiesta horas después del rollback.
+* **Trade-off Memoria vs Flexibilidad**: Capturar estado completo consume RAM/disco. La compresión diferencial o snapshots parciales reducen costo pero añaden complejidad de merge.
+  * Por qué importa: La optimización prematura genera bugs de restauración. El patrón justifica su costo solo cuando la reversión es un requisito de negocio crítico.
+
+---
+
+## 2. 📐 Estructura Lógica y Contrato de Estado
+
+La arquitectura sigue un flujo estricto de captura, almacenamiento opaco y restauración controlada. El patrón garantiza que el estado externo nunca se manipule directamente y que la reversión sea determinista.
+
+```text
+               Caretaker (Gestiona historial)
+                  │
+                  ▼ solicita / almacena
+            Memento (Interfaz Opaca)
+         +---------------------------+
+         | (sin getters públicos)    |
+         | solo referencia opaca     |
+         +---------------------------+
+                  ▲ crea / restaura
+                  │
+             Originator (Dominio)
+         +---------------------------+
+         | estado interno privado    |
+         | createMemento(): Memento  |
+         | restore(memento): void    |
+         +---------------------------+
+```
+
+Flujo de ejecución garantizado:
+1. Originador modifica su estado durante operación.
+2. Antes de cambio crítico, `caretaker` invoca `originator.createMemento()`.
+3. Originador empaqueta estado interno en `Memento` inmutable y lo retorna.
+4. Caretaker almacena memento en stack, cola, base de datos o caché.
+5. Si se requiere reversión, `caretaker` pasa memento a `originator.restore(memento)`.
+6. Originador extrae datos, valida consistencia y reemplaza su estado interno.
+7. Caretaker nunca lee ni modifica el contenido del memento directamente.
+
+Contrato mínimo en pseudocódigo tipado:
+```typescript
+// Interfaz opaca para Caretaker
+interface EditorMemento {
+  readonly id: string;
+  readonly timestamp: number;
+  // Sin getters de contenido. Solo metadatos para gestión.
+}
+
+// Originador
+class DocumentEditor {
+  private content = '';
+  private cursor = 0;
+  private history: Set&lt;string&gt; = new Set();
+
+  createMemento(): EditorMemento {
+    const snapshot = JSON.stringify({ c: this.content, cur: this.cursor });
+    this.history.add(snapshot);
+    return { id: crypto.randomUUID(), timestamp: Date.now() };
+  }
+
+  restore(memento: EditorMemento & { data: string }): void {
+    const state = JSON.parse(memento.data);
+    this.content = state.c;
+    this.cursor = state.cur;
+  }
+
+  // ... métodos de edición ...
+}
+
+// Caretaker
+class HistoryManager {
+  private stack: (EditorMemento & { data: string })[] = [];
+  push(m: EditorMemento & { data: string }) { this.stack.push(m); }
+  pop() { return this.stack.pop(); }
+}
+```
+Regla inquebrantable: El `Caretaker` **nunca** debe acceder a campos internos del memento. Si requiere inspección, debe ser mediante interfaz explícita, versionada y documentada. La opacidad es el núcleo del patrón.
+
+---
+
+## 3. 🛠️ Implementación por Paradigma y Ecosistema
+
+El patrón se adapta al modelo de memoria, tipado y gestión de estado del entorno. No requiere necesariamente herencia clásica ni clases explícitas.
+
+### 3.1. POO Clásica con Encapsulamiento Estricto (TypeScript / Java / C#)
+Uso de interfaces opacas, clases internas o paquetes protegidos. Ideal para editores, transacciones locales o state machines.
+
+```java
+public interface CommandHistory {
+    void push(Memento m);
+    Memento pop();
+}
+
+public class Document {
+    private String text;
+    private int version;
+
+    public Memento save() {
+        return new MementoImpl(this.text, this.version);
+    }
+
+    public void restore(Memento m) {
+        if (!(m instanceof MementoImpl impl)) throw new IllegalArgumentException();
+        this.text = impl.content;
+        this.version = impl.version;
+    }
+
+    // Memento como clase interna estática privada
+    private static class MementoImpl implements Memento {
+        final String content;
+        final int version;
+        private MementoImpl(String c, int v) { this.content = c; this.version = v; }
+    }
+}
+// Java/C# usan clases internas privadas para garantizar opacidad en tiempo de compilación.
+```
+
+### 3.2. Enfoque Funcional / Estructuras Inmutables (Rust / JavaScript / Scala)
+Se reemplaza mutación por copias estructurales y snapshots inmutables. Cero side-effects.
+
+```rust
+#[derive(Clone, Debug)]
+pub struct EditorState {
+    pub content: String,
+    pub cursor: usize,
+    pub selections: Vec&lt;(usize, usize)&gt;,
+}
+
+pub struct Document {
+    state: EditorState,
+}
+
+impl Document {
+    pub fn save(&amp;self) -&gt; EditorState { self.state.clone() }
+    pub fn restore(&amp;mut self, snapshot: EditorState) { self.state = snapshot; }
+}
+
+// Caretaker gestiona Vec&lt;EditorState&gt; o LRU cache.
+// Clone estructural es seguro y predecible. Rust garantiza ownership.
+```
+Ventaja: Inmutabilidad nativa, thread-safety, serialización trivial. Desventaja: Overhead de copia en estados muy grandes si no se usa structural sharing.
+
+### 3.3. Serialización Basada (JSON / Protobuf / BSON)
+Mementos se persisten en disco, DB o red. Útil para aplicaciones de larga ejecución o recuperación ante fallos.
+
+```python
+import json
+import zlib
+from dataclasses import dataclass
+
+@dataclass
+class ConfigMemento:
+    schema_version: int
+    payload: bytes
+
+class SystemConfig:
+    def __init__(self):
+        self.rules = {}
+        self.thresholds = {}
+
+    def snapshot(self) -> ConfigMemento:
+        raw = json.dumps({"r": self.rules, "t": self.thresholds}).encode()
+        compressed = zlib.compress(raw)
+        return ConfigMemento(schema_version=2, payload=compressed)
+
+    def restore(self, m: ConfigMemento):
+        if m.schema_version != 2:
+            raise ValueError(f"Unsupported schema v{m.schema_version}")
+        raw = json.loads(zlib.decompress(m.payload))
+        self.rules = raw["r"]
+        self.thresholds = raw["t"]
+```
+
+### 3.4. Differential / Incremental Snapshots
+Almacena solo cambios (deltas) en lugar de copias completas. Reconstruye estado aplicando secuencia de deltas.
+
+```typescript
+interface Delta {
+  type: 'insert' | 'delete' | 'update';
+  path: string[];
+  value?: any;
+  previous?: any;
+}
+
+class DiffMemento {
+  constructor(public baseVersion: number, public deltas: Delta[]) {}
+}
+
+class StateMachine {
+  applyDelta(d: Delta) { /* mutate state */ }
+  reverseDelta(d: Delta) { /* restore previous value */ }
+  createIncrementalMemento(deltas: Delta[]): DiffMemento {
+    return new DiffMemento(this.version, deltas);
+  }
+}
+// Reduce memoria drásticamente. Requiere gestión de versionado base y merge seguro.
+```
+
+---
+
+## 4. 🔄 Variantes Arquitectónicas y Extensiones
+
+| Variante | Mecanismo | Caso de uso | Trade-off |
+|----------|-----------|-------------|-----------|
+| **Undo/Redo Stack** | Pila LIFO de mementos. `undo()` pop, `redo()` re-push. | Editores de texto/gráficos, formularios complejos, IDEs. | Consumo lineal de memoria. Requiere límites o truncado. |
+| **Wide Interface** | Memento expone getters limitados para comparación o merge. | Sincronización de configuración, resolución de conflictos. | Rompe opacidad estricta. Aumenta superficie de acoplamiento. |
+| **Differential** | Almacena deltas en lugar de snapshots completos. | Logs de auditoría, colaboración en tiempo real, CRDTs. | Complejidad de reconstrucción. Requiere versión base estable. |
+| **Serialized/Persistent** | Mementos persistidos en BD, filesystem o cloud storage. | Recuperación ante crash, workflows de aprobación largos. | Latencia de I/O. Requiere versionado de esquema y migración. |
+| **Command + Memento** | Comando captura memento antes de ejecutar. Undo restaura. | Transacciones de negocio, operaciones distribuidas complejas. | Doble indirección. Overhead de gestión coordinada. |
+| **Time-Travel / Debug** | Historial completo con timestamps. Permite replay determinista. | Simuladores, debugging de estado, testing de edge cases. | Presión extrema en memoria. Requiere compresión o sampling. |
+
+---
+
+## 5. 🎯 Cuándo Usar y Cuándo Evitar
+
+| ✅ Usar cuando... | ❌ Evitar cuando... |
+|------------------|-------------------|
+| Necesitas undo/redo, puntos de guardado o rollback transaccional | El estado cambia miles de veces por segundo y la memoria es crítica. Usa event sourcing o log de deltas. |
+| Quieres preservar encapsulamiento al externalizar historial | El originador es inmutable por diseño. No requiere snapshots, solo versiones nuevas. |
+| Necesitas versionado de configuración o reglas de negocio | Ya usas un motor de persistencia con snapshots nativos (ej. DB con WAL, Git-like storage). |
+| Trabajas con editores interactivos, state machines o flujos de aprobación | La restauración parcial es inaceptable y el estado no puede validarse atómicamente. |
+| Requieres determinismo en testing o replay de sesiones | El acoplamiento temporal entre caretaker y originator degrada rendimiento en hot paths. |
+
+Comparación rápida con patrones de comportamiento y creacionales:
+* **Memento**: Captura estado interno para reversión. Enfocado en encapsulamiento y historial.
+* **Command**: Encapsula petición ejecutable. Enfocado en ejecución diferida, undo/redo o encolado.
+* **Prototype**: Clona objetos existentes. Enfocado en replicación de estado, no en historial.
+* **State**: Cambia comportamiento según estado interno. Enfocado en transición de lógica, no en snapshot.
+* **Visitor**: Externaliza operaciones sobre estructura estable. Enfocado en múltiples traversals.
+
+---
+
+## 6. 🧪 Testing, Mantenibilidad y Arquitectura
+
+* **Aislamiento en Tests**: Prueba `createMemento()` y `restore()` por separado. Verifica que el estado restaurado sea idéntico al original antes de la mutación.
+  * Técnica: Usa fixtures controlados. Aserta igualdad profunda (`deepEqual`, `assertStructurallyEqual`). Valida que `restore()` no mute referencias compartidas.
+* **Validación de Restauración Atómica**: Escribe tests que invoquen `restore()` con memento corrupto, schema viejo o datos incompletos. Verifique fallo controlado o fallback.
+  * Fix: `assert.throws(() => doc.restore(invalidMemento), /SchemaMismatch/)`. Valida mensajes y estado post-fallo (debe permanecer intacto).
+* **Ciclo de Vida y Limpieza de Historial**: El `Caretaker` debe gestionar truncado, LRU, o TTL. Nunca dejar mementos huérfanos consumiendo memoria.
+* **Refactorización desde Estado Expuesto**: Identifique getters/setters directos usados por orquestadores para guardar historial. Envuelva en `Memento`. Deprecar acceso directo progresivamente.
+* **Impacto en Rendimiento**: La copia profunda añade overhead lineal al tamaño del estado. En CPUs modernas, negligible para &lt; 10MB. Solo impacta en estados masivos o alta frecuencia. Profile antes de optimizar.
+* **Gestión de Versiones**: Si el esquema del memento evoluciona, mantenga compatibilidad hacia atrás o use versionado explícito (`schemaVersion: 1`). Nunca rompa contrato sin migrador.
+* **Visibilidad y APIs Públicas**: Exponga solo `createMemento()` y `restore()`. Oculte estructura interna del snapshot en módulos privados o clases selladas. Reduzca superficie de uso indebido.
+* **Documentación de Opacidad**: Especifique explícitamente qué puede y no puede hacer el caretaker con el memento. Elimine suposiciones implícitas sobre introspección.
+* **Migración hacia Serialización**: Si requiere persistencia, reemplace copias en memoria por DTOs serializables. Valide checksums o firmas para detectar corrupción.
+* **Integración con Observabilidad**: Inyecte correlation IDs, métricas de tamaño de memento, tasa de creación/restauración y presión en GC. Detecte fugas o bloat temprano.
+
+---
+
+## 7. ⚠️ Errores Comunes y Soluciones
+
+* **Romper Encapsulamiento (Leaky Memento)**: Caretaker lee/modifica campos internos del snapshot. Estado se corrompe silenciosamente.
+  * Fix: Use clases internas privadas, interfaces opacas, o `Object.freeze()`. Nunca exponga getters de estado en la interfaz pública del memento.
+* **Fuga de Memoria por Historial Infinito**: Stack de mementos crece sin límite. Aplica presión en GC y eventualmente OOM.
+  * Fix: Implemente LRU, TTL, truncado por versión, o compresión diferencial. Documente política de retención explícitamente.
+* **Restauración Parcial o Inconsistente**: `restore()` aplica solo parte del estado, dejando invariantes rotos.
+  * Fix: Valide integridad antes de aplicar. Use transacción atómica o rollback completo si falla. Nunca mutar parcialmente.
+* **Memento con Referencias Compartidas**: Snapshot contiene punteros a objetos mutables externos. Restaurar corrompe otros componentes.
+  * Fix: Copie profundamente (deep clone) o use inmutabilidad estructural. Nunca referencias crudas a estado externo compartido.
+* **Confundir con Command o Prototype**: Usar Memento para encolar peticiones o para clonar objetos sin intención de reversión.
+  * Fix: Si encapsula acción ejecutable → Command. Si replica objeto → Prototype. Si captura estado para rollback → Memento. No mezcle propósitos.
+* **Serialización Rota o Incompatible**: Cambio de campos en originador invalida mementos antiguos. `JSON.parse` lanza error.
+  * Fix: Use versionado de esquema (`schemaVersion`). Implemente migradores o fallbacks seguros. Valide estructura antes de deserializar.
+* **Concurrent Modification durante Snapshot**: Otro hilo muta estado mientras se captura memento. Estado inconsistente.
+  * Fix: Use locks de lectura, snapshots inmutables, o copy-on-write. Documente thread-safety explícitamente.
+* **Falta de Validación de Tipo/Null**: `restore()` asume campos presentes, falla en producción por datos corruptos o truncados.
+  * Fix: Valide contratos en bordes. Use schemas (`zod`, `Pydantic`, `valibot`). Rechace mementos inválidos inmediatamente.
+* **Overhead en Estados Triviales**: Crear mementos para objetos de pocos campos que mutan raramente. Añade fricción innecesaria.
+  * Fix: Reserve memento para estados complejos, críticos o con requisito explícito de undo. Para simples, use copia literal o inmutabilidad nativa.
+* **Olvidar Resetear Historial en Tests**: Suite de tests comparte caretaker con mementos antiguos. Estado filtrado entre casos.
+  * Fix: Instancie caretaker nuevo por test o implemente `clear()`. Aísle entorno de ejecución estrictamente.
+
+---
+
+## 8. 💡 Mejores Prácticas y Consejos
+
+* **Prefiera Inmutabilidad Estructural**: Si el lenguaje lo soporta (Rust `Clone`, JS `structuredClone`, Python `copy.deepcopy`), úselo para garantizar snapshots seguros sin mutación cruzada.
+* **Documente Contrato de Opacidad**: Especifique explícitamente que el caretaker no debe inspeccionar ni modificar el memento. Elimine suposiciones implícitas.
+* **Implemente Versionado de Esquema**: Incluya `schemaVersion` en cada memento. Valide antes de restaurar. Permita migración o fallback seguro si versión difiere.
+* **Use Diferenciales para Estados Masivos**: Reduzca huella de memoria almacenando deltas en lugar de copias completas. Reconstruya aplicando secuencia controlada.
+* **Valide Atómicamente en Restauración**: Rechace mementos corruptos, incompletos o incompatibles. Mantenga estado original intacto si falla. Fail fast con trazabilidad.
+* **Mantenga Separación de Responsabilidades Estricta**: Originador crea/restaura. Caretaker almacena/gestiona. Memento solo transporta. Nunca mezcle lógica de dominio con historial.
+* **Profile antes de Desplegar**: No asuma overhead de copia trivial. Mide allocation por snapshot, tamaño promedio, y GC pressure. Optimice solo si el profiler lo indica.
+* **Pruebe Casos Límite y Fallos**: Valide mementos vacíos, corruptos, con versión vieja, con referencias cíclicas y con mutación concurrente. Detecte regresiones temprano.
+* **Mantenga Contratos Estables**: Cambiar la firma de `createMemento()` o estructura de snapshot rompe clientes. Use deprecación controlada, versionado semántico y adapters paralelos.
+* **No lo use "por moda"**: Si el estado es inmutable, simple o ya gestionado por infraestructura nativa (DB snapshots, git, event log), use esas herramientas. La implementación manual innecesaria es deuda técnica de rendimiento y mantenimiento.
+
+---
+
+Este cheatsheet proporciona una referencia arquitectónica completa para el patrón Memento, cubriendo su intención de comportamiento, contratos de inmutabilidad y opacidad, implementación multi-paradigma, variantes diferenciales y persistentes, impacto real en testing y mantenibilidad, errores frecuentes en producción y estrategias de mitigación, junto con criterios estrictos para decidir cuándo la externalización de estado es una necesidad del dominio y cuándo migrar hacia inmutabilidad nativa, event sourcing o sistemas de versionado infraestructurales más escalables.
