@@ -1,0 +1,278 @@
+# 📡 Patrón Observer — Cheatsheet Completo 📡
+
+El patrón **Observer** es un patrón de comportamiento que define una dependencia uno-a-muchos entre objetos, de modo que cuando un objeto cambia su estado, todos sus dependientes son notificados y actualizados automáticamente. Resuelve problemas de acoplamiento rígido entre productores y consumidores de eventos, habilita arquitecturas reactivas, desacopla flujos de validación, auditoría o sincronización de la lógica de mutación central, y permite la extensión de comportamientos sin modificar el sujeto notificador. Nace para transformar polling ineficiente en push determinista, soportar sistemas basados en eventos y facilitar la composición de flujos de datos asíncronos. Este cheatsheet desglosa la intención arquitectónica real del patrón, contratos de suscripción segura, implementaciones multi-paradigma, variantes reactivas y distribuidas, impacto en rendimiento y gestión de ciclo de vida, trampas de notificación en cascada y fugas de memoria, y criterios estrictos para decidir cuándo la propagación de eventos es una necesidad del dominio y no un mecanismo opaco que degrada la trazabilidad o introduce condiciones de carrera silenciosas.
+
+---
+
+## 1. 🌟 Conceptos Fundamentales
+
+* **Subject/Publisher (Sujeto)**: Objeto que mantiene el estado de dominio y una lista interna de observadores registrados. Expone métodos para suscribir, desuscribir y notificar cambios.
+  * Por qué importa: Centraliza la emisión de eventos sin conocer la lógica de los consumidores. Cumple el principio de inversión de dependencias.
+* **Observer/Subscriber (Observador)**: Interfaz o contrato que declara el método de recepción de notificaciones (`update()`, `onNext()`, `handle()`). Puede ser síncrono o asíncrono.
+  * Por qué importa: Establece uniformidad de consumo. Permite intercambiar, reordenar o añadir reactivos sin tocar la lógica del sujeto.
+* **Push vs Pull Notification**: Push envía el estado completo o delta directamente al observador. Pull notifica el cambio y el observador consulta el sujeto por el estado actual.
+  * Por qué importa: Push es rápido pero puede transferir datos innecesarios. Pull es eficiente en memoria pero añade latencia de consulta y acoplamiento temporal.
+* **Registro/Desregistro Explícito**: El observador debe suscribirse activamente y, críticamente, cancelar la suscripción cuando ya no requiere notificaciones.
+  * Por qué importa: Previene memory leaks, garantiza limpieza de recursos y permite lifecycles acotados por contexto, sesión o request.
+* **Orden de Notificación Indefinido**: El patrón no garantiza secuencia de ejecución a menos que se documente o implemente explícitamente.
+  * Por qué importa: Asume que los observadores son independientes y no deben depender del orden de ejecución. Si el orden es crítico, requiere Chain of Responsibility o pipelines explícitos.
+* **Estado Compartido vs Evento Aislado**: El sujeto puede emitir el evento con payload inmutable o exponer su estado interno para consulta posterior.
+  * Por qué importa: La inmutabilidad del payload garantiza determinismo y thread-safety. El acceso directo al estado puede causar race conditions si se muta durante la notificación.
+* **Desacoplamiento Temporal y Espacial**: El emisor no espera resultado ni conoce cuántos observadores procesarán el evento. Puede ejecutar en el mismo hilo, cola o proceso distinto.
+  * Por qué importa: Habilita escalabilidad horizontal, resiliencia ante fallos de consumidores y procesamiento asíncrono sin bloquear el flujo principal.
+* **Prevención de Notificaciones en Cascada**: Un observador que muta el sujeto durante su `update()` puede disparar notificaciones infinitas.
+  * Por qué importa: Requiere guardas de reentrada, flags de `isNotifying`, o políticas de batching para evitar stack overflow o corrupción de estado.
+
+---
+
+## 2. 📐 Estructura Lógica y Contrato de Notificación
+
+La arquitectura sigue un flujo estricto de registro, emisión controlada y propagación a consumidores. El patrón garantiza que los cambios de estado se comuniquen de forma predecible, segura y extensible.
+
+```text
+               Subject/Publisher
+         +---------------------------+
+         | state: T                  |
+         | observers: Observer[]     |
+         | subscribe(o): void        |
+         | unsubscribe(o): void      |
+         | notify(): void            |
+         +---------------------------+
+                  ▲ registra / notifica
+            Observer (Interfaz)
+         +---------------------------+
+         | update(event: Event): void|
+         +---------------------------+
+            ▲ implementa
+   ConcreteObserverA / ConcreteObserverB
+   [Procesa evento, actualiza UI, log, etc.]
+```
+
+Flujo de ejecución garantizado:
+1. Cliente o sistema instancia `ConcreteObserver` y lo registra en `subject.subscribe(observer)`.
+2. Sujeto muta su estado interno mediante operación de dominio.
+3. Sujeto invoca `notify()`, iterando sobre la lista de observadores registrados.
+4. Cada observador recibe `update(event)` con payload inmutable o referencia de consulta.
+5. Observador ejecuta lógica aislada (logging, sync, UI, validación, métricas).
+6. Sujeto finaliza notificación. El cliente nunca ve la iteración interna ni la gestión de registros.
+
+Contrato mínimo en pseudocódigo tipado:
+```typescript
+interface EventPayload {
+  type: string;
+  data: Record<string, any>;
+  timestamp: number;
+  correlationId: string;
+}
+
+interface Observer {
+  update(event: EventPayload): void | Promise&lt;void&gt;;
+}
+
+class Subject {
+  private state: string = '';
+  private observers = new Set&lt;Observer&gt;();
+  private isNotifying = false;
+
+  subscribe(observer: Observer) { this.observers.add(observer); }
+  unsubscribe(observer: Observer) { this.observers.delete(observer); }
+
+  setState(newState: string) {
+    this.state = newState;
+    this.notify({ type: 'STATE_CHANGED', data: { value: newState } });
+  }
+
+  private notify(event: EventPayload) {
+    if (this.isNotifying) return; // Guardia contra reentrada infinita
+    this.isNotifying = true;
+    try {
+      for (const obs of this.observers) obs.update(event);
+    } finally {
+      this.isNotifying = false;
+    }
+  }
+}
+```
+Regla inquebrantable: El sujeto **nunca** debe depender de la lógica interna del observador ni bloquearse esperando su ejecución, a menos que esté explícitamente diseñado como síncrono y acotado. La notificación debe ser unidireccional y aislada.
+
+---
+
+## 3. 🛠️ Implementación por Paradigma y Ecosistema
+
+El patrón se adapta al modelo de ejecución y al estilo de gestión de eventos del entorno. No requiere necesariamente herencia clásica ni listas manuales.
+
+### 3.1. POO Clásica con Registro Explícito (TypeScript / Java / C#)
+Uso de interfaces, colecciones thread-safe y gestión manual de ciclo de vida. Ideal para sistemas de reglas, validadores o state machines.
+
+```java
+public interface EventObserver {
+    void onEvent(EventPayload event);
+}
+
+public class AuditManager {
+    private final List&lt;EventObserver&gt; observers = new CopyOnWriteArrayList&lt;&gt;();
+    public void register(EventObserver o) { observers.add(o); }
+    public void unregister(EventObserver o) { observers.remove(o); }
+
+    protected void fireEvent(EventPayload event) {
+        for (EventObserver o : observers) {
+            try { o.onEvent(event); }
+            catch (Exception e) { Log.error("Observer failed", e); } // No romper cadena
+        }
+    }
+}
+// CopyOnWriteArrayList evita ConcurrentModificationException durante notificación.
+```
+
+### 3.2. Reactivo / Streams (RxJS / Kotlin Flow / Swift Combine)
+Se reemplaza iteración manual por pipelines declarativos. Composición funcional, backpressure y cancelación nativa.
+
+```kotlin
+val stateFlow = MutableStateFlow&lt;Config&gt;(initial)
+
+// Observador reactivo con lifecycle acotado
+val job = lifecycleScope.launch {
+    stateFlow
+        .filter { it.version >= 2 }
+        .debounce(300.milliseconds)
+        .collect { config -> syncToRemote(config) }
+}
+// Cancelación automática al destruir lifecycle. Cero fugas de memoria.
+```
+Ventaja: Composición declarativa, manejo nativo de errores, backpressure, cancelación segura. Desventaja: Curva de aprendizaje y overhead de runtime en sistemas críticos.
+
+### 3.3. PubSub / Event Emitter (Node.js / Go / Python)
+Enrutamiento por tópicos o canales. Observadores se suscriben a eventos específicos, no a un sujeto único.
+
+```python
+class EventEmitter:
+    def __init__(self):
+        self._listeners = defaultdict(list)
+
+    def on(self, event: str, callback: Callable):
+        self._listeners[event].append(callback)
+
+    def emit(self, event: str, *args, **kwargs):
+        for cb in self._listeners[event]:
+            try: cb(*args, **kwargs)
+            except Exception as e: logging.warning(f"Listener error on {event}: {e}")
+
+# Uso: emitter.on("user.created", notify_email); emitter.emit("user.created", user_data)
+```
+
+### 3.4. Weak Reference / Auto-Cleanup (Python / JS / C++)
+Observadores registrados con referencias débiles para evitar fugas cuando el consumidor es recolectado o destruido.
+
+```python
+import weakref
+
+class WeakObserverList:
+    def __init__(self):
+        self._refs = []
+
+    def add(self, observer):
+        def cleanup(ref):
+            self._refs.remove(ref)
+        self._refs.append(weakref.ref(observer, cleanup))
+
+    def notify(self, event):
+        dead = []
+        for ref in self._refs:
+            obs = ref()
+            if obs: obs.update(event)
+            else: dead.append(ref)
+        for ref in dead: self._refs.remove(ref)
+```
+
+---
+
+## 4. 🔄 Variantes Arquitectónicas y Extensiones
+
+| Variante | Mecanismo | Caso de uso | Trade-off |
+|----------|-----------|-------------|-----------|
+| **Push vs Pull** | Payload incluido vs consulta posterior al sujeto. | Push: eventos ligeros, métricas. Pull: estado masivo, datos sensibles. | Push: overhead de serialización. Pull: latencia y acoplamiento temporal. |
+| **Sync vs Async/Reactive** | Notificación bloqueante vs encolada o pipeline. | Sync: validación inmediata, consistencia fuerte. Async: I/O, logging, notificaciones externas. | Sync: riesgo de bloqueo. Async: complejidad de orden y backpressure. |
+| **Weak/Disposable Observers** | Referencias débiles o tokens de cancelación. | UI components, short-lived handlers, context-scoped listeners. | Overhead de gestión de ciclo de vida. Posible pérdida de notificaciones si se recolecta prematuramente. |
+| **Filtered/Conditional** | Observador solo notificado si predicate cumple. | Logging por nivel, validación por estado, feature flags. | Evaluación adicional por evento. Puede ocultar bugs si el filtro es incorrecto. |
+| **Throttled/Debounced** | Agrupa o retrasa notificaciones frecuentes. | Resize events, scroll, búsqueda en tiempo real, métricas de alta frecuencia. | Pérdida de eventos intermedios. Requiere buffer o timer management. |
+| **Distributed/Event Bus** | Notificación vía message broker (Kafka, RabbitMQ, Redis). | Microservicios, event sourcing, sistemas multi-tenant o cross-process. | Latencia de red, garantía de entrega (at-least-once), serialización estricta. |
+
+---
+
+## 5. 🎯 Cuándo Usar y Cuándo Evitar
+
+| ✅ Usar cuando... | ❌ Evitar cuando... |
+|------------------|-------------------|
+| Múltiples componentes deben reaccionar a cambios de estado sin acoplarse al productor | Solo hay 1-2 consumidores y la lógica es lineal. Usa llamada directa o Strategy. |
+| Quieres desacoplar validación, logging, métricas o sincronización de la mutación central | El orden de ejecución es crítico y no documentado. Usa Chain of Responsibility o pipelines. |
+| Necesitas soporte para suscripción dinámica, feature flags o hot-swapping de handlers | El rendimiento es crítico en loops tight. La iteración y serialización añaden latencia inaceptable. |
+| Trabajas con sistemas reactivos, state machines, UIs reactivas o arquitecturas event-driven | Ya usas un framework de mensajería nativo o contenedor DI que gestiona eventos automáticamente. |
+| Requieres extensión sin modificar código existente (Open/Closed en emisión) | La notificación en cascada o mutación durante `update()` es común y no controlable. |
+
+Comparación rápida con patrones de comportamiento y arquitectura:
+* **Observer**: Notifica múltiples consumidores de un cambio de estado. Enfocado en desacoplamiento uno-a-muchos.
+* **PubSub/Event Bus**: Enrutea eventos por tópicos/canales, no por sujeto directo. Más distribuido y escalable.
+* **Mediator**: Centraliza comunicación entre pares. Enfocado en desacoplar objetos que se conocen entre sí.
+* **Chain of Responsibility**: Enruta petición hasta que un handler la procesa. Enfocado en secuencialidad y fallback.
+* **Strategy**: Intercambia algoritmos completos. Enfocado en variación de lógica, no en propagación de eventos.
+
+---
+
+## 6. 🧪 Testing, Mantenibilidad y Arquitectura
+
+* **Aislamiento en Tests**: Mockea observadores para verificar que `notify()` los invoca correctamente, con payload esperado y orden de registro.
+  * Técnica: Usa spies o fakes. Aserta número de llamadas, payload y que excepciones en un observador no rompen la cadena.
+* **Validación de Ciclo de Vida**: Escribe tests que suscriban, notifiquen, desuscriban y notifiquen nuevamente. Verifique que el observador desuscrito no reciba eventos.
+  * Fix: `assert.strictEqual(fakeUpdateCalls, 0)`. Valide limpieza de referencias y ausencia de memory leaks.
+* **Gestión de Errores en Cadena**: Un observador no debe bloquear o corromper la notificación de otros. Aísle excepciones y loguee sin rethrow.
+* **Refactorización desde Polling**: Identifique `setInterval` o bucles de verificación de estado. Reemplace por suscripción a eventos. Deprecar polling progresivamente.
+* **Impacto en Rendimiento**: Iteración síncrona sobre N observadores añade O(N) por mutación. En sistemas de alta frecuencia, use batching, async o reactive streams. Profile antes de optimizar.
+* **Gestión de Versiones de Eventos**: Si el payload evoluciona, mantenga compatibilidad hacia atrás o use versionado explícito (`event.v2`). Nunca rompa contrato sin migrador.
+* **Visibilidad y APIs Públicas**: Exponga solo `subscribe()`/`unsubscribe()` o `on()`/`off()`. Oculte lista interna y lógica de iteración. Reduzca superficie de uso indebido.
+* **Documentación de Garantías de Entrega**: Especifique si es at-most-once, at-least-once, o exactly-once. Elimine suposiciones implícitas sobre retries o pérdida de eventos.
+* **Migración hacia Reactive Streams**: Si el lenguaje/ecosistema lo soporta (Rx, Flow, Combine), reemplace Observer manual por pipelines nativos. Elimine boilerplate de gestión de errores y cancelación.
+* **Integración con Observabilidad**: Inyecte correlation IDs, trace spans y métricas por evento y observador. Centralice telemetría de latencia, fallos y tasa de entrega.
+
+---
+
+## 7. ⚠️ Errores Comunes y Soluciones
+
+* **Memory Leak por Suscripción Olvidada**: Observador no se desuscribe al destruirse o cambiar contexto. Acumulación en lista.
+  * Fix: Use `unsubscribe()`, tokens de cancelación, `WeakRef`, o lifecycle-aware subscriptions (UI frameworks, DI scopes). Documente ciclo de vida explícitamente.
+* **Notificación Infinita/Reentrada**: Observador muta el sujeto durante `update()`, disparando nueva notificación y loop infinito.
+  * Fix: Use flag `isNotifying`, queue de eventos para procesamiento posterior, o prohíba mutación directa del sujeto desde handlers.
+* **Orden de Ejecución Asumido**: Lógica que depende de que el observador A se ejecute antes que B. Fracilla al cambiar registro o en entornos concurrentes.
+  * Fix: No asuma orden. Si es crítico, use lista ordenada explícita, pipeline, o Chain of Responsibility. Documente advertencia en contrato.
+* **Bloqueo Síncrono en Handlers**: Observador ejecuta I/O, red o cálculo pesado. Sujeto se bloquea y degrada throughput.
+  * Fix: Use notificación asíncrona, colas, `async/await`, o reactive streams con backpressure. Mantenga handlers ligeros y stateless.
+* **Excepción en Observador Rompe Cadena**: Un handler lanza error no capturado, deteniendo notificación a observadores restantes.
+  * Fix: Envuelva llamadas en `try/catch`, loguee error, continúe iteración. Use `Promise.allSettled()` o equivalentes para async.
+* **Confundir con PubSub o Mediator**: Usar Observer para enrutamiento por tópicos o para desacoplar comunicación bidireccional entre pares.
+  * Fix: Si enruta por canales tópicos → PubSub. Si centraliza diálogo entre objetos → Mediator. Si notifica cambio de estado a dependientes → Observer.
+* **State Inconsistency During Broadcast**: Sujeto muta estado después de iniciar `notify()` pero antes de terminar. Observadores ven estado híbrido.
+  * Fix: Congele estado antes de notificar, pase payload inmutable, o use copy-on-write. Nunca mutar durante iteración de notificación.
+* **Serialización Rota en Eventos Distribuidos**: Payload contiene referencias cíclicas, métodos no serializables o tipos dependientes de runtime.
+  * Fix: Serialize solo DTOs planos. Use schemas (`zod`, `Protobuf`, `Pydantic`). Reconstruya en consumidor mediante factory.
+* **Falta de Backpressure**: Productor emite más rápido de lo que consumidores procesan. OOM o degradación silenciosa.
+  * Fix: Implemente throttling, debounce, colas con límites, o reactive streams con `buffer`/`drop`/`backpressure` strategies.
+* **Observador con Dependencia Circular al Subject**: Observer necesita Subject para operar, creando acoplamiento bidireccional no documentado.
+  * Fix: Inyecte dependencias externas, use eventos con payload completo, o refactorice hacia Mediator si la bidireccionalidad es inherente.
+
+---
+
+## 8. 💡 Mejores Prácticas y Consejos
+
+* **Prefiera Ciclo de Vida Explícito**: Suscripción y desuscripción deben ser simétricas y acotadas a contexto, request o componente. Nunca suscripción global sin cleanup.
+* **Documente Garantías de Entrega y Orden**: Especifique si es síncrono, asíncrono, ordenado, o fire-and-forget. Elimine suposiciones implícitas sobre comportamiento de handlers.
+* **Use Payloads Inmutables o DTOs**: Nunca pase referencias mutables que puedan corromperse durante broadcast. Clone o congele datos antes de emitir.
+* **Aísle Excepciones por Observador**: Un fallo no debe detener la cadena. Loguee, métrica, continúe. Use patrones de resiliencia si es crítico.
+* **Prefiera Reactive/Async para I/O o Cálculo Pesado**: Mantenga el sujeto desbloqueado. Use colas, streams, o workers para procesamiento no crítico en el hilo principal.
+* **Implemente Throttling/Debouncing Nativo**: Para eventos de alta frecuencia (scroll, resize, métricas), agregue o retrase notificaciones antes de broadcast.
+* **Mantenga Handlers Stateless y Rápidos**: Observer debe solo reaccionar, no orquestar flujos complejos. Delegue lógica a servicios inyectados o pipelines.
+* **Profile antes de Desplegar**: No asuma overhead de iteración trivial. Mide latency por evento, allocation y GC pressure. Optimice solo si el profiler lo indica.
+* **Pruebe Casos Límite y Fallos**: Valide suscripción concurrente, desuscripción durante notificación, observadores lentos, excepciones y payloads vacíos/corruptos. Detecte regresiones temprano.
+* **No lo use "por moda"**: Si la comunicación es punto-a-punto, síncrona y no requiere extensión dinámica, use llamada directa o Strategy. La notificación innecesaria es deuda técnica de rendimiento y mantenibilidad.
+
+---
+
+Este cheatsheet proporciona una referencia arquitectónica completa para el patrón Observer, cubriendo su intención de comportamiento, contratos de suscripción segura, implementación multi-paradigma, variantes reactivas y distribuidas, impacto real en testing y mantenibilidad, errores frecuentes en producción y estrategias de mitigación, junto con criterios estrictos para decidir cuándo la propagación de eventos es una necesidad del dominio y cuándo migrar hacia PubSub escalable, reactive streams nativos o orquestación explícita más predecible.
