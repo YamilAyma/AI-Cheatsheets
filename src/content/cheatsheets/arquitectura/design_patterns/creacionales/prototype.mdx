@@ -1,0 +1,260 @@
+# 🧬 Patrón Prototype — Cheatsheet Completo 🧬
+
+El patrón **Prototype** es un patrón creacional que permite crear nuevos objetos clonando una instancia existente en lugar de instanciarlos desde cero. Resuelve problemas de creación costosa, configuración compleja, aislamiento de estado y desconocimiento del tipo concreto en tiempo de ejecución. Nace para evitar la explosión de subclases, optimizar la generación de objetos con estructuras internas complejas, y garantizar que las copias sean independientes del original sin repetir lógica de inicialización. Este cheatsheet desglosa la intención arquitectónica real del patrón, contratos de clonación segura, variantes multi-paradigma, implicaciones en memoria y concurrencia, trampas de referencias compartidas, y criterios estrictos para decidir cuándo la clonación es una necesidad del dominio y no un atajo que introduce acoplamiento oculto o fugas de recursos.
+
+---
+
+## 1. 🌟 Conceptos Fundamentales
+
+* **Clonación sobre Instanciación**: Se reemplaza `new Constructor(config)` por `prototipo.clone()`. El objeto base actúa como plantilla viva.
+  * Por qué importa: Elimina lógica de configuración repetida, reduce acoplamiento a constructores complejos y permite crear variantes en tiempo de ejecución sin conocer la clase concreta.
+* **Copia Superficial vs Profunda (Shallow vs Deep)**: Superficial copia solo el primer nivel de campos; profunda replica recursivamente todo el grafo de objetos referenciados.
+  * Por qué importa: Una copia superficial comparte referencias internas, lo que puede causar mutaciones cruzadas. Una copia profunda garantiza aislamiento completo pero consume más CPU y memoria.
+* **Contrato `clone()` Uniforme**: Interfaz o protocolo que declara el método de clonación. Todos los concretos deben cumplirlo.
+  * Por qué importa: Permite polimorfismo de creación. El cliente manipula `Prototype`, no `ConcretePrototype`, cumpliendo el principio de inversión de dependencias.
+* **Registro de Prototipos (Prototype Registry)**: Mapa o diccionario que almacena instancias base listas para ser clonadas bajo una clave o identificador.
+  * Por qué importa: Centraliza la selección de variantes, permite carga dinámica desde configuración o plugins, y evita lógica condicional dispersa.
+* **Independencia del Ciclo de Vida**: El prototipo base persiste en memoria como plantilla. Las copias nacen, mutan y se destruyen según el contexto de uso.
+  * Por qué importa: Clarifica ownership. El prototipo nunca debe ser modificado después de su registro. Las copias son efímeras o persistentes según el dominio.
+* **Inmutabilidad Post-Clonación**: Una vez clonado, el objeto copia debe tratarse como estado aislado. El original permanece inalterado.
+  * Por qué importa: Garantiza predictibilidad en sistemas concurrentes, facilita debugging y permite caché seguro de resultados intermedios.
+* **Costo vs Beneficio Arquitectónico**: Clonar es más rápido que configurar desde cero solo si la construcción inicial es costosa o el grafo de estado es complejo.
+  * Por qué importa: Usar `clone()` para objetos triviales añade overhead innecesario. El patrón justifica su costo solo cuando la inicialización domina el rendimiento o la complejidad.
+
+---
+
+## 2. 📐 Estructura Lógica y Contrato de Implementación
+
+El patrón sigue un flujo estricto de replicación controlada. La arquitectura garantiza que cada clon sea una entidad independiente con estado inicial idéntico al prototipo.
+
+```text
+          Cliente
+             │
+             ▼ invoca
+       Prototype (Interfaz/Protocolo)
+      +-----------------------------+
+      | clone(): Prototype          |
+      +-----------------------------+
+             ▲
+             | implementa
+      ConcretePrototypeA / ConcretePrototypeB
+      +-----------------------------+
+      | campos de estado            |
+      | clone() =&gt; copia completa   |
+      +-----------------------------+
+```
+
+Flujo de ejecución garantizado:
+1. Cliente obtiene referencia a un `Prototype` registrado o inyectado.
+2. Invoca `prototipo.clone()`.
+3. La implementación crea una nueva instancia del mismo tipo.
+4. Copia todos los campos internos (profunda o superficial según contrato).
+5. Retorna la nueva referencia al cliente.
+6. Cliente modifica la copia sin afectar al prototipo original.
+
+Contrato mínimo en pseudocódigo tipado:
+```typescript
+interface Prototype {
+  clone(): Prototype;
+  mutate(value: string): void;
+}
+
+class ConcreteConfig implements Prototype {
+  private deepState: NestedState;
+  private metadata: Record<string, any>;
+
+  constructor(state: NestedState, meta: Record<string, any>) {
+    this.deepState = structuredClone(state); // Copia defensiva
+    this.metadata = { ...meta };
+  }
+
+  clone(): Prototype {
+    // Garantiza aislamiento completo
+    return new ConcreteConfig(
+      structuredClone(this.deepState),
+      { ...this.metadata }
+    );
+  }
+
+  mutate(value: string): void {
+    this.metadata.lastUpdate = value;
+  }
+}
+```
+Regla inquebrantable: `clone()` nunca debe retornar la misma referencia (`this`). Debe crear una nueva instancia o lanzar error si la clonación no es segura.
+
+---
+
+## 3. 🛠️ Implementación por Paradigma y Ecosistema
+
+El patrón se adapta al modelo de ejecución y al sistema de tipos del entorno. No requiere necesariamente herencia clásica.
+
+### 3.1. POO Clásica (TypeScript / C# / Java)
+Uso de interfaces `Cloneable` o contratos explícitos. Requiere gestión manual de copia profunda.
+
+```java
+public interface Document extends Cloneable {
+    Document clone();
+    void setContent(String text);
+}
+
+public class Report implements Document {
+    private List&lt;Section&gt; sections;
+    private Map&lt;String, Object&gt; metadata;
+
+    @Override
+    public Document clone() {
+        try {
+            Report copy = (Report) super.clone(); // shallow
+            // Deep copy mutable collections
+            copy.sections = new ArrayList&lt;&gt;(sections.stream().map(Section::clone).toList());
+            copy.metadata = new HashMap&lt;&gt;(metadata);
+            return copy;
+        } catch (CloneNotSupportedException e) {
+            throw new AssertionError("Clone no soportado", e);
+        }
+    }
+}
+```
+Nota: `super.clone()` en Java es superficial por defecto. La responsabilidad de deep copy recae en el implementador.
+
+### 3.2. Enfoque Funcional / Inmutable (Rust / Elixir / Haskell)
+Se reemplaza clonación mutante por copia estructural con garantías de inmutabilidad.
+
+```rust
+#[derive(Clone)]
+pub struct Pipeline {
+    pub stages: Vec&lt;Stage&gt;,
+    pub config: Config,
+    pub cache: Arc&lt;Mutex&lt;Cache&gt;&gt;, // Recurso compartido, no se clona
+}
+
+impl Pipeline {
+    pub fn fork(&amp;self) -&gt; Self {
+        // `clone()` copia `stages` y `config` por valor.
+        // `Arc` se comparte intencionalmente (referencia contada).
+        self.clone()
+    }
+}
+```
+Ventaja: Garantías en tiempo de compilación. Desventaja: `Arc`/`Mutex` rompe aislamiento si no se documenta. Se recomienda separar estado compartido del estado clonable.
+
+### 3.3. Módulos / Scripting (Python / JavaScript)
+Dependencia de runtime. `structuredClone`, `copy.deepcopy`, o `Object.create` con prototipos.
+
+```python
+import copy
+
+class QueryTemplate:
+    def __init__(self, base_sql: str, params: dict):
+        self.base_sql = base_sql
+        self.params = params  # mutable
+
+    def clone(self) -&gt; 'QueryTemplate':
+        # copy.deepcopy garantiza aislamiento completo
+        return copy.deepcopy(self)
+
+    def bind(self, **kwargs) -&gt; 'QueryTemplate':
+        q = self.clone()
+        q.params.update(kwargs)
+        return q
+```
+Nota: `structuredClone` (JS) y `copy.deepcopy` (Python) manejan referencias circulares, pero fallan con objetos nativos no serializables (sockets, archivos, closures).
+
+### 3.4. Serialización como Clonación Alternativa
+Se usa cuando la clonación directa es imposible o insegura.
+
+```csharp
+public static T CloneViaSerialization&lt;T&gt;(T source) {
+    using var ms = new MemoryStream();
+    var formatter = new BinaryFormatter();
+    formatter.Serialize(ms, source);
+    ms.Position = 0;
+    return (T)formatter.Deserialize(ms);
+}
+```
+Riesgo: Serialización expone campos privados, puede ser lenta, y falla con referencias no marcadas. Úsala solo como fallback controlado, no como mecanismo principal.
+
+---
+
+## 4. 🔄 Variantes Arquitectónicas y Extensiones
+
+| Variante | Mecanismo | Caso de uso | Trade-off |
+|----------|-----------|-------------|-----------|
+| **Copia Superficial Controlada** | Solo clona nivel 1. Referencias internas se comparten intencionalmente. | Datos inmutables, caché de lectura, DTOs de solo lectura. | Mutación en referencias compartidas afecta a todas las copias. |
+| **Copia Profunda Perezosa (Copy-on-Write)** | Retrasa la copia real hasta que se intenta modificar. | Grandes datasets, editores, versionado de estado. | Overhead de tracking de mutación. Complejidad de implementación. |
+| **Clonación Parametrizada** | `clone(overrides: Partial&lt;T&gt;)` aplica cambios durante la copia. | Templates de configuración, builders, generadores de escenarios. | Mezcla responsabilidad de clonación y configuración. |
+| **Registry con TTL / WeakRefs** | Diccionario que almacena prototipos con expiración o referencias débiles. | Sistemas modulares, plugins, entornos efímeros. | Invalidación compleja. Riesgo de `undefined` si se recolecta prematuramente. |
+| **Hybrid con Factory** | Factory retorna prototipo clonado + aplica personalización específica. | Migración de legacy, factories que evitan `switch` gigantes. | Doble indirección. Puede oscurecer el flujo de creación. |
+| **Snapshot / Inmutable Clone** | Clona y marca como `readonly` o `sealed`. | Versionado, audit logging, replay de eventos. | Imposible modificar sin crear nueva copia. Aumenta presión en GC. |
+
+---
+
+## 5. 🎯 Cuándo Usar y Cuándo Evitar
+
+| ✅ Usar cuando... | ❌ Evitar cuando... |
+|------------------|-------------------|
+| La construcción inicial es costosa (conexiones, parsing, validación compleja) | Los objetos son triviales o se crean con pocos campos. Usa `new` o literales. |
+| Necesitas aislar estado para procesamiento paralelo o transaccional | Requieres identidad única por objeto. Usa UUIDs + Factory, no clonación. |
+| El tipo concreto se desconoce en tiempo de compilación o se carga dinámicamente | La clonación profunda es imposible por restricciones de lenguaje o seguridad. |
+| Quieres evitar explosión de subclases por combinaciones de configuración | El sistema es altamente concurrente y la copia introduce overhead crítico. |
+| Necesitas snapshots de estado para undo/redo, replay o testing determinista | Los objetos contienen recursos no clonables (handles de OS, streams, mutexes). |
+
+Comparación rápida con patrones creacionales:
+* **Prototype**: Clona instancias existentes. Enfocado en replicación de estado y aislamiento.
+* **Factory Method**: Delega creación a subclases. Enfocado en selección polimórfica de tipo.
+* **Abstract Factory**: Crea familias relacionadas. Enfocado en compatibilidad cruzada de componentes.
+* **Builder**: Construye paso a paso. Enfocado en configuración progresiva y validación intermedia.
+* **Singleton**: Garantiza unicidad. Enfocado en acceso global controlado.
+
+---
+
+## 6. 🧪 Testing, Mantenibilidad y Arquitectura
+
+* **Aislamiento en Tests**: Clonar prototipos de prueba evita efectos secundarios entre casos. Cada test recibe una copia limpia del mismo estado base.
+  * Técnica: `beforeEach(() => suite = prototype.clone())`. Reset automático sin reinstanciación costosa.
+* **Detección de Fugas por Referencias Compartidas**: Si un test modifica una copia y afecta a otros, la clonación es superficial donde no debería serlo.
+  * Fix: Escribe tests de inmutabilidad que verifiquen `assert(copy.field !== original.field)` para objetos mutables.
+* **Ciclo de Vida y Ownership**: ¿Quién libera la memoria de las copias? En GC, el problema es automático. En C++/Rust, la factory debe documentar si transfiere ownership o usa shared pointers.
+* **Refactorización hacia Value Objects**: Si el objeto clonado solo transporta datos y nunca muta, considera reemplazarlo por Value Objects inmutables. Elimina la necesidad de `clone()` explícito.
+* **Impacto en Rendimiento**: La clonación profunda añade costo lineal o exponencial según el grafo. Usa profiling para medir asignaciones por segundo. Si >10k clones/seg, evalúa Copy-on-Write o pools.
+* **Gestión de Versiones**: Si el prototipo evoluciona (v1 a v2), mantenga contratos de clonación estables. Use adapters o migradores de estado. Nunca rompa la firma de `clone()`.
+* **Visibilidad y APIs Públicas**: Exponga solo la interfaz `Prototype` y métodos seguros de mutación. Oculte campos internos y constructores. Reduzca la superficie de clonación incorrecta.
+
+---
+
+## 7. ⚠️ Errores Comunes y Soluciones
+
+* **Fuga por Copia Superficial**: `clone()` copia punteros/referencias en lugar de valores. Mutación en una copia corrompe otras.
+  * Fix: Implementa deep copy para todos los campos mutables. Usa `structuredClone`, `copy.deepcopy`, o recursión controlada con mapa de visitados.
+* **Referencias Circulares (Stack Overflow)**: Objeto A referencia a B, B referencia a A. Clonación recursiva entra en bucle infinito.
+  * Fix: Usa un mapa `visited: WeakMap&lt;Object, Object&gt;`. Si el objeto ya se clonó, retorna la copia existente. Patrón estándar en serializadores.
+* **Clonación de Recursos No Compartibles**: Sockets, file descriptors, locks o hilos se copian por referencia, causando corrupción o doble cierre.
+  * Fix: Marca estos campos como `transient`/`non-clonable`. Reemplázalos con `null`, stubs o inicialízalos en un hook `afterClone()`.
+* **Race Condition durante `clone()`**: Múltiples hilos leen/modifican el prototipo mientras se clona. Estado inconsistente.
+  * Fix: Usa snapshots inmutables, locks de lectura durante clonación, o copia atómica en memoria. Documenta thread-safety explícitamente.
+* **Olvidar Invalidar Registry**: Prototipos antiguos permanecen en memoria aunque ya no se usen.
+  * Fix: Usa `WeakRef` + `FinalizationRegistry`, TTL explícito, o método `unregister()`. Monitorea consumo de memoria en producción.
+* **Violación de Covarianza en `clone()`**: Subclase retorna tipo base o lanza error de tipo.
+  * Fix: Usa tipos de retorno covariantes (`override clone(): ConcreteType`). En lenguajes sin soporte, documenta el contrato y valida en tests de integración.
+* **Confundir Clonación con Inicialización**: Llamar a `clone()` y luego modificar campos esenciales que deberían validarse en construcción.
+  * Fix: Separa `clone()` (copia fiel) de `configure()` (validación y mutación). O usa `cloneWith(overrides: Config)` que valida antes de retornar.
+
+---
+
+## 8. 💡 Mejores Prácticas y Consejos
+
+* **Prefiere Inmutabilidad para Prototipos**: Si el prototipo base nunca muta después del registro, elimina clases de bugs por modificación accidental y permite caching agresivo.
+* **Documenta Semántica de Copia**: Indica explícitamente en comentarios o docs si la clonación es superficial, profunda, o híbrida. Especifica qué campos se comparten intencionalmente.
+* **Usa Primitivas Nativas de Clonación Profunda**: `structuredClone` (JS), `copy.deepcopy` (Python), `Clone` trait (Rust), `MemberwiseClone` (Swift). Evita reinventar serializadores inseguros.
+* **Separa Estado Compartido del Estado Clonable**: Mantén conexiones, caches globales o pools en campos marcados como no clonables. Reasígnalos en `afterClone()` si es necesario.
+* **Implementa `afterClone()` para Inicialización Segura**: Hook post-clonación para regenerar IDs, reiniciar timestamps, o validar invariantes sin tocar el constructor original.
+* **Valida Clones en Tests de Integración**: Escribe tests que verifiquen `original !== copy`, `deepEqual(original, copy)`, y `mutate(copy) !== original`. Garantiza aislamiento real.
+* **Evita Clonar Singletons o Servicios Globales**: Un logger, pool de conexiones o configurador central no debe clonarse. Usa referencias compartidas o inyección explícita.
+* **Monitorea Presión en el Garbage Collector**: En sistemas de alta concurrencia, miles de clones/seg pueden saturar el allocator. Usa object pools o Copy-on-Write si el profiler lo indica.
+* **Mantenga Contratos Estables**: Cambiar la firma de `clone()` o añadir campos obligatorios rompe todas las implementaciones. Use versiones, adapters o migradores de estado.
+* **No lo use "por conveniencia"**: Si la creación es rápida y el estado es simple, usa `new` o literales. La clonación innecesaria es deuda técnica de rendimiento y mantenibilidad.
+
+---
+
+Este cheatsheet proporciona una referencia arquitectónica completa para el patrón Prototype, cubriendo su intención estructural, contratos de clonación segura, implementación multi-paradigma, variantes de copia y optimización, impacto real en testing y mantenibilidad, errores frecuentes en producción y estrategias de mitigación, junto con criterios estrictos para decidir cuándo la replicación de estado es una necesidad del dominio y cuándo migrar hacia value objects inmutables, object pools o inyección de dependencias más escalables.
