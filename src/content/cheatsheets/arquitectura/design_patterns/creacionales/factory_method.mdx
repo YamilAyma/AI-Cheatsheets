@@ -1,0 +1,260 @@
+# 🏭 Patrón Factory Method — Cheatsheet Completo 🏭
+
+El patrón **Factory Method** es un patrón creacional que define una interfaz para crear objetos, pero delega en las subclases la decisión de qué clase concreta instanciar. Permite que una clase base controle el flujo de creación mientras encapsula la lógica de instanciación en implementaciones especializadas. Nace para resolver el acoplamiento rígido del operador `new`, facilitar la extensión sin modificar código existente (Open/Closed Principle), y permitir la creación polimórfica de objetos en sistemas modulares.
+
+---
+
+## 1. 🌟 Conceptos Fundamentales
+
+* **Creator (Creador)**: Clase base o interfaz que declara el método factory. Puede contener lógica de negocio que depende del producto, pero no conoce la clase concreta.
+  * Por qué importa: Desacopla la lógica de alto nivel de los detalles de implementación, permitiendo sustituir productos sin tocar el algoritmo principal.
+* **ConcreteCreator (Creador Concreto)**: Subclase que sobrescribe el método factory para instanciar un `ConcreteProduct` específico.
+  * Por qué importa: Centraliza la responsabilidad de creación en un solo lugar, facilitando el intercambio de familias de productos mediante herencia o composición.
+* **Product (Producto)**: Interfaz o tipo abstracto que define el contrato de los objetos creados.
+  * Por qué importa: Garantiza que todos los productos son intercambiables desde la perspectiva del `Creator`. La dependencia es hacia la abstracción, no hacia la implementación.
+* **ConcreteProduct (Producto Concreto)**: Clase que implementa `Product`. Cada `ConcreteCreator` típicamente retorna un tipo distinto.
+  * Por qué importa: Encapsula variaciones de comportamiento o configuración. El sistema solo interactúa a través de la interfaz `Product`.
+* **Diferencia con Simple Factory**: La Simple Factory es una función/estática con un `switch` o mapa. Factory Method usa herencia/polimorfismo para delegar la creación.
+  * Por qué importa: Simple Factory viola Open/Closed al agregar nuevos tipos (modificas el `switch`). Factory Method cumple OCP: agregas una nueva subclase sin tocar código existente.
+* **Diferencia con Abstract Factory**: Factory Method crea un único tipo de producto por jerarquía. Abstract Factory crea familias completas de productos relacionados sin exponer clases concretas.
+  * Por qué importa: Usa Factory Method cuando la variación es unidimensional. Usa Abstract Factory cuando necesitas garantizar compatibilidad entre múltiples productos de una misma familia.
+* **Inversión de Control Parcial**: El flujo de creación se invierte de la clase consumidora a la subclase especializada.
+  * Por qué importa: Permite que el framework o capa base defina *cuándo* y *cómo* se usa un objeto, mientras la aplicación define *qué* objeto se crea.
+
+---
+
+## 2. 📐 Estructura y Contrato del Patrón
+
+La estructura mínima sigue un contrato estricto de delegación:
+
+```text
+         Creator (Interfaz/Abstracta)
+        +-----------------------------+
+        | factoryMethod(): Product    |
+        | someOperation(): void       |
+        +-----------------------------+
+                    ▲
+                    | implementa/extends
+        +-----------------------------+
+        | ConcreteCreatorA            |
+        | factoryMethod() =&gt; ProductA |
+        +-----------------------------+
+        +-----------------------------+
+        | ConcreteCreatorB            |
+        | factoryMethod() =&gt; ProductB |
+        +-----------------------------+
+
+                    │
+                    ▼ retorna
+         Product (Interfaz/Abstracta)
+        +-----------------------------+
+        | operation(): void           |
+        +-----------------------------+
+                    ▲
+                    | implementa/extends
+        +-----------------------------+        +-----------------------------+
+        | ConcreteProductA            |        | ConcreteProductB            |
+        +-----------------------------+        +-----------------------------+
+```
+
+Flujo de ejecución típico:
+1. Cliente instancia `ConcreteCreatorA`.
+2. Llama a `someOperation()`.
+3. `someOperation()` invoca internamente `factoryMethod()`.
+4. `ConcreteCreatorA.factoryMethod()` retorna `new ConcreteProductA()`.
+5. `someOperation()` ejecuta `product.operation()` polimórficamente.
+6. El cliente nunca ve `new ConcreteProductA()`. Solo conoce `Creator` y `Product`.
+
+Contrato mínimo en pseudocódigo:
+```ts
+interface Product {
+  execute(): void;
+}
+
+abstract class Creator {
+  // Método factory a sobrescribir
+  abstract createProduct(): Product;
+
+  // Lógica que depende del producto
+  doWork(): void {
+    const p = this.createProduct();
+    p.execute();
+    this.postProcess(p);
+  }
+
+  protected postProcess(p: Product): void { /* opcional */ }
+}
+```
+
+---
+
+## 3. 🛠️ Implementación por Paradigma
+
+### 3.1. POO Clásica (TypeScript / C# / Java)
+Uso de herencia y sobrescritura. Ideal cuando ya existe una jerarquía de creadores o cuando el framework exige una clase base.
+
+```ts
+// Contrato
+interface Notification { send(msg: string): void; }
+
+abstract class Notifier {
+  abstract createChannel(): Notification;
+  notify(msg: string) { this.createChannel().send(msg); }
+}
+
+// Implementaciones
+class EmailNotifier extends Notifier {
+  createChannel(): Notification { return new EmailChannel(); }
+}
+class SMSNotifier extends Notifier {
+  createChannel(): Notification { return new SMSChannel(); }
+}
+
+// Uso polimórfico
+const sender: Notifier = new EmailNotifier();
+sender.notify('Alerta crítica'); // Delega a EmailChannel.send()
+```
+
+### 3.2. Enfoque Funcional / Módulos (Python / JavaScript)
+Se reemplaza herencia por funciones de orden superior o mapas de registro. Elimina boilerplate de clases.
+
+```python
+# Python: Factory como diccionario de constructores
+def create_email_channel(): return EmailChannel()
+def create_sms_channel(): return SMSChannel()
+
+REGISTRY = {
+    "email": create_email_channel,
+    "sms": create_sms_channel,
+}
+
+def notify_via(channel_type: str, msg: str):
+    factory = REGISTRY.get(channel_type)
+    if not factory: raise ValueError(f"Canal desconocido: {channel_type}")
+    factory().send(msg)
+```
+Ventaja: Extensión sin herencia. Desventaja: Pérdida de tipado estricto en tiempo de compilación si no se usa `typing.Protocol` o generics.
+
+### 3.3. Traits / Generics (Rust / C++ / Go)
+Rust usa traits y `Box<dyn Product>`. Go usa interfaces y funciones constructoras. C++ usa templates o punteros inteligentes.
+
+```rust
+// Rust: Trait + Factory genérico
+trait Product { fn execute(&self); }
+
+struct Creator&lt;F: Fn() -&gt; Box&lt;dyn Product&gt;&gt; {
+    factory: F,
+}
+
+impl&lt;F&gt; Creator&lt;F&gt; where F: Fn() -&gt; Box&lt;dyn Product&gt; {
+    fn do_work(&self) { self.factory().execute(); }
+}
+
+// Instanciación sin herencia
+let creator = Creator { factory: || Box::new(ConcreteProductA) };
+creator.do_work();
+```
+
+### 3.4. Registro Dinámico para Plugins
+Permite cargar productos en tiempo de ejecución desde módulos externos o archivos de configuración.
+
+```ts
+// Sistema de registro centralizado
+const factories = new Map&lt;string, () =&gt; Product&gt;();
+
+function register(type: string, factory: () =&gt; Product) {
+  if (factories.has(type)) throw new Error(`Tipo duplicado: ${type}`);
+  factories.set(type, factory);
+}
+
+function create(type: string): Product {
+  const fn = factories.get(type);
+  if (!fn) throw new Error(`Tipo no registrado: ${type}`);
+  return fn();
+}
+
+// Registro externo (plugin system)
+register("analytics", () =&gt; new AnalyticsTracker());
+register("logging", () =&gt; new StructuredLogger());
+```
+
+---
+
+## 4. 🔄 Variantes y Extensiones
+
+| Variante | Mecanismo | Caso de uso | Trade-off |
+|----------|-----------|-------------|-----------|
+| **Factory Method con Parámetros** | `create(type, config)` retorna producto configurado. | Lectores de archivos, parsers, drivers de BD. | Aumenta complejidad de validación. Puede derivar en `switch` gigante. |
+| **Factory Virtual / Lazy** | El método factory se ejecuta solo cuando se necesita el producto. | Recursos costosos (conexiones, buffers GPU). | Dificulta depuración de fallos de inicialización tardía. |
+| **Factory como Servicio (DI)** | Contenedor inyecta factory. La clase solo recibe `Func&lt;T&gt;` o `Provider`. | Arquitecturas modulares, testing aislado. | Requiere framework DI. Aumenta indirección. |
+| **Factory de Serialización** | `parseJSON()`, `fromXML()`, `fromStream()` actúan como factories. | Deserialización polimórfica, migración de formatos. | Debe validar esquemas antes de instanciar para evitar objetos corruptos. |
+| **Factory Template Method** | `factoryMethod()` es abstracto, pero `doOperation()` usa patrón Template Method. | Frameworks con flujo fijo pero extensión en puntos clave. | Acoplamiento entre creación y algoritmo. Difícil de testear por separado. |
+
+---
+
+## 5. 🎯 Cuándo Usar y Cuándo Evitar
+
+| ✅ Usar cuando... | ❌ Evitar cuando... |
+|------------------|-------------------|
+| Necesitas extender tipos de producto sin modificar código existente | Solo tienes 1-2 tipos y nunca cambiarán. Usa `new` directo o función simple. |
+| El sistema debe cargar plugins o módulos en runtime | La lógica de creación es trivial y no requiere validación compleja. |
+| Quieres desacoplar la instanciación de la lógica de negocio | El cliente ya conoce la clase concreta y no hay riesgo de cambio. |
+| Necesitas registrar estadísticas, logs o métricas por cada creación | Usar herencia para delegar creación añade complejidad innecesaria. |
+| La creación requiere configuración contextual dinámica | El overhead de indirección impacta rendimiento en loops tight (microoptimización). |
+
+Comparación rápida de patrones creacionales:
+* **Factory Method**: Delega creación a subclases. Jerarquía vertical. Un producto por vez.
+* **Abstract Factory**: Agrupa familias de productos. Jerarquía horizontal. Múltiples productos relacionados.
+* **Builder**: Construye objetos complejos paso a paso. Enfocado en configuración, no en selección de tipo.
+* **Prototype**: Clona instancias existentes. Útil cuando `new` es costoso o el estado inicial es complejo.
+* **Simple Factory**: Función estática con `switch`/mapa. No cumple OCP, pero es práctico para casos simples.
+
+---
+
+## 6. 🧪 Testing, Mantenibilidad y Arquitectura
+
+* **Mocking y Aislamiento**: Factory Method facilita el testing porque el cliente solo conoce la interfaz `Product`. Puedes inyectar un `MockCreator` que retorne `MockProduct`.
+  * Técnica: Sobrescribe `createProduct()` en tests o usa inyección de fábrica: `new RealCreator(() =&gt; new MockProduct())`.
+* **Acoplamiento y Complejidad**: Cada `ConcreteCreator` añade una clase. Si el número crece &gt; 10, evalúa registro dinámico o DI. La herencia profunda dificulta la navegación y el debugging.
+* **Refactorización hacia DI**: Si tu `Creator` depende de servicios externos, reemplaza la herencia por inyección. El contenedor DI gestiona el ciclo de vida; tu clase solo consume la interfaz `Product`.
+* **Impacto en Rendimiento**: La indirección polimórfica añade 1-2 saltos de puntero. En CPUs modernas, el branch prediction lo absorbe. Solo impacta en loops de millones de iteraciones. En ese caso, usa factories inline o templates.
+* **Gestión de Ciclo de Vida**: ¿Quién libera la memoria? En lenguajes con GC, el problema es mínimo. En C++/Rust, la factory debe documentar ownership. Usa `shared_ptr`, `Box` o `Arc` para compartir referencias de forma segura.
+* **Visibilidad y APIs Públicas**: Expón solo la interfaz `Product` y el `Creator`. Oculta `ConcreteProduct` y `ConcreteCreator` en módulos internos o namespaces privados. Reduce la superficie de ataque y evita uso indebido.
+
+---
+
+## 7. ⚠️ Errores Comunes y Soluciones
+
+* **God Factory**: Un solo `Creator` que gestiona 20+ tipos con lógica condicional gigante.
+  * Fix: Divide por dominio o usa registro dinámico con módulos separados. Cada módulo registra su propio tipo. Cumple Single Responsibility.
+* **Violación de Liskov Substitution Principle (LSP)**: `ConcreteProduct` lanza excepción en métodos heredados o cambia contrato implícitamente.
+  * Fix: La interfaz `Product` debe ser estricta. Usa contratos, pre/post condiciones o tests de tipo. Si un producto no puede cumplir el contrato, no debe implementar `Product`.
+* **Inicialización Costosa no Controlada**: `factoryMethod()` abre conexiones, carga archivos grandes o bloquea hilos.
+  * Fix: Separa creación de inicialización. Retorna un objeto "lazy" que inicializa bajo demanda. Documenta el costo en comentarios o docs.
+* **Estado Compartido Oculto**: Múltiples `ConcreteCreator` leen/escriben variables globales estáticas.
+  * Fix: Pasa estado explícitamente en el constructor o usa inmutabilidad. Evita referencias a `static` o `global` dentro de factories.
+* **Dificultad de Depuración**: El stack trace muestra `Creator.doWork()` pero el error ocurre en un `ConcreteProduct` remoto.
+  * Fix: Loguea el tipo concreto al inicio de `factoryMethod()`. Usa trazas estructuradas o correlation IDs. En producción, registra métricas de uso por tipo.
+* **Olvidar Registrar Nuevos Tipos**: Agregas `ConcreteProductC` pero no actualizas el registro o el `switch`.
+  * Fix: Usa tests de integración que escanean módulos o validan registros en startup. En TS/Java, usa `@AutoService` o decorators con registro automático.
+* **Confundir Factory Method con Constructor**: Llamar al factory desde el constructor del `Creator` o viceversa, creando recursión o inicialización parcial.
+  * Fix: Mantén separación estricta. El constructor solo establece estado base. `factoryMethod()` se llama en métodos de negocio, nunca en `__init__`/`ctor`.
+
+---
+
+## 8. 💡 Mejores Prácticas y Consejos
+
+* **Prefiere Composición sobre Herencia cuando sea posible**: Si no necesitas sobrescribir comportamiento del `Creator`, usa inyección de factory (`Func&lt;Product&gt;`) en lugar de crear jerarquías de clases.
+* **Valida Argumentos Antes de Instanciar**: Si la factory recibe parámetros, rechaza valores inválidos inmediatamente. No crees objetos corruptos que fallen en `execute()`.
+* **Documenta el Contrato de Ownership**: En lenguajes sin GC, especifica claramente quién es dueño del objeto creado. Usa punteros inteligentes, lifetimes o documentación explícita.
+* **Evita Lógica de Negocio en la Factory**: La factory solo debe crear y configurar. Delega procesamiento a servicios, validadores o pipelines separados.
+* **Usa Registro Dinámico para Sistemas Modulares**: Permite que plugins se auto-registren al cargar. Usa hash maps, service locators o DI scopes. Elimina `switch` gigantes.
+* **Implementa Fallbacks Seguros**: Si un tipo no se encuentra, retorna un `NullProduct`, `FallbackCreator` o lanza una excepción descriptiva con contexto. Nunca retornes `null`/`undefined` silenciosamente.
+* **Prueba la Extensión**: Antes de lanzar, agrega un tipo nuevo sin tocar código existente. Si requieres modificar el `Creator` o agregar `case`, el patrón está mal implementado.
+* **Monitorea la Distribución de Tipos**: En producción, registra cuántas veces se crea cada `ConcreteProduct`. Detecta sesgos, memory leaks o configuraciones erróneas rápidamente.
+* **Mantén Interfaces Estables**: Cambiar la firma de `Product` o `factoryMethod()` rompe todas las implementaciones. Usa versiones, adapters o deprecación controlada.
+* **No lo uses "por moda"**: Si el sistema solo tiene un tipo de producto, o la creación es trivial, usa `new` o una función constructora simple. La abstracción innecesaria es deuda técnica.
+
+---
+
+Este cheatsheet proporciona una referencia arquitectónica completa para el patrón Factory Method, cubriendo su intención estructural, implementación multi-paradigma, variantes de registro y lazy loading, impacto real en testing y mantenibilidad, errores frecuentes en producción y estrategias de mitigación, junto con criterios estrictos para decidir cuándo la delegación polimórfica es una necesidad del dominio y cuándo migrar hacia inyección de dependencias o factories dinámicas más escalables.
