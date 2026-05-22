@@ -1,0 +1,330 @@
+# 🎭 Patrón Decorator — Cheatsheet Completo 🎭
+
+El patrón **Decorator** es un patrón estructural que permite añadir responsabilidades a objetos de forma **dinámica**, sin modificar su clase original ni crear jerarquías de subclases infinitas. Envuelve el componente base manteniendo su interfaz intacta, interceptando llamadas y añadiendo comportamiento antes, después o alrededor de la ejecución delegada. Nace para resolver la explosión combinatoria de subclases por combinaciones de características, aislar responsabilidades transversales (logging, caché, validación, seguridad, compresión, métricas) y habilitar composiciones en tiempo de ejecución predecibles, reversibles y testeables. Este cheatsheet desglosa la intención arquitectónica real del patrón, contratos de envoltura transparente, implementaciones multi-paradigma, variantes funcionales y de pipeline, impacto en rendimiento y debugging, trampas de identidad de objeto y estado compartido, y criterios estrictos para decidir cuándo la extensión dinámica es una necesidad del dominio y no una capa de indirección que oculta acoplamientos o degrada la trazabilidad.
+
+---
+
+## 1. 🌟 Conceptos Fundamentales
+
+* **Componente Base (Component)**: Interfaz o tipo abstracto que define las operaciones que el cliente espera. Establece el contrato inmutable para todos los envoltorios.
+  * Por qué importa: Garantiza que cualquier decorador pueda sustituir al objeto original sin romper código consumidor. Es la base de la transparencia estructural.
+* **Componente Concreto (ConcreteComponent)**: Implementación base que contiene la lógica de dominio principal. Punto de partida del primer envoltorio.
+  * Por qué importa: Representa el comportamiento sin extensiones. Puede existir solo o ser envuelto múltiples veces en runtime.
+* **Decorador (Decorator)**: Clase o función abstracta que implementa `Component` y contiene una referencia interna a otro `Component`. Delega todas las llamadas por defecto.
+  * Por qué importa: Actúa como base para la composición. Permite añadir lógica transversal sin modificar la interfaz ni la implementación original.
+* **Decorador Concreto (ConcreteDecorator)**: Extiende el `Decorator` y añade comportamiento específico (pre/post-processing, transformación, validación, caché).
+  * Por qué importa: Encapsula una responsabilidad única. Puede combinarse con otros decoradores para crear efectos acumulativos.
+* **Composición sobre Herencia**: Reemplaza `extends` por `has-a` + delegación controlada. Permite combinar características en runtime sin jerarquías estáticas.
+  * Por qué importa: Evita la explosión de subclases (`CachedEncryptedCompressedStream` vs `Stream`). Reduce acoplamiento y cumple Open/Closed Principle estrictamente.
+* **Transparencia de Interfaz**: El cliente interactúa siempre con el contrato `Component`. No distingue entre objeto base y objeto decorado.
+  * Por qué importa: Habilita sustitución total, facilita testing, y permite cambiar comportamientos sin modificar lógica de negocio.
+* **Anidamiento Recursivo (Wrapping)**: Un decorador puede envolver otro. `D3(D2(D1(Base)))`. El orden de aplicación define el orden de ejecución.
+  * Por qué importa: Permite pipelines configurables dinámicamente. La composición es asociativa pero **no conmutativa**: el orden importa.
+* **Separación de Responsabilidades Transversales**: Logging, métricas, retry, validación, cifrado, compresión, rate-limiting, circuit-breaker. Aislados del core.
+  * Por qué importa: Mantiene la lógica de dominio pura. Los decoradores actúan como middleware estructural, no como lógica de negocio.
+* **Estado y Contexto Compartido**: Los decoradores pueden mantener estado local (caché, contadores) o inyectar contexto (request ID, tenant, trace).
+  * Por qué importa: Requiere gestión explícita de ciclo de vida. El estado compartido entre envoltorios debe ser inmutable o thread-safe.
+* **Extensión sin Modificación**: Nuevos comportamientos se añaden como clases/funciones independientes. El código existente no se toca.
+  * Por qué importa: Reduce riesgo de regresión, facilita code review, y habilita feature flags sin tocar código de producción.
+
+---
+
+## 2. 📐 Estructura Lógica y Contrato de Envoltura
+
+La arquitectura sigue un flujo estricto de interceptación y delegación. El patrón garantiza que cualquier llamada al componente se resuelva correctamente, añadiendo capas de comportamiento de forma predecible.
+
+```text
+               Cliente
+                  │
+                  ▼ invoca
+            Component (Interfaz)
+         +---------------------------+
+         | operation(): Result       |
+         +---------------------------+
+                  ▲
+          +-------+-------+
+          |               |
+   ConcreteComponent    Decorator (Abstracto)
+   [Lógica Base]        +-------------------+
+                        | wrapped: Component|
+                        | operation()       |
+                        |   &gt; pre-procesar  |
+                        |   &gt; wrapped.op()  |
+                        |   &gt; post-procesar |
+                        +-------------------+
+                                  ▲
+                          +-------+-------+
+                          |               |
+                 ConcreteDecoratorA  ConcreteDecoratorB
+                 [Añade Log/Cache]   [Añade Validación/Retry]
+```
+
+Flujo de ejecución garantizado:
+1. Cliente invoca `component.operation(data)`.
+2. El primer decorador intercepta la llamada.
+3. Ejecuta lógica pre-procesamiento (validación, transformación, métricas).
+4. Delega a `wrapped.operation(transformedData)`.
+5. Si hay más decoradores, repite el ciclo recursivamente hasta el `ConcreteComponent`.
+6. El resultado sube por la cadena, aplicando post-procesamiento (caché, formateo, logging).
+7. Retorna resultado final al cliente. La interfaz nunca cambia.
+
+Contrato mínimo en pseudocódigo tipado:
+```typescript
+// Contrato inmutable
+interface DataProcessor {
+  process(input: string): string;
+}
+
+// Componente base
+class BasicProcessor implements DataProcessor {
+  process(input: string): string {
+    return input.trim().toLowerCase();
+  }
+}
+
+// Decorador abstracto
+abstract class ProcessorDecorator implements DataProcessor {
+  protected wrapped: DataProcessor;
+  constructor(wrapped: DataProcessor) { this.wrapped = wrapped; }
+  abstract process(input: string): string;
+}
+
+// Decorador concreto
+class CachingDecorator extends ProcessorDecorator {
+  private cache = new Map&lt;string, string&gt;();
+  process(input: string): string {
+    if (this.cache.has(input)) return this.cache.get(input)!;
+    const result = this.wrapped.process(input);
+    this.cache.set(input, result);
+    return result;
+  }
+}
+
+// Composición en runtime
+let processor: DataProcessor = new BasicProcessor();
+processor = new CachingDecorator(processor);
+console.log(processor.process("  HELLO  ")); // Delega, cachea, retorna
+```
+Regla inquebrantable: El decorador **nunca** debe romper la firma del contrato. Si añade métodos, se vuelve semi-transparente y pierde sustituibilidad total. Mantén la interfaz estricta.
+
+---
+
+## 3. 🛠️ Implementación por Paradigma y Ecosistema
+
+El patrón se adapta al modelo de ejecución y al estilo de composición del entorno. No requiere necesariamente herencia clásica.
+
+### 3.1. POO Clásica con Delegación (TypeScript / Java / C#)
+Uso de interfaces explícitas y composición en constructor. Ideal para streams, conexiones, o servicios con comportamiento transversal.
+
+```java
+public interface NotificationService {
+    void send(String message);
+}
+
+public class EmailService implements NotificationService {
+    public void send(String msg) { /* SMTP logic */ }
+}
+
+public abstract class NotificationDecorator implements NotificationService {
+    protected final NotificationService wrapped;
+    protected NotificationDecorator(NotificationService wrapped) { this.wrapped = wrapped; }
+}
+
+public class RetryDecorator extends NotificationDecorator {
+    private final int maxRetries;
+    public RetryDecorator(NotificationService wrapped, int retries) { super(wrapped); this.maxRetries = retries; }
+
+    @Override
+    public void send(String msg) {
+        for (int i = 1; i <= maxRetries; i++) {
+            try { wrapped.send(msg); return; }
+            catch (Exception e) { if (i == maxRetries) throw e; }
+        }
+    }
+}
+// Uso: new LoggingDecorator(new RetryDecorator(new EmailService(), 3));
+```
+
+### 3.2. Enfoque Funcional / HOFs (JavaScript / Python)
+Se reemplaza herencia por funciones de orden superior. Composición mediante `pipe` o `compose`.
+
+```python
+from functools import wraps
+import time
+
+def with_logging(fn):
+    @wraps(fn)
+    def wrapper(*args, **kwargs):
+        print(f"[LOG] Calling {fn.__name__} with {args}")
+        result = fn(*args, **kwargs)
+        print(f"[LOG] {fn.__name__} returned {result}")
+        return result
+    return wrapper
+
+def with_cache(ttl=300):
+    def decorator(fn):
+        cache = {}
+        @wraps(fn)
+        def wrapper(*args):
+            if args in cache and (time.time() - cache[args][1]) < ttl:
+                return cache[args][0]
+            result = fn(*args)
+            cache[args] = (result, time.time())
+            return result
+        return wrapper
+    return decorator
+
+@with_cache(ttl=60)
+@with_logging
+def fetch_user(uid):
+    return {"id": uid, "name": "Ana"}
+# Orden de ejecución: logging → cache → fetch_user
+```
+Ventaja: Extensión declarativa, cero boilerplate de clases. Desventaja: Pérdida de validación estática si no se usa `TypeScript` o `typing.Protocol`.
+
+### 3.3. Middleware / Pipeline (Go / Rust / Express-style)
+Flujo secuencial donde cada decorador decide llamar o no al siguiente. `next()` o `handler(req, res)` pattern.
+
+```go
+type Middleware func(http.Handler) http.Handler
+
+func LoggingMiddleware(next http.Handler) http.Handler {
+    return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+        start := time.Now()
+        log.Printf("Started %s %s", r.Method, r.URL.Path)
+        next.ServeHTTP(w, r)
+        log.Printf("Completed in %v", time.Since(start))
+    })
+}
+
+func AuthMiddleware(next http.Handler) http.Handler {
+    return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+        if !isValidToken(r.Header.Get("Authorization")) {
+            http.Error(w, "Unauthorized", 401)
+            return
+        }
+        next.ServeHTTP(w, r)
+    })
+}
+
+// Composición: chain := LoggingMiddleware(AuthMiddleware(handler))
+```
+
+### 3.4. Proxies Dinámicos / Metaprogramación (C# / Python / JS)
+Intercepción vía reflexión, `Proxy` object, o decoradores de clase. Útil cuando no se puede modificar código fuente.
+
+```javascript
+function createDecoratedObject(target, handler) {
+  return new Proxy(target, handler);
+}
+
+const original = { save: (data) => console.log("Saved", data) };
+const decorated = createDecoratedObject(original, {
+  get(target, prop) {
+    if (prop === "save") {
+      return function(...args) {
+        console.log("[Intercept] Saving...");
+        const result = target[prop].apply(target, args);
+        console.log("[Intercept] Saved successfully.");
+        return result;
+      };
+    }
+    return target[prop];
+  }
+});
+decorated.save({ id: 1 });
+```
+
+---
+
+## 4. 🔄 Variantes Arquitectónicas y Extensiones
+
+| Variante | Mecanismo | Caso de uso | Trade-off |
+|----------|-----------|-------------|-----------|
+| **Transparente** | Mantiene interfaz exacta. Cliente no sabe que está decorado. | APIs públicas, librerías, plugins. | Limita extensión de métodos nuevos. |
+| **Semi-Transparente** | Añade métodos específicos al decorador. Requiere downcast o type guard. | Extensiones específicas de dominio (ej. `getCacheSize()`). | Rompe sustituibilidad. Aumenta acoplamiento al tipo concreto. |
+| **Pipeline/Chain** | Flujo secuencial con `next()`. Cada decorador decide continuar o abortar. | Middlewares HTTP, validación de requests, auth flows. | Complejidad de orden y manejo de errores en cascada. |
+| **Stateful vs Stateless** | Decoradores con memoria (caché, contador) vs puros (logging, validación). | Caché, rate-limiting, métricas vs validación, transformación. | Stateful requiere gestión de ciclo de vida y invalidación. |
+| **Async/Stream Aware** | Intercepta promesas, observables o streams. Maneja resolución/rechazo o chunks. | Fetch wrappers, retry con backoff, compresión de streams. | Complejidad de gestión de backpressure y cancellation tokens. |
+| **Conditional/Lazy** | Aplica comportamiento solo si se cumple condición (feature flags, env). | Dev/Prod logging, A/B testing, throttling dinámico. | Overhead de evaluación constante. Puede ocultar comportamientos. |
+| **Hybrid con Strategy** | Decorador selecciona algoritmo interno en runtime según contexto. | Renderizadores con múltiples motores, parsers con dialectos. | Doble indirección. Puede oscurecer el flujo si no se documenta. |
+
+---
+
+## 5. 🎯 Cuándo Usar y Cuándo Evitar
+
+| ✅ Usar cuando... | ❌ Evitar cuando... |
+|------------------|-------------------|
+| Necesitas añadir comportamiento transversal sin tocar código de dominio | Solo tienes 1-2 extensiones estáticas. Usa herencia simple o composición directa. |
+| Quieres combinar características dinámicamente en runtime (caching + logging + retry) | El orden de composición es crítico y difícil de documentar/mantener. |
+| Necesitas evitar explosión de subclases por combinaciones de features | La identidad de objeto es crítica (`===`, `instanceof`, serialización estricta). |
+| Trabajas con middlewares, pipelines, o sistemas de plugins extensibles | El overhead de múltiples wrappers impacta rendimiento en loops tight. |
+| Quieres aislar responsabilidades cruzadas para testing independiente | Ya usas AOP, interceptores nativos del framework, o contenedores DI avanzados. |
+
+Comparación rápida con patrones estructurales y de comportamiento:
+* **Decorator**: Extiende comportamiento dinámicamente manteniendo interfaz. Envoltura acumulativa.
+* **Proxy**: Controla acceso, lazy loading o seguridad. Gestiona ciclo de vida, no necesariamente añade comportamiento.
+* **Adapter**: Traduce interfaces incompatibles existentes. Corrección post-factum.
+* **Strategy**: Intercambia algoritmos/comportamiento. Enfocado en lógica, no en envoltura.
+* **Chain of Responsibility**: Pasa request a través de cadena de handlers. Enfocado en routing, no en extensión de interfaz.
+
+---
+
+## 6. 🧪 Testing, Mantenibilidad y Arquitectura
+
+* **Aislamiento en Tests**: Prueba cada decorador con un `MockComponent`. Verifica pre/post lógica, manejo de errores, y propagación de excepciones.
+  * Técnica: Usa fixtures controlados. Aserta orden de llamadas, transformaciones de entrada/salida, y estados internos.
+* **Validación de Orden de Composición**: El orden define el comportamiento. `Cache(Logging(Base))` ≠ `Logging(Cache(Base))`.
+  * Fix: Documenta explícitamente el orden esperado. Escribe tests de integración que validen composiciones comunes.
+* **Ciclo de Vida y Ownership**: Si el decorador abre recursos (sockets, archivos, conexiones DB), debe implementar `dispose()` o `close()` y propagarlo al `wrapped`.
+* **Refactorización hacia Composition over Inheritance**: Identifique jerarquías que mezclan dominio con transversales. Extraiga comportamientos a decoradores. Reemplace `extends` por wrapping.
+* **Impacto en Rendimiento**: Cada wrapper añade 1-2 saltos de función/v-table. En CPUs modernas, la JIT los absorbe. Solo impacta en millones de llamadas/seg. En ese caso, evalúe inlining, memoización, o skip de decoradores vacíos.
+* **Gestión de Versiones**: Cuando el contrato `Component` evoluciona, todos los decoradores deben actualizarse. Mantenga interfaces estables. Use adapters internos para migración progresiva.
+* **Visibilidad y APIs Públicas**: Exponga solo `Component`. Oculte decoradores concretos en módulos internos o factories. Reduzca la superficie de uso indebido y acoplamiento accidental.
+* **Documentación de Efectos Secundarios**: Especifique si un decorador muta estado, cachea, o altera flujo. Elimine suposiciones implícitas.
+* **Migración desde Herencia Múltiple**: Identifique clases que combinan múltiples responsabilidades. Extraiga cada responsabilidad a un decorador. Envuelva progresivamente.
+* **Integración con Observabilidad**: Inyecte correlation IDs, trace IDs, o métricas en decoradores de logging/metrics. Centralice telemetría sin tocar dominio.
+
+---
+
+## 7. ⚠️ Errores Comunes y Soluciones
+
+* **Romper Transparencia de Interfaz**: Añadir métodos a `ConcreteDecorator` que no existen en `Component`. Cliente falla al sustituir.
+  * Fix: Mantenga interfaz estricta. Si necesita métodos nuevos, use interfaces separadas o factories que retornen tipos extendidos explícitos.
+* **Orden de Composión Incorrecto**: Asumir conmutatividad cuando no la hay. `Retry(Cache())` vs `Cache(Retry())`.
+  * Fix: Documente orden explícito. Use builders o pipelines con validación de secuencia. Pruebe combinaciones críticas.
+* **Fuga de Estado Mutable**: Decoradores comparten caché o contadores entre instancias no relacionadas.
+  * Fix: Instanciar estado por decorador. Use `WeakMap`, inmutabilidad, o scope por request/tenant. Nunca state global sin control.
+* **Recursión Infinita / Autowrapping**: Decorador se envuelve a sí mismo o crea referencia circular.
+  * Fix: Valide en constructor que `wrapped !== this`. Use factories centralizadas que garanticen DAG de composición.
+* **Supresión Silenciosa de Errores**: `try/catch` en decorador que no rethrow o transforma error incorrectamente.
+  * Fix: Propague excepciones o use `Result`/`Either` patterns. Documente política de errores en contrato de decorador.
+* **Degradación de Rendimiento por Anidamiento Excesivo**: 10+ wrappers en cadena sin profiling.
+  * Fix: Profile primero. Use decoradores vacíos como no-op si están deshabilitados. Combine lógica compatible en un solo decorador.
+* **Confundir con Proxy o Strategy**: Usar Decorator para control de acceso o para intercambiar algoritmos completos.
+  * Fix: Si controla lifecycle/acceso → Proxy. Si varía algoritmo → Strategy. Si extiende comportamiento manteniendo interfaz → Decorator.
+* **Serialización Rota**: `JSON.stringify()` o `pickle` falla con referencias a decoradores o métodos no serializables.
+  * Fix: Serialize solo DTOs o estado base. Reconstruya cadena de decoradores al deserializar. Use `toJSON()`/`__reduce__` seguro.
+* **Falta de Validación de Input/Output**: Decorador asume formato correcto y falla en producción.
+  * Fix: Valide contratos en bordes del decorador. Use schemas (`zod`, `Pydantic`, `valibot`). Fail fast con mensajes descriptivos.
+* **Olvidar Propagar `dispose()`/`close()`**: Recursos abiertos en decoradores no se liberan al terminar.
+  * Fix: Implemente `IDisposable`/`AsyncDisposable` o método `cleanup()`. Propague en orden inverso al wrapping.
+
+---
+
+## 8. 💡 Mejores Prácticas y Consejos
+
+* **Prefiera Decoradores Stateless cuando sea posible**: Elimina complejidad de gestión de estado, facilita caching y testing determinista.
+* **Documente Orden y Efectos Secundarios**: Especifique explícitamente flujo de ejecución, transformaciones, y garantías de propagación.
+* **Use Composición Funcional para HOFs**: `pipe(logging, caching, validation)(baseFn)` es legible, testeable y reversible.
+* **Valide Contratos en Bordes**: Rechace payloads malformados inmediatamente. Fail fast ahorra horas de debugging en producción.
+* **Implemente Cleanup Propagado**: Asegure que `dispose()`, `close()`, o `cancel()` fluyan por toda la cadena. Evite fugas de recursos.
+* **Use Type Guards o Structural Typing**: Evite `instanceof` o checks de identidad. Trate siempre como `Component`.
+* **Profile antes de Optimizar**: No asuma overhead crítico. Mide allocations y latency. Optimice solo si el profiler lo indica.
+* **Mantenga Responsabilidad Única**: Cada decorador debe hacer una cosa bien. Combine solo si la cohesión lo justifica arquitectónicamente.
+* **Pruebe Combinaciones, no solo Unidades**: Valide decoradores aislados Y en cadena. Detecte order-dependencies y state-leaks temprano.
+* **No lo use "por moda"**: Si la extensión es estática, simple, o rompe interfaz, use herencia, strategy, o proxy. La envoltura innecesaria es deuda técnica de legibilidad y mantenimiento.
+
+---
+
+Este cheatsheet proporciona una referencia arquitectónica completa para el patrón Decorator, cubriendo su intención estructural, contratos de envoltura transparente, implementación multi-paradigma, variantes funcionales y de pipeline, impacto real en testing y mantenibilidad, errores frecuentes en producción y estrategias de mitigación, junto con criterios estrictos para decidir cuándo la extensión dinámica es una necesidad del dominio y cuándo migrar hacia proxies, estrategias, o composición estática más escalables.
