@@ -1,0 +1,275 @@
+# 🏭 Patrón Abstract Factory — Cheatsheet Completo 🏭
+
+El patrón **Abstract Factory** es un patrón creacional estructural que proporciona una interfaz para crear **familias de objetos relacionados o dependientes** sin especificar sus clases concretas. Permite que un cliente trabaje exclusivamente con abstracciones, garantizando que los productos creados sean compatibles entre sí y pertenecan a la misma familia o configuración. Nace para resolver problemas de portabilidad, tematización, compatibilidad cruzada y encapsulamiento de variantes complejas, asegurando que el sistema nunca mezcle componentes de familias distintas.
+
+---
+
+## 1. 🌟 Conceptos Fundamentales
+
+* **Familia de Productos**: Conjunto de interfaces relacionadas que deben coexistir coherentemente (ej. `Botón`, `Menú`, `Scrollbar` en un tema UI; o `Connection`, `Query`, `Transaction` en un driver de BD).
+  * Por qué importa: Garantiza coherencia estructural y funcional. Evita errores de incompatibilidad en tiempo de ejecución al mezclar versiones o plataformas distintas.
+* **AbstractFactory**: Interfaz que declara métodos de creación para cada producto de la familia. No implementa lógica de negocio ni conoce detalles concretos.
+  * Por qué importa: Actúa como contrato unificado. El cliente solo depende de esta interfaz, nunca de clases concretas.
+* **ConcreteFactory**: Implementación que crea instancias de una familia específica (ej. `WindowsUIFactory`, `PostgresDriverFactory`, `DarkThemeFactory`).
+  * Por qué importa: Centraliza la lógica de instanciación por variante. Cambiar la factory cambia toda la familia sin tocar al cliente.
+* **AbstractProduct**: Interfaz o tipo base que define el contrato de un componente individual dentro de la familia.
+  * Por qué importa: Permite polimorfismo y sustitución segura. Todos los productos concretos deben cumplir el mismo protocolo.
+* **ConcreteProduct**: Implementación específica de un `AbstractProduct` para una familia dada.
+  * Por qué importa: Encapsula variaciones de comportamiento, estilo o protocolo. El sistema los intercambia sin impacto en la lógica consumidora.
+* **Independencia de Implementación**: El cliente desconoce qué clases se instancian. Solo conoce interfaces y el momento de creación.
+  * Por qué importa: Reduce acoplamiento, facilita pruebas A/B, permite carga dinámica de módulos y cumple Open/Closed Principle.
+* **Configuración en el Borde**: La selección de la factory concreta ocurre típicamente al inicio del sistema (archivo de config, variable de entorno, detección de plataforma).
+  * Por qué importa: Centraliza la toma de decisiones de variante. Evita lógica condicional dispersa (`if (os == "win") ...`).
+
+---
+
+## 2. 📐 Estructura Lógica y Contrato de Implementación
+
+El patrón sigue un flujo estricto de delegación familiar. La arquitectura garantiza que **nunca** se combinen productos de factories distintas.
+
+```text
+               AbstractFactory
+          +---------------------------+
+          | createButton(): IButton   |
+          | createMenu(): IMenu       |
+          | createDialog(): IDialog   |
+          +---------------------------+
+                     ▲
+         +-----------+-----------+
+         |                       |
+   WindowsFactory           LinuxFactory
+         |                       |
+   createButton() = &gt; WinBtn   createButton() = &gt; GtkBtn
+   createMenu()   = &gt; WinMenu  createMenu()   = &gt; GtkMenu
+```
+
+Flujo de ejecución garantizado:
+1. Aplicación detecta contexto (ej. `platform = detectOS()`).
+2. Selecciona `ConcreteFactory` correspondiente.
+3. Pasa la referencia al cliente o la registra en un contenedor.
+4. Cliente invoca `factory.createButton()` y `factory.createMenu()`.
+5. Recibe objetos que comparten implementación base, estilo o protocolo.
+6. Interactúa exclusivamente a través de `IButton`, `IMenu`, etc.
+
+Contrato mínimo en pseudocódigo tipado:
+```typescript
+// Contratos de productos
+interface IButton { render(): void; onClick(cb: Function): void; }
+interface IMenu   { render(): void; addItem(text: string): void; }
+
+// Factory abstracta
+interface IUIFactory {
+  createButton(): IButton;
+  createMenu(): IMenu;
+}
+
+// Implementación concreta
+class MaterialUIFactory implements IUIFactory {
+  createButton(): IButton { return new MaterialButton(); }
+  createMenu(): IMenu     { return new MaterialMenu(); }
+}
+
+// Cliente desacoplado
+class ScreenRenderer {
+  constructor(private factory: IUIFactory) {}
+  render() {
+    const btn = this.factory.createButton();
+    const menu = this.factory.createMenu();
+    btn.onClick(() =&gt; menu.render());
+  }
+}
+```
+Regla inquebrantable: Un cliente nunca debe instanciar `ConcreteProduct` directamente. Toda creación debe pasar por la `AbstractFactory` asignada.
+
+---
+
+## 3. 🛠️ Implementación Multi-Paradigma y Ecosistemas
+
+El patrón se adapta al modelo de ejecución. No requiere necesariamente herencia clásica.
+
+### 3.1. POO Clásica (TypeScript / C# / Java)
+Jerarquías explícitas. Ideal cuando el lenguaje exige contratos estrictos o cuando se integra con frameworks de DI.
+
+```java
+public abstract class DatabaseFactory {
+    public abstract Connection createConnection();
+    public abstract QueryBuilder createQueryBuilder();
+}
+
+public class MySQLFactory extends DatabaseFactory {
+    public Connection createConnection() { return new MySqlConnection(); }
+    public QueryBuilder createQueryBuilder() { return new MySQLQueryBuilder(); }
+}
+
+// Inyección en capa de aplicación
+public class UserRepository {
+    private final DatabaseFactory factory;
+    public UserRepository(DatabaseFactory factory) { this.factory = factory; }
+    public User findById(Long id) {
+        try (Connection conn = factory.createConnection()) {
+            return factory.createQueryBuilder().select("users").where("id", id).execute(conn);
+        }
+    }
+}
+```
+
+### 3.2. Enfoque Funcional / Módulos (Python / JavaScript)
+Se reemplaza herencia por fábricas de funciones o objetos inmutables registrados.
+
+```python
+from typing import Protocol
+
+class IAuth(Protocol):
+    def authenticate(self, token: str) -&gt; bool: ...
+
+class IDBClient(Protocol):
+    def query(self, sql: str) -&gt; list: ...
+
+def create_cloud_factory() -&gt; dict:
+    return {
+        "auth": lambda: CloudAuthClient(region="us-east"),
+        "db": lambda: CloudDBClient(endpoint="rds.aws")
+    }
+
+def create_onprem_factory() -&gt; dict:
+    return {
+        "auth": lambda: LDAPAuthClient(domain="corp.local"),
+        "db": lambda: OracleClient(dsn="db01:1521/XE")
+    }
+
+# Selección en tiempo de arranque
+ENV = os.getenv("DEPLOY_MODE", "cloud")
+FACTORY = create_cloud_factory() if ENV == "cloud" else create_onprem_factory()
+FACTORY["auth"]().authenticate("tok_123")
+```
+Ventaja: Extensión sin boilerplate de clases. Desventaja: Pérdida de validación estática si no se usa `typing.Protocol` o generics estrictos.
+
+### 3.3. Contenedores de Inyección (NestJS / Spring / tsyringe)
+La factory se convierte en un proveedor o token inyectable. El contenedor resuelve la implementación según scope.
+
+```typescript
+// NestJS: Provider condicional basado en config
+export const DatabaseModule = {
+  providers: [
+    {
+      provide: 'IDatabaseFactory',
+      useFactory: (config: ConfigService) =&gt; {
+        return config.get('DB_TYPE') === 'postgres' 
+          ? new PostgresFactory(config) 
+          : new MySQLFactory(config);
+      },
+      inject: [ConfigService],
+    },
+  ],
+  exports: ['IDatabaseFactory'],
+};
+
+// Consumo
+@Injectable()
+export class PaymentService {
+  constructor(@Inject('IDatabaseFactory') private dbFactory: IDatabaseFactory) {}
+}
+```
+
+### 3.4. Registro Dinámico / Plugin System
+Permite cargar families en runtime desde módulos externos o archivos de configuración.
+
+```ts
+const registry = new Map&lt;string, () =&gt; AbstractFactory&gt;();
+
+function registerFamily(name: string, factoryBuilder: () =&gt; AbstractFactory) {
+  if (registry.has(name)) throw new Error(`Familia duplicada: ${name}`);
+  registry.set(name, factoryBuilder);
+}
+
+function getFactory(name: string): AbstractFactory {
+  const builder = registry.get(name);
+  if (!builder) throw new Error(`Familia no registrada: ${name}`);
+  return builder();
+}
+
+// Carga modular
+registerFamily('dark', () =&gt; new DarkThemeFactory());
+registerFamily('high-contrast', () =&gt; new AccessibilityThemeFactory());
+```
+
+---
+
+## 4. 🔄 Variantes Arquitectónicas y Extensiones
+
+| Variante | Mecanismo | Caso de uso | Trade-off |
+|----------|-----------|-------------|-----------|
+| **Factory Parametrizada** | `create(type, config)` genera productos con ajustes específicos. | Drivers con múltiples versiones de protocolo o dialectos SQL. | Aumenta complejidad de validación. Puede derivar en `switch` gigante. |
+| **Factory Perezosa (Lazy)** | Instancia familias bajo demanda, no al arranque. | Recursos costosos o familias rara vez usadas. | Dificulta detección temprana de errores de configuración. |
+| **Factory con Validación de Compatibilidad** | Verifica que todos los productos pertenezcan a la misma versión/familia antes de retornarlos. | Sistemas legacy con múltiples versiones de APIs o protocolos. | Overhead en creación. Requiere metadatos de versión en cada producto. |
+| **Factory de Configuración (Config-Driven)** | Lee YAML/JSON y construye la familia dinámicamente mediante reflexión o registro. | Plataformas multi-tenant con temas/drivers por cliente. | Pérdida de tipado fuerte. Depuración compleja en producción. |
+| **Factory Protocol/Adapter** | La factory retorna adaptadores que normalizan APIs distintas detrás de un contrato único. | Integración con múltiples proveedores externos (AWS, GCP, Azure). | Capa extra de indirección. Mantenimiento de adaptadores requiere disciplina. |
+
+---
+
+## 5. 🎯 Cuándo Usar y Cuándo Evitar
+
+| ✅ Usar cuando... | ❌ Evitar cuando... |
+|------------------|-------------------|
+| Necesitas garantizar compatibilidad entre múltiples componentes relacionados | Solo tienes un tipo de producto o familias que nunca cambiarán. Usa Factory Method simple. |
+| El sistema debe soportar plataformas, temas o dialectos intercambiables en runtime | La selección de variante es fija y conocida en tiempo de compilación. |
+| Quieres aislar la lógica de creación de familias complejas del código de negocio | El overhead de indirección impacta rendimiento en loops de alta frecuencia. |
+| Necesitas facilitar pruebas A/B o switching de proveedores sin tocar al cliente | La familia crece &gt; 5 productos y la factory se convierte en un "God Factory". |
+| Trabajas con drivers, UI toolkits, o integraciones con APIs heterogéneas | Ya usas un contenedor DI avanzado que gestiona scopes y proveedores dinámicos. |
+
+Comparación rápida con patrones creacionales:
+* **Abstract Factory**: Crea familias completas relacionadas. Garantiza compatibilidad cruzada. Horizontal.
+* **Factory Method**: Crea un solo tipo de producto por jerarquía. Vertical. Delega a subclases.
+* **Builder**: Construye objetos complejos paso a paso. Enfocado en configuración interna, no en selección de familia.
+* **Prototype**: Clona instancias existentes. Útil cuando `new` es costoso o el estado inicial es complejo de replicar.
+
+---
+
+## 6. 🧪 Testing, Mantenibilidad y Ciclo de Vida
+
+* **Mocking por Familia**: Reemplaza la `AbstractFactory` completa con una `MockFactory` que retorne productos controlados. Aísla el cliente de implementaciones reales.
+  * Técnica: Inyecta la factory en el constructor. En tests, usa `class TestFactory implements IUIFactory { createButton() = &gt; new MockButton(); ... }`.
+* **Validación de Compatibilidad en Tests**: Escribe tests que verifiquen que `factory.createA()` y `factory.createB()` interactúan correctamente. Evita mezclas accidentales.
+* **Ciclo de Vida y Ownership**: ¿Quién gestiona la vida de los productos creados? En GC, el problema es mínimo. En C++/Rust, la factory debe documentar si transfiere ownership, comparte referencias o usa pools.
+* **Refactorización hacia DI**: Si tu sistema crece, reemplaza factories manuales por contenedores DI con scopes (`RequestScoped`, `TenantScoped`). Mantén la abstracción, delega la resolución.
+* **Impacto en Rendimiento**: La creación de familias añade indirección. En sistemas críticos, usa caching de factories o inicialización eager. Mide con profiling antes de optimizar.
+* **Gestión de Versiones**: Si una familia evoluciona (v1 a v2), mantenga interfaces estables. Use adapters o factories específicas por versión. Nunca rompa el contrato de `AbstractFactory`.
+* **Visibilidad y APIs Públicas**: Exponga solo `AbstractFactory` e `AbstractProduct`. Oculte implementaciones concretas en módulos internos. Reduzca la superficie de ataque y uso indebido.
+
+---
+
+## 7. ⚠️ Errores Comunes y Soluciones
+
+* **Mezcla de Familias**: Cliente usa `factoryA.createButton()` y `factoryB.createMenu()`. Renderizado o protocolo roto.
+  * Fix: Pase una sola referencia de factory a todo el cliente. Valide en tests de integración que nunca se combinen instancias de factories distintas.
+* **God Factory**: Una sola factory gestiona 10+ productos con lógica condicional interna. Viola Single Responsibility.
+  * Fix: Divida por dominio o sub-familias. Use composición de factories pequeñas o registro dinámico con módulos separados.
+* **Estado Compartido Oculto**: Productos de la misma factory leen/escriben variables estáticas globales.
+  * Fix: Pase estado explícitamente en la creación o use inmutabilidad. Evite `static` dentro de productos concretos.
+* **Inicialización Costosa no Controlada**: `createConnection()` abre sockets, carga certificados o bloquea hilos.
+  * Fix: Separe creación de inicialización. Retorne objetos "lazy" o use pools. Documente el costo en contratos.
+* **Dificultad de Depuración**: Error en `ConcreteProductX` pero stack trace muestra solo `AbstractFactory.createX()`.
+  * Fix: Loguee el tipo concreto al inicio de cada método factory. Use correlation IDs y trazas estructuradas en producción.
+* **Serialización/Deserialización Rota**: Al restaurar estado, se pierden referencias a la factory o se instancian productos huérfanos.
+  * Fix: Serialize solo identificadores o DTOs. Reconstruya la familia desde la factory al deserializar. Nunca serialice objetos concretos directamente.
+* **Confundir con Simple Factory**: Usar un `switch` gigante dentro de una clase y llamarlo "Abstract Factory".
+  * Fix: Si no hay múltiples métodos retornando diferentes tipos de una misma familia, no es Abstract Factory. Es Simple Factory o Strategy.
+
+---
+
+## 8. 💡 Mejores Prácticas y Consejos Pro
+
+* **Prefiera Composición sobre Herencia**: Si no necesita sobrescribir comportamiento del cliente, inyecte la factory como dependencia. Evite jerarquías profundas innecesarias.
+* **Valide Contratos en Tiempo de Arranque**: Instancie cada producto de la familia al inicio y ejecute smoke tests. Detecte incompatibilidades antes de entrar en producción.
+* **Documente el Ownership y Ciclo de Vida**: Especifique claramente quién libera recursos, si los productos son thread-safe, y si pueden reutilizarse o son single-use.
+* **Evite Lógica de Negocio en la Factory**: La factory solo debe crear y configurar. Delegue procesamiento a servicios, validadores o pipelines separados.
+* **Use Registro Dinámico para Sistemas Modulares**: Permita que plugins se auto-registren. Use mapas, service locators o scopes DI. Elimine `switch` gigantes.
+* **Implemente Fallbacks Seguros**: Si una familia no se encuentra, retorne una implementación por defecto, lance excepción descriptiva, o use Null Object. Nunca retorne `null` silenciosamente.
+* **Pruebe la Extensión**: Antes de lanzar, agregue una familia nueva sin tocar código existente. Si requiere modificar `AbstractFactory` o agregar `case`, el patrón está mal implementado.
+* **Monitoree la Distribución de Familias**: En producción, registre cuántas veces se activa cada `ConcreteFactory`. Detecte sesgos, configuraciones erróneas o memory leaks.
+* **Mantenga Interfaces Estables**: Cambiar la firma de `AbstractFactory` o `AbstractProduct` rompe todas las implementaciones. Use versiones, adapters o deprecación controlada.
+* **No lo use "por moda"**: Si el sistema solo tiene una familia fija, o la creación es trivial, use `new` o una función simple. La abstracción innecesaria es deuda técnica arquitectónica.
+
+---
+
+Este cheatsheet proporciona una referencia arquitectónica completa para el patrón Abstract Factory, cubriendo su intención estructural, implementación multi-paradigma, variantes de registro y validación de compatibilidad, impacto real en testing y mantenibilidad, errores frecuentes en producción y estrategias de mitigación, junto con criterios estrictos para decidir cuándo la abstracción de familias es una necesidad del dominio y cuándo migrar hacia inyección de dependencias o factories dinámicas más escalables.
