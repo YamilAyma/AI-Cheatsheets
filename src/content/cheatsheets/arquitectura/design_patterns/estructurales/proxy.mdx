@@ -1,0 +1,305 @@
+# 🎯 Patrón Proxy — Cheatsheet Completo 🎯
+
+El patrón **Proxy** es un patrón estructural que proporciona un sustituto o intermediario para controlar el acceso a un objeto real, añadiendo comportamiento transversal sin modificar su implementación original. Envuelve al sujeto manteniendo su interfaz intacta, interceptando llamadas para aplicar políticas de seguridad, caché, inicialización diferida, comunicación remota o monitorización. Nace para resolver problemas de acceso no controlado, carga costosa de recursos, acoplamiento directo a sistemas externos y necesidad de observabilidad centralizada. Este cheatsheet desglosa la intención arquitectónica real del patrón, contratos de interceptación transparente, implementaciones multi-paradigma, variantes de control y rendimiento, impacto en profiling y debugging, trampas de recursión infinita y acoplamiento encubierto, y criterios estrictos para decidir cuándo la delegación controlada es una necesidad del dominio y no una capa de indirección que degrada la trazabilidad o introduce cuellos de botella operativos.
+
+---
+
+## 1. 🌟 Conceptos Fundamentales
+
+* **Subject (Sujeto)**: Interfaz o contrato que define las operaciones expuestas tanto por el objeto real como por el proxy.
+  * Por qué importa: Garantiza sustituibilidad total. El cliente nunca distingue si interactúa con el original o con el intermediario.
+* **RealSubject (Sujeto Real)**: Implementación base que contiene la lógica de dominio, el recurso pesado o la conexión externa.
+  * Por qué importa: Representa la funcionalidad central. El proxy solo lo envuelve, nunca lo reemplaza ni duplica su comportamiento interno.
+* **Proxy**: Entidad que implementa `Subject` y mantiene una referencia interna al `RealSubject`. Intercepta, valida o transforma llamadas antes de delegar.
+  * Por qué importa: Centraliza controles transversales (auth, cache, lazy, logging) sin contaminar la lógica de negocio con código boilerplate.
+* **Interceptación Transparente**: El cliente invoca métodos del contrato sin conocer la existencia del proxy ni su lógica interna.
+  * Por qué importa: Cumple el principio de sustitución de Liskov. Facilita swapping en runtime, testing aislado y evolución sin romper consumidores.
+* **Control de Acceso vs Extensión**: El proxy gestiona *cuándo*, *cómo* o *si* se ejecuta una operación. No añade nuevas firmas al contrato.
+  * Por qué importa: Diferencia estructural clave con Decorator. El proxy filtra/optimiza/redirige; el decorator acumula comportamiento nuevo.
+* **Estado y Ciclo de Vida**: El proxy puede mantener estado local (caché, contadores, timeouts, circuit state) o operar como componente stateless.
+  * Por qué importa: Requiere gestión explícita de invalidación, thread-safety y limpieza. El estado compartido entre peticiones debe ser aislado o inmutable.
+* **Delegación Selectiva**: Algunas llamadas pasan directo al real, otras se bloquean, cachean o redirigen según políticas configuradas o contexto runtime.
+  * Por qué importa: Permite control granular sin reescribir flujos completos. Habilita feature flags, rate limiting y fallbacks dinámicos.
+* **Aislamiento de Costos Operativos**: Retrasa creación de objetos pesados, limita llamadas a APIs externas o agrupa requests bajo demanda.
+  * Por qué importa: Transforma restricciones de infraestructura en límites manejables. Reduce consumo de memoria, I/O y latencia percibida.
+
+---
+
+## 2. 📐 Estructura y Contrato de Delegación
+
+La arquitectura sigue un flujo estricto de interceptación, validación condicional y delegación controlada. El patrón garantiza que cualquier llamada al sujeto se resuelva correctamente, aplicando políticas de acceso o optimización de forma predecible.
+
+```text
+               Cliente
+                  │
+                  ▼ invoca operación
+             Subject (Interfaz)
+         +---------------------------+
+         | operation(): Result       |
+         | secondaryOp(data): void   |
+         +---------------------------+
+                  ▲
+          +-------+-------+
+          |               |
+   RealSubject           Proxy
+   [Lógica Base]   +-------------------+
+                   | wrapped: Subject  |
+                   | operation()       |
+                   |   &gt; validar acceso|
+                   |   &gt; si caché &gt; retorna
+                   |   &gt; si válido &gt; wrapped.operation()
+                   |   &gt; else &gt; denegar/fallback
+                   +-------------------+
+```
+
+Flujo de ejecución garantizado:
+1. Cliente invoca `subject.operation(params)`.
+2. El proxy intercepta la llamada antes de alcanzar el `RealSubject`.
+3. Evalúa políticas: autenticación, límites de tasa, caché, estado de circuito, permisos.
+4. Si la política lo permite, delega a `wrapped.operation(transformedParams)`.
+5. El `RealSubject` ejecuta la lógica y retorna resultado crudo.
+6. El proxy aplica post-procesamiento (logging, transformación, cacheo) y retorna al cliente.
+7. El cliente recibe respuesta limpia sin conocer validaciones internas ni infraestructura subyacente.
+
+Contrato mínimo en pseudocódigo tipado:
+```typescript
+// Contrato estable
+interface ImageService {
+  load(id: string): Promise&lt;Image&gt;;
+  metadata(id: string): Promise&lt;Metadata&gt;;
+}
+
+// Sujeto real (costoso: descarga red, parsing, decodificación)
+class RemoteImageService implements ImageService {
+  async load(id: string): Promise&lt;Image&gt; { return fetchFromCDN(id); }
+  async metadata(id: string): Promise&lt;Metadata&gt; { return parseExif(id); }
+}
+
+// Proxy con caché y protección
+class CachingProtectedProxy implements ImageService {
+  private wrapped: ImageService;
+  private cache = new Map&lt;string, Image&gt;();
+
+  constructor(wrapped: ImageService) { this.wrapped = wrapped; }
+
+  async load(id: string): Promise&lt;Image&gt; {
+    if (!this.hasPermission(id)) throw new AccessDeniedError();
+    if (this.cache.has(id)) return this.cache.get(id)!;
+    const img = await this.wrapped.load(id);
+    this.cache.set(id, img);
+    return img;
+  }
+
+  async metadata(id: string): Promise&lt;Metadata&gt; {
+    return this.wrapped.metadata(id); // Delegación directa sin caché
+  }
+
+  private hasPermission(id: string): boolean {
+    return acl.check(currentUser, `image:read:${id}`);
+  }
+}
+```
+Regla inquebrantable: El proxy **nunca** debe romper la firma del contrato ni añadir métodos propios que el cliente espere. Si extiende la interfaz, se vuelve semi-transparente y pierde sustituibilidad total. Mantén el contrato estricto.
+
+---
+
+## 3. 🛠️ Implementación por Paradigma y Ecosistema
+
+El patrón se adapta al modelo de ejecución y al estilo de composición del entorno. No requiere necesariamente herencia clásica ni wrappers manuales.
+
+### 3.1. POO Clásica con Composición (TypeScript / Java / C#)
+Uso de interfaces explícitas y delegación en constructor. Ideal para control de acceso, logging o caché local.
+
+```java
+public interface PaymentProcessor {
+    TransactionResult charge(PaymentRequest req);
+}
+
+public class StripeGateway implements PaymentProcessor {
+    public TransactionResult charge(PaymentRequest req) { /* API call */ }
+}
+
+public class RateLimitingProxy implements PaymentProcessor {
+    private final PaymentProcessor gateway;
+    private final AtomicInteger counter = new AtomicInteger(0);
+    private final long resetTime = System.currentTimeMillis() + 60_000;
+
+    public RateLimitingProxy(PaymentProcessor gateway) { this.gateway = gateway; }
+
+    public TransactionResult charge(PaymentRequest req) {
+        if (System.currentTimeMillis() &gt; resetTime) { counter.set(0); resetTime = System.currentTimeMillis() + 60_000; }
+        if (counter.incrementAndGet() &gt; 100) throw new LimitExceededException();
+        return gateway.charge(req);
+    }
+}
+```
+
+### 3.2. Dynamic Proxies / Metaprogramación (C# / Java / Python)
+Generación automática en runtime mediante reflexión o handlers de interceptación. Elimina boilerplate de wrappers manuales.
+
+```python
+from functools import wraps
+import time
+
+def logging_proxy_factory(target):
+    class Proxy:
+        def __init__(self, obj):
+            self._obj = obj
+        def __getattr__(self, name):
+            attr = getattr(self._obj, name)
+            if callable(attr):
+                @wraps(attr)
+                def wrapper(*args, **kwargs):
+                    print(f"[PROXY] Calling {name}")
+                    start = time.perf_counter()
+                    result = attr(*args, **kwargs)
+                    print(f"[PROXY] {name} completed in {time.perf_counter()-start:.3f}s")
+                    return result
+                return wrapper
+            return attr
+    return Proxy(target)
+
+# Uso: service = logging_proxy_factory(RealService())
+# service.process(data)  # Interceptado automáticamente
+```
+
+### 3.3. JS Proxy Object / Property Traps (JavaScript / TypeScript)
+Intercepción nativa mediante `Proxy` y traps (`get`, `set`, `apply`). Ideal para validación reactiva, observabilidad o control de mutación.
+
+```javascript
+function createSecureStore(target) {
+  return new Proxy(target, {
+    get(obj, prop) {
+      if (prop.startsWith('_')) throw new Error('Acceso denegado a campos privados');
+      console.log(`[READ] ${String(prop)}`);
+      return obj[prop];
+    },
+    set(obj, prop, value) {
+      if (prop === 'balance' && typeof value !== 'number' || value &lt; 0) {
+        throw new Error('Balance debe ser numérico y no negativo');
+      }
+      console.log(`[WRITE] ${String(prop)} = ${value}`);
+      obj[prop] = value;
+      return true;
+    }
+  });
+}
+// El cliente interactúa como con un objeto normal, pero todas las operaciones pasan por traps.
+```
+
+### 3.4. Remote Stubs / gRPC / REST Clients
+Proxies que serializan llamadas, gestionan reconexiones y manejan fallos de red. Actúan como fachadas transparentes a servicios remotos.
+
+```rust
+// Rust: Stub generado que actúa como proxy local a gRPC server
+pub struct UserClientProxy {
+    channel: tonic::transport::Channel,
+    timeout: Duration,
+}
+
+impl UserClientProxy {
+    pub async fn get_profile(&amp;self, user_id: &amp;str) -&gt; Result&lt;Profile, ProxyError&gt; {
+        let req = tonic::Request::new(GetProfileRequest { id: user_id.into() });
+        let mut client = profile_service::client::ProfileServiceClient::new(self.channel.clone());
+        let fut = client.get_profile(req);
+        match tokio::time::timeout(self.timeout, fut).await {
+            Ok(Ok(resp)) =&gt; Ok(resp.into_inner().into()),
+            Ok(Err(status)) =&gt; Err(ProxyError::Grpc(status)),
+            Err(_) =&gt; Err(ProxyError::Timeout),
+        }
+    }
+}
+```
+
+---
+
+## 4. 🔄 Variantes Arquitectónicas y Casos de Uso
+
+| Variante | Mecanismo | Caso de uso | Trade-off |
+|----------|-----------|-------------|-----------|
+| **Virtual Proxy** | Inicialización diferida. Crea el sujeto real solo en primera invocación. | Imágenes pesadas, conexiones DB, parsers complejos, módulos on-demand. | Retrasa fallos de configuración. Dificulta diagnóstico temprano si no se valida. |
+| **Protection Proxy** | Valida permisos, roles o contexto antes de delegar. | APIs internas, sistemas multi-tenant, gestión de recursos sensibles. | Overhead en cada llamada. Requiere política de auth centralizada y actualizada. |
+| **Remote Proxy** | Serializa requests, maneja red, retries y timeouts. | gRPC stubs, REST clients, sockets, microservicios distribuidos. | Complejidad de fallos parciales. Requiere circuit breakers y serialización eficiente. |
+| **Caching Proxy** | Almacena resultados por clave. Retorna caché si es válida. | Consultas costosas, renderizado estático, catálogos, configuración. | Invalidación compleja. Riesgo de datos obsoletos si TTL o eventos no se gestionan. |
+| **Smart/Logging Proxy** | Registra llamadas, métricas, auditoría o validación de contratos. | Compliance, debugging, monitoring, validación de payloads en borde. | Aumento de I/O logs. Puede saturar sistemas si no se samplea o agrega. |
+| **Copy-on-Write Proxy** | Comparte estado hasta mutación. Clona solo al modificar. | Editores, versionado, estructuras inmutables con forks frecuentes. | Complejidad de tracking. Overhead en primera escritura y gestión de referencias. |
+
+---
+
+## 5. 🎯 Cuándo Usar y Cuándo Evitar
+
+| ✅ Usar cuando... | ❌ Evitar cuando... |
+|------------------|-------------------|
+| Necesitas controlar acceso, caché o lazy loading sin tocar lógica de negocio | El sujeto ya es ligero, rápido y seguro. Usa referencia directa. |
+| Quieres aislar clientes de fallos de red, latencia o cambios de protocolo | La interceptación añade overhead crítico en loops tight o sistemas embebidos. |
+| Necesitas logging, auditoría o métricas transversales centralizadas | El proxy se convierte en cuello de botella de rendimiento o punto único de fallo. |
+| Trabajas con recursos costosos, APIs externas o integración legacy | Ya usas AOP nativo, interceptores de framework o contenedores DI con proxies automáticos. |
+| Quieres implementar circuit breakers, rate limiting o fallbacks dinámicos | La abstracción oculta capacidades críticas y fuerza workarounds complejos. |
+
+Comparación rápida con patrones estructurales:
+* **Proxy**: Controla acceso, optimiza o intercepta. Enfocado en ciclo de vida y seguridad.
+* **Decorator**: Añade comportamiento dinámicamente manteniendo interfaz. Enfocado en extensión acumulativa.
+* **Adapter**: Traduce interfaces incompatibles existentes. Corrección post-factum.
+* **Facade**: Simplifica subsistemas complejos. Enfocado en reducción de acoplamiento y superficie.
+* **Strategy**: Intercambia algoritmos/comportamiento. Enfocado en variación de lógica, no en interceptación.
+
+---
+
+## 6. 🧪 Testing, Mantenibilidad y Arquitectura
+
+* **Aislamiento en Tests**: Mockea el `RealSubject` o usa un proxy controlado. Verifica interceptación, bloqueo de acceso, cache hits/misses y propagación de errores.
+  * Técnica: Inyecta sujeto falso. Aserta que el proxy no delega cuando se deniega permiso, y que cachea correctamente.
+* **Validación de Transparencia**: Escribe tests que traten proxy y real como idénticos. Verifica `instanceof` o type guards si el lenguaje lo exige.
+  * Fix: `assert(proxy instanceof Subject)`. Valida que métodos adicionales no rompan contratos.
+* **Ciclo de Vida y Ownership**: Si el proxy gestiona conexiones, buffers o sesiones, debe implementar `dispose()`, `close()` o `cancel()` y propagarlo al sujeto real.
+* **Refactorización hacia Intercepción Centralizada**: Identifique código duplicado de logging, validación o retries. Extraiga a proxy. Inyecte en constructor. Deprecar lógica dispersa.
+* **Impacto en Rendimiento**: La indirección añade 1-2 saltos de función/v-table. En CPUs modernas, negligible. Solo impacta si valida/transforma excesivamente o serializa payloads grandes. Profile antes de optimizar.
+* **Gestión de Versiones**: Cuando el contrato `Subject` evoluciona, todos los proxies deben actualizarse. Mantenga interfaces estables. Use adapters internos para migración progresiva.
+* **Visibilidad y APIs Públicas**: Exponga solo `Subject`. Oculte proxies concretos en módulos internos o factories. Reduzca superficie de uso indebido y acoplamiento accidental.
+* **Documentación de Puntos de Intercepción**: Especifique qué métodos se interceptan, qué políticas aplican, y qué garantías ofrece cada capa. Elimine suposiciones implícitas.
+* **Migración desde Acceso Directo**: Identifique llamadas a recursos costosos o inseguros. Envuelva en proxy. Inyecte dependencias. Deprecar acceso directo progresivamente con linters.
+* **Integración con Observabilidad**: Inyecte correlation IDs, trace IDs y métricas en entrada/salida. Centralice telemetría sin tocar lógica de delegación.
+
+---
+
+## 7. ⚠️ Errores Comunes y Soluciones
+
+* **Romper Transparencia de Interfaz**: Añadir métodos a `Proxy` que no existen en `Subject`. Cliente falla al sustituir o hacer downcast inseguro.
+  * Fix: Mantenga interfaz estricta. Si necesita métodos nuevos, use interfaces separadas o factories que retornen tipos extendidos explícitos.
+* **Recursión Infinita / Autowrapping**: Proxy se envuelve a sí mismo o crea referencia circular al delegar incorrectamente.
+  * Fix: Valide en constructor que `wrapped !== this`. Use factories centralizadas que garanticen DAG de composición. Evite `return this.operation()` sin delegar.
+* **Degradación de Rendimiento por Intercepción Excesiva**: Logging sincrónico, validación pesada o serialización en cada llamada.
+  * Fix: Profile primero. Use logging asincrónico, sampling o validación en borde. Combine lógica compatible en un solo proxy. Skip si está deshabilitado.
+* **Fuga de Estado entre Requests/Usuarios**: Configuración, caché o sesiones compartidas que filtran datos entre tenants.
+  * Fix: Pase contexto explícitamente por parámetro o scope. Nunca estado global sin control. Use `AsyncLocal`, `HttpContext.Items` o factories por request.
+* **Supresión Silenciosa de Errores**: `try/catch` en proxy que no rethrow o transforma error incorrectamente, ocultando fallos al cliente.
+  * Fix: Propague excepciones o use `Result`/`Either` patterns. Documente política de errores en contrato. Fail fast con trazabilidad.
+* **Confundir con Decorator o Adapter**: Usar Proxy para añadir comportamiento acumulativo o traducir contratos incompatibles.
+  * Fix: Si controla acceso/ciclo &gt; Proxy. Si extiende comportamiento manteniendo interfaz &gt; Decorator. Si traduce APIs &gt; Adapter. No mezcle propósitos.
+* **Serialización Rota**: `JSON.stringify()` o `pickle` falla con referencias a proxies o métodos no serializables.
+  * Fix: Serialize solo DTOs o estado base. Reconstruya cadena de delegación al deserializar. Use `toJSON()`/`__reduce__` seguro.
+* **Invalidación de Caché Defectuosa**: Proxy cachea respuestas y no invalida cuando cambian datos remotos o políticas.
+  * Fix: Use TTL explícito, invalide por evento, o evite caché en proxies síncronos. Prefiera caché en capa de aplicación con invalidación centralizada.
+* **Thread-Safety Violada**: Múltiples hilos leen/escriben estado interno del proxy simultáneamente sin sincronización.
+  * Fix: Use locks, inmutabilidad, o contextos por request. Documente thread-safety explícitamente. Evite `static` mutable sin control.
+* **Olvidar Propagar `dispose()`/`cancel()`**: Recursos abiertos en sujeto real no se liberan al terminar el flujo proxy.
+  * Fix: Implemente `IDisposable`/`AsyncDisposable` o método `cleanup()`. Propague en orden inverso al wrapping. Use `try/finally` o context managers.
+
+---
+
+## 8. 💡 Mejores Prácticas y Consejos
+
+* **Prefiera Proxies Stateless cuando sea posible**: Elimina complejidad de gestión de estado, facilita testing determinista y evita fugas entre peticiones.
+* **Documente Puntos de Intercepción y Políticas**: Especifique explícitamente qué métodos se interceptan, qué reglas aplican, y qué garantías ofrece cada capa.
+* **Use Dynamic Proxies para Cross-Cutting**: Cuando múltiples clases requieren la misma interceptación, genere proxies en runtime en lugar de wrappers manuales.
+* **Valide Contratos en Bordes**: Rechace payloads malformados o contextos inválidos inmediatamente. Fail fast ahorra horas de debugging en producción.
+* **Implemente Fallbacks y Circuit Breakers**: Aísle fallos de sujetos remotos o inestables. Evite propagar timeouts o errores 5xx al cliente final.
+* **Mantenga Liskov Substitution Principle Estricto**: Trate siempre como `Subject`. Evite `instanceof`, downcasts o checks de identidad que rompan abstracción.
+* **Profile antes de Desplegar**: No asuma overhead trivial. Mide allocations, latency y GC pressure. Optimice solo si el profiler lo indica.
+* **Pruebe Flujos de Falla, no solo Éxito**: Valide denegaciones, timeouts, cache misses, circuit open y recuperación. Detecte order-dependencies temprano.
+* **Mantenga Contratos Estables**: Cambiar la firma pública rompe todos los clientes. Use deprecación controlada, versionado semántico y proxies paralelos.
+* **No lo use "por moda"**: Si el acceso es seguro, el recurso es ligero y no requiere observabilidad transversal, use referencia directa. La interceptación innecesaria es deuda técnica de rendimiento y mantenimiento.
+
+---
+
+Este cheatsheet proporciona una referencia arquitectónica completa para el patrón Proxy, cubriendo su intención estructural, contratos de interceptación transparente, implementación multi-paradigma, variantes de control y rendimiento, impacto real en testing y mantenibilidad, errores frecuentes en producción y estrategias de mitigación, junto con criterios estrictos para decidir cuándo la delegación controlada es una necesidad del dominio y cuándo migrar hacia referencias directas, contenedores DI avanzados o estrategias de interceptación nativas más escalables.
