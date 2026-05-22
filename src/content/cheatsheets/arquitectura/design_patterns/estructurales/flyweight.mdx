@@ -1,0 +1,317 @@
+# 🪶 Patrón Flyweight — Cheatsheet Completo 🪶
+
+El patrón **Flyweight** es un patrón estructural de optimización que permite compartir eficientemente una gran cantidad de objetos de grano fino extrayendo y reutilizando su **estado intrínseco inmutable**, mientras se pasa el **estado extrínseco contextual** en tiempo de ejecución. Nace para resolver problemas de presión de memoria, fragmentación de heap y overhead de instanciación en sistemas que manejan decenas de miles o millones de entidades similares (motores de renderizado, editores de texto, simuladores, redes de sensores, juegos, parsers masivos). Este cheatsheet desglosa la intención arquitectónica real del patrón, contratos de separación de estado, implementaciones multi-paradigma, variantes de caché y concurrencia, impacto en profiling y mantenibilidad, trampas de mutación compartida, y criterios estrictos para decidir cuándo el reuso estructural es una necesidad del dominio y no una optimización prematura que complica la depuración y la evolución del sistema.
+
+---
+
+## 1. 🌟 Conceptos Fundamentales
+
+* **Estado Intrínseco (Intrinsic State)**: Parte del objeto que es inmutable y compartible entre todas las instancias. Se almacena una sola vez en memoria.
+  * Por qué importa: Define la identidad estructural del flyweight. Su inmutabilidad garantiza que compartirlo no cause efectos secundarios cruzados.
+* **Estado Extrínseco (Extrinsic State)**: Contexto variable que depende de cada uso o ubicación. Se pasa como parámetro en cada invocación, no se almacena en el objeto.
+  * Por qué importa: Permite reutilizar el mismo objeto para escenarios distintos sin romper coherencia. Separa "qué es" de "dónde/cómo se usa".
+* **Flyweight (Interfaz/Contrato)**: Declara operaciones que reciben estado extrínseco y ejecutan lógica usando el estado intrínseco interno.
+  * Por qué importa: Establece el límite de abstracción. El cliente solo interactúa con este contrato, desconociendo si el objeto es compartido o único.
+* **ConcreteFlyweight**: Implementación que almacena el estado intrínseco y define el comportamiento compartido.
+  * Por qué importa: Encapsula la configuración común (textura, fuente, protocolo, geometría base, regla de validación). Nunca muta tras su creación.
+* **FlyweightFactory**: Componente que gestiona la creación, caché y recuperación de flyweights. Garantiza que solicitudes idénticas retornen la misma referencia.
+  * Por qué importa: Centraliza el control de reuso. Implementa políticas de instanciación bajo demanda, validación de claves y gestión de ciclo de vida.
+* **Cliente**: Código de aplicación que solicita flyweights al factory y proporciona estado extrínseco en cada llamada.
+  * Por qué importa: Mantiene el principio de inversión de dependencias. La lógica de dominio permanece pura, solo coordina contexto y referencias compartidas.
+* **Structural Sharing**: Principio subyacente. Múltiples entidades apuntan al mismo bloque de datos inmutable, reduciendo huella de memoria de O(N) a O(U) donde U ≪ N.
+  * Por qué importa: Transforma restricciones de hardware en límites manejables. Habilita escalabilidad en sistemas embebidos, edge computing y procesamiento masivo.
+* **Inmutabilidad Post-Creación**: Una vez registrado en el factory, el flyweight nunca debe modificarse. Cualquier cambio requiere crear una nueva variante y actualizar la caché.
+  * Por qué importa: Garantiza thread-safety, predictibilidad y aislamiento de fallos. La mutación silenciosa corrompe a todos los clientes que comparten la referencia.
+* **Separación Estricta de Responsabilidades**: El flyweight solo gestiona datos/estructura compartida. El cliente o contexto gestiona posición, estado temporal, métricas o ciclo de vida local.
+  * Por qué importa: Evita el antipatrón "God Object". Mantiene el patrón enfocado en optimización estructural, no en lógica de dominio.
+* **Trade-off Memoria vs Complejidad**: Reduce heap dramáticamente, pero introduce indirección, gestión de caché y depuración no trivial. Solo justifica su costo cuando N es masivo o el footprint crítico.
+  * Por qué importa: La optimización prematura añade deuda técnica. El flyweight debe aplicarse solo tras profiling, no por convención.
+
+---
+
+## 2. 📐 Estructura Lógica y Contrato de Reutilización
+
+La arquitectura sigue un flujo estricto de separación de estado, caché controlada y delegación contextual. El patrón garantiza que todas las entidades compartan configuración inmutable sin interferir entre sí.
+
+```text
+               Cliente
+                  │
+                  ▼ solicita con clave única
+            FlyweightFactory
+         +---------------------------+
+         | getFlyweight(key): IFW    |
+         | cache: Map<Key, IFW>      |
+         +---------------------------+
+                  ▲ retorna referencia
+            IFlyweight (Interfaz)
+         +---------------------------+
+         | operation(extrinsic): void|
+         +---------------------------+
+            ▲ implementa
+        +---+---+
+        |       |
+  ConcreteFWA ConcreteFWB
+  [Intrinsic] [Intrinsic]
+```
+
+Flujo de ejecución garantizado:
+1. Cliente necesita procesar una entidad con configuración `key`.
+2. Invoca `factory.getFlyweight(key)`.
+3. Factory busca en caché. Si existe, retorna referencia compartida.
+4. Si no existe, instancia `ConcreteFlyweight`, almacena estado intrínseco, registra en caché, retorna referencia.
+5. Cliente invoca `flyweight.operation(extrinsicState)`.
+6. Flyweight combina estado intrínseco (interno) con extrínseco (parámetro) y ejecuta lógica.
+7. Retorna resultado. El cliente nunca ve la caché ni la reutilización interna.
+
+Contrato mínimo en pseudocódigo tipado:
+```typescript
+// Interfaz
+interface Glyph {
+  render(x: number, y: number, color: string): void;
+}
+
+// ConcreteFlyweight
+class CharacterGlyph implements Glyph {
+  constructor(private charCode: string, private font: string) {} // Inmutable
+  render(x: number, y: number, color: string) {
+    // Usa intrínseco (charCode, font) + extrínseco (x, y, color)
+    drawToCanvas(this.charCode, this.font, x, y, color);
+  }
+}
+
+// Factory
+class GlyphFactory {
+  private cache = new Map<string, Glyph>();
+  getGlyph(char: string, font: string): Glyph {
+    const key = `${char}:${font}`;
+    if (!this.cache.has(key)) {
+      this.cache.set(key, new CharacterGlyph(char, font));
+    }
+    return this.cache.get(key)!;
+  }
+  getCacheSize(): number { return this.cache.size; }
+  clearCache(): void { this.cache.clear(); }
+}
+
+// Cliente
+const factory = new GlyphFactory();
+const doc = [{char: 'A', font: 'Serif', x: 10, y: 20, color: '#000'}, ...];
+doc.forEach(g => {
+  const glyph = factory.getGlyph(g.char, g.font);
+  glyph.render(g.x, g.y, g.color); // Extrínseco pasado en runtime
+});
+```
+Regla inquebrantable: El estado intrínseco **nunca** debe mutarse después de la creación. Si se requiere variación, genera una nueva clave y instancia. La caché debe gestionar claves estrictas y consistentes.
+
+---
+
+## 3. 🛠️ Implementación por Paradigma y Ecosistema
+
+El patrón se adapta al modelo de memoria, tipado y gestión de recursos del entorno. No requiere necesariamente herencia clásica.
+
+### 3.1. POO Clásica con Caché Centralizada (TypeScript / Java / C#)
+Uso de mapas/diccionarios thread-safe, claves compuestas y factory methods. Ideal para UI toolkits, editores o simuladores.
+
+```java
+public interface TreeFlyweight {
+    void render(int x, int y, int scale, Season season);
+}
+
+public class DeciduousTree implements TreeFlyweight {
+    private final String texturePath;
+    private final double baseHeight;
+    public DeciduousTree(String tex, double height) {
+        this.texturePath = tex; this.baseHeight = height;
+    }
+    public void render(int x, int y, int scale, Season season) {
+        Engine.draw(texturePath, x, y, baseHeight * scale, season.getColor());
+    }
+}
+
+public class TreeFactory {
+    private final Map<String, TreeFlyweight> cache = new ConcurrentHashMap<>();
+    public TreeFlyweight get(String species) {
+        return cache.computeIfAbsent(species, spec -> {
+            String tex = loadTexture(spec);
+            double h = Database.getBaseHeight(spec);
+            return new DeciduousTree(tex, h);
+        });
+    }
+}
+```
+
+### 3.2. Enfoque Funcional / Structural Sharing (Rust / JS / Clojure)
+Se reemplaza caché mutable por mapas inmutables, memoización o estructuras persistentes.
+
+```rust
+use std::collections::HashMap;
+use std::sync::Arc;
+
+#[derive(Clone)]
+pub struct ParticleFlyweight {
+    pub texture: Arc<Texture>, // Shared, ref-counted
+    pub mass: f32,
+    pub drag_coeff: f32,
+}
+
+pub struct ParticleFactory {
+    cache: HashMap<String, ParticleFlyweight>,
+}
+
+impl ParticleFactory {
+    pub fn get(&mut self, spec: &str) -> &ParticleFlyweight {
+        self.cache.entry(spec.to_string()).or_insert_with(|| {
+            let tex = Arc::new(load_texture(spec));
+            ParticleFlyweight { texture: tex, mass: 1.0, drag_coeff: 0.8 }
+        })
+    }
+}
+// Cliente pasa posición, velocidad, lifespan como parámetros separados.
+```
+Ventaja: Inmutabilidad, thread-safety nativa, cero mutación compartida. Desventaja: Requiere disciplina arquitectónica para separar contexto de datos.
+
+### 3.3. Game Dev / Engine Systems (C++ / Unity / Godot)
+Combinación con Object Pooling y ECS (Entity Component System). Flyweight para assets/render states, Pool para entidades activas.
+
+```cpp
+class MeshFlyweight {
+    GLuint vao, vbo;
+    std::string materialKey;
+public:
+    MeshFlyweight(const std::string& key) : vao(createVAO(key)), vbo(createVBO(key)), materialKey(key) {}
+    void render(glm::vec3 pos, glm::quat rot) {
+        glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(glm::translate(pos) * glm::mat4(rot)));
+        glBindVertexArray(vao); glDrawArrays(GL_TRIANGLES, 0, vertCount);
+    }
+};
+
+class AssetManager {
+    std::unordered_map<std::string, std::shared_ptr<MeshFlyweight>> cache;
+public:
+    std::shared_ptr<MeshFlyweight> getMesh(const std::string& id) {
+        auto it = cache.find(id);
+        if (it == cache.end()) {
+            auto fw = std::make_shared<MeshFlyweight>(id);
+            cache[id] = fw; return fw;
+        }
+        return it->second;
+    }
+};
+// ECS separa Transform (extrínseco) de MeshRef (intrínseco compartido).
+```
+
+### 3.4. Network / Protocol / Connection Deduplication
+Reutilización de buffers, handlers de protocolo o configuraciones de conexión para miles de sockets o requests.
+
+```python
+class RequestFlyweight:
+    __slots__ = ['headers', 'timeout', 'retry_policy'] # Memory optimization
+    def __init__(self, headers, timeout, retry):
+        self.headers = headers
+        self.timeout = timeout
+        self.retry_policy = retry
+
+class RequestFactory:
+    _cache = weakref.WeakValueDictionary()
+    @classmethod
+    def get_config(cls, profile: str) -> RequestFlyweight:
+        if profile not in cls._cache:
+            cfg = load_profile_config(profile)
+            cls._cache[profile] = RequestFlyweight(cfg.headers, cfg.timeout, cfg.retries)
+        return cls._cache[profile]
+
+# Cliente pasa URL, payload, context como parámetros externos.
+```
+
+---
+
+## 4. 🔄 Variantes Arquitectónicas y Extensiones
+
+| Variante | Mecanismo | Caso de uso | Trade-off |
+|----------|-----------|-------------|-----------|
+| **Pure Flyweight** | Todo estado compartible es intrínseco. Extrínseco 100% externo. | Renderizado masivo, parsers, editores de texto. | Rigidez alta. Requiere diseño anticipado estricto. |
+| **Hybrid Flyweight** | Permite estado mutable controlado por cliente (ej. flags locales). | Juegos con entidades semi-independientes, UI widgets. | Riesgo de mutación accidental. Requiere documentación clara. |
+| **LRU / WeakRef Cache** | Elimina entradas no usadas o bajo presión de memoria. | Aplicaciones de larga ejecución, edge devices, browsers. | Overhead de gestión de referencias. Puede causar reinstanciación frecuente. |
+| **Context-Bound Pool** | Caché aislada por tenant, request o sesión. Evita fuga cruzada. | SaaS multi-tenant, SSR/Edge, sistemas de permisos. | Fragmentación de caché. Mayor consumo si contexts son muchos. |
+| **Lazy + Prefetch** | Crea bajo demanda, pero precarga variantes probables en background. | Motores gráficos, streaming de assets, IA inference. | Complejidad de scheduling. Puede saturar I/O o memoria inicial. |
+| **Composite + Flyweight** | Árboles donde nodos comparten configuración (estilos, reglas, permisos). | DOM virtual, reglas de negocio anidadas, taxonomías. | Traversal más complejo. Requiere validación de consistencia. |
+
+---
+
+## 5. 🎯 Cuándo Usar y Cuándo Evitar
+
+| ✅ Usar cuando... | ❌ Evitar cuando... |
+|------------------|-------------------|
+| Manejas > 10k instancias similares con configuración repetida | El sistema tiene < 1k objetos o la memoria no es cuello de botella. Usa instanciación directa. |
+| El estado intrínseco es inmutable y bien delimitado | Requieres mutación frecuente de configuración compartida. Usa copia profunda o value objects. |
+| El profiling muestra presión de GC o fragmentación de heap | La depuración de instancias compartidas rompe flujos de desarrollo o compliance. |
+| Trabajas con motores gráficos, editores, simuladores o redes masivas | El lenguaje/entorno ya ofrece structural sharing nativo (ej. immutable.js, Clojure, Rust Arc). |
+| Necesitas deduplicar assets, protocolos o reglas de validación | Ya usas un contenedor DI o cache distribuido que gestiona reuso automáticamente. |
+
+Comparación rápida con patrones estructurales y creacionales:
+* **Flyweight**: Comparte estado intrínseco inmutable. Enfocado en reducción de huella de memoria.
+* **Object Pool**: Reutiliza instancias completas para evitar allocation/deallocation costoso. Enfocado en rendimiento de ciclo de vida.
+* **Prototype**: Clona objetos existentes. Enfocado en replicación de estado, no en sharing estructural.
+* **Singleton**: Garantiza unicidad. Enfocado en acceso global, no en reuso masivo.
+* **Decorator**: Extiende comportamiento dinámicamente. Enfocado en composición funcional, no en optimización de memoria.
+
+---
+
+## 6. 🧪 Testing, Mantenibilidad y Arquitectura
+
+* **Aislamiento en Tests**: Mockea el factory para forzar cache hits/misses. Verifica que objetos con misma clave sean `===` o `==`.
+  * Técnica: Inyecta factory controlado. Aserta `assert.strictEqual(fwA, fwB)` para claves idénticas. Valida que extrínseco no afecte estado interno.
+* **Validación de Inmutabilidad**: Escribe tests que intenten mutar propiedades intrínsecas post-creación. Deben fallar o ser ignoradas.
+  * Fix: Use `Object.freeze()`, `readonly`, `const`, o `__slots__`. Documente contrato de inmutabilidad explícitamente.
+* **Ciclo de Vida y Ownership**: La caché debe gestionar referencias débiles, TTL o LRU si el sistema es de larga ejecución. Evite memory leaks por strong refs.
+* **Refactorización desde Instanciación Directa**: Identifique objetos con campos repetidos. Extraiga configuración común. Mueva a factory. Pase contexto como parámetro.
+* **Impacto en Rendimiento**: La indirección de caché añade lookup O(1) average. En CPUs modernas, negligible. Solo impacta si hashing es costoso o colisiones altas. Profile antes de optimizar.
+* **Gestión de Versiones**: Si la configuración intrínseca evoluciona, mantenga claves estables o use versionado (`key_v2`). Nunca rompa contrato de factory sin migración.
+* **Visibilidad y APIs Públicas**: Exponga solo `getFlyweight()` y operaciones. Oculte caché interna. Reduzca superficie de manipulación accidental.
+* **Documentación de Límites**: Especifique explícitamente qué es intrínseco, qué es extrínseco, y políticas de caché. Elimine suposiciones implícitas.
+* **Migración desde Clases Pesadas**: Identifique campos estáticos o repetidos. Envuelva en flyweight. Inyecte factory. Deprecar `new` directo progresivamente.
+* **Integración con Observabilidad**: Exponga métricas de cache hit rate, size, miss penalty. Detecte ineficiencias o leaks en producción.
+
+---
+
+## 7. ⚠️ Errores Comunes y Soluciones
+
+* **Mutación de Estado Intrínseco**: Modificar flyweight compartido corrompe a todos los clientes.
+  * Fix: Inmutabilidad estricta. Use `readonly`, `const`, `Object.freeze()`, o clones defensivos. Lance error en setters.
+* **Confundir Intrínseco con Extrínseco**: Almacenar posición, timestamp o contexto en el flyweight.
+  * Fix: Separe datos en estructura clara. Pase contexto como parámetro. Revise contrato de `operation()`.
+* **Cache Leak por Strong References**: La caché nunca libera objetos, saturando memoria.
+  * Fix: Use `WeakMap`, `WeakValueDictionary`, LRU con TTL, o invalidación por evento. Monitoree heap size.
+* **Race Condition en Factory**: Múltiples hilos crean duplicados para misma clave.
+  * Fix: Use `ConcurrentHashMap`, `computeIfAbsent`, locks, o atómicos. Garantice idempotencia en creación.
+* **Over-Sharing Inseguro**: Compartir objetos que no deberían compartirse (ej. credenciales, estado de sesión).
+  * Fix: Valide claves de sharing. Use context-bound pools. Nunca comparta datos sensibles o mutable por defecto.
+* **Confundir con Pool o Singleton**: Usar Flyweight para reutilizar instancias completas o garantizar acceso global.
+  * Fix: Si reutiliza contención → Pool. Si unicidad → Singleton. Si comparte estado inmutable masivo → Flyweight.
+* **Debugging Imposible**: No saber qué entidad usa qué flyweight en logs o profilers.
+  * Fix: Exponga `id` o `key` público. Loguee sharing stats. Use correlation IDs para trazabilidad.
+* **Hashing Costoso o Colisiones**: Claves complejas generan overhead o retornan flyweights incorrectos.
+  * Fix: Use claves canónicas, normalice entrada, evite objetos como claves sin `hashCode`/`equals` estables.
+* **Falta de Validación de Entrada**: Claves nulas, vacías o malformadas corrompen caché.
+  * Fix: Valide en factory. Lance `ArgumentException` o use fallback seguro. Rechace silenciosamente solo si contrato lo permite.
+* **Olvidar Invalidar Caché en Hot-Reload**: Configuración cambia pero flyweights antiguos persisten.
+  * Fix: Implemente `clear()`, `reload()`, o versionado de claves. Notifique a clientes si es crítico.
+
+---
+
+## 8. 💡 Mejores Prácticas y Consejos
+
+* **Inmutabilidad Estricta por Defecto**: Congele estado intrínseco al crear. Use tipos `readonly`, `const` o estructuras inmutables nativas.
+* **Separe Intrínseco/Extrínseco en Diseño**: Documente explícitamente qué se comparte y qué se pasa. Revise contrato antes de implementar.
+* **Use Cachés Inteligentes**: `WeakRef`, LRU, o TTL para evitar leaks. Exponga métricas de hit/miss para tuning en producción.
+* **Profile Antes de Optimizar**: No asuma que el flyweight es necesario. Mide allocations, GC pressure, y memory fragmentation. Optimice solo si justifica.
+* **Prefiera Structural Sharing Nativo**: Si el lenguaje soporta (Rust `Arc`, Clojure persistent vectors, JS `structuredClone` + cache), úselo en lugar de reinventar factory.
+* **Thread-Safety Garantizada**: Use mapas concurrentes, atómicos o locks en factory. Nunca asuma single-thread en sistemas modernos.
+* **Pruebe Cache Hits y Misses**: Valide comportamiento bajo carga, colisiones, invalidación y reinstanciación. Detecte regresiones temprano.
+* **Mantenga Contratos Estables**: Cambiar firma de `operation()` o claves de caché rompe clientes. Use deprecación controlada y migradores.
+* **Monitoree Huella de Memoria**: Registre tamaño de caché, objetos compartidos, y presión en allocator. Detecte fugas o over-sharing.
+* **No lo use "por moda"**: Si N es bajo, memoria no es crítica, o el contexto muta frecuentemente, use instanciación directa o pooling. La optimización innecesaria es deuda técnica de legibilidad y mantenimiento.
+
+---
+
+Este cheatsheet proporciona una referencia arquitectónica completa para el patrón Flyweight, cubriendo su intención estructural, contratos de separación de estado, implementación multi-paradigma, variantes de caché y concurrencia, impacto real en profiling y mantenibilidad, errores frecuentes en producción y estrategias de mitigación, junto con criterios estrictos para decidir cuándo el reuso estructural es una necesidad del dominio y cuándo migrar hacia instanciación directa, object pooling o structural sharing nativo más escalables.
