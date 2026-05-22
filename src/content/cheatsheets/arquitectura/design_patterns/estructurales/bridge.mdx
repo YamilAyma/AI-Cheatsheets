@@ -1,0 +1,303 @@
+# 🌉 Patrón Bridge — Cheatsheet Completo 🌉
+
+El patrón **Bridge** es un patrón estructural que desacopla una **abstracción** de su **implementación**, permitiendo que ambas dimensiones varíen de forma completamente independiente. Resuelve la explosión combinatoria de subclases, elimina el acoplamiento rígido por herencia y facilita la extensión cruzada de interfaces de dominio y motores de ejecución subyacentes. Nace para separar la capa de API o contrato de alto nivel de los detalles de plataforma, renderizado, protocolo o proveedor, garantizando que cambios en un eje no requieran modificar ni recompilar el otro. Este cheatsheet desglosa la intención arquitectónica real del patrón, contratos de delegación segura, implementaciones multi-paradigma, variantes de swapping dinámico y validación cruzada, impacto en testing y rendimiento, trampas de acoplamiento encubierto, y criterios estrictos para decidir cuándo la separación de ejes es una necesidad del dominio y no una abstracción innecesaria que añade fricción.
+
+---
+
+## 1. 🌟 Conceptos Fundamentales
+
+* **Abstraction (Abstracción)**: Interfaz de alto nivel que define el contrato visible para el cliente. Contiene una referencia interna a un `Implementor`.
+  * Por qué importa: Establece el límite de dominio. El cliente interactúa solo con esta capa, desconociendo por completo los detalles de ejecución.
+* **RefinedAbstraction (Abstracción Refinada)**: Subclase o variante que extiende la abstracción base con lógica de dominio específica o combinaciones de comportamiento.
+  * Por qué importa: Permite crear jerarquías de negocio sin acoplarse a plataformas. Ej: `VectorShape`, `RasterShape`, `3DShape` sobre un mismo renderer.
+* **Implementor (Implementador)**: Interfaz de bajo nivel que declara operaciones primitivas requeridas por la abstracción. Independiente del dominio.
+  * Por qué importa: Define el contrato técnico. Garantiza que cualquier motor, driver o plataforma pueda integrarse si cumple este protocolo.
+* **ConcreteImplementor (Implementador Concreto)**: Clase que materializa `Implementor` para una tecnología específica (OpenGL, Vulkan, MySQL, Stripe, AWS S3).
+  * Por qué importa: Encapsula la complejidad nativa. Cambiar de proveedor solo requiere sustituir esta clase, no tocar la abstracción ni el cliente.
+* **Composición sobre Herencia**: Reemplaza `extends` por `has-a`. La abstracción **delega** trabajo al implementor en lugar de heredar su comportamiento.
+  * Por qué importa: Rompe la dependencia vertical. Permite matrices N×M de combinaciones sin generar N×M clases. Cumple Open/Closed en ambos ejes.
+* **Variación Independiente en Dos Ejes**: Eje X = Qué se hace (dominio/API). Eje Y = Cómo se hace (plataforma/tecnología).
+  * Por qué importa: La herencia mezcla ambos ejes, creando clases como `MySQLUserDAO`, `PostgresUserDAO`, `MongoUserDAO`. Bridge los separa limpiamente.
+* **Delegación Explícita y Pura**: La abstracción nunca implementa lógica crítica de bajo nivel. Solo orquesta, valida y delega.
+  * Por qué importa: Mantiene la responsabilidad única. Si la abstracción implementa detalles de plataforma, el patrón colapsa en acoplamiento híbrido.
+* **Aislamiento de Ciclo de Vida**: La abstracción y el implementor pueden instanciarse, configurarse y destruirse en momentos distintos.
+  * Por qué importa: Facilita inyección dinámica, hot-swapping en runtime, pruebas aisladas y gestión de recursos por capa.
+
+---
+
+## 2. 📐 Estructura y Contrato de Desacoplamiento
+
+La arquitectura sigue un flujo estricto de separación de responsabilidades y delegación controlada. El patrón garantiza que ningún cambio en la plataforma afecte la API de dominio, y viceversa.
+
+```text
+               Cliente
+                  │
+                  ▼ usa
+            Abstraction
+         +---------------------------+
+         | setImplementor(imp)       |
+         | operation(): Result       |
+         +---------------------------+
+                  │ delega
+                  ▼
+            Implementor
+         +---------------------------+
+         | primitiveOperationA(): T  |
+         | primitiveOperationB(): U  |
+         +---------------------------+
+                  ▲
+          +-------+-------+
+          |               |
+ ConcreteImpA         ConcreteImpB
+ (OpenGL)             (DirectX/Vulkan)
+```
+
+Flujo de ejecución garantizado:
+1. Cliente instancia o inyecta una `Abstraction`.
+2. Se le asigna un `ConcreteImplementor` (vía constructor, setter o DI).
+3. Cliente invoca `abstraction.operation()`.
+4. La abstracción valida estado, aplica lógica de dominio y delega al implementor: `implementor.primitiveOperationA()`.
+5. El implementor ejecuta la acción nativa y retorna resultado crudo.
+6. La abstracción transforma el resultado al formato de dominio y lo retorna al cliente.
+
+Contrato mínimo en pseudocódigo tipado:
+```typescript
+// Eje Y: Implementación (plataforma)
+interface Renderer {
+  drawLine(x1: number, y1: number, x2: number, y2: number): void;
+  drawCircle(x: number, y: number, radius: number): void;
+  clear(): void;
+}
+
+// Eje X: Abstracción (dominio)
+abstract class Shape {
+  protected constructor(protected renderer: Renderer) {}
+  abstract draw(): void;
+}
+
+class Circle extends Shape {
+  constructor(renderer: Renderer, private radius: number) { super(renderer); }
+  draw() {
+    // Lógica de dominio (cálculo, validación, coordenadas)
+    const cx = 100, cy = 100;
+    this.renderer.drawCircle(cx, cy, this.radius);
+  }
+}
+
+// Uso desacoplado
+const canvas = new WebGLRenderer(); // ConcreteImplementor
+const shape: Shape = new Circle(canvas, 50);
+shape.draw(); // Delega a WebGLRenderer.drawCircle()
+```
+Regla inquebrantable: La `Abstraction` nunca debe conocer la clase concreta del `Implementor`. Si realiza `instanceof` o casteos, el puente está roto y el desacoplamiento ha fallado.
+
+---
+
+## 3. 🛠️ Implementación por Paradigma y Ecosistema
+
+El patrón se adapta al modelo de tipado y al estilo de composición del entorno. No requiere necesariamente herencia clásica.
+
+### 3.1. POO Clásica con Inyección (TypeScript / Java / C#)
+Uso de interfaces explícitas y composición en constructor. Ideal para UI toolkits, drivers o motores de renderizado.
+
+```java
+// Implementor
+public interface StorageEngine {
+    void save(String key, byte[] data);
+    byte[] load(String key);
+}
+
+// Abstraction
+public abstract class Cache {
+    protected final StorageEngine engine;
+    protected Cache(StorageEngine engine) { this.engine = engine; }
+    public abstract void store(String key, Object value);
+}
+
+// RefinedAbstraction
+public class DistributedCache extends Cache {
+    public DistributedCache(StorageEngine engine) { super(engine); }
+    @Override
+    public void store(String key, Object value) {
+        byte[] serialized = Serializer.serialize(value);
+        engine.save("dist:" + key, serialized); // Delegación pura
+    }
+}
+// Cliente inyecta RedisEngine, FileSystemEngine o S3Engine sin cambiar Cache.
+```
+
+### 3.2. Enfoque Funcional / Módulos (JavaScript / Python)
+Se reemplaza herencia por closures, inyección de funciones o objetos inmutables que delegan explícitamente.
+
+```javascript
+// Implementor como objeto de funciones
+const sqliteImpl = {
+  query: (sql, params) => db.prepare(sql).all(params),
+  execute: (sql, params) => db.prepare(sql).run(params)
+};
+
+const postgresImpl = {
+  query: async (sql, params) => await client.query(sql, params),
+  execute: async (sql, params) => await client.query(sql, params)
+};
+
+// Abstraction como función de orden superior
+function createRepository(engine) {
+  return {
+    findById: async (id) => {
+      const res = await engine.query('SELECT * FROM users WHERE id = $1', [id]);
+      return res.rows[0] || null;
+    },
+    updateStatus: async (id, status) => {
+      await engine.execute('UPDATE users SET status = $1 WHERE id = $2', [status, id]);
+    }
+  };
+}
+
+// Uso: const repo = createRepository(postgresImpl);
+```
+Ventaja: Extensión sin boilerplate. Desventaja: Pérdida de validación estática si no se usa `TypeScript` o `typing.Protocol`.
+
+### 3.3. Traits / Generics Estrictos (Rust / Go)
+Uso de traits para definir contratos y structs para composición. Garantía en tiempo de compilación.
+
+```rust
+pub trait PaymentProcessor {
+    fn process_charge(&self, amount: f64, currency: &str) -> Result<Transaction, Error>;
+    fn refund(&self, tx_id: &str) -> Result<Refund, Error>;
+}
+
+pub struct PaymentGateway<'a, P: PaymentProcessor> {
+    processor: &'a P,
+    config: GatewayConfig,
+}
+
+impl<'a, P: PaymentProcessor> PaymentGateway<'a, P> {
+    pub fn new(processor: &'a P, config: GatewayConfig) -> Self {
+        Self { processor, config }
+    }
+
+    pub fn checkout(&self, amount: f64) -> Result<Receipt, Error> {
+        // Lógica de dominio (validación, límites, logs)
+        self.config.validate_amount(amount)?;
+        let tx = self.processor.process_charge(amount, self.config.currency())?;
+        Ok(Receipt::from(tx))
+    }
+}
+// Se instancia con StripeProcessor, PayPalProcessor o MockProcessor sin cambiar Gateway.
+```
+
+### 3.4. Dynamic Swapping / Plugin System
+Permite cambiar el implementor en runtime sin reiniciar la abstracción ni el cliente.
+
+```typescript
+class DynamicBridge {
+  private impl: Implementor;
+  private abstractions: Set<Abstraction> = new Set();
+
+  register(abstraction: Abstraction) {
+    abstraction.setImplementor(this.impl);
+    this.abstractions.add(abstraction);
+  }
+
+  swap(newImpl: Implementor) {
+    this.impl = newImpl;
+    // Notifica a todas las abstracciones registradas
+    this.abstractions.forEach(a => a.setImplementor(newImpl));
+  }
+}
+// Útil para hot-reload, feature flags, o migración en vivo entre proveedores.
+```
+
+---
+
+## 4. 🔄 Variantes Arquitectónicas y Extensiones
+
+| Variante | Mecanismo | Caso de uso | Trade-off |
+|----------|-----------|-------------|-----------|
+| **Bridge Dinámico** | `setImplementor()` o inyección en runtime. | Hot-swapping, A/B testing, feature flags. | Complejidad de estado transitorio. Requiere sincronización si es concurrente. |
+| **Bridge con Validación de Capacidades** | `impl.supports(feature)` antes de delegar. | Motores con diferencias de API (WebGL 1 vs 2, SQLite vs PostgreSQL). | Overhead en llamadas. Requiere contrato de features explícito. |
+| **Bridge Lazy/Proxy** | Inicializa implementor solo en primera delegación. | Recursos costosos, conexiones pesadas, carga bajo demanda. | Retrasa fallos de configuración. Dificulta diagnóstico temprano. |
+| **Bridge + Strategy** | El implementor contiene un strategy para variar comportamiento interno. | Renderizadores con diferentes algoritmos de optimización o compresión. | Doble indirección. Puede oscurecer el flujo si no se documenta. |
+| **Bridge de Protocolo** | Adapta y desacopla simultáneamente (Bridge + Adapter híbrido). | Integrar APIs legacy bajo una abstracción moderna con múltiples backends. | Riesgo de violar Single Responsibility. Requiere límites claros. |
+| **Bridge con Caché de Resultados** | Almacena salidas del implementor por clave de entrada. | Motores de cálculo costosos, parsers, generadores de gráficos. | Invalidation compleja. Puede servir datos obsoletos si no se gestiona. |
+
+---
+
+## 5. 🎯 Cuándo Usar y Cuándo Evitar
+
+| ✅ Usar cuando... | ❌ Evitar cuando... |
+|------------------|-------------------|
+| Necesitas extender abstracciones e implementaciones en direcciones independientes | Solo tienes una abstracción y un implementor fijo. Usa herencia simple o composición directa. |
+| La herencia genera explosión combinatoria de subclases | La delegación añade indirección crítica en loops de alta frecuencia o sistemas embebidos. |
+| Quieres cambiar de plataforma/tecnología sin tocar código de dominio | El implementor ya expone exactamente la interfaz que la abstracción necesita. |
+| Necesitas aislar lógica de negocio de detalles de renderizado, red o persistencia | El acoplamiento es intencional y no hay planes de variación futura. |
+| Trabajas con toolkits UI, drivers DB, payment gateways o motores gráficos | Ya usas un contenedor DI con factories dinámicas que gestionan la selección automáticamente. |
+
+Comparación rápida con patrones estructurales y creacionales:
+* **Bridge**: Desacopla abstracción e implementación para variación independiente. Diseño anticipado.
+* **Adapter**: Traduce interfaces incompatibles existentes. Corrección post-factum.
+* **Strategy**: Intercambia algoritmos/comportamiento dinámicamente. Enfocado en lógica, no en plataforma.
+* **Abstract Factory**: Crea familias de objetos compatibles. Enfocado en creación, no en delegación.
+* **Facade**: Simplifica interfaces complejas. Enfocado en reducción de acoplamiento, no en separación de ejes.
+
+---
+
+## 6. 🧪 Testing, Mantenibilidad y Arquitectura
+
+* **Aislamiento en Tests**: Mockea el `Implementor` para probar la `Abstraction` sin tocar tecnología real. Prueba delegación, mapeo y validación de dominio.
+  * Técnica: Inyecta `MockImplementor` que registra llamadas y retorna fixtures controlados. Verifica orden, parámetros y transformación de resultados.
+* **Validación de Contratos Cruzados**: Escribe tests que combinen múltiples `RefinedAbstraction` con múltiples `ConcreteImplementor`. Garantiza que ninguna combinación falle por incompatibilidad oculta.
+  * Fix: Matriz de pruebas NxM. Use property-based testing para generar payloads aleatorios y validar respuestas.
+* **Ciclo de Vida y Ownership**: La abstracción no debe poseer ni destruir el implementor. Solo lo referencia. La gestión de recursos (conexiones, buffers, handles) pertenece al implementor o a un contenedor externo.
+* **Refactorización desde Herencia**: Identifique jerarquías donde `extends` mezcla dominio y plataforma. Extraiga la parte de plataforma a `Implementor`. Reemplace `extends` por composición + delegación.
+* **Impacto en Rendimiento**: La indirección añade 1-2 saltos de función/v-table. En CPUs modernas, el branch prediction y la JIT los absorben. Solo impacta en sistemas de latencia ultrabaja o millones de llamadas/seg. En ese caso, evalúe inline o templates estáticos.
+* **Gestión de Versiones**: Cuando el `Implementor` evoluciona, mantenga la interfaz estable. Use `ImplementorV2` paralelo hasta la migración. Nunca rompa el contrato de delegación.
+* **Visibilidad y APIs Públicas**: Exponga solo `Abstraction`. Oculte `Implementor` y `ConcreteImplementor` en módulos internos. Reduzca la superficie de uso indebido y acoplamiento accidental.
+* **Documentación de Delegación**: Especifique explícitamente en comentarios o docs qué métodos delegan, cómo se transforman parámetros, y qué garantías ofrece cada lado del puente.
+* **Migración desde Uso Directo**: Identifique llamadas a plataformas en código de dominio. Envuelva en `Implementor`. Inyecte en `Abstraction`. Deprecar acceso directo progresivamente.
+* **Integración con Resiliencia**: Envuelva el `Bridge` con patrones de `retry`, `fallback`, o `timeout`. Aísle fallos de proveedores externos sin propagar a la capa de dominio.
+
+---
+
+## 7. ⚠️ Errores Comunes y Soluciones
+
+* **Puente Permeable (Leaky Bridge)**: La abstracción expone tipos, métodos o errores del implementor al cliente.
+  * Fix: Capture excepciones del implementor, mapee a errores de dominio, y nunca rethrow raw exceptions. Mantenga el contrato puro.
+* **Abstracción que Implementa Lógica de Bajo Nivel**: La abstracción formatea bytes, maneja sockets o aplica algoritmos de renderizado.
+  * Fix: Delegue toda lógica técnica al implementor. La abstracción solo orquesta, valida y transforma resultados de dominio.
+* **Acoplamiento Encubierto por Estado Compartido**: Ambos lados leen/escriben variables globales, singletons o cachés estáticos.
+  * Fix: Pase estado explícitamente en métodos o use inmutabilidad. Evite referencias compartidas que rompan el aislamiento del puente.
+* **Explosión de Implementadores No Coordinados**: Múltiples `ConcreteImplementor` para la misma tecnología con semánticas distintas.
+  * Fix: Centralice en un módulo compartido. Registre en DI contenedor. Valide que solo exista una implementación por contrato técnico.
+* **Falta de Validación de Capacidades**: Delegar a un implementor que no soporta la operación solicitada.
+  * Fix: Use `impl.supports(feature)` o lance `UnsupportedOperationException` controlada. Documente capacidades en el contrato.
+* **Confundir con Adapter o Strategy**: Usar Bridge para corregir interfaces incompatibles o variar algoritmos simples.
+  * Fix: Si corrige incompatibilidad post-factum → Adapter. Si varía comportamiento → Strategy. Si separa ejes de variación anticipadamente → Bridge.
+* **Serialización Rota**: Intentar serializar la abstracción sin considerar que contiene referencia al implementor.
+  * Fix: Serialize solo DTOs o identificadores. Reconstruya el puente al deserializar. Marque referencias al implementor como `transient`/`non-serializable`.
+* **Estado Mutable Compartido entre Delegaciones**: El implementor mantiene estado entre llamadas que corrompe resultados concurrentes.
+  * Fix: Haga operaciones stateless o documente claramente thread-safety. Use locks, inmutabilidad o contextos por request si es necesario.
+* **Olvidar Documentar el Contrato de Delegación**: Desarrolladores asumen que el implementor hace más de lo que declara.
+  * Fix: Especifique pre/post condiciones, garantías de atomicidad, y manejo de errores en la interfaz `Implementor`.
+* **Uso Innecesario (Over-Engineering)**: Aplicar Bridge cuando solo hay una abstracción y un implementor fijo.
+  * Fix: Si no hay variación independiente planeada, use composición simple. La separación prematura añade fricción de mantenimiento y rendimiento.
+
+---
+
+## 8. 💡 Mejores Prácticas y Consejos
+
+* **Prefiera Composición Explícita sobre Herencia**: La delegación clara es más testeable, flexible y segura. Evite acoplamiento rígido y permita reemplazo dinámico.
+* **Valide Capacidades en Compile-Time o Runtime**: Use tipos estrictos, traits con bounds, o métodos `supports()` para evitar delegaciones inválidas en producción.
+* **Separe Ejes de Variación Claramente**: Documente qué cambia en la abstracción (dominio/API) y qué cambia en el implementor (plataforma/tecnología). Mantenga las capas puras.
+* **Documente el Contrato de Delegación**: Especifique qué métodos delegan, cómo se transforman parámetros, y qué garantías ofrece cada lado. Elimine suposiciones implícitas.
+* **Use Tipos Estrictos para Evitar Castings**: En lenguajes tipados, declare interfaces explícitas. Evite `any`, `Object`, o `void*` que oculten incompatibilidades.
+* **Implemente Fallbacks Seguros**: Si un implementor falla o no está disponible, retorne una implementación por defecto, lance excepción descriptiva, o use Null Object. Nunca retorne `null` silenciosamente.
+* **Pruebe Combinaciones Cruzadas**: Valide que todas las combinaciones de abstracción e implementador funcionen correctamente. Detecte incompatibilidades antes del despliegue.
+* **Mantenga Contratos Estables**: Cambiar la firma de `Abstraction` o `Implementor` rompe el puente. Use deprecación controlada, versionado semántico y adaptadores paralelos.
+* **Monitoree Latencia y Tasa de Error**: Registre métricas de delegación. Detecte degradación de implementadores, mapeos rotos o cuellos de botella en transformación.
+* **No lo use "por moda"**: Si no hay variación independiente real, use composición simple o herencia controlada. La abstracción innecesaria es deuda técnica de rendimiento y mantenimiento.
+
+---
+
+Este cheatsheet proporciona una referencia arquitectónica completa para el patrón Bridge, cubriendo su intención estructural, contratos de delegación segura, implementación multi-paradigma, variantes de swapping dinámico y validación cruzada, impacto real en testing y mantenibilidad, errores frecuentes en producción y estrategias de mitigación, junto con criterios estrictos para decidir cuándo la separación de ejes es una necesidad del dominio y cuándo migrar hacia composición simple, adapters o contenedores de inyección más escalables.
