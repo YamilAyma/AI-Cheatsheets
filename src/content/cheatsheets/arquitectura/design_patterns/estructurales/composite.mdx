@@ -1,0 +1,310 @@
+# 🌳 Patrón Composite — Cheatsheet Completo 🌳
+
+El patrón **Composite** es un patrón estructural que permite componer objetos en estructuras de árbol para representar jerarquías **parte-todo**. Permite a los clientes tratar objetos individuales y composiciones de manera **uniforme** mediante una interfaz común, eliminando lógica condicional dispersa y habilitando operaciones recursivas predecibles. Nace para dominar la complejidad de estructuras anidadas (sistemas de archivos, interfaces gráficas, ASTs, gráficos de escena, organigramas), simplificar el traversal de datos jerárquicos y garantizar que la adición de nuevos tipos de nodos no rompa la lógica de alto nivel. Este cheatsheet desglosa la intención arquitectónica real, contratos de recursión segura, implementaciones multi-paradigma, variantes transparentes vs seguras, impacto en rendimiento y memoria, trampas de acoplamiento en árboles, y criterios estrictos para decidir cuándo la uniformidad estructural es una necesidad del dominio y no una abstracción que introduce overhead innecesario.
+
+---
+
+## 1. 🌟 Conceptos Fundamentales
+
+* **Componente (Component)**: Interfaz o clase base que declara operaciones comunes para hojas y compuestos. Puede incluir métodos de gestión de hijos con implementación por defecto (no-op o lanzar excepción controlada).
+  * Por qué importa: Establece el contrato uniforme. El cliente solo depende de esta interfaz, desconociendo si opera sobre un nodo terminal o un subárbol.
+* **Hoja (Leaf)**: Objeto primitivo sin hijos. Representa el nodo terminal de la jerarquía. Implementa las operaciones de `Component` directamente.
+  * Por qué importa: Encapsula el comportamiento base. No gestiona estructura, solo lógica de dominio o datos finales.
+* **Compuesto (Composite)**: Nodo intermedio o raíz que mantiene una colección de `Component`. Implementa operaciones de árbol (`add`, `remove`, `getChild`, `iterate`) y delega operaciones de dominio a sus hijos de forma recursiva o iterativa.
+  * Por qué importa: Centraliza la gestión estructural. Permite anidar árboles infinitamente sin modificar la interfaz pública.
+* **Cliente (Client)**: Código que invoca operaciones de `Component` sin distinguir entre hojas y compuestos.
+  * Por qué importa: Mantiene el principio de inversión de dependencias. La lógica de negocio permanece pura, predecible y desacoplada de la topología.
+* **Uniformidad y Recursión**: La esencia del patrón. Permite aplicar operaciones en cascada (`render()`, `calculate()`, `export()`) sin ramificaciones `if/else` por tipo de nodo.
+  * Por qué importa: Reduce complejidad ciclomática, facilita mantenimiento y habilita algoritmos genéricos de traversal.
+* **Transparente vs Seguro**: Transparente expone `add/remove` en todos los nodos (flexible pero permite llamadas inválidas en hojas). Seguro los restringe a `Composite` (seguro pero rompe uniformidad total).
+  * Por qué importa: Define el contrato de seguridad estructural. La elección impacta en validación en tiempo de compilación vs flexibilidad en runtime.
+* **Separación de Estructura y Lógica**: El árbol solo modela la relación parte-todo. Las operaciones complejas se externalizan mediante visitors, iteradores o pipelines funcionales.
+  * Por qué importa: Evita que los nodos acumulen lógica de negocio. Mantiene el patrón enfocado en composición, no en procesamiento.
+* **Propagación de Estado/Operaciones**: Las operaciones pueden fluir top-down (de raíz a hojas), bottom-up (de hojas a raíz), o mixtas. El patrón facilita ambos flujos sin acoplamiento.
+  * Por qué importa: Permite cálculos acumulativos, validaciones en cascada y renderizado progresivo sin reescribir traversal.
+
+---
+
+## 2. 📐 Estructura Lógica y Contrato de Recursión
+
+La arquitectura sigue un flujo estricto de delegación y propagación. El patrón garantiza que cualquier operación aplicada a la raíz se resuelva correctamente en toda la jerarquía.
+
+```text
+               Cliente
+                  │
+                  ▼ invoca
+            Component (Interfaz)
+         +---------------------------+
+         | operation(): Result       |
+         | add(child): void          |
+         | remove(child): void       |
+         | getChild(index): Component|
+         +---------------------------+
+            ▲           ▲
+            |           |
+        +-------+   +-----------+
+        | Leaf  |   | Composite |
+        +-------+   +-----------+
+        | op()    | | op()      |
+        |         | |   > for child in children:
+        |         | |     child.op()
+        +-------+   +-----------+
+```
+
+Flujo de ejecución garantizado (operación `calculate()`):
+1. Cliente invoca `root.calculate()`.
+2. Si es `Leaf`, retorna valor base directamente.
+3. Si es `Composite`, itera sobre `children`, invoca `child.calculate()` recursivamente.
+4. Agrega, transforma o filtra resultados según la lógica de dominio.
+5. Retorna resultado consolidado al cliente. El cliente nunca ve la recursión interna.
+
+Contrato mínimo en pseudocódigo tipado:
+```typescript
+// Componente uniforme
+abstract class FileSystemNode {
+  constructor(protected name: string) {}
+  abstract size(): number;
+  abstract list(indent: number): void;
+}
+
+// Hoja
+class File extends FileSystemNode {
+  constructor(name: string, private bytes: number) { super(name); }
+  size(): number { return this.bytes; }
+  list(indent: number): void {
+    console.log(' '.repeat(indent) + `📄 ${this.name} (${this.bytes}B)`);
+  }
+}
+
+// Compuesto
+class Directory extends FileSystemNode {
+  private children: FileSystemNode[] = [];
+
+  constructor(name: string) { super(name); }
+  add(node: FileSystemNode) { this.children.push(node); }
+  remove(node: FileSystemNode) { this.children = this.children.filter(c => c !== node); }
+  
+  size(): number {
+    return this.children.reduce((sum, child) => sum + child.size(), 0);
+  }
+  list(indent: number): void {
+    console.log(' '.repeat(indent) + `📁 ${this.name}`);
+    this.children.forEach(child => child.list(indent + 2));
+  }
+}
+```
+Regla inquebrantable: El cliente nunca debe realizar `instanceof`, downcasting ni verificar si un nodo es hoja o compuesto. La uniformidad se mantiene estrictamente a través de la interfaz `Component`.
+
+---
+
+## 3. 🛠️ Implementación por Paradigma y Ecosistema
+
+El patrón se adapta al modelo de tipado y al estilo de composición del entorno. No requiere necesariamente herencia clásica.
+
+### 3.1. POO Clásica con Delegación (TypeScript / Java / C#)
+Uso de interfaces explícitas y composición en listas/arrays. Ideal para UIs, sistemas de archivos o motores de escena.
+
+```java
+public interface Graphic {
+    void draw();
+    void move(int x, int y);
+    default void add(Graphic child) { throw new UnsupportedOperationException(); }
+    default void remove(Graphic child) { throw new UnsupportedOperationException(); }
+    default Graphic getChild(int i) { throw new UnsupportedOperationException(); }
+}
+
+public class CompositeGraphic implements Graphic {
+    private List<Graphic> children = new ArrayList<>();
+
+    public void add(Graphic g) { children.add(g); }
+    public void remove(Graphic g) { children.remove(g); }
+    public Graphic getChild(int i) { return children.get(i); }
+
+    public void draw() { children.forEach(Graphic::draw); }
+    public void move(int x, int y) { children.forEach(g -> g.move(x, y)); }
+}
+// Safe approach: leafs throw on structural methods. Client handles via try/catch or avoids calling them.
+```
+
+### 3.2. Enfoque Funcional / Tipos Algebraicos (Rust / Scala / Haskell)
+Se reemplaza herencia por tipos recursivos y pattern matching. Eliminación de estado mutable.
+
+```rust
+pub enum TreeNode {
+    Leaf(String),
+    Composite(String, Vec<TreeNode>),
+}
+
+impl TreeNode {
+    pub fn total_nodes(&self) -> usize {
+        match self {
+            TreeNode::Leaf(_) => 1,
+            TreeNode::Composite(_, children) => {
+                1 + children.iter().map(TreeNode::total_nodes).sum::<usize>()
+            }
+        }
+    }
+
+    pub fn find_by_name(&self, target: &str) -> Option<&TreeNode> {
+        match self {
+            TreeNode::Leaf(name) if name == target => Some(self),
+            TreeNode::Composite(name, children) if name == target => Some(self),
+            TreeNode::Composite(_, children) => {
+                children.iter().find_map(|c| c.find_by_name(target))
+            }
+            _ => None,
+        }
+    }
+}
+```
+Ventaja: Inmutabilidad, exhaustividad en compilación, recursión de cola optimizable. Desventaja: Requiere reestructuración completa para mutar nodos.
+
+### 3.3. Módulos / AST / JSON (JavaScript / Python)
+Objetos literales con `children: []`, traversal con `reduce`/`map`, validación de esquemas.
+
+```javascript
+function createComposite(type, data, children = []) {
+  return { type, data, children };
+}
+
+function traverse(node, visitFn) {
+  visitFn(node);
+  for (const child of node.children) {
+    traverse(child, visitFn);
+  }
+}
+
+// Uso con AST/JSON
+const tree = createComposite("root", {}, [
+  createComposite("section", { title: "Intro" }),
+  createComposite("section", { title: "Body" }, [
+    createComposite("paragraph", { text: "Hello" }),
+    createComposite("paragraph", { text: "World" })
+  ])
+]);
+
+traverse(tree, (node) => console.log(`${node.type}:`, node.data));
+```
+Nota: La validación de estructura recae en schemas (`zod`, `Pydantic`) o builders seguros. Evite mutación directa de `children` en producción.
+
+### 3.4. Visitor Integration (Separación Estructura/Lógica)
+El Composite solo mantiene la jerarquía. Las operaciones complejas se externalizan.
+
+```typescript
+interface Visitor {
+  visitLeaf(leaf: Leaf): void;
+  visitComposite(composite: Composite): void;
+}
+
+class Component {
+  abstract accept(visitor: Visitor): void;
+}
+
+class Leaf extends Component {
+  accept(visitor: Visitor) { visitor.visitLeaf(this); }
+}
+
+class Composite extends Component {
+  private children: Component[] = [];
+  add(c: Component) { this.children.push(c); }
+  accept(visitor: Visitor) {
+    visitor.visitComposite(this);
+    this.children.forEach(c => c.accept(visitor));
+  }
+}
+// Permite añadir operaciones sin modificar nodos. Cumple Open/Closed estrictamente.
+```
+
+---
+
+## 4. 🔄 Variantes Arquitectónicas y Extensiones
+
+| Variante | Mecanismo | Caso de uso | Trade-off |
+|----------|-----------|-------------|-----------|
+| **Transparente** | `add/remove` expuestos en `Component`. Hojas lanzan excepción o ignoran. | APIs flexibles, builders dinámicos, carga desde JSON/DB sin validación previa. | Errores en runtime si se llaman métodos estructurales en hojas. |
+| **Seguro** | Métodos de gestión solo en `Composite`. Cliente debe conocer tipo o usar downcast controlado. | Sistemas críticos, validación en compile-time, árboles inmutables. | Rompe uniformidad total. Requiere branching o visitors tipados. |
+| **Iterator/Traversal** | Expone iterador externo (`depthFirst()`, `breadthFirst()`). Separa recorrido de estructura. | Búsquedas complejas, lazy loading, streaming de nodos grandes. | Overhead de estado de iteración. Requiere gestión de cursores o generadores. |
+| **Lazy/Deferred** | Hijos se cargan o calculan bajo demanda. `children` es un proxy o thunk. | Árboles masivos, sistemas de archivos remotos, UIs virtuales. | Complejidad de invalidación. Fallos de red/carga pueden romper traversal. |
+| **Inmutable/Functional** | Cada mutación retorna nuevo árbol. Sin estado compartido. | Redux/Zustand stores, versionado, replay/debugging seguro. | Presión en GC. Requiere structural sharing (trie/hamt) para eficiencia. |
+| **Chunked/Partitioned** | Divide árboles grandes en subárboles procesables en paralelo. | Renderizado de escenas 3D, compilación de ASTs, procesamiento batch. | Complejidad de sincronización. Requiere merge strategy para resultados. |
+
+---
+
+## 5. 🎯 Cuándo Usar y Cuándo Evitar
+
+| ✅ Usar cuando... | ❌ Evitar cuando... |
+|------------------|-------------------|
+| Modelas jerarquías parte-todo con operaciones uniformes (UI, archivos, ASTs) | Solo tienes 1-2 niveles de anidación y lógica plana. Usa arrays o maps simples. |
+| Necesitas eliminar condicionales `if (isLeaf) ... else ...` dispersos | El árbol crece > 10k nodos y la recursión impacta stack/memoria. Usa traversal iterativo o chunking. |
+| Quieres extender tipos de nodos sin modificar lógica de traversal | La estructura es plana o relacional (gráficos, bases de datos). Usa patrones de grafo o ORMs. |
+| Necesitas propagar operaciones en cascada (render, calcular, validar, exportar) | Los nodos comparten estado mutable complejo sin control de ciclo de vida. |
+| Trabajas con parsers, motores de reglas, sistemas de permisos o taxonomías | Ya usas un contenedor DI con factories dinámicas que gestionan la composición automáticamente. |
+
+Comparación rápida con patrones estructurales y de comportamiento:
+* **Composite**: Uniformidad en estructuras parte-todo. Enfocado en jerarquías y recursión.
+* **Adapter**: Traduce interfaces incompatibles. Enfocado en compatibilidad externa.
+* **Bridge**: Desacopla abstracción e implementación. Enfocado en variación independiente de ejes.
+* **Decorator**: Añade comportamiento dinámicamente. Enfocado en extensión sin modificar estructura base.
+* **Visitor**: Externaliza operaciones sobre estructuras estables. Enfocado en Open/Closed para algoritmos.
+* **Iterator**: Separa traversal de estructura. Enfocado en acceso secuencial sin exponer implementación interna.
+
+---
+
+## 6. 🧪 Testing, Mantenibilidad y Arquitectura
+
+* **Aislamiento en Tests**: Prueba hojas y compuestos por separado. Verifica delegación recursiva, agregación de resultados y manejo de árboles vacíos.
+  * Técnica: Usa fixtures pequeños, mocks para hojas externas, y asertos de profundidad/orden de visita.
+* **Validación de Traversal**: Escribe tests que invoquen cada operación con árboles profundos, anchos, vacíos, y con nodos mixtos. Verifica que no haya `undefined`, `NaN` o referencias perdidas.
+  * Fix: `assert.strictEqual(tree.calculate(), expectedSum)`. Valida resultados numéricos, no solo que no falle.
+* **Ciclo de Vida y Ownership**: Los compuestos deben gestionar la referencia a sus hijos. Si un hijo se elimina, debe liberarse o notificarse a sus dependientes. Evite referencias circulares padre-hijo.
+* **Refactorización hacia Visitors/Iterators**: Si los nodos acumulan > 3 operaciones complejas, externalícelas. Mantenga el Composite enfocado en estructura, no en lógica.
+* **Impacto en Rendimiento**: La recursión añade overhead de stack. En CPUs modernas, la optimización de llamadas de cola o iteradores la absorben. Solo impacta en árboles > 5k niveles o sistemas embebidos. En ese caso, use traversal iterativo con pila explícita.
+* **Gestión de Versiones**: Si la estructura del nodo evoluciona (nuevos campos, cambios de semántica), mantenga la interfaz `Component` estable. Use migradores de estado o adapters internos. Nunca rompa el contrato de traversal.
+* **Visibilidad y APIs Públicas**: Exponga solo `Component` y operaciones de dominio. Oculte `children` o use getters inmutables (`getChildren(): ReadonlyArray<Component>`). Reduzca la superficie de mutación accidental.
+* **Documentación de Recursión**: Especifique explícitamente en comentarios o docs el flujo de operaciones, garantías de orden, y manejo de errores en cascada. Elimine suposiciones implícitas.
+* **Migración desde Lógica Condicional**: Identifique `if (node.type === 'leaf')` dispersos. Extraiga comportamiento a `Component`. Envuelva en Composite. Deprecar branching progresivamente.
+* **Integración con Resiliencia**: Envuelva el traversal con `timeout`, `chunking`, o `cancellation tokens`. Aísle fallos de nodos corruptos sin propagar al árbol completo.
+
+---
+
+## 7. ⚠️ Errores Comunes y Soluciones
+
+* **Stack Overflow en Recursión Profunda**: Árboles muy profundos saturan la pila de llamadas.
+  * Fix: Reemplace recursión por iteración con pila explícita (`stack.push(...)`). Use `requestIdleCallback` o `setTimeout` para chunks en UIs.
+* **Abstracción Permeable (Leaky Composite)**: El cliente accede a `children` directamente, mutando estructura sin validación.
+  * Fix: Oculte `children` tras getters inmutables o métodos `add/remove` validados. Use `ReadonlyArray` o `Object.freeze()`.
+* **Estado Mutable Compartido en Traversal**: Varios procesos leen/modifican el mismo árbol simultáneamente. Corrupción de datos.
+  * Fix: Use inmutabilidad estructural, locks por rama, o copie subárboles antes de procesar. Documente thread-safety explícitamente.
+* **Operaciones O(N²) por Revisita Innecesaria**: `size()` recorre todo el árbol cada vez. Cuello de botella en árboles dinámicos.
+  * Fix: Cachee resultados por nodo con invalidación controlada, o mantenga contadores incrementales en `add/remove`.
+* **Confundir con Decorator o Strategy**: Usar Composite para añadir comportamiento dinámico o variar algoritmos.
+  * Fix: Si envuelve un solo objeto para extender → Decorator. Si intercambia lógica → Strategy. Si anida partes en un todo → Composite.
+* **Referencias Circulares Padre-Hijo**: `child.parent = this` crea ciclos que rompen serialización y recolección de basura.
+  * Fix: Use IDs o weak references para navegación ascendente. Nunca almacene punteros fuertes bidireccionales sin gestión explícita.
+* **Serialización Rota**: `JSON.stringify()` falla con referencias cíclicas o métodos no serializables.
+  * Fix: Implemente `toJSON()` que retorne DTOs planos. Reconstruya el árbol mediante un parser o factory dedicado.
+* **Violación de Liskov en Hojas**: Hojas lanzan `UnsupportedOperationException` en `add()`, rompiendo uniformidad real.
+  * Fix: Prefiera variante segura con `add` solo en `Composite`, o use `Optional`/`Maybe` en retorno. Documente el contrato claramente.
+* **Falta de Validación de Entrada**: `add(null)` o `add(undefined)` corrompe la colección interna.
+  * Fix: Valide argumentos en `add()`. Use `assert` o `throw` inmediato. Rechace silenciosamente solo si el contrato lo permite explícitamente.
+* **Olvidar Invalidar Caché Interno**: Nodos cachean resultados y no actualizan al mutar hijos.
+  * Fix: Notifique cambios mediante eventos, invalidación por versión, o recálculo perezoso. Evite estado stale en producción.
+
+---
+
+## 8. 💡 Mejores Prácticas y Consejos
+
+* **Prefiera Composición Explícita sobre Herencia**: La delegación clara es más testeable, flexible y segura. Evite acoplamiento rígido y permita reemplazo dinámico.
+* **Valide Contratos en Compile-Time o Runtime**: Use tipos estrictos, interfaces explícitas, o schemas para evitar llamadas inválidas a hojas. Elimine `any` o `Object` en firmas.
+* **Separe Estructura de Lógica**: El Composite solo modela jerarquía. Externalice procesamiento mediante Visitors, Iterators o pipelines funcionales. Mantenga nodos ligeros.
+* **Documente el Flujo de Recursión**: Especifique orden de visita, garantías de propagación, y manejo de errores en cascada. Elimine suposiciones implícitas.
+* **Use Inmutabilidad para Árboles Compartidos**: Si el estado se lee desde múltiples hilos o procesos, retorne copias estructurales o use structural sharing (HAMT, persistent vectors).
+* **Implemente Fallbacks Seguros**: Si un nodo falla o está corrupto, continúe traversal con advertencias, use Null Object, o lance excepción descriptiva. Nunca ignore silenciosamente.
+* **Pruebe Casos Límite**: Valide árboles vacíos, de un solo nivel, profundamente anidados, con ciclos accidentales, y con nodos mixtos. Detecte regresiones temprano.
+* **Mantenga Contratos Estables**: Cambiar la firma de `Component` rompe todo el ecosistema. Use deprecación controlada, versionado semántico y adapters paralelos.
+* **Monitoree Profundidad y Memoria**: Registre métricas de altura de árbol, número de nodos, y presión en GC. Detecte fugas, recursión descontrolada o serialización pesada.
+* **No lo use "por moda"**: Si la estructura es plana, relacional o no requiere uniformidad, use arrays, maps o grafos. La recursión innecesaria es deuda técnica de rendimiento y mantenimiento.
+
+---
+
+Este cheatsheet proporciona una referencia arquitectónica completa para el patrón Composite, cubriendo su intención estructural, contratos de recursión segura, implementación multi-paradigma, variantes transparentes vs seguras, impacto real en testing y mantenibilidad, errores frecuentes en producción y estrategias de mitigación, junto con criterios estrictos para decidir cuándo la uniformidad jerárquica es una necesidad del dominio y cuándo migrar hacia traversals iterativos, visitors externalizados o estructuras relacionales más escalables.
