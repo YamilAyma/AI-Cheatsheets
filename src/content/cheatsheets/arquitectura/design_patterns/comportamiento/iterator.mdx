@@ -1,0 +1,277 @@
+# 🔄 Patrón Iterator — Cheatsheet Completo 🔄
+
+El patrón **Iterator** es un patrón de comportamiento que proporciona una forma estandarizada de recorrer secuencialmente los elementos de una estructura agregada sin exponer su representación interna. Desacopla los algoritmos de recorrido de las colecciones subyacentes, permite múltiples iteraciones concurrentes e independientes, y habilita la evaluación perezosa (lazy) para fuentes de datos masivas, remotas o infinitas. Nace para resolver el acoplamiento rígido entre estructuras de datos y lógica de traversal, unificar APIs de acceso heterogéneas y transformar colecciones complejas en flujos predecibles y composables. Este cheatsheet desglosa la intención arquitectónica real del patrón, contratos de navegación segura, implementaciones multi-paradigma, variantes perezosas y concurrentes, impacto en rendimiento y gestión de recursos, trampas de modificación durante iteración y fugas de estado, y criterios estrictos para decidir cuándo el recorrido abstracto es una necesidad del dominio y no una capa de indirección que degrada la localidad de caché o añade overhead innecesario.
+
+---
+
+## 1. 🌟 Conceptos Fundamentales
+
+* **Aggregate/Colección**: Interfaz o tipo que declara `createIterator()` o implementa un protocolo de iteración. Oculta estructura interna (array, árbol, grafo, stream).
+  * Por qué importa: Establece el límite de abstracción. El cliente nunca depende de índices, punteros o nodos internos.
+* **Iterator**: Contrato que expone `hasNext()`, `next()`, `reset()` y, opcionalmente, `remove()` o `peek()`. Mantiene estado de navegación independiente.
+  * Por qué importa: Garantiza uniformidad de acceso. Cualquier algoritmo de recorrido funciona con cualquier colección que cumpla el protocolo.
+* **ConcreteIterator**: Implementación específica que conoce la topología interna pero la encapsula tras el contrato. Avanza posición, valida límites y retorna elementos.
+  * Por qué importa: Centraliza la lógica de traversal. Permite DFS, BFS, windowed, filtering o reverse sin modificar la colección.
+* **External vs Internal Iterator**: Externo controla el ciclo (`while(it.hasNext())`). Interno recibe callback/fn y controla el flujo internamente (`collection.forEach(fn)`).
+  * Por qué importa: El externo permite pausas, saltos y composición manual. El interno es más seguro, optimizable por el runtime y evita errores de estado.
+* **Estado Independiente**: Cada iterador mantiene su propio cursor, pila de traversal o buffer. No comparte posición con otros iteradores sobre la misma colección.
+  * Por qué importa: Habilita recorridos simultáneos, algoritmos paralelos y procesamiento de múltiples vistas sin interferencia ni locks globales.
+* **Evaluación Perezosa (Lazy)**: Genera o carga elementos solo cuando `next()` es invocado. No materializa la colección completa en memoria.
+  * Por qué importa: Transforma restricciones de hardware en límites manejables. Crítico para streams infinitos, paginación remota o grafos masivos.
+* **Fail-Fast vs Fail-Safe**: Fail-Fast detecta modificación concurrente y lanza error inmediato. Fail-Safe trabaja sobre snapshot, copia o versión inmutable.
+  * Por qué importa: Define la semántica de seguridad estructural. Fail-Fast previene corrupción silenciosa; Fail-Safe garantiza completitud con overhead de memoria.
+* **Separación de Responsabilidades**: La colección gestiona almacenamiento y mutación. El iterador gestiga navegación y límites. Cumple Single Responsibility estrictamente.
+  * Por qué importa: Evita que la lógica de dominio mezcle gestión de datos con algoritmos de traversal. Facilita testing, versionado y optimización independiente.
+
+---
+
+## 2. 📐 Estructura Lógica y Contrato de Recorrido
+
+La arquitectura sigue un flujo estricto de inicialización, avance controlado y validación de límites. El patrón garantiza que el recorrido sea predecible, seguro y reversible según contrato.
+
+```text
+               Cliente
+                  │
+                  ▼ solicita iterador
+            Aggregate/Colección
+         +---------------------------+
+         | createIterator(): Iterator|
+         +---------------------------+
+                  ▲ retorna
+            Iterator (Interfaz)
+         +---------------------------+
+         | hasNext(): bool           |
+         | next(): T                 |
+         | reset(): void             |
+         +---------------------------+
+            ▲ implementa
+      ConcreteIterator
+         +---------------------------+
+         | cursor/stack/queue        |
+         | collectionRef             |
+         | hasNext() = &gt; valida límite
+         | next()    = &gt; retorna + avanza
+         +---------------------------+
+```
+
+Flujo de ejecución garantizado:
+1. Cliente invoca `collection.createIterator()`.
+2. Se instancia `ConcreteIterator`, se inicializa estado (cursor=0, pila vacía, etc.).
+3. Cliente evalúa `hasNext()`. Si verdadero, invoca `next()`.
+4. Iterador valida límite, extrae/transforma elemento, avanza estado interno.
+5. Cliente procesa elemento. Repite hasta `hasNext() == false`.
+6. Iterador se descarta, resetea o cierra. El cliente nunca ve índices, nodos o punteros internos.
+
+Contrato mínimo en pseudocódigo tipado:
+```typescript
+interface Iterator&lt;T&gt; {
+  hasNext(): boolean;
+  next(): T;
+  reset(): void;
+}
+
+interface Aggregate&lt;T&gt; {
+  createIterator(): Iterator&lt;T&gt;;
+}
+
+class ArrayIterator&lt;T&gt; implements Iterator&lt;T&gt; {
+  private index = 0;
+  constructor(private collection: T[]) {}
+  hasNext(): boolean { return this.index &lt; this.collection.length; }
+  next(): T { return this.collection[this.index++]; }
+  reset(): void { this.index = 0; }
+}
+```
+Regla inquebrantable: El iterador **nunca** debe exponer índices internos, punteros crudos o permitir mutación directa de la colección a través de su API, a menos que esté explícitamente diseñado y documentado como mutante seguro.
+
+---
+
+## 3. 🛠️ Implementación por Paradigma y Ecosistema
+
+El patrón se adapta al modelo de ejecución y al protocolo nativo del entorno. No requiere necesariamente herencia clásica ni interfaces explícitas.
+
+### 3.1. POO Clásica con Delegación (TypeScript / Java / C#)
+Uso de interfaces `Iterable`/`Iterator`, clases concretas y gestión manual de estado. Ideal para estructuras personalizadas o traversal complejo.
+
+```java
+public interface Iterator&lt;T&gt; {
+    boolean hasNext();
+    T next();
+    void reset();
+}
+
+public class TreeIterator&lt;T&gt; implements Iterator&lt;T&gt; {
+    private final Deque&lt;TreeNode&lt;T&gt;&gt; stack = new ArrayDeque&lt;&gt;();
+    public TreeIterator(TreeNode&lt;T&gt; root) { if (root != null) stack.push(root); }
+    public boolean hasNext() { return !stack.isEmpty(); }
+    public T next() {
+        TreeNode&lt;T&gt; node = stack.pop();
+        if (node.right != null) stack.push(node.right);
+        if (node.left != null) stack.push(node.left);
+        return node.value;
+    }
+    public void reset() { throw new UnsupportedOperationException("Re-initialize required"); }
+}
+// Preorder DFS explícito, sin exponer estructura de nodos al cliente.
+```
+
+### 3.2. Generadores / Evaluación Perezosa (JavaScript / Python / C#)
+Se reemplaza clase iteradora por funciones `yield` o `async generators`. Estado manejado por el runtime.
+
+```python
+def read_log_lines(filepath: str):
+    """Iterator perezoso que carga líneas bajo demanda."""
+    with open(filepath, 'r', encoding='utf-8') as f:
+        for line in f:
+            yield line.strip()
+
+def filter_errors(lines):
+    for line in lines:
+        if "ERROR" in line:
+            yield line
+
+# Composición segura y sin carga completa en memoria:
+errors = filter_errors(read_log_lines("/var/log/app.log"))
+for err in errors:
+    process(err)  # Solo una línea en RAM a la vez
+```
+Ventaja: Zero boilerplate, manejo automático de estado, integración nativa con `for...in`, `for await...of`. Desventaja: Pérdida de control fino de reset o rollback.
+
+### 3.3. Traits / Protocolos Estrictos (Rust / Go / Swift)
+Uso de traits para definir contratos y structs para estado. Garantía en tiempo de compilación.
+
+```rust
+pub trait MyIterator {
+    type Item;
+    fn next(&mut self) -> Option<Self::Item>;
+}
+
+pub struct RangeIterator {
+    current: i32,
+    end: i32,
+}
+
+impl MyIterator for RangeIterator {
+    type Item = i32;
+    fn next(&mut self) -> Option<i32> {
+        if self.current < self.end {
+            let val = self.current;
+            self.current += 1;
+            Some(val)
+        } else {
+            None
+        }
+    }
+}
+// Rust's std::iter::Iterator es el estándar real. Este ejemplo muestra la base conceptual.
+```
+
+### 3.4. Interno / Callback-Driven (Funcional / Streams)
+La colección controla el flujo. El cliente proporciona función de procesamiento. Optimizado por runtime.
+
+```javascript
+// Internal iterator seguro, sin estado expuesto
+class SafeCollection {
+  #items = [];
+  forEach(fn) {
+    for (const item of this.#items) fn(item);
+  }
+  map(fn) {
+    return this.#items.map(fn);
+  }
+}
+// Preferido cuando no se requiere pausa, salto o composición manual del ciclo.
+```
+
+---
+
+## 4. 🔄 Variantes Arquitectónicas y Extensiones
+
+| Variante | Mecanismo | Caso de uso | Trade-off |
+|----------|-----------|-------------|-----------|
+| **Forward/Reverse** | Cursor avanza o retrocede. `hasNext()`/`hasPrevious()`. | Historiales, editores, navegación temporal. | Overhead de doble referencia o índices complementarios. |
+| **Tree/Graph Traversal** | Usa stack (DFS) o queue (BFS). Mantiene estado de visitados. | ASTs, sistemas de archivos, grafos de dependencia. | Complejidad de estado. Riesgo de ciclos infinitos sin `visited` set. |
+| **Lazy/Generator-Based** | `yield` o `async yield`. Carga bajo demanda. | Streams infinitos, paginación, ETL masivo. | No permite `reset()` ni acceso aleatorio. Depende de runtime. |
+| **Filter/Transform** | Envuelve iterador base. Omite o mapea elementos en `next()`. | Pipelines de datos, validación en traversal, sanitización. | Doble indirección. Puede degradar localidad si no se inlina. |
+| **Concurrent/Thread-Safe** | Locks por chunk, snapshot inmutable, o iteradores por hilo. | Procesamiento paralelo, sistemas de colas, analytics. | Overhead de sincronización o copia. Puede causar contención. |
+| **Windowed/Sliding** | Retorna subconjuntos de tamaño fijo con solapamiento. | Series temporales, procesamiento de señales, ML batches. | Lógica de borde compleja. Requiere buffer interno controlado. |
+
+---
+
+## 5. 🎯 Cuándo Usar y Cuándo Evitar
+
+| ✅ Usar cuando... | ❌ Evitar cuando... |
+|------------------|-------------------|
+| Necesitas recorrer estructuras complejas (árboles, grafos, streams) sin exponer nodos internos | La colección es un array/lista simple y solo requieres acceso secuencial directo. Usa `for...of` o índice nativo. |
+| Quieres múltiples recorridos concurrentes e independientes sobre la misma fuente | El rendimiento es crítico en loops tight y la indirección virtual degrada localidad de caché. |
+| Requieres evaluación perezosa para datos remotos, paginados o potencialmente infinitos | Necesitas acceso aleatorio frecuente (`get(i)`). El iterador no está diseñado para saltos eficientes. |
+| Quieres desacoplar algoritmos de traversal de la estructura de datos | Ya usas protocolos nativos (`Iterable`, `Iterator`, `yield`) que cubren el 100% de tus necesidades. |
+| Trabajas con pipelines de datos, filtros dinámicos o composición de flujos | La mutación de la colección durante iteración es común y no puede controlarse con fail-safe o snapshots. |
+
+Comparación rápida con patrones de comportamiento:
+* **Iterator**: Secuencia navegación uniforme. Enfocado en acceso controlado y desacoplamiento de estructura.
+* **Visitor**: Aplica operaciones a estructura estable. Enfocado en múltiples traversals sin modificar nodos.
+* **Strategy**: Intercambia algoritmos completos. Enfocado en variación de lógica, no en navegación.
+* **Composite**: Modela jerarquías parte-todo. Enfocado en uniformidad estructural, no en traversal.
+* **Chain of Responsibility**: Enruta petición hasta handler. Enfocado en desacoplamiento de receptores, no en secuencia de datos.
+
+---
+
+## 6. 🧪 Testing, Mantenibilidad y Arquitectura
+
+* **Aislamiento en Tests**: Prueba iteradores con colecciones mock o fixtures controlados. Verifica `hasNext()`, `next()`, límites y comportamiento post-fin.
+  * Técnica: Aserta que `next()` lanza `StopIteration`/`null`/excepción controlada al agotarse. Valida que múltiples iteradores no compartan cursor.
+* **Validación de Modificación Concurrente**: Escribe tests que muten la colección durante iteración. Verifique semántica fail-fast o fail-safe según contrato.
+  * Fix: `assert.throws(() => it.next(), /ConcurrentModification/)`. Documente política de mutación explícitamente.
+* **Ciclo de Vida y Cleanup**: Si el iterador mantiene conexiones, archivos o buffers, debe implementar `close()`, `dispose()` o `finally` explícito.
+* **Refactorización desde Acceso Directo**: Identifique `for(i=0; i<list.length; i++)` acoplado a estructura interna. Envuelva en iterador. Exponga solo `Iterable`. Deprecar acceso por índice progresivamente.
+* **Impacto en Rendimiento**: La indirección añade 1-2 saltos de función/v-table. En CPUs modernas, negligible para < 10k iteraciones. Solo impacta en hot paths o estructuras con baja localidad. Profile antes de optimizar.
+* **Gestión de Versiones**: Si la colección evoluciona (nuevos campos, cambios de topología), mantenga contrato de iteración estable. Use adapters internos para migración progresiva.
+* **Visibilidad y APIs Públicas**: Exponga solo `Iterable`/`Iterator`. Oculte implementaciones concretas en módulos internos. Reduzca superficie de uso indebido y acoplamiento accidental.
+* **Documentación de Mutabilidad**: Especifique explícitamente si la iteración es fail-fast, fail-safe, o permite modificación controlada. Elimine suposiciones implícitas.
+* **Migración hacia Generadores**: Si el lenguaje soporta `yield`, reemplace clases iteradoras manuales por funciones generadoras. Elimine boilerplate de `hasNext`/`next`.
+* **Integración con Observabilidad**: Inyecte métricas de elementos consumidos, tiempo por iteración, y tasa de finalización. Detecte cuellos de botella o iteradores huérfanos.
+
+---
+
+## 7. ⚠️ Errores Comunes y Soluciones
+
+* **Modificación Durante Iteración (ConcurrentModification)**: Mutar colección mientras se itera causa estado inconsistente, omisión de elementos o crash.
+  * Fix: Use iteradores fail-fast con versionado interno, o fail-safe con snapshot/copia inmutable. Documente semántica claramente. Para mutación segura, use `remove()` del iterador si está soportado.
+* **Fuga de Recursos (Leak)**: Iteradores que abren archivos, sockets o buffers no cierran al terminar o en excepciones.
+  * Fix: Implemente `close()`, `dispose()`, o use `using`/context managers. Garantice limpieza en `finally` o con `try-with-resources`.
+* **Bucle Infinito / Estado Corrupto**: `hasNext()` siempre retorna true por lógica de avance rota o ciclos en grafos sin `visited`.
+  * Fix: Valide límites estrictos, use sets de visitados, o timeouts de seguridad. Pruebe grafos cíclicos explícitamente.
+* **Exposición de Estructura Interna**: Iterador retorna nodos, índices o punteros crudos en lugar de valores de dominio.
+  * Fix: Envuelva en DTOs o valore de dominio. Mantenga abstracción estricta. Nunca exponga implementación tras el contrato.
+* **Confundir con Visitor o Strategy**: Usar Iterator para aplicar operaciones complejas o variar lógica de procesamiento.
+  * Fix: Si aplica múltiples operaciones a estructura → Visitor. Si varía algoritmo completo → Strategy. Si secuencia acceso uniforme → Iterator. No mezcle propósitos.
+* **Ignorar `reset()` o Estado Post-Fin**: Reutilizar iterador agotado sin reiniciar, causando comportamiento indefinido.
+  * Fix: Lance excepción clara al llamar `next()` tras fin, o implemente `reset()` seguro. Documente ciclo de vida explícitamente.
+* **Overhead en Colecciones Simples**: Crear clase iteradora para arrays nativos donde `for...of` o `forEach` son más rápidos y seguros.
+  * Fix: Use protocolos nativos del lenguaje. Reserve iteradores personalizados para estructuras complejas o traversal no lineal.
+* **State Leakage en Iteradores Concurrentes**: Múltiples hilos comparten cursor o buffer sin sincronización. Corrupción de datos.
+  * Fix: Instancie iterador por hilo/request, use inmutabilidad, o locks por chunk. Nunca estado mutable compartido sin control explícito.
+* **Falta de Validación de Tipos/Nulls**: `next()` retorna `undefined`, `null` o tipos mixtos sin contrato claro.
+  * Fix: Use `Option`/`Maybe`, `Result`/`Either`, o excepciones controladas. Documente contrato de retorno estrictamente.
+* **Serialización Rota**: Intentar persistir iterador con estado interno, punteros o closures. Imposible restaurar posición.
+  * Fix: Serialize solo identificadores, offsets o DTOs. Reconstruya iterador desde colección o checkpoint. Nunca serialice estado de navegación directamente.
+
+---
+
+## 8. 💡 Mejores Prácticas y Consejos
+
+* **Prefiera Protocolos Nativos del Lenguaje**: `Iterable`/`Iterator` (JS), `__iter__`/`__next__` (Python), `java.util.Iterator`, Rust `std::iter::Iterator`. Evite reinvención innecesaria.
+* **Documente Semántica de Mutación**: Especifique explícitamente si es fail-fast, fail-safe, o permite modificación controlada. Elimine suposiciones implícitas.
+* **Implemente Cleanup Explícito**: Asegure que `close()`, `dispose()`, o `finally` liberen recursos. Evite fugas en sistemas de larga ejecución.
+* **Use Generadores para Evaluación Perezosa**: `yield` maneja estado, excepciones y cleanup automáticamente. Reduce boilerplate y errores de cursor.
+* **Valide Límites y Ciclos Estrictamente**: Use sets de visitados para grafos/árboles. Implemente timeouts o contadores de seguridad en traversals profundos.
+* **Mantenga Contrato de Retorno Estable**: Use `Option`/`Maybe` o excepciones controladas para fin de iteración. Nunca retorne valores mágicos (`-1`, `null`) sin documentación.
+* **Profile antes de Optimizar**: No asuma overhead de iterador trivial. Mide allocation por elemento, localidad de caché y GC pressure. Optimice solo si el profiler lo indica.
+* **Pruebe Casos Límite y Fallos**: Valide colecciones vacías, de un elemento, profundamente anidadas, con mutación concurrente y con recursos no cerrados. Detecte regresiones temprano.
+* **Mantenga Contratos Estables**: Cambiar la firma de `next()` o `hasNext()` rompe clientes. Use deprecación controlada, versionado semántico y adapters paralelos.
+* **No lo use "por moda"**: Si la colección es plana, estática y solo requiere acceso directo, use índices o iteradores nativos. La abstracción innecesaria es deuda técnica de rendimiento y mantenimiento.
+
+---
+
+Este cheatsheet proporciona una referencia arquitectónica completa para el patrón Iterator, cubriendo su intención de comportamiento, contratos de navegación segura, implementación multi-paradigma, variantes perezosas y concurrentes, impacto real en testing y mantenibilidad, errores frecuentes en producción y estrategias de mitigación, junto con criterios estrictos para decidir cuándo el recorrido abstracto es una necesidad del dominio y cuándo migrar hacia protocolos nativos, generadores perezosos o pipelines funcionales más escalables.
