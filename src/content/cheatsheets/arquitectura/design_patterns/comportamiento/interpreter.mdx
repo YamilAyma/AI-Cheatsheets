@@ -1,0 +1,297 @@
+# 📖 Patrón Interpreter — Cheatsheet Completo 📖
+
+El patrón **Interpreter** es un patrón de comportamiento que define una representación gramatical para un lenguaje y proporciona un intérprete que utiliza dicha representación para evaluar expresiones o sentencias dentro de él. Permite transformar cadenas de texto, reglas de dominio o consultas estructuradas en un **Árbol de Sintaxis Abstracta (AST)** navegable, evaluando recursivamente cada nodo según contratos predecibles. Nace para habilitar lenguajes de dominio específicos (DSLs), motores de reglas, evaluadores de fórmulas, parsers de configuración y sistemas de consulta ligeros, manteniendo la gramática separada de la infraestructura de ejecución. Este cheatsheet desglosa la intención arquitectónica real del patrón, contratos de evaluación segura, implementaciones multi-paradigma, variantes iterativas y visitor-based, impacto en profiling y mantenibilidad, trampas de recursión infinita y acoplamiento a gramática, y criterios estrictos para decidir cuándo la representación explícita de lenguaje es una necesidad del dominio y no una reinvención frágil de parsers generados o evaluadores nativos.
+
+---
+
+## 1. 🌟 Conceptos Fundamentales
+
+* **Expresión Abstracta (AbstractExpression)**: Interfaz o contrato que declara el método de evaluación (`interpret(Context)`). Todos los nodos del AST deben cumplirlo.
+  * Por qué importa: Establece uniformidad estructural. Permite traversal genérico sin conocer el tipo concreto de cada nodo.
+* **Expresión Terminal (TerminalExpression)**: Nodo hoja que representa literales, constantes, identificadores o valores atómicos de la gramática.
+  * Por qué importa: Contiene el estado base sin dependencia de otros nodos. Su evaluación es directa y predecible.
+* **Expresión No Terminal (NonTerminalExpression)**: Nodo intermedio que representa operadores, funciones, condicionales o estructuras compuestas. Mantiene referencias a sub-expresiones.
+  * Por qué importa: Define la lógica de composición y precedencia. Evalúa recursivamente sus hijos y combina resultados.
+* **Contexto**: Objeto o mapa que transporta variables globales, estado de ejecución, scope, o referencias externas necesarias durante la evaluación.
+  * Por qué importa: Separa datos dinámicos del AST estático. Permite reutilizar el mismo árbol con distintos entornos de ejecución.
+* **Cliente**: Componente que parsea la entrada, construye el AST, inyecta el contexto y dispara `interpret()`. Desconoce la lógica interna de cada nodo.
+  * Por qué importa: Mantiene inversión de dependencias. La capa de presentación o API solo interactúa con el motor de interpretación.
+* **Separación Parsing/Interpretación**: La construcción del AST y su evaluación son fases distintas. El parser valida sintaxis; el interpreter ejecuta semántica.
+  * Por qué importa: Evita acoplamiento circular. Permite cache de AST, validación estática temprana y reevaluación con distintos contextos.
+* **Precedencia y Asociatividad**: Reglas que determinan el orden de evaluación en expresiones ambiguas. Deben reflejarse en la estructura del AST, no en lógica runtime.
+  * Por qué importa: Un AST bien construido garantiza evaluación correcta sin hacks de parsing en tiempo de interpretación.
+* **Inmutabilidad del Árbol**: Una vez parseado, el AST no debe mutar. La evaluación solo lee estructura y contexto.
+  * Por qué importa: Garantiza thread-safety, reutilización segura, determinismo en testing y compatibilidad con caché o memoización.
+* **Trade-off Flexibilidad vs Rendimiento**: La representación explícita de nodos añade overhead de objetos y llamadas recursivas. Justifica su uso solo cuando la gramática es dinámica, auditable o requiere validación semántica avanzada.
+  * Por qué importa: Para gramáticas complejas o alto throughput, los parsers generados (ANTLR, Lark, Bison) o evaluación JIT son más eficientes y mantenibles.
+* **Separación de Gramática y Ejecución**: El patrón modela *qué* dice el lenguaje. La infraestructura modela *cómo* se resuelve. Mantenerlos aislados permite migrar, versionar o compilar sin tocar reglas de dominio.
+
+---
+
+## 2. 📐 Estructura Lógica y Contrato de Evaluación
+
+La arquitectura sigue un flujo estricto de traversal recursivo, resolución contextual y combinación de resultados. El patrón garantiza que cada expresión se evalúe de forma predecible, segura y extensible.
+
+```text
+               Cliente
+                  │
+                  ▼ parsea y construye
+            AbstractExpression
+         +---------------------------+
+         | interpret(context): T     |
+         +---------------------------+
+            ▲           ▲
+            |           |
+    TerminalExpr    NonTerminalExpr
+    [Valor/Literal] [Op/Func/Cond]
+         |           |
+    interpret() = &gt;   interpret() = &gt;
+    retorna valor     resuelve hijos
+                      combina resultados
+                      retorna valor final
+```
+
+Flujo de ejecución garantizado:
+1. Cliente recibe entrada (cadena, JSON, DSL, regla).
+2. Lexer/P parser valida sintaxis y construye AST inmutable.
+3. Cliente inyecta `Context` con variables, funciones externas o configuración.
+4. Invoca `root.interpret(context)`.
+5. Cada nodo evalúa recursivamente: terminales retornan valores; no terminales resuelven hijos y aplican lógica.
+6. El resultado final se propaga hacia arriba. El cliente nunca ve la recursión interna.
+
+Contrato mínimo en pseudocódigo tipado:
+```typescript
+interface Context {
+  resolveVariable(name: string): number;
+  getFunction(name: string): Function;
+}
+
+interface Expression {
+  interpret(ctx: Context): number;
+}
+
+class NumberLiteral implements Expression {
+  constructor(private value: number) {}
+  interpret(): number { return this.value; }
+}
+
+class VariableRef implements Expression {
+  constructor(private name: string) {}
+  interpret(ctx: Context): number { return ctx.resolveVariable(this.name); }
+}
+
+class AddExpression implements Expression {
+  constructor(private left: Expression, private right: Expression) {}
+  interpret(ctx: Context): number {
+    return this.left.interpret(ctx) + this.right.interpret(ctx);
+  }
+}
+
+// Uso: const ast = new AddExpression(new VariableRef('x'), new NumberLiteral(5));
+// const result = ast.interpret({ resolveVariable: (n) => vars[n], getFunction: () => null });
+```
+Regla inquebrantable: El `interpret()` **nunca** debe modificar el contexto ni el AST. Solo lee, resuelve y combina. La mutación debe ocurrir en capas superiores o mediante comandos explícitos.
+
+---
+
+## 3. 🛠️ Implementación por Paradigma y Ecosistema
+
+El patrón se adapta al modelo de tipado y al estilo de traversal del entorno. No requiere necesariamente herencia clásica ni recursión explícita.
+
+### 3.1. POO Clásica con Recursión (TypeScript / Java / C#)
+Uso de interfaces, nodos concretos y delegación explícita. Ideal para evaluadores de fórmulas, reglas de negocio o DSLs ligeros.
+
+```java
+public interface Expression {
+    double evaluate(Context ctx);
+}
+
+public class Multiply implements Expression {
+    private final Expression left, right;
+    public Multiply(Expression l, Expression r) { this.left = l; this.right = r; }
+    public double evaluate(Context ctx) { return left.evaluate(ctx) * right.evaluate(ctx); }
+}
+
+public class Context {
+    private final Map&lt;String, Double&gt; vars;
+    public Context(Map&lt;String, Double&gt; v) { this.vars = v; }
+    public double getVar(String name) {
+        if (!vars.containsKey(name)) throw new UndefinedVariableException(name);
+        return vars.get(name);
+    }
+}
+// AST construido por parser; evaluado en un solo paso: root.evaluate(ctx);
+```
+
+### 3.2. Tipos Algebraicos / Pattern Matching (Rust / Scala / Haskell)
+Se reemplaza herencia por enums recursivos y match exhaustivo. Eliminación de polimorfismo runtime.
+
+```rust
+pub enum Expr {
+    Number(f64),
+    Var(String),
+    Add(Box&lt;Expr&gt;, Box&lt;Expr&gt;),
+    Mul(Box&lt;Expr&gt;, Box&lt;Expr&gt;),
+}
+
+impl Expr {
+    pub fn eval(&amp;self, ctx: &amp;HashMap&lt;String, f64&gt;) -&gt; Result&lt;f64, EvalError&gt; {
+        match self {
+            Expr::Number(n) =&gt; Ok(*n),
+            Expr::Var(name) =&gt; ctx.get(name).copied().ok_or(EvalError::UndefinedVar),
+            Expr::Add(l, r) =&gt; Ok(l.eval(ctx)? + r.eval(ctx)?),
+            Expr::Mul(l, r) =&gt; Ok(l.eval(ctx)? * r.eval(ctx)?),
+        }
+    }
+}
+// Garantía de exhaustividad en compilación. Cero casts o downcasts.
+```
+
+### 3.3. Iterativo / Stack-Based (Python / C / JavaScript)
+Reemplaza recursión por pila explícita para evitar stack overflow en árboles profundos o entornos con límites de recursión.
+
+```python
+def evaluate_iterative(root, context):
+    stack = [(root, False)]  # (node, visited_children)
+    result_stack = []
+    
+    while stack:
+        node, visited = stack.pop()
+        if not visited:
+            stack.append((node, True))
+            for child in reversed(getattr(node, 'children', [])):
+                stack.append((child, False))
+        else:
+            if isinstance(node, NumberLiteral):
+                result_stack.append(node.value)
+            elif isinstance(node, AddExpression):
+                b, a = result_stack.pop(), result_stack.pop()
+                result_stack.append(a + b)
+            elif isinstance(node, VariableRef):
+                result_stack.append(context[node.name])
+    return result_stack[0]
+```
+Ventaja: Control total de memoria, evita límites de recursión nativos. Desventaja: Complejidad aumentada en gramáticas con múltiples niveles de evaluación.
+
+### 3.4. Visitor-Separated (Java / TypeScript / C++)
+Separa estructura del AST de las operaciones aplicables. El AST solo expone `accept(visitor)`.
+
+```typescript
+interface Expression {
+  accept&lt;T&gt;(visitor: ExpressionVisitor&lt;T&gt;): T;
+}
+
+class AddExpression implements Expression {
+  constructor(private left: Expression, private right: Expression) {}
+  accept&lt;T&gt;(v: ExpressionVisitor&lt;T&gt;): T { return v.visitAdd(this); }
+}
+
+interface ExpressionVisitor&lt;T&gt; {
+  visitNumber(n: NumberLiteral): T;
+  visitVar(v: VariableRef): T;
+  visitAdd(a: AddExpression): T;
+}
+
+class Evaluator implements ExpressionVisitor&lt;number&gt; {
+  constructor(private ctx: Context) {}
+  visitNumber(n: NumberLiteral): number { return n.value; }
+  visitVar(v: VariableRef): number { return this.ctx.resolveVariable(v.name); }
+  visitAdd(a: AddExpression): number {
+    return a.left.accept(this) + a.right.accept(this);
+  }
+}
+// Permite añadir operaciones (pretty-print, lint, optimize) sin tocar nodos.
+```
+
+---
+
+## 4. 🔄 Variantes Arquitectónicas y Extensiones
+
+| Variante | Mecanismo | Caso de uso | Trade-off |
+|----------|-----------|-------------|-----------|
+| **Recursive Descent** | Evaluación directa por recursión nativa. Gramáticas simples y predecibles. | Evaluadores de fórmulas, reglas de precio, DSLs internos ligeros. | Stack overflow en árboles profundos. Difícil optimizar sin visitor. |
+| **AST + Visitor** | Separación estricta estructura/operación. `accept()` delega a visitor. | Múltiples operaciones sobre mismo AST (eval, print, optimize, lint). | Boilerplate aumentado. Requiere mantenimiento sincronizado de interfaces. |
+| **Stack/Evaluador Iterativo** | Pila explícita, sin recursión. Control total de memoria. | Entornos embebidos, límites de stack estrictos, parsers masivos. | Complejidad de implementación. Difícil mantener semántica de scope anidado. |
+| **Compiled/Bytecode** | AST se traduce a instrucciones intermedias, luego se ejecuta en VM ligera. | DSLs de alto rendimiento, motores de scripts, evaluación repetitiva. | Overhead de compilación inicial. Requiere diseño de opcode y dispatcher. |
+| **Memoized/Cached** | Almacena resultados de sub-expresiones por contexto. Reutiliza cálculos. | Expresiones con variables estables, fórmulas repetitivas, simulaciones. | Invalidación compleja. Puede consumir memoria si contexto varía frecuentemente. |
+| **Rule Engine / DSL-Specific** | Gramática fija, nodos optimizados para dominio (condicionales, loops, funciones). | Motores de validación, workflows, políticas de acceso, transformaciones. | Acoplamiento al dominio. Difícil reutilizar fuera del contexto específico. |
+
+---
+
+## 5. 🎯 Cuándo Usar y Cuándo Evitar
+
+| ✅ Usar cuando... | ❌ Evitar cuando... |
+|------------------|-------------------|
+| Necesitas evaluar expresiones dinámicas, reglas de dominio o DSLs ligeros | La gramática es compleja, ambigua o requiere look-ahead avanzado. Usa ANTLR, Lark o Bison. |
+| Quieres separar validación semántica de ejecución y permitir reevaluación con distintos contextos | El rendimiento es crítico en loops tight. La creación de nodos y recursión añade latencia inaceptable. |
+| Necesitas auditabilidad, versionado de reglas o replay de evaluación | Solo evalúas fórmulas matemáticas simples. Usa `mathjs`, `Decimal` o evaluación nativa segura. |
+| Trabajas con configuraciones expresivas, motores de precios, validadores de flujo o query languages ligeros | Ya usas un contenedor DI con interceptores, o un framework de mensajería que gestiona reglas automáticamente. |
+| Requieres múltiples operaciones sobre la misma estructura (eval, print, optimize, serialize) | La gramática cambia frecuentemente. El mantenimiento de nodos concretos se vuelve deuda técnica. |
+
+Comparación rápida con patrones de comportamiento y herramientas:
+* **Interpreter**: Representa gramática como AST y evalúa recursivamente. Enfocado en ejecución semántica de lenguajes simples.
+* **Visitor**: Separa operaciones de estructura. Enfocado en múltiples traversals sin modificar nodos.
+* **Command**: Encapsula petición ejecutable. Enfocado en ejecución diferida, undo/redo o encolado.
+* **Strategy**: Intercambia algoritmos completos. Enfocado en variación de lógica, no en parsing o evaluación de expresiones.
+* **Parser Generators (ANTLR/Lark)**: Compilan gramáticas formales a parsers optimizados. Enfocado en precisión, rendimiento y gramáticas complejas.
+
+---
+
+## 6. 🧪 Testing, Mantenibilidad y Arquitectura
+
+* **Aislamiento por Nodo**: Prueba `TerminalExpression` y `NonTerminalExpression` por separado con contextos mock. Verifica evaluación, manejo de variables indefinidas y combinación de resultados.
+  * Técnica: Usa fixtures controlados. Aserta que `interpret()` no muta contexto ni AST.
+* **Validación de Precedencia y Asociatividad**: Escribe tests con expresiones ambiguas (`2 + 3 * 4`, `a - b - c`). Verifica que el AST refleja reglas matemáticas/lógicas correctas.
+  * Fix: `assert.strictEqual(ast.evaluate(ctx), 14)`. Valida estructura del árbol, no solo resultado final.
+* **Ciclo de Vida y Contexto**: El contexto debe ser inmutable por evaluación o copiado explícitamente. Nunca compartas referencias mutables entre evaluaciones concurrentes.
+* **Refactorización desde `eval()` o `new Function()`**: Identifique evaluación insegura de strings. Reemplace por parser seguro + AST + interpreter. Deprecar evaluación dinámica progresivamente.
+* **Impacto en Rendimiento**: Cada nodo añade asignación de objeto + llamada virtual. En CPUs modernas, negligible para &lt; 1k nodos. Solo impacta en millones de evaluaciones/seg o árboles &gt; 5k niveles. Profile antes de optimizar.
+* **Gestión de Versiones**: Si la gramática evoluciona, mantenga compatibilidad hacia atrás o use versionado explícito (`v1`, `v2`). Nunca rompa contrato de `interpret()` sin migrador.
+* **Visibilidad y APIs Públicas**: Exponga solo `evaluate(expression, context)`. Oculte nodos concretos en módulos internos o parsers. Reduzca superficie de uso indebido.
+* **Documentación de Gramática EBNF**: Especifique explícitamente reglas, precedencia, tipos soportados y extensiones permitidas. Elimine suposiciones implícitas.
+* **Migración hacia Visitor**: Si añades &gt; 3 operaciones sobre el AST (print, optimize, lint, serialize), separa estructura de lógica. Cumple Open/Closed estrictamente.
+* **Integración con Observabilidad**: Inyecte correlation IDs, trace spans y métricas por nodo o expresión. Centralice telemetría de evaluación, fallos y latencia por tipo de regla.
+
+---
+
+## 7. ⚠️ Errores Comunes y Soluciones
+
+* **Stack Overflow en Árboles Profundos**: Recursión nativa satura pila en expresiones anidadas o gramáticas left-recursivas.
+  * Fix: Reemplace por evaluación iterativa con pila explícita, o transforme gramática left-recursiva a right-recursiva antes de parsear.
+* **Mezclar Parsing e Interpretación**: Validar sintaxis, construir AST y evaluar en un solo paso. Código ilegible, difícil de testear o cachear.
+  * Fix: Separe fases estrictamente. Parser → AST → Interpreter. Permita validación estática, reevaluación y profiling independiente.
+* **Precedencia/Asociatividad Incorrecta**: AST no refleja reglas matemáticas o lógicas. Resultados erráticos en expresiones complejas.
+  * Fix: Defina reglas en parser, no en interpreter. Use algoritmos estándar (Shunting-yard, Pratt parsing, o gramáticas con precedencia explícita).
+* **Context Leak o Mutación Silenciosa**: `interpret()` modifica variables globales o comparte estado entre evaluaciones concurrentes.
+  * Fix: Pase contexto inmutable o clonado. Use `Object.freeze()`, `copy.deepcopy`, o scope por evaluación. Documente contrato de solo lectura.
+* **Acoplamiento a Gramática Concreta**: Nodos concretos conocen detalles de parsing o validación. Dificulta migrar o extender lenguaje.
+  * Fix: Mantenga nodos puros. Delegue validación a parser o visitor. Cumpla Single Responsibility estrictamente en cada fase.
+* **Confundir con Visitor o Command**: Usar Interpreter para añadir operaciones sin evaluación, o para encolar peticiones.
+  * Fix: Si separa operaciones de estructura → Visitor. Si encapsula petición ejecutable → Command. Si evalúa gramática representada → Interpreter. No mezcle propósitos.
+* **Serialización Rota**: Intentar persistir AST con métodos, closures o referencias cíclicas. Imposible restaurar o ejecutar en otro proceso.
+  * Fix: Serialize solo DTOs planos o formato intermedio (JSON, S-expression). Reconstruya AST mediante factory o parser. Nunca serialice funciones.
+* **Falta de Validación Estática**: Expresiones con tipos incompatibles, variables indefinidas o sintaxis inválida fallan en runtime sin contexto claro.
+  * Fix: Implemente fase de type-checking o validación semántica antes de ejecución. Use schemas o análisis estático en parser. Fail fast con mensajes descriptivos.
+* **Olvidar Manejo de Errores Parciales**: Un sub-nodo lanza excepción, pero el interpreter no propaga contexto de error o posición en expresión original.
+  * Fix: Use `Result`/`Either` patterns, o excepciones con metadata (`line`, `column`, `nodeType`). Propague error hacia arriba sin perder trazabilidad.
+* **Reinvención de Ruedas Complejas**: Implementar parser + interpreter desde cero para gramáticas estándar (SQL, JSONPath, XPath, regex).
+  * Fix: Use librerías maduras o generadores. Mantenga interpreter solo para DSLs de dominio específico o reglas empresariales ligeras.
+
+---
+
+## 8. 💡 Mejores Prácticas y Consejos
+
+* **Prefiera Separación Estricta de Fases**: Lexer → Parser → AST → Interpreter. Cada fase independiente, testeable y optimizable por separado.
+* **Documente Gramática en EBNF o PEG**: Elimine ambigüedades, defina precedencia explícitamente y valide con tests de parsing antes de implementación.
+* **Use Visitor para Múltiples Operaciones**: Si necesita eval, print, optimize o lint sobre el mismo AST, separe estructura de lógica. Cumpla Open/Closed.
+* **Valide Contexto en Bordes**: Rechace variables indefinidas, tipos incompatibles o scopes inválidos antes de evaluar. Fail fast ahorra recursos y simplifica debugging.
+* **Implemente Evaluación Iterativa para Profundidad Crítica**: Evite límites de stack en entornos embebidos o gramáticas anidadas. Use pila explícita con estado por nodo.
+* **Mantenga AST Inmutable**: Congele estructura tras parsing. Permita reevaluación segura, caché de sub-expresiones y concurrencia sin locks.
+* **Profile antes de Desplegar**: No asuma overhead de nodos trivial. Mide allocation por expresión, latency de traversal y GC pressure. Optimice solo si el profiler lo indica.
+* **Pruebe Casos Límite y Errores**: Valide expresiones vacías, nulas, profundamente anidadas, con ciclos accidentales y con tipos mixtos. Detecte regresiones temprano.
+* **Mantenga Contratos Estables**: Cambiar la firma de `interpret()` o estructura de contexto rompe clientes. Use deprecación controlada, versionado semántico y migradores.
+* **No lo use "por moda"**: Si la expresión es estática, simple o ya soportada por librerías maduras, use evaluación nativa o parsers generados. La reinvención innecesaria es deuda técnica de rendimiento y mantenimiento.
+
+---
+
+Este cheatsheet proporciona una referencia arquitectónica completa para el patrón Interpreter, cubriendo su intención de comportamiento, contratos de evaluación segura, implementación multi-paradigma, variantes iterativas y visitor-based, impacto real en testing y mantenibilidad, errores frecuentes en producción y estrategias de mitigación, junto con criterios estrictos para decidir cuándo la representación explícita de gramática es una necesidad del dominio y cuándo migrar hacia parsers generados, evaluación nativa segura o contenedores de reglas más escalables.
