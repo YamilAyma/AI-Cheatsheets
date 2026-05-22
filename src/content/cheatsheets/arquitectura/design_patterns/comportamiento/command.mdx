@@ -1,0 +1,301 @@
+# 🎯 Patrón Command — Cheatsheet Completo 🎯
+
+El patrón **Command** es un patrón de comportamiento que encapsula una petición o acción como un objeto independiente, desacoplando el emisor de la petición del receptor que la ejecuta. Permite parametrizar operaciones, encolar o registrar solicitudes, soportar operaciones de deshacer/rehacer, y ejecutar acciones de forma asíncrona o distribuida sin modificar la lógica de negocio subyacente. Nace para transformar llamadas directas y sincrónicas en entidades transitables, serializables y gestionables por infraestructura externa (colas, schedulers, audit logs, transaction managers). Este cheatsheet desglosa la intención arquitectónica real del patrón, contratos de ejecución y reversión, implementaciones multi-paradigma, variantes transaccionales y distribuidas, impacto en observabilidad y concurrencia, trampas de estado mutable y acoplamiento encubierto, y criterios estrictos para decidir cuándo la encapsulación de acciones es una necesidad del dominio y no una capa de indirección que complica el flujo de control sin justificación operativa.
+
+---
+
+## 1. 🌟 Conceptos Fundamentales
+
+* **Command (Interfaz)**: Contrato que declara métodos de ejecución (`execute()`), reversión (`undo()` o `rollback()`), validación (`canExecute()`), y serialización de estado.
+  * Por qué importa: Establece el límite de abstracción. Permite tratar todas las acciones como objetos intercambiables, encolables y auditables.
+* **ConcreteCommand**: Implementación específica que encapsula la petición, los parámetros necesarios y la referencia al `Receiver`. Contiene la lógica de ejecución y compensación.
+  * Por qué importa: Aísla los detalles de la acción del contexto de invocación. Permite versionar, persistir o replicar la petición sin tocar el emisor.
+* **Invoker (Invocador)**: Componente que recibe, almacena, encola o dispara comandos. No conoce la lógica interna, solo llama a `execute()` o gestiona el ciclo de vida.
+  * Por qué importa: Desacopla completamente el quién solicita del quién ejecuta. Habilita colas, schedulers, retries y balanceo de carga sin modificar la acción.
+* **Receiver (Receptor)**: Objeto o servicio que contiene la lógica real de dominio o infraestructura. Es el destino final de la ejecución del comando.
+  * Por qué importa: Mantiene la responsabilidad única. El comando solo orquesta y pasa parámetros; el receptor ejecuta la mutación o cálculo de negocio.
+* **Client (Cliente)**: Entidad que instancia el `ConcreteCommand`, lo configura con parámetros y referencia al receptor, y lo entrega al `Invoker`.
+  * Por qué importa: Mantiene inversión de dependencias. El cliente no ejecuta directamente; delega la orquestación al patrón.
+* **Encapsulación de Estado**: El comando almacena snapshot de parámetros, contexto de ejecución o estado previo necesario para `undo()`.
+  * Por qué importa: Garantiza reversibilidad determinista. Sin estado capturado, la compensación o auditoría es imposible o inconsistente.
+* **Idempotencia y Compensación**: En sistemas distribuidos o asíncronos, los comandos deben poder reejecutarse sin efectos secundarios duplicados o aplicar lógica de rollback explícita.
+  * Por qué importa: Evita corrupción de datos por retries automáticos, fallos de red o procesamiento duplicado en colas distribuidas.
+* **Transitabilidad y Serialización**: Los comandos deben poder convertirse a bytes/JSON para persistencia, transporte entre procesos o replay de auditoría.
+  * Por qué importa: Habilita event sourcing, colas de mensajes, replicación de estado y recuperación ante fallos sin pérdida de intención.
+* **Desacoplamiento Temporal y Espacial**: El emisor no espera resultado inmediato. El comando puede ejecutarse en otro hilo, proceso, nodo o momento.
+  * Por qué importa: Transforma acoplamiento síncrono en flujos asíncronos, mejorando resiliencia, escalabilidad y tolerancia a fallos.
+* **Separación de Intención y Ejecución**: El comando representa *qué* se quiere hacer. El receptor representa *cómo* se hace. El `Invoker` representa *cuándo* y *dónde*.
+  * Por qué importa: Clarifica responsabilidades arquitectónicas. Facilita testing aislado, versionado de acciones y migración de infraestructura sin tocar dominio.
+
+---
+
+## 2. 📐 Estructura Lógica y Contrato de Ejecución
+
+La arquitectura sigue un flujo estricto de encapsulación, delegación y gestión de ciclo de vida. El patrón garantiza que cada petición sea trazable, reversible o reejecutable según contrato.
+
+```text
+               Cliente
+                  │
+                  ▼ instancia y configura
+          ConcreteCommand
+         +---------------------------+
+         | execute(): void           |
+         | undo(): void              |
+         | receiver: Receiver        |
+         | params: CommandPayload    |
+         +---------------------------+
+                  │ entrega
+                  ▼
+               Invoker
+         +---------------------------+
+         | queue: Command[]          |
+         | execute(command): void    |
+         | undoLast(): void          |
+         +---------------------------+
+                  │ delega
+                  ▼
+             Receiver
+         +---------------------------+
+         | performAction(payload): T |
+         | revertAction(snapshot): V |
+         +---------------------------+
+```
+
+Flujo de ejecución garantizado:
+1. Cliente crea `ConcreteCommand`, inyecta `Receiver` y captura parámetros/snapshots.
+2. Entrega el comando al `Invoker` (síncrono, cola, scheduler, etc.).
+3. `Invoker` valida estado, registra en auditoría y llama a `command.execute()`.
+4. `ConcreteCommand` delega a `receiver.performAction(params)`.
+5. Si falla o se solicita reversión, `Invoker` llama a `command.undo()`.
+6. Resultado o error se propaga mediante callbacks, eventos o promesas.
+7. Cliente nunca invoca al receptor directamente. Solo interactúa con `Invoker` o sistema de colas.
+
+Contrato mínimo en pseudocódigo tipado:
+```typescript
+interface Command {
+  execute(): Promise&lt;ExecutionResult&gt;;
+  undo(): Promise&lt;void&gt;;
+  canUndo(): boolean;
+  serialize(): SerializablePayload;
+}
+
+class WithdrawFundsCommand implements Command {
+  constructor(
+    private account: AccountReceiver,
+    private amount: number,
+    private prevBalance: number
+  ) {}
+
+  async execute(): Promise&lt;ExecutionResult&gt; {
+    if (this.amount &lt;= 0) throw new InvalidAmountError();
+    await this.account.debit(this.amount);
+    return { status: 'EXECUTED', newBalance: this.prevBalance - this.amount };
+  }
+
+  async undo(): Promise&lt;void&gt; {
+    if (!this.canUndo()) return;
+    await this.account.credit(this.amount);
+  }
+
+  canUndo(): boolean { return this.amount &gt; 0; }
+  serialize() { return { type: 'Withdraw', amount: this.amount, ts: Date.now() }; }
+}
+```
+Regla inquebrantable: El comando **nunca** debe ejecutar lógica de dominio directamente. Solo orquesta, captura estado y delega al `Receiver`. Si el comando acumula reglas de negocio, el patrón colapsa en acoplamiento híbrido y pierde reversibilidad segura.
+
+---
+
+## 3. 🛠️ Implementación por Paradigma y Ecosistema
+
+El patrón se adapta al modelo de ejecución y al estilo de composición del entorno. No requiere necesariamente herencia clásica ni interfaces explícitas en todos los lenguajes.
+
+### 3.1. POO Clásica con Inyección (TypeScript / Java / C#)
+Uso de interfaces explícitas, clases concretas y gestión de estado interno. Ideal para undo/redo, transacciones locales o schedulers.
+
+```java
+public interface Command {
+    void execute();
+    void undo();
+    boolean canUndo();
+}
+
+public class ResizeShapeCommand implements Command {
+    private final ShapeReceiver shape;
+    private final double oldWidth, oldHeight, newWidth, newHeight;
+
+    public ResizeShapeCommand(ShapeReceiver shape, double nw, double nh) {
+        this.shape = shape;
+        this.newWidth = nw; this.newHeight = nh;
+        this.oldWidth = shape.getWidth(); this.oldHeight = shape.getHeight();
+    }
+
+    public void execute() { shape.resize(newWidth, newHeight); }
+    public void undo() { shape.resize(oldWidth, oldHeight); }
+    public boolean canUndo() { return oldWidth != newWidth || oldHeight != newHeight; }
+}
+// Invoker mantiene stack: history.push(cmd); cmd.execute();
+```
+
+### 3.2. Enfoque Funcional / Closures (JavaScript / Python / Rust)
+Se reemplaza herencia por funciones de orden superior, closures o tuplas inmutables. Composición declarativa sin boilerplate.
+
+```python
+from dataclasses import dataclass
+from typing import Callable, Any
+
+@dataclass(frozen=True)
+class Command:
+    execute: Callable[[], Any]
+    undo: Callable[[], None]
+    description: str
+
+def create_move_command(receiver: object, dx: int, dy: int) -&gt; Command:
+    ox, oy = receiver.x, receiver.y
+    return Command(
+        execute=lambda: receiver.move_to(ox + dx, oy + dy),
+        undo=lambda: receiver.move_to(ox, oy),
+        description=f"Move ({dx},{dy})"
+    )
+
+# Uso: cmd = create_move_command(shape, 10, 5); cmd.execute(); cmd.undo()
+```
+Ventaja: Inmutabilidad, cero clases, fácil serialización. Desventaja: Pérdida de validación estática si no se usa tipado estricto o contratos explícitos.
+
+### 3.3. Event/Message Bus Distribuido (Kafka / RabbitMQ / Redis)
+Comandos se publican como mensajes, se consumen asíncronamente y se procesan en workers separados. Patrón base de CQRS y Event Sourcing.
+
+```rust
+#[derive(Serialize, Deserialize, Clone)]
+pub struct PlaceOrderCommand {
+    pub order_id: String,
+    pub customer_id: String,
+    pub items: Vec&lt;OrderItem&gt;,
+    pub correlation_id: Uuid,
+}
+
+// Publisher (Client/Invoker)
+async fn publish_command(cmd: PlaceOrderCommand) -&gt; Result&lt;(), Error&gt; {
+    let payload = serde_json::to_vec(&amp;cmd)?;
+    kafka_producer.send("orders.commands", payload).await
+}
+
+// Consumer (Receiver/Worker)
+async fn handle_command(msg: Message) -&gt; Result&lt;(), Error&gt; {
+    let cmd: PlaceOrderCommand = serde_json::from_slice(&amp;msg.payload)?;
+    order_service.execute(&amp;cmd).await?;
+    audit_log.record(&amp;cmd).await?;
+    Ok(())
+}
+```
+
+### 3.4. MacroCommand / Composite Command
+Comando que agrupa otros comandos y los ejecuta secuencial o concurrentemente. Útil para transacciones complejas o operaciones atómicas multi-paso.
+
+```typescript
+class MacroCommand implements Command {
+  private commands: Command[];
+  constructor(commands: Command[]) { this.commands = commands; }
+
+  async execute(): Promise&lt;void&gt; {
+    for (const cmd of this.commands) await cmd.execute();
+  }
+
+  async undo(): Promise&lt;void&gt; {
+    for (const cmd of this.commands.reverse()) await cmd.undo();
+  }
+}
+// Garantiza atomicidad lógica: si falla un paso, se deshacen los anteriores.
+```
+
+---
+
+## 4. 🔄 Variantes Arquitectónicas y Extensiones
+
+| Variante | Mecanismo | Caso de uso | Trade-off |
+|----------|-----------|-------------|-----------|
+| **Simple/Immediate** | Ejecución síncrona directa. Sin cola ni reversión. | Scripts de mantenimiento, validación rápida, operaciones atómicas simples. | Pierde ventajas de desacoplamiento temporal y auditabilidad. |
+| **Queued/Async** | Comandos se encolan y procesan por workers en background. | ETL, notificaciones, sincronización de datos, procesamiento batch. | Latencia añadida. Requiere idempotencia y manejo de fallos explícito. |
+| **Reversible/Undo-Redo** | Mantiene stack de ejecución y soporta `undo()`/`redo()` determinista. | Editores de texto/gráficos, formularios complejos, workflows interactivos. | Overhead de estado capturado. Complejidad en mutaciones compartidas. |
+| **Transactional/Compensating** | Usa compensación explícita en lugar de rollback de BD. | Sistemas distribuidos, sagas, integración con APIs externas sin 2PC. | Diseño complejo de compensadores. Requiere pruebas exhaustivas de fallos. |
+| **Idempotent/Deduplicated** | Identifica comandos por ID/key y rechaza reejecuciones duplicadas. | Retries automáticos, redes inestables, procesamiento al menos una vez. | Necesita almacenamiento de estado procesado. Añede I/O por validación. |
+| **Scheduled/Deferred** | Comandos se programan para ejecución futura o recurrente. | Recordatorios, limpieza de datos, sincronización periódica, cron jobs. | Complejidad de rescheduling, manejo de timezone y fallos de scheduler. |
+
+---
+
+## 5. 🎯 Cuándo Usar y Cuándo Evitar
+
+| ✅ Usar cuando... | ❌ Evitar cuando... |
+|------------------|-------------------|
+| Necesitas undo/redo, logging de acciones o replay de estado | La operación es simple, síncrona y no requiere auditoría o reversión. Usa llamada directa. |
+| Quieres desacoplar emisor de receptor para procesamiento asíncrono o distribuido | El rendimiento es crítico en loops tight. La serialización/encolado añade latencia inaceptable. |
+| Necesitas parametrizar operaciones para colas, schedulers o feature flags | El comando acumula lógica de negocio compleja en lugar de orquestar. Refactoriza hacia servicios. |
+| Trabajas con editores, workflows, CQRS, event sourcing o integración de APIs externas | Ya usas un framework de mensajería nativo o contenedor DI que gestiona comandos automáticamente. |
+| Requieres idempotencia, compensación o transacciones lógicas en sistemas distribuidos | La complejidad de gestión de estado, serialización y retry supera el beneficio arquitectónico. |
+
+Comparación rápida con patrones de comportamiento:
+* **Command**: Encapsula petición como objeto. Enfocado en ejecución diferida, reversión y desacoplamiento temporal.
+* **Strategy**: Intercambia algoritmos completos en runtime. Enfocado en variación de lógica, no en encolado o auditoría.
+* **Memento**: Captura y restaura estado interno. Enfocado en snapshot, no en ejecución de acciones.
+* **Observer**: Notifica a múltiples suscriptores de cambios. Enfocado en broadcasting, no en ejecución dirigida.
+* **Mediator**: Centraliza comunicación entre componentes. Enfocado en desacoplar pares, no en encapsular peticiones.
+
+---
+
+## 6. 🧪 Testing, Mantenibilidad y Arquitectura
+
+* **Aislamiento en Tests**: Prueba `ConcreteCommand` con `MockReceiver`. Verifica que `execute()` delegue correctamente y `undo()` revierta estado esperado.
+  * Técnica: Inyecta receptor falso. Aserta llamadas, parámetros pasados y mutaciones o compensaciones aplicadas.
+* **Validación de Idempotencia**: Escribe tests que ejecuten el mismo comando múltiples veces con mismo ID. Verifica que no se dupliquen efectos secundarios.
+  * Fix: `assert.strictEqual(executionCount, 1)`. Valida almacenamiento de processed IDs y rechazo silencioso o explícito.
+* **Ciclo de Vida y Ownership**: El `Invoker` debe gestionar retries, timeouts, dead-letter queues y limpieza de comandos expirados. Nunca dejar comandos en limbo.
+* **Refactorización desde Llamadas Directas**: Identifique acoplamiento síncrono, falta de auditoría o necesidad de undo. Envuelva en `Command`. Inyecte `Invoker`. Deprecar llamada directa.
+* **Impacto en Rendimiento**: La serialización, encolado y deserialización añede overhead. En sistemas de alta throughput, use formatos binarios (Protobuf, MessagePack) o bypass en paths críticos.
+* **Gestión de Versiones**: Si el payload del comando evoluciona, mantenga compatibilidad hacia atrás o use versionado explícito (`v1`, `v2`). Nunca rompa contrato sin migrador.
+* **Visibilidad y APIs Públicas**: Exponga solo `Invoker` o `CommandBus`. Oculte `ConcreteCommand` en módulos internos o factories. Reduzca superficie de uso indebido.
+* **Documentación de Contrato de Reversión**: Especifique qué es reversible, qué no, y cómo se maneja compensación en fallos parciales. Elimine suposiciones implícitas.
+* **Migración hacia Event Sourcing**: Identifique mutaciones de estado. Convierta en comandos. Persista eventos. Reconstruya estado desde log. Valide con replay tests.
+* **Integración con Observabilidad**: Inyecte correlation IDs, trace spans y métricas por comando. Centralice telemetría de ejecución, fallos y latencia por tipo de acción.
+
+---
+
+## 7. ⚠️ Errores Comunes y Soluciones
+
+* **Comando con Lógica de Negocio**: El `ConcreteCommand` calcula reglas, valida dominio o toma decisiones complejas.
+  * Fix: Delegue toda lógica a `Receiver`. El comando solo captura parámetros, orquesta y maneja estado para undo. Mantenga < 50 líneas.
+* **Falta de Idempotencia**: Retries automáticos duplican transacciones, envían emails múltiples o corrompen contadores.
+  * Fix: Use `commandId` único, almacene `processedIds` con TTL, o diseñe operaciones idempotentes por naturaleza (PUT vs POST, incrementos atómicos).
+* **Undo Incompleto o Peligroso**: `undo()` revierte parcialmente o falla si el receptor cambió estado externamente.
+  * Fix: Capture snapshot previo completo, valide consistencia antes de revertir, o use compensación explícita en lugar de reversión directa.
+* **Acoplamiento del Invoker al Receptor**: El `Invoker` conoce tipos concretos o llama directamente a servicios, saltando el comando.
+  * Fix: El `Invoker` solo debe llamar a `command.execute()`. Inyecte `CommandBus` o factory. Cumpla Dependency Inversion Principle estrictamente.
+* **Serialización Rota o Incompleta**: `JSON.stringify()` omite métodos, closures o referencias cíclicas. Comando no se puede restaurar.
+  * Fix: Serialize solo DTOs planos. Reconstruya comando en consumer usando factory o registry. Nunca serialice funciones o estados mutables directamente.
+* **Bloqueo en Cadenas Asíncronas**: `execute()` no retorna promesa o ignora `await`, causando race conditions o pérdida de errores.
+  * Fix: Declare `async execute(): Promise&lt;void&gt;`. Use `try/catch/finally` explícito. Propague errores al `Invoker` para retry o dead-letter.
+* **State Leakage entre Comandos**: Variables estáticas o caché global compartido entre ejecuciones concurrentes.
+  * Fix: Pase contexto explícitamente por parámetro o scope. Nunca estado global sin control. Use factories por request o scope DI.
+* **Confundir con Strategy o Memento**: Usar Command para variar algoritmos o para capturar estado sin intención de ejecución.
+  * Fix: Si varía lógica → Strategy. Si solo guarda/restaura estado → Memento. Si encapsula petición ejecutable/reversible → Command. No mezcle propósitos.
+* **Olvidar Manejo de Fallos Parciales**: Un paso de `MacroCommand` falla, pero los anteriores no se deshacen.
+  * Fix: Implemente compensación secuencial en `undo()`. Use sagas o transaction outbox para garantizar consistencia eventual o rollback controlado.
+* **Comandos Huérfanos o Sin Timeout**: Comandos encolados nunca se procesan o se procesan días después, cuando ya no son válidos.
+  * Fix: Implemente TTL, dead-letter queues, expiración por contexto, o validación de vigencia antes de ejecución. Loguee descartes para auditoría.
+
+---
+
+## 8. 💡 Mejores Prácticas y Consejos
+
+* **Prefiera Comandos Inmutables**: Capture parámetros y estado en el constructor. No permita mutación posterior. Garantice determinismo y thread-safety.
+* **Documente Contrato de Reversión y Compensación**: Especifique explícitamente qué es reversible, cómo se compensa, y qué fallos son irreversibles por diseño.
+* **Use ID Únicos y Correlation IDs**: Habilite trazabilidad completa, idempotencia, debugging en producción y reconstrucción de flujos desde logs.
+* **Valide en Bordes, no en Ejecución**: Rechace payloads malformados o contextos inválidos antes de encolar. Fail fast ahorra recursos y simplifica dead-letter handling.
+* **Implemente Transaction Outbox para Consistencia**: Guarde comando y evento en misma transacción local antes de publicar. Evita pérdida de intención en fallos de red.
+* **Mantenga Liskov Substitution Principle Estricto**: Trate siempre como `Command`. Evite `instanceof`, downcasts o checks de identidad que rompan abstracción.
+* **Profile antes de Desplegar**: No asuma overhead de serialización trivial. Mide latency por tipo de comando, allocation y GC pressure. Optimice solo si el profiler lo indica.
+* **Pruebe Replay y Fallos, no solo Éxito**: Valide idempotencia, compensación, timeouts, circuit open y recuperación. Detecte order-dependencies y state-leaks temprano.
+* **Mantenga Contratos Estables**: Cambiar la firma de `execute()` o payload rompe consumidores. Use deprecación controlada, versionado semántico y handlers paralelos.
+* **No lo use "por moda"**: Si la llamada es síncrona, simple y no requiere auditoría, reversión o encolado, use función o servicio directo. La encapsulación innecesaria es deuda técnica de legibilidad y mantenimiento.
+
+---
+
+Este cheatsheet proporciona una referencia arquitectónica completa para el patrón Command, cubriendo su intención de comportamiento, contratos de ejecución y reversión, implementación multi-paradigma, variantes transaccionales y distribuidas, impacto real en testing y mantenibilidad, errores frecuentes en producción y estrategias de mitigación, junto con criterios estrictos para decidir cuándo la encapsulación de acciones es una necesidad del dominio y cuándo migrar hacia llamadas directas, servicios inyectados o frameworks de mensajería nativos más escalables.
