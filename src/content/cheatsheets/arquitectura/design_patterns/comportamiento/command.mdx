@@ -1,3 +1,11 @@
+---
+title: "command"
+description: "El patrón Command es un patrón de comportamiento que encapsula una petición o acción como un objeto independiente, desacoplando el emisor de la petición del receptor que la ejecuta."
+createdAt: 2026-05-22
+updatedAt: 2026-05-22
+tags: [comportamiento]
+icon: "📄"
+---
 # 🎯 Patrón Command — Cheatsheet Completo 🎯
 
 El patrón **Command** es un patrón de comportamiento que encapsula una petición o acción como un objeto independiente, desacoplando el emisor de la petición del receptor que la ejecuta. Permite parametrizar operaciones, encolar o registrar solicitudes, soportar operaciones de deshacer/rehacer, y ejecutar acciones de forma asíncrona o distribuida sin modificar la lógica de negocio subyacente. Nace para transformar llamadas directas y sincrónicas en entidades transitables, serializables y gestionables por infraestructura externa (colas, schedulers, audit logs, transaction managers). Este cheatsheet desglosa la intención arquitectónica real del patrón, contratos de ejecución y reversión, implementaciones multi-paradigma, variantes transaccionales y distribuidas, impacto en observabilidad y concurrencia, trampas de estado mutable y acoplamiento encubierto, y criterios estrictos para decidir cuándo la encapsulación de acciones es una necesidad del dominio y no una capa de indirección que complica el flujo de control sin justificación operativa.
@@ -234,9 +242,9 @@ class MacroCommand implements Command {
 
 Comparación rápida con patrones de comportamiento:
 * **Command**: Encapsula petición como objeto. Enfocado en ejecución diferida, reversión y desacoplamiento temporal.
-* **Strategy**: Intercambia algoritmos completos en runtime. Enfocado en variación de lógica, no en encolado o auditoría.
-* **Memento**: Captura y restaura estado interno. Enfocado en snapshot, no en ejecución de acciones.
-* **Observer**: Notifica a múltiples suscriptores de cambios. Enfocado en broadcasting, no en ejecución dirigida.
+* **[Strategy](/arquitectura/design_patterns/comportamiento/strategy "El patrón Strategy es un patrón de comportamiento que define una familia de algoritmos intercambiables, los encapsula y los hace sustituibles en tiempo de ejecución sin alterar el código del cliente que los utiliza.")**: Intercambia algoritmos completos en runtime. Enfocado en variación de lógica, no en encolado o auditoría.
+* **[Memento](/arquitectura/design_patterns/comportamiento/memento "El patrón Memento es un patrón de comportamiento que permite capturar y externalizar el estado interno de un objeto sin violar su encapsulamiento, de modo que el objeto pueda ser restaurado a ese estado en un momento posterior.")**: Captura y restaura estado interno. Enfocado en snapshot, no en ejecución de acciones.
+* **[Observer](/arquitectura/design_patterns/comportamiento/observer "El patrón Observer es un patrón de comportamiento que define una dependencia uno-a-muchos entre objetos, de modo que cuando un objeto cambia su estado, todos sus dependientes son notificados y actualizados automáticamente.")**: Notifica a múltiples suscriptores de cambios. Enfocado en broadcasting, no en ejecución dirigida.
 * **Mediator**: Centraliza comunicación entre componentes. Enfocado en desacoplar pares, no en encapsular peticiones.
 
 ---
@@ -261,7 +269,7 @@ Comparación rápida con patrones de comportamiento:
 ## 7. ⚠️ Errores Comunes y Soluciones
 
 * **Comando con Lógica de Negocio**: El `ConcreteCommand` calcula reglas, valida dominio o toma decisiones complejas.
-  * Fix: Delegue toda lógica a `Receiver`. El comando solo captura parámetros, orquesta y maneja estado para undo. Mantenga < 50 líneas.
+  * Fix: Delegue toda lógica a `Receiver`. El comando solo captura parámetros, orquesta y maneja estado para undo. Mantenga &lt; 50 líneas.
 * **Falta de Idempotencia**: Retries automáticos duplican transacciones, envían emails múltiples o corrompen contadores.
   * Fix: Use `commandId` único, almacene `processedIds` con TTL, o diseñe operaciones idempotentes por naturaleza (PUT vs POST, incrementos atómicos).
 * **Undo Incompleto o Peligroso**: `undo()` revierte parcialmente o falla si el receptor cambió estado externamente.
@@ -272,10 +280,10 @@ Comparación rápida con patrones de comportamiento:
   * Fix: Serialize solo DTOs planos. Reconstruya comando en consumer usando factory o registry. Nunca serialice funciones o estados mutables directamente.
 * **Bloqueo en Cadenas Asíncronas**: `execute()` no retorna promesa o ignora `await`, causando race conditions o pérdida de errores.
   * Fix: Declare `async execute(): Promise&lt;void&gt;`. Use `try/catch/finally` explícito. Propague errores al `Invoker` para retry o dead-letter.
-* **State Leakage entre Comandos**: Variables estáticas o caché global compartido entre ejecuciones concurrentes.
+* **[State](/arquitectura/design_patterns/comportamiento/state "El patrón State es un patrón de comportamiento que permite a un objeto alterar su comportamiento cuando su estado interno cambia, haciendo que parezca que el objeto cambia de clase.") Leakage entre Comandos**: Variables estáticas o caché global compartido entre ejecuciones concurrentes.
   * Fix: Pase contexto explícitamente por parámetro o scope. Nunca estado global sin control. Use factories por request o scope DI.
-* **Confundir con Strategy o Memento**: Usar Command para variar algoritmos o para capturar estado sin intención de ejecución.
-  * Fix: Si varía lógica → Strategy. Si solo guarda/restaura estado → Memento. Si encapsula petición ejecutable/reversible → Command. No mezcle propósitos.
+* **Confundir con [Strategy](/arquitectura/design_patterns/comportamiento/strategy "El patrón Strategy es un patrón de comportamiento que define una familia de algoritmos intercambiables, los encapsula y los hace sustituibles en tiempo de ejecución sin alterar el código del cliente que los utiliza.") o [Memento](/arquitectura/design_patterns/comportamiento/memento "El patrón Memento es un patrón de comportamiento que permite capturar y externalizar el estado interno de un objeto sin violar su encapsulamiento, de modo que el objeto pueda ser restaurado a ese estado en un momento posterior.")**: Usar Command para variar algoritmos o para capturar estado sin intención de ejecución.
+  * Fix: Si varía lógica → [Strategy](/arquitectura/design_patterns/comportamiento/strategy "El patrón Strategy es un patrón de comportamiento que define una familia de algoritmos intercambiables, los encapsula y los hace sustituibles en tiempo de ejecución sin alterar el código del cliente que los utiliza."). Si solo guarda/restaura estado → [Memento](/arquitectura/design_patterns/comportamiento/memento "El patrón Memento es un patrón de comportamiento que permite capturar y externalizar el estado interno de un objeto sin violar su encapsulamiento, de modo que el objeto pueda ser restaurado a ese estado en un momento posterior."). Si encapsula petición ejecutable/reversible → Command. No mezcle propósitos.
 * **Olvidar Manejo de Fallos Parciales**: Un paso de `MacroCommand` falla, pero los anteriores no se deshacen.
   * Fix: Implemente compensación secuencial en `undo()`. Use sagas o transaction outbox para garantizar consistencia eventual o rollback controlado.
 * **Comandos Huérfanos o Sin Timeout**: Comandos encolados nunca se procesan o se procesan días después, cuando ya no son válidos.
@@ -292,7 +300,7 @@ Comparación rápida con patrones de comportamiento:
 * **Implemente Transaction Outbox para Consistencia**: Guarde comando y evento en misma transacción local antes de publicar. Evita pérdida de intención en fallos de red.
 * **Mantenga Liskov Substitution Principle Estricto**: Trate siempre como `Command`. Evite `instanceof`, downcasts o checks de identidad que rompan abstracción.
 * **Profile antes de Desplegar**: No asuma overhead de serialización trivial. Mide latency por tipo de comando, allocation y GC pressure. Optimice solo si el profiler lo indica.
-* **Pruebe Replay y Fallos, no solo Éxito**: Valide idempotencia, compensación, timeouts, circuit open y recuperación. Detecte order-dependencies y state-leaks temprano.
+* **Pruebe Replay y Fallos, no solo Éxito**: Valide idempotencia, compensación, timeouts, circuit open y recuperación. Detecte order-dependencies y [state](/arquitectura/design_patterns/comportamiento/state "El patrón State es un patrón de comportamiento que permite a un objeto alterar su comportamiento cuando su estado interno cambia, haciendo que parezca que el objeto cambia de clase.")-leaks temprano.
 * **Mantenga Contratos Estables**: Cambiar la firma de `execute()` o payload rompe consumidores. Use deprecación controlada, versionado semántico y handlers paralelos.
 * **No lo use "por moda"**: Si la llamada es síncrona, simple y no requiere auditoría, reversión o encolado, use función o servicio directo. La encapsulación innecesaria es deuda técnica de legibilidad y mantenimiento.
 
