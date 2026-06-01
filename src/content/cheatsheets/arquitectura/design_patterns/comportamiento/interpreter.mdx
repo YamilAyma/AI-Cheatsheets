@@ -1,6 +1,14 @@
+---
+title: "interpreter"
+description: "El patrón Interpreter es un patrón de comportamiento que define una representación gramatical para un lenguaje y proporciona un intérprete que utiliza dicha representación para evaluar expresiones o sentencias dentro de él."
+createdAt: 2026-05-22
+updatedAt: 2026-05-22
+tags: [comportamiento]
+icon: "📄"
+---
 # 📖 Patrón Interpreter — Cheatsheet Completo 📖
 
-El patrón **Interpreter** es un patrón de comportamiento que define una representación gramatical para un lenguaje y proporciona un intérprete que utiliza dicha representación para evaluar expresiones o sentencias dentro de él. Permite transformar cadenas de texto, reglas de dominio o consultas estructuradas en un **Árbol de Sintaxis Abstracta (AST)** navegable, evaluando recursivamente cada nodo según contratos predecibles. Nace para habilitar lenguajes de dominio específicos (DSLs), motores de reglas, evaluadores de fórmulas, parsers de configuración y sistemas de consulta ligeros, manteniendo la gramática separada de la infraestructura de ejecución. Este cheatsheet desglosa la intención arquitectónica real del patrón, contratos de evaluación segura, implementaciones multi-paradigma, variantes iterativas y visitor-based, impacto en profiling y mantenibilidad, trampas de recursión infinita y acoplamiento a gramática, y criterios estrictos para decidir cuándo la representación explícita de lenguaje es una necesidad del dominio y no una reinvención frágil de parsers generados o evaluadores nativos.
+El patrón **Interpreter** es un patrón de comportamiento que define una representación gramatical para un lenguaje y proporciona un intérprete que utiliza dicha representación para evaluar expresiones o sentencias dentro de él. Permite transformar cadenas de texto, reglas de dominio o consultas estructuradas en un **Árbol de Sintaxis Abstracta (AST)** navegable, evaluando recursivamente cada nodo según contratos predecibles. Nace para habilitar lenguajes de dominio específicos (DSLs), motores de reglas, evaluadores de fórmulas, parsers de configuración y sistemas de consulta ligeros, manteniendo la gramática separada de la infraestructura de ejecución. Este cheatsheet desglosa la intención arquitectónica real del patrón, contratos de evaluación segura, implementaciones multi-paradigma, variantes iterativas y [visitor](/arquitectura/design_patterns/comportamiento/visitor "El patrón Visitor es un patrón de comportamiento que separa algoritmos de las estructuras de objetos sobre las que operan, permitiendo añadir nuevas operaciones sin modificar las clases de los elementos visitados.")-based, impacto en profiling y mantenibilidad, trampas de recursión infinita y acoplamiento a gramática, y criterios estrictos para decidir cuándo la representación explícita de lenguaje es una necesidad del dominio y no una reinvención frágil de parsers generados o evaluadores nativos.
 
 ---
 
@@ -15,7 +23,7 @@ El patrón **Interpreter** es un patrón de comportamiento que define una repres
 * **Contexto**: Objeto o mapa que transporta variables globales, estado de ejecución, scope, o referencias externas necesarias durante la evaluación.
   * Por qué importa: Separa datos dinámicos del AST estático. Permite reutilizar el mismo árbol con distintos entornos de ejecución.
 * **Cliente**: Componente que parsea la entrada, construye el AST, inyecta el contexto y dispara `interpret()`. Desconoce la lógica interna de cada nodo.
-  * Por qué importa: Mantiene inversión de dependencias. La capa de presentación o API solo interactúa con el motor de interpretación.
+  * Por qué importa: Mantiene inversión de dependencias. La capa de presentación o [API](/conocimiento/api "Una API (Application Programming Interface) es un conjunto de reglas, protocolos y herramientas que permite que diferentes aplicaciones de software se comuniquen entre sí.") solo interactúa con el motor de interpretación.
 * **Separación Parsing/Interpretación**: La construcción del AST y su evaluación son fases distintas. El parser valida sintaxis; el interpreter ejecuta semántica.
   * Por qué importa: Evita acoplamiento circular. Permite cache de AST, validación estática temprana y reevaluación con distintos contextos.
 * **Precedencia y Asociatividad**: Reglas que determinan el orden de evaluación en expresiones ambiguas. Deben reflejarse en la estructura del AST, no en lógica runtime.
@@ -88,7 +96,7 @@ class AddExpression implements Expression {
 }
 
 // Uso: const ast = new AddExpression(new VariableRef('x'), new NumberLiteral(5));
-// const result = ast.interpret({ resolveVariable: (n) => vars[n], getFunction: () => null });
+// const result = ast.interpret({ resolveVariable: (n) =&gt; vars[n], getFunction: () =&gt; null });
 ```
 Regla inquebrantable: El `interpret()` **nunca** debe modificar el contexto ni el AST. Solo lee, resuelve y combina. La mutación debe ocurrir en capas superiores o mediante comandos explícitos.
 
@@ -209,8 +217,8 @@ class Evaluator implements ExpressionVisitor&lt;number&gt; {
 
 | Variante | Mecanismo | Caso de uso | Trade-off |
 |----------|-----------|-------------|-----------|
-| **Recursive Descent** | Evaluación directa por recursión nativa. Gramáticas simples y predecibles. | Evaluadores de fórmulas, reglas de precio, DSLs internos ligeros. | Stack overflow en árboles profundos. Difícil optimizar sin visitor. |
-| **AST + Visitor** | Separación estricta estructura/operación. `accept()` delega a visitor. | Múltiples operaciones sobre mismo AST (eval, print, optimize, lint). | Boilerplate aumentado. Requiere mantenimiento sincronizado de interfaces. |
+| **Recursive Descent** | Evaluación directa por recursión nativa. Gramáticas simples y predecibles. | Evaluadores de fórmulas, reglas de precio, DSLs internos ligeros. | Stack overflow en árboles profundos. Difícil optimizar sin [visitor](/arquitectura/design_patterns/comportamiento/visitor "El patrón Visitor es un patrón de comportamiento que separa algoritmos de las estructuras de objetos sobre las que operan, permitiendo añadir nuevas operaciones sin modificar las clases de los elementos visitados."). |
+| **AST + [Visitor](/arquitectura/design_patterns/comportamiento/visitor "El patrón Visitor es un patrón de comportamiento que separa algoritmos de las estructuras de objetos sobre las que operan, permitiendo añadir nuevas operaciones sin modificar las clases de los elementos visitados.")** | Separación estricta estructura/operación. `accept()` delega a visitor. | Múltiples operaciones sobre mismo AST (eval, print, optimize, lint). | Boilerplate aumentado. Requiere mantenimiento sincronizado de interfaces. |
 | **Stack/Evaluador Iterativo** | Pila explícita, sin recursión. Control total de memoria. | Entornos embebidos, límites de stack estrictos, parsers masivos. | Complejidad de implementación. Difícil mantener semántica de scope anidado. |
 | **Compiled/Bytecode** | AST se traduce a instrucciones intermedias, luego se ejecuta en VM ligera. | DSLs de alto rendimiento, motores de scripts, evaluación repetitiva. | Overhead de compilación inicial. Requiere diseño de opcode y dispatcher. |
 | **Memoized/Cached** | Almacena resultados de sub-expresiones por contexto. Reutiliza cálculos. | Expresiones con variables estables, fórmulas repetitivas, simulaciones. | Invalidación compleja. Puede consumir memoria si contexto varía frecuentemente. |
@@ -230,9 +238,9 @@ class Evaluator implements ExpressionVisitor&lt;number&gt; {
 
 Comparación rápida con patrones de comportamiento y herramientas:
 * **Interpreter**: Representa gramática como AST y evalúa recursivamente. Enfocado en ejecución semántica de lenguajes simples.
-* **Visitor**: Separa operaciones de estructura. Enfocado en múltiples traversals sin modificar nodos.
-* **Command**: Encapsula petición ejecutable. Enfocado en ejecución diferida, undo/redo o encolado.
-* **Strategy**: Intercambia algoritmos completos. Enfocado en variación de lógica, no en parsing o evaluación de expresiones.
+* **[Visitor](/arquitectura/design_patterns/comportamiento/visitor "El patrón Visitor es un patrón de comportamiento que separa algoritmos de las estructuras de objetos sobre las que operan, permitiendo añadir nuevas operaciones sin modificar las clases de los elementos visitados.")**: Separa operaciones de estructura. Enfocado en múltiples traversals sin modificar nodos.
+* **[Command](/arquitectura/design_patterns/comportamiento/command "El patrón Command es un patrón de comportamiento que encapsula una petición o acción como un objeto independiente, desacoplando el emisor de la petición del receptor que la ejecuta.")**: Encapsula petición ejecutable. Enfocado en ejecución diferida, undo/redo o encolado.
+* **[Strategy](/arquitectura/design_patterns/comportamiento/strategy "El patrón Strategy es un patrón de comportamiento que define una familia de algoritmos intercambiables, los encapsula y los hace sustituibles en tiempo de ejecución sin alterar el código del cliente que los utiliza.")**: Intercambia algoritmos completos. Enfocado en variación de lógica, no en parsing o evaluación de expresiones.
 * **Parser Generators (ANTLR/Lark)**: Compilan gramáticas formales a parsers optimizados. Enfocado en precisión, rendimiento y gramáticas complejas.
 
 ---
@@ -266,15 +274,15 @@ Comparación rápida con patrones de comportamiento y herramientas:
   * Fix: Pase contexto inmutable o clonado. Use `Object.freeze()`, `copy.deepcopy`, o scope por evaluación. Documente contrato de solo lectura.
 * **Acoplamiento a Gramática Concreta**: Nodos concretos conocen detalles de parsing o validación. Dificulta migrar o extender lenguaje.
   * Fix: Mantenga nodos puros. Delegue validación a parser o visitor. Cumpla Single Responsibility estrictamente en cada fase.
-* **Confundir con Visitor o Command**: Usar Interpreter para añadir operaciones sin evaluación, o para encolar peticiones.
-  * Fix: Si separa operaciones de estructura → Visitor. Si encapsula petición ejecutable → Command. Si evalúa gramática representada → Interpreter. No mezcle propósitos.
+* **Confundir con Visitor o [Command](/arquitectura/design_patterns/comportamiento/command "El patrón Command es un patrón de comportamiento que encapsula una petición o acción como un objeto independiente, desacoplando el emisor de la petición del receptor que la ejecuta.")**: Usar Interpreter para añadir operaciones sin evaluación, o para encolar peticiones.
+  * Fix: Si separa operaciones de estructura → Visitor. Si encapsula petición ejecutable → [Command](/arquitectura/design_patterns/comportamiento/command "El patrón Command es un patrón de comportamiento que encapsula una petición o acción como un objeto independiente, desacoplando el emisor de la petición del receptor que la ejecuta."). Si evalúa gramática representada → Interpreter. No mezcle propósitos.
 * **Serialización Rota**: Intentar persistir AST con métodos, closures o referencias cíclicas. Imposible restaurar o ejecutar en otro proceso.
   * Fix: Serialize solo DTOs planos o formato intermedio (JSON, S-expression). Reconstruya AST mediante factory o parser. Nunca serialice funciones.
 * **Falta de Validación Estática**: Expresiones con tipos incompatibles, variables indefinidas o sintaxis inválida fallan en runtime sin contexto claro.
   * Fix: Implemente fase de type-checking o validación semántica antes de ejecución. Use schemas o análisis estático en parser. Fail fast con mensajes descriptivos.
 * **Olvidar Manejo de Errores Parciales**: Un sub-nodo lanza excepción, pero el interpreter no propaga contexto de error o posición en expresión original.
   * Fix: Use `Result`/`Either` patterns, o excepciones con metadata (`line`, `column`, `nodeType`). Propague error hacia arriba sin perder trazabilidad.
-* **Reinvención de Ruedas Complejas**: Implementar parser + interpreter desde cero para gramáticas estándar (SQL, JSONPath, XPath, regex).
+* **Reinvención de Ruedas Complejas**: Implementar parser + interpreter desde cero para gramáticas estándar ([SQL](/base_datos/sql "SQL es el lenguaje estándar utilizado para comunicarse con y gestionar bases de datos relacionales (RDBMS) como MySQL, PostgreSQL, Oracle, SQL Server, SQLite, entre otros."), JSONPath, XPath, regex).
   * Fix: Use librerías maduras o generadores. Mantenga interpreter solo para DSLs de dominio específico o reglas empresariales ligeras.
 
 ---
