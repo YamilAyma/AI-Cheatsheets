@@ -90,13 +90,16 @@ async function main() {
     if (normalizedPath.startsWith(CHEATSHEETS_DIR) && (normalizedPath.endsWith('.md') || normalizedPath.endsWith('.mdx'))) {
       filesToCommit.push({
         relativeToRepo: normalizedPath,
-        relativeToDir: normalizedPath.substring(CHEATSHEETS_DIR.length + 1)
+        relativeToDir: normalizedPath.substring(CHEATSHEETS_DIR.length + 1),
+        status: statusCode.trim()
       });
     }
   }
 
   if (filesToCommit.length === 0) {
     console.log('ℹ️ No se detectaron modificaciones ni nuevas cheatsheets en la carpeta de contenidos.');
+    // Check if there are other files to commit
+    commitRemainingFiles();
     return;
   }
 
@@ -115,9 +118,11 @@ async function main() {
     const folderScope = formatFolderLocation(file.relativeToDir);
     const cheatsheetTitle = await getCheatsheetTitle(file.relativeToRepo, fileNameWithoutExt);
 
-    // Construct the commit message according to requested format:
-    // feat (Cheatsheet/[UbicacionCarpetaCapitalizad]): Agregar cheatsheet de [nombre de cheatsheet capitalizado]
-    const commitMessage = `feat (Cheatsheet/${folderScope}): Agregar cheatsheet de ${cheatsheetTitle}`;
+    // Differentiate between additions and updates
+    const isNew = file.status === '??' || file.status === 'A';
+    const commitMessage = isNew
+      ? `feat (Cheatsheet/${folderScope}): Agregar cheatsheet de ${cheatsheetTitle}`
+      : `docs (Cheatsheet/${folderScope}): Actualizar enlaces y metadatos de ${cheatsheetTitle}`;
 
     console.log(`\nStaging: ${file.relativeToRepo}`);
     try {
@@ -130,16 +135,31 @@ async function main() {
     }
   }
 
-  if (commitCount > 0) {
-    console.log(`\n⬆️ Subiendo ${commitCount} commit(s) al repositorio remoto...`);
-    try {
-      execSync('git push');
-      console.log('✅ ¡Cheatsheets subidas con éxito!');
-    } catch (err) {
-      console.error('❌ Error al subir (git push):', err.message);
+  // Also commit any other residual config/scripts changed during the process
+  commitRemainingFiles();
+
+  // Push all commits
+  console.log(`\n⬆️ Subiendo commits al repositorio remoto...`);
+  try {
+    execSync('git push');
+    console.log('✅ ¡Repositorio subido con éxito!');
+  } catch (err) {
+    console.error('❌ Error al subir (git push):', err.message);
+  }
+}
+
+function commitRemainingFiles() {
+  try {
+    const remainingStatus = execSync('git status --porcelain', { encoding: 'utf-8' }).trim();
+    if (remainingStatus) {
+      console.log('\n📦 Staging y commit de archivos de configuración restantes...');
+      execSync('git add .');
+      const msg = 'chore: actualizar utilidades, scripts de procesamiento y package.json';
+      execSync(`git commit -m "${msg}"`);
+      console.log(`✅ Commited: "${msg}"`);
     }
-  } else {
-    console.log('\nℹ️ No se realizaron commits.');
+  } catch (err) {
+    // Ignore if nothing to commit
   }
 }
 

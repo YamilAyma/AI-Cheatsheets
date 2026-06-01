@@ -1,0 +1,560 @@
+---
+title: "rust"
+description: "Rust es un lenguaje de programación de sistemas enfocado en seguridad, concurrencia y rendimiento sin recolector de basura (GC)."
+createdAt: 2026-06-01
+updatedAt: 2026-06-01
+tags: [rust]
+icon: "📄"
+---
+# 🎯 Rust — Complete Cheatsheet 🎯
+
+Rust es un lenguaje de programación de sistemas enfocado en seguridad, concurrencia y rendimiento sin recolector de basura (GC). Su sistema de *ownership* garantiza seguridad de memoria en tiempo de compilación, eliminando errores clásicos como null pointer dereferences, buffer overflows y data races. Este cheatsheet cubre desde la sintaxis esencial hasta ownership avanzado, traits, concurrencia, manejo de errores, macros y patrones de producción. Ideal para desarrolladores que migran desde C/C++, [Python](/python/python "Python es un lenguaje de programación de alto nivel, interpretado, interactivo y orientado a objetos.") o Go y buscan rendimiento nativo con garantías de seguridad.
+
+---
+
+## 1. 🌟 Conceptos Fundamentales
+
+* **Ownership (Propiedad)**: Cada valor tiene exactamente un dueño. Cuando el dueño sale del scope, el valor se libera automáticamente.
+  * Por qué importa: elimina fugas de memoria y doble liberación sin necesidad de GC o `free()` manual.
+* **Borrowing (Préstamo)**: Referencias (`&T` mutable `&mut T`) permiten leer/mutar datos sin transferir la propiedad.
+  * Regla de oro: o una referencia mutable, o múltiples inmutables, nunca ambas simultáneamente.
+* **Lifetimes (Tiempos de vida)**: Anotaciones estáticas (`'a`) que garantizan que las referencias no sobrevivan a los datos que apuntan.
+  * El compilador infiere la mayoría; explícitas solo cuando hay ambigüedad entre referencias.
+* **Zero-Cost Abstractions**: Características de alto nivel (iteradores, traits, generics) se compilan a código máquina equivalente al manual.
+  * No hay overhead en tiempo de ejecución por usar abstracciones seguras.
+* **Pattern Matching**: Desestructuración exhaustiva con `match`. El compilador obliga a manejar todos los casos posibles.
+  * Previene `unhandled case` bugs y permite control de flujo expresivo.
+* **Trait System**: Interfaces compartidas que definen comportamiento. Los tipos implementan traits para habilitar polimorfismo estático/dinámico.
+  * Base para generics, iteradores, serialización y async.
+* **Fearless Concurrency**: `Send` y `Sync` garantizan que los datos puedan moverse entre hilos o compartirse de forma segura.
+  * Data races son imposibles en código seguro (`safe Rust`).
+* **Safe vs Unsafe**: `safe Rust` no permite operaciones inseguras. `unsafe` desbloquea punteros crudos, llamadas FFI y manipulación directa de memoria, pero requiere verificación manual.
+
+---
+
+## 2. 🛠️ Instalación y Entorno
+
+* **Instalación vía `rustup`** (gestor oficial de toolchains):
+  ```bash
+  curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+  rustup default stable
+  rustup component add rust-src rust-analyzer
+  ```
+* **Verificación y actualización**:
+  ```bash
+  rustc --version      # Versión del compilador
+  cargo --version      # Versión del package manager
+  rustup update        # Actualiza toolchain y componentes
+  rustup toolchain install nightly  # Para features experimentales
+  ```
+* **Estructura de proyecto estándar**:
+  ```
+  my_project/
+  ├── Cargo.toml       # Metadatos y dependencias
+  ├── Cargo.lock       # Hashes exactos de dependencias (no editar)
+  └── src/
+      ├── main.rs      # Binario entry point
+      └── lib.rs       # Library crate entry point
+  ```
+* **Comandos esenciales de Cargo**:
+  ```bash
+  cargo new my_project --bin   # Crear binario
+  cargo new my_lib --lib       # Crear librería
+  cargo build                  # Compilar (debug)
+  cargo run                    # Compilar + ejecutar
+  cargo check                  # Verificar tipos sin generar binario (rápido)
+  cargo test                   # Ejecutar tests unitarios/doc
+  cargo clippy                 # Linter avanzado con sugerencias idiomáticas
+  cargo fmt                    # Formateador oficial (rustfmt)
+  cargo doc --open             # Generar y abrir documentación local
+  cargo publish                # Publicar en crates.io
+  ```
+
+---
+
+## 3. 📝 Sintaxis Básica
+
+### 3.1. Variables y Tipos
+
+```rust
+// Inmutables por defecto
+let x = 5;
+// Mutables explícitas
+let mut y = 10;
+y += 5;
+
+// Tipos primitivos comunes
+let i: i32 = -42;          // Entero con signo 32-bit
+let u: u8 = 255;           // Entero sin signo 8-bit
+let f: f64 = 3.14;         // Float 64-bit (default)
+let f32: f32 = 2.71;       // Float 32-bit
+let b: bool = true;        // Booleano
+let c: char = '🦀';        // Unicode 4 bytes
+let s: &str = "slice";     // String slice (inmutable)
+```
+
+### 3.2. Funciones
+
+```rust
+// Declaración básica
+fn greet(name: &str) -&gt; String {
+    // String::from crea un String heap-allocated desde &str
+    format!("Hola, {}!", name)
+}
+
+// Tuplas como retorno múltiple
+fn min_max(arr: &[i32]) -&gt; (i32, i32) {
+    let mut min = i32::MAX;
+    let mut max = i32::MIN;
+    for &x in arr {
+        if x &lt; min { min = x; }
+        if x &gt; max { max = x; }
+    }
+    (min, max)
+}
+
+// Closures (funciones anónimas)
+let double = |x: i32| x * 2;
+assert_eq!(double(5), 10);
+```
+
+### 3.3. Tuplas y Arrays
+
+```rust
+// Tupla: tamaño fijo, tipos mixtos
+let person: (String, u32) = ("Ana".to_string(), 28);
+let name = person.0;
+
+// Array: mismo tipo, tamaño conocido en compilación
+let months: [String; 3] = [
+    "Jan".into(), "Feb".into(), "Mar".into()
+];
+let first = months[0]; // Panic si índice fuera de rango
+
+// Slice: referencia a array/vec dinámico
+let slice: &[String] = &months[1..];
+```
+
+---
+
+## 4. 🔀 Control de Flujo
+
+```rust
+// If como expresión (no requiere paréntesis, retorna valor)
+let status = if score &gt;= 90 {
+    "A"
+} else if score &gt;= 80 {
+    "B"
+} else {
+    "C"
+};
+
+// Loop infinito con break/return
+let mut counter = 0;
+loop {
+    counter += 1;
+    if counter == 10 {
+        break counter * 2; // Retorna 20
+    }
+}
+
+// While
+while n &gt; 0 {
+    n -= 1;
+}
+
+// For sobre iteradores (idiomático)
+for i in 1..=5 {
+    println!("{}", i);
+}
+
+// Ranges: .. (excluyente), ..= (incluyente)
+let sum: i32 = (1..5).sum();       // 1+2+3+4 = 10
+let sum2: i32 = (1..=5).sum();     // 1+2+3+4+5 = 15
+```
+
+---
+
+## 5. 📦 Ownership, Borrowing y Lifetimes
+
+### 5.1. Reglas de Ownership
+
+```rust
+let s1 = String::from("hello");
+let s2 = s1;           // Movimiento: s1 ya no es válido
+// println!("{}", s1); // ❌ Compile error: use of moved value
+
+// Clonación explícita (copia profunda)
+let s3 = s2.clone();
+
+// Copy types (primitivos) se copian automáticamente
+let x = 5;
+let y = x;             // ✅ x sigue siendo válido
+```
+
+### 5.2. Referencias y Mutabilidad
+
+```rust
+fn calculate_length(s: &String) -&gt; usize {
+    s.len() // Solo lectura, sin movimiento
+}
+
+fn append(s: &mut String) {
+    s.push_str(", world");
+}
+
+let mut text = String::from("hi");
+append(&mut text);
+```
+
+### 5.3. Lifetimes Explícitas
+
+```rust
+// Devuelve la referencia que viva más tiempo
+fn longest&lt;'a>(x: &'a str, y: &'a str) -&gt; &'a str {
+    if x.len() > y.len() { x } else { y }
+}
+
+// Struct con referencia
+struct ImportantExcerpt&lt;'a> {
+    part: &'a str,
+}
+
+// Elision rules (omisión):
+// 1. Cada parámetro referencia obtiene su propio lifetime
+// 2. Si hay un solo parámetro, ese se asigna al retorno
+// 3. Si es &self o &mut self, el lifetime de self se asigna al retorno
+```
+
+---
+
+## 6. 🏗️ Structs, Enums y Pattern Matching
+
+### 6.1. Structs
+
+```rust
+// Unit-like, Tuple, Named
+struct Point { x: f64, y: f64 }
+struct Color(u8, u8, u8);
+struct Marker;
+
+impl Point {
+    // Constructor idiomático
+    fn new(x: f64, y: f64) -&gt; Self {
+        Self { x, y } // Shorthand field init
+    }
+    
+    fn distance(&self, other: &Point) -&gt; f64 {
+        ((self.x - other.x).powi(2) + (self.y - other.y).powi(2)).sqrt()
+    }
+}
+```
+
+### 6.2. Enums y Associated Data
+
+```rust
+enum Message {
+    Quit,
+    Move { x: i32, y: i32 },
+    Write(String),
+    ChangeColor(u8, u8, u8),
+}
+
+// Option<T> y Result<T, E> son enums estándar
+let found: Option<String> = Some("key".into());
+let missing: Option<String> = None;
+
+let success: Result<u32, &str> = Ok(42);
+let failure: Result<u32, &str> = Err("not found");
+```
+
+### 6.3. Match Exhaustivo
+
+```rust
+let msg = Message::Write("Hola".into());
+match msg {
+    Message::Quit =&gt; println!("Saliendo..."),
+    Message::Move { x, y } =&gt; println!("Mover a {},{}", x, y),
+    Message::Write(text) =&gt; println!("Escribir: {}", text),
+    Message::ChangeColor(r, g, b) =&gt; println!("Color RGB: {},{},{}", r, g, b),
+}
+
+// If let para casos únicos
+if let Message::Write(t) = msg {
+    println!("Solo texto: {}", t);
+}
+```
+
+---
+
+## 7. 🛡️ Manejo de Errores
+
+### 7.1. Result y ?
+
+```rust
+use std::fs;
+use std::io;
+
+fn read_username(path: &str) -&gt; Result<String, io::Error> {
+    // ? desenvuelve Ok o retorna Err inmediatamente
+    let mut contents = fs::read_to_string(path)?;
+    contents.trim().to_string();
+    Ok(contents)
+}
+```
+
+### 7.2. Panic vs Control de Errores
+
+```rust
+// unwrap() -&gt; panic si Err
+let val = Some(5).unwrap();
+
+// expect() -&gt; panic con mensaje personalizado
+let file = fs::read("config.toml").expect("Config missing");
+
+// Propagación segura
+let parsed = "42".parse::<i32>().map_err(|e| format!("Parse error: {}", e));
+```
+
+### 7.3. Error Trait Personalizado
+
+```rust
+use std::fmt;
+
+#[derive(Debug)]
+struct AppError {
+    code: u16,
+    msg: String,
+}
+
+impl fmt::Display for AppError {
+    fn fmt(&self, f: &mut fmt::Formatter) -&gt; fmt::Result {
+        write!(f, "[{}] {}", self.code, self.msg)
+    }
+}
+
+impl std::error::Error for AppError {}
+```
+
+---
+
+## 8. 📚 Collections y Strings
+
+| Tipo              | Heap? | Mutable? | Uso típico                          |
+|-------------------|-------|----------|-------------------------------------|
+| `String`          | ✅     | ✅        | Texto propietario, crecimiento dinámico |
+| `&str`            | ❌     | ❌        | Vistas inmutables de texto          |
+| `Vec<T>`          | ✅     | ✅        | Listas dinámicas, push/pop          |
+| `[T; N]`          | ❌/✅  | ✅        | Arrays fijos (stack/heap según tamaño) |
+| `HashMap<K, V>`   | ✅     | ✅        | Clave-valor, hashing                |
+| `HashSet<T>`      | ✅     | ✅        | Conjuntos únicos                    |
+| `BinaryHeap<T>`   | ✅     | ✅        | Cola de prioridad                   |
+
+```rust
+// Vec
+let mut nums = vec![1, 2, 3];
+nums.push(4);
+let last = nums.pop(); // Some(4)
+
+// HashMap
+use std::collections::HashMap;
+let mut scores = HashMap::new();
+scores.insert("Blue", 10);
+// entry API para update o insert
+scores.entry("Red").or_insert(50);
+
+// Iteración sobre colecciones
+for (k, v) in &scores {
+    println!("{}: {}", k, v);
+}
+```
+
+---
+
+## 9. 🧩 Traits y Genéricos
+
+### 9.1. Definición e Implementación
+
+```rust
+trait Summary {
+    fn summarize(&self) -&gt; String;
+    
+    // Método default
+    fn alert(&self) -&gt; String {
+        format!("Alert: {}", self.summarize())
+    }
+}
+
+struct Tweet { content: String }
+
+impl Summary for Tweet {
+    fn summarize(&self) -&gt; String {
+        self.content[..50].to_string() + "..."
+    }
+}
+```
+
+### 9.2. Traits como Bounds
+
+```rust
+// Sintaxis inline
+fn print_item<T: std::fmt::Display>(item: T) {
+    println!("{}", item);
+}
+
+// Sintaxis where (preferida para múltiples bounds)
+fn merge_lists<T>(a: Vec<T>, b: Vec<T>) -&gt; Vec<T>
+where
+    T: Clone + PartialOrd,
+{
+    let mut merged = a.clone();
+    merged.extend(b);
+    merged.sort_by(|x, y| x.partial_cmp(y).unwrap());
+    merged
+}
+
+// Dynamic dispatch (trait objects)
+let items: Vec&lt;&dyn Summary> = vec![&tweet1, &tweet2];
+```
+
+### 9.3. Traits Derivables Comunes
+
+* `#[derive(Debug, Clone, PartialEq, Eq, Hash)]`
+* `#[derive(Serialize, Deserialize)]` (con `serde`)
+* `#[derive(Default)]` (implementa `::default()`)
+
+---
+
+## 10. 🧵 Concurrencia
+
+### 10.1. Threads y Move
+
+```rust
+use std::thread;
+use std::sync::mpsc;
+
+let handle = thread::spawn(|| {
+    for i in 1..=5 {
+        println!("Hilo: {}", i);
+    }
+});
+
+handle.join().unwrap(); // Espera terminación
+```
+
+### 10.2. Canales (MPSC)
+
+```rust
+let (tx, rx) = mpsc::channel();
+thread::spawn(move || {
+    let vals = vec!["hi", "from", "thread"];
+    for v in vals {
+        tx.send(v).unwrap();
+    }
+});
+
+for received in rx {
+    println!("Recibido: {}", received);
+}
+```
+
+### 10.3. Mutex y Arc
+
+```rust
+use std::sync::{Arc, Mutex};
+
+let counter = Arc::new(Mutex::new(0));
+let mut handles = vec![];
+
+for _ in 0..10 {
+    let counter = Arc::clone(&counter);
+    let handle = thread::spawn(move || {
+        let mut num = counter.lock().unwrap();
+        *num += 1;
+    });
+    handles.push(handle);
+}
+
+for h in handles {
+    h.join().unwrap();
+}
+println!("Resultado: {}", *counter.lock().unwrap());
+```
+
+---
+
+## 11. 📦 Cargo y Ecosistema
+
+### 11.1. Dependencias y Features
+
+```toml
+# Cargo.toml
+[dependencies]
+serde = { version = "1.0", features = ["derive"] }
+tokio = { version = "1", features = ["full"] }
+clap = "4.0"
+regex = "^1.9"
+
+[dev-dependencies]
+criterion = "0.5"
+
+[profile.release]
+lto = true
+codegen-units = 1
+opt-level = 3
+```
+
+### 11.2. Workspaces
+
+```toml
+# Cargo.toml (raíz)
+[workspace]
+members = ["crates/core", "crates/api", "crates/cli"]
+resolver = "2"
+```
+
+### 11.3. Compilación Cruzada
+
+```bash
+rustup target add x86_64-unknown-linux-musl
+cargo build --target x86_64-unknown-linux-musl --release
+```
+
+---
+
+## 12. ⚠️ Errores Comunes y Trampas
+
+* **Confundir `String` con `&str`**: `String` es propietario y mutable; `&str` es una vista inmutable.
+  * Fix: Usa `.to_string()` o `.into()` para convertir `&str` a `String`. Usa `&str` en firmas de funciones para aceptar ambas.
+* **Olvidar `clone()` en closures multi-thread**: Los closures capturan por referencia por defecto. Si el hilo vive más que el scope, falla.
+  * Fix: Usa `move` + `.clone()` o `Arc` para datos compartidos.
+* **Lifetimes innecesarios en structs**: Anotar lifetimes donde no hay referencias reales.
+  * Fix: Usa tipos propietarios (`String`, `Vec`) en structs a menos que la optimización de memoria sea crítica.
+* **Usar `unwrap()` en producción**: Convierte errores recuperables en panics.
+  * Fix: Propaga con `?`, usa `expect()` con contexto claro, o maneja con `match`.
+* **Iteradores perezosos sin consumir**: `.map()`, `.filter()` no ejecutan hasta que se consume el iterador.
+  * Fix: Termina con `.collect()`, `.for_each()`, `.sum()`, o `.count()`.
+* **Modificando colección mientras se itera**: Rust lo previene en tiempo de compilación.
+  * Fix: Recolecta índices/valores a modificar primero, itera sobre la copia, luego aplica cambios.
+* **Confundir `Copy` vs `Clone`**: `Copy` es implícito y rápido (bitwise); `Clone` es explícito y puede ser costoso.
+  * Fix: Deriva `Copy` solo para tipos pequeños y simples (primitivos, structs con solo campos `Copy`).
+
+---
+
+## 13. 💡 Mejores Prácticas y Consejos de Experto
+
+* **Diseña APIs con `&str` y `AsRef<T>`**: Permite pasar `String`, `&str`, `Cow<str>` sin overhead de conversión.
+  * Ejemplo: `fn process(input: impl AsRef<str>)`
+* **Prefiere composición sobre herencia**: Rust no tiene herencia de clases. Usa traits + structs + delegation.
+* **Usa `#[must_use]` en funciones que retornan resultados ignorables**: Ayuda al linter a detectar errores no manejados.
+* **Aprovecha `clippy` desde el día 1**: Ejecuta `cargo clippy -- -D warnings` en CI. Corrige advertencias antes de que se acumulen.
+* **Separa lógica de I/O**: Mantén funciones puras separadas de lectura/escritura de archivos/red. Facilita testing y paralelismo.
+* **Usa `thiserror` para errores de librería**: Genera implementaciones de `Display` y `From` automáticamente vía macros.
+  * `#[derive(thiserror::Error)] struct MyErr { ... }`
+* **Perfila antes de optimizar**: Usa `cargo flamegraph` o `criterion`. Los cuellos de botella rara vez están donde intuyes.
+* **Documenta con ejemplos ejecutables**: Usa `///` con bloques ```rust. `cargo test --doc` los ejecuta automáticamente.
+* **Evita `unsafe` hasta dominar lo seguro**: El 95% de los problemas se resuelven con tipos, traits y ownership correctos.
+
+---
+
+Este cheatsheet proporciona una referencia completa para Rust, cubriendo ownership avanzado, traits genéricos, concurrencia segura, manejo de errores idiomático, organización de proyectos con Cargo y patrones de producción, junto con las mejores prácticas para escribir código seguro, performante y mantenible.

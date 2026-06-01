@@ -16,7 +16,8 @@
     "icons:optimize": "node scripts/resize-icons.mjs",
     "icons:clean": "node scripts/cleanup-icons.mjs",
     "list": "node scripts/list-cheatsheets.js",
-    "upload": "node scripts/upload-cheatsheets.js"
+    "pipeline": "node scripts/process-pipeline.js",
+    "upload": "node scripts/process-pipeline.js && node scripts/upload-cheatsheets.js"
   },
   "dependencies": {
     "@astrojs/mdx": "^5.0.4",

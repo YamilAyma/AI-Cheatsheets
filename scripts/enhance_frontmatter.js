@@ -7,6 +7,23 @@ const __dirname = path.dirname(__filename);
 
 const contentDir = path.join(__dirname, '../src/content/cheatsheets');
 
+function stripQuotes(str) {
+    let val = str.trim();
+    while ((val.startsWith('"') && val.endsWith('"')) || (val.startsWith("'") && val.endsWith("'")) || (val.startsWith('\\"') && val.endsWith('\\"'))) {
+        if (val.startsWith('\\"') && val.endsWith('\\"')) {
+            val = val.slice(2, -2);
+        } else {
+            val = val.slice(1, -1);
+        }
+        val = val.trim();
+    }
+    // Remove any remaining raw surrounding backslashes or leftover isolated quotes
+    val = val.replace(/^\\"/g, '').replace(/\\"$/g, '');
+    val = val.replace(/^"/g, '').replace(/"$/g, '');
+    val = val.replace(/^'/g, '').replace(/'$/g, '');
+    return val.trim();
+}
+
 function getIconByFilename(filename) {
     const f = filename.toLowerCase();
     if (f.includes('react')) return '⚛️';
@@ -47,7 +64,10 @@ function walkDir(dir) {
                 yaml.split('\n').forEach(line => {
                     const parts = line.split(':');
                     if (parts.length >= 2) {
-                        frontmatter[parts[0].trim()] = parts.slice(1).join(':').trim();
+                        let value = parts.slice(1).join(':').trim();
+                        // Clean surrounding quotes using the robust helper
+                        value = stripQuotes(value);
+                        frontmatter[parts[0].trim()] = value;
                     }
                 });
                 body = content.slice(fmMatch[0].length);
