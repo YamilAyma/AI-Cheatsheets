@@ -67,7 +67,7 @@ Existen varias notaciones para los DER, siendo las más comunes la **Notación d
   * **Clave Foránea (Foreign Key - FK)**: Un atributo en una entidad que es la Clave Primaria de otra entidad. Establece el vínculo entre tablas.
     * *Notación:* No siempre se dibuja como un atributo separado en el ERD, sino que se *infiere* de la relación y se implementa en el modelo lógico/físico. Si se lista, a menudo se usa un prefijo `FK:`.
   * **Atributo Simple (Simple/Atomic)**: No se puede dividir en partes más pequeñas (ej. `Nombre`, `Edad`).
-  * **Atributo Compuesto (Composite)**: Se puede dividir en atributos más pequeños y significativos (ej. `Dirección` se compone de `Calle`, `Ciudad`, `Código Postal`). (En Crow's Foot, simplemente se listan los componentes).
+  * **Atributo Compuesto ([Composite](/arquitectura/design_patterns/estructurales/composite "El patrón Composite es un patrón estructural que permite componer objetos en estructuras de árbol para representar jerarquías parte-todo."))**: Se puede dividir en atributos más pequeños y significativos (ej. `Dirección` se compone de `Calle`, `Ciudad`, `Código Postal`). (En Crow's Foot, simplemente se listan los componentes).
   * **Atributo Multivalor (Multi-valued)**: Puede tener múltiples valores para una sola instancia de entidad (ej. `Teléfonos` de un Cliente).
     * *Notación (Crow's Foot):* A menudo se resuelve creando una nueva entidad y una relación 1:N.
   * **Atributo Derivado (Derived)**: Su valor puede calcularse a partir de otros atributos (ej. `Edad` se deriva de `FechaNacimiento`).
