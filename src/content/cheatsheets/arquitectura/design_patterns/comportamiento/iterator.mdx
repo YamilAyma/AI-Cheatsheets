@@ -1,3 +1,11 @@
+---
+title: "iterator"
+description: "El patrón Iterator es un patrón de comportamiento que proporciona una forma estandarizada de recorrer secuencialmente los elementos de una estructura agregada sin exponer su representación interna."
+createdAt: 2026-05-22
+updatedAt: 2026-05-22
+tags: [comportamiento]
+icon: "📄"
+---
 # 🔄 Patrón Iterator — Cheatsheet Completo 🔄
 
 El patrón **Iterator** es un patrón de comportamiento que proporciona una forma estandarizada de recorrer secuencialmente los elementos de una estructura agregada sin exponer su representación interna. Desacopla los algoritmos de recorrido de las colecciones subyacentes, permite múltiples iteraciones concurrentes e independientes, y habilita la evaluación perezosa (lazy) para fuentes de datos masivas, remotas o infinitas. Nace para resolver el acoplamiento rígido entre estructuras de datos y lógica de traversal, unificar APIs de acceso heterogéneas y transformar colecciones complejas en flujos predecibles y composables. Este cheatsheet desglosa la intención arquitectónica real del patrón, contratos de navegación segura, implementaciones multi-paradigma, variantes perezosas y concurrentes, impacto en rendimiento y gestión de recursos, trampas de modificación durante iteración y fugas de estado, y criterios estrictos para decidir cuándo el recorrido abstracto es una necesidad del dominio y no una capa de indirección que degrada la localidad de caché o añade overhead innecesario.
@@ -82,7 +90,7 @@ class ArrayIterator&lt;T&gt; implements Iterator&lt;T&gt; {
   reset(): void { this.index = 0; }
 }
 ```
-Regla inquebrantable: El iterador **nunca** debe exponer índices internos, punteros crudos o permitir mutación directa de la colección a través de su API, a menos que esté explícitamente diseñado y documentado como mutante seguro.
+Regla inquebrantable: El iterador **nunca** debe exponer índices internos, punteros crudos o permitir mutación directa de la colección a través de su [API](/conocimiento/api "Una API (Application Programming Interface) es un conjunto de reglas, protocolos y herramientas que permite que diferentes aplicaciones de software se comuniquen entre sí."), a menos que esté explícitamente diseñado y documentado como mutante seguro.
 
 ---
 
@@ -143,7 +151,7 @@ Uso de traits para definir contratos y structs para estado. Garantía en tiempo 
 ```rust
 pub trait MyIterator {
     type Item;
-    fn next(&mut self) -> Option<Self::Item>;
+    fn next(&mut self) -&gt; Option<Self::Item>;
 }
 
 pub struct RangeIterator {
@@ -153,8 +161,8 @@ pub struct RangeIterator {
 
 impl MyIterator for RangeIterator {
     type Item = i32;
-    fn next(&mut self) -> Option<i32> {
-        if self.current < self.end {
+    fn next(&mut self) -&gt; Option<i32> {
+        if self.current &lt; self.end {
             let val = self.current;
             self.current += 1;
             Some(val)
@@ -210,9 +218,9 @@ class SafeCollection {
 
 Comparación rápida con patrones de comportamiento:
 * **Iterator**: Secuencia navegación uniforme. Enfocado en acceso controlado y desacoplamiento de estructura.
-* **Visitor**: Aplica operaciones a estructura estable. Enfocado en múltiples traversals sin modificar nodos.
-* **Strategy**: Intercambia algoritmos completos. Enfocado en variación de lógica, no en navegación.
-* **Composite**: Modela jerarquías parte-todo. Enfocado en uniformidad estructural, no en traversal.
+* **[Visitor](/arquitectura/design_patterns/comportamiento/visitor "El patrón Visitor es un patrón de comportamiento que separa algoritmos de las estructuras de objetos sobre las que operan, permitiendo añadir nuevas operaciones sin modificar las clases de los elementos visitados.")**: Aplica operaciones a estructura estable. Enfocado en múltiples traversals sin modificar nodos.
+* **[Strategy](/arquitectura/design_patterns/comportamiento/strategy "El patrón Strategy es un patrón de comportamiento que define una familia de algoritmos intercambiables, los encapsula y los hace sustituibles en tiempo de ejecución sin alterar el código del cliente que los utiliza.")**: Intercambia algoritmos completos. Enfocado en variación de lógica, no en navegación.
+* **[Composite](/arquitectura/design_patterns/estructurales/composite "El patrón Composite es un patrón estructural que permite componer objetos en estructuras de árbol para representar jerarquías parte-todo.")**: Modela jerarquías parte-todo. Enfocado en uniformidad estructural, no en traversal.
 * **Chain of Responsibility**: Enruta petición hasta handler. Enfocado en desacoplamiento de receptores, no en secuencia de datos.
 
 ---
@@ -222,10 +230,10 @@ Comparación rápida con patrones de comportamiento:
 * **Aislamiento en Tests**: Prueba iteradores con colecciones mock o fixtures controlados. Verifica `hasNext()`, `next()`, límites y comportamiento post-fin.
   * Técnica: Aserta que `next()` lanza `StopIteration`/`null`/excepción controlada al agotarse. Valida que múltiples iteradores no compartan cursor.
 * **Validación de Modificación Concurrente**: Escribe tests que muten la colección durante iteración. Verifique semántica fail-fast o fail-safe según contrato.
-  * Fix: `assert.throws(() => it.next(), /ConcurrentModification/)`. Documente política de mutación explícitamente.
+  * Fix: `assert.throws(() =&gt; it.next(), /ConcurrentModification/)`. Documente política de mutación explícitamente.
 * **Ciclo de Vida y Cleanup**: Si el iterador mantiene conexiones, archivos o buffers, debe implementar `close()`, `dispose()` o `finally` explícito.
 * **Refactorización desde Acceso Directo**: Identifique `for(i=0; i<list.length; i++)` acoplado a estructura interna. Envuelva en iterador. Exponga solo `Iterable`. Deprecar acceso por índice progresivamente.
-* **Impacto en Rendimiento**: La indirección añade 1-2 saltos de función/v-table. En CPUs modernas, negligible para < 10k iteraciones. Solo impacta en hot paths o estructuras con baja localidad. Profile antes de optimizar.
+* **Impacto en Rendimiento**: La indirección añade 1-2 saltos de función/v-table. En CPUs modernas, negligible para &lt; 10k iteraciones. Solo impacta en hot paths o estructuras con baja localidad. Profile antes de optimizar.
 * **Gestión de Versiones**: Si la colección evoluciona (nuevos campos, cambios de topología), mantenga contrato de iteración estable. Use adapters internos para migración progresiva.
 * **Visibilidad y APIs Públicas**: Exponga solo `Iterable`/`Iterator`. Oculte implementaciones concretas en módulos internos. Reduzca superficie de uso indebido y acoplamiento accidental.
 * **Documentación de Mutabilidad**: Especifique explícitamente si la iteración es fail-fast, fail-safe, o permite modificación controlada. Elimine suposiciones implícitas.
@@ -244,13 +252,13 @@ Comparación rápida con patrones de comportamiento:
   * Fix: Valide límites estrictos, use sets de visitados, o timeouts de seguridad. Pruebe grafos cíclicos explícitamente.
 * **Exposición de Estructura Interna**: Iterador retorna nodos, índices o punteros crudos en lugar de valores de dominio.
   * Fix: Envuelva en DTOs o valore de dominio. Mantenga abstracción estricta. Nunca exponga implementación tras el contrato.
-* **Confundir con Visitor o Strategy**: Usar Iterator para aplicar operaciones complejas o variar lógica de procesamiento.
-  * Fix: Si aplica múltiples operaciones a estructura → Visitor. Si varía algoritmo completo → Strategy. Si secuencia acceso uniforme → Iterator. No mezcle propósitos.
+* **Confundir con [Visitor](/arquitectura/design_patterns/comportamiento/visitor "El patrón Visitor es un patrón de comportamiento que separa algoritmos de las estructuras de objetos sobre las que operan, permitiendo añadir nuevas operaciones sin modificar las clases de los elementos visitados.") o [Strategy](/arquitectura/design_patterns/comportamiento/strategy "El patrón Strategy es un patrón de comportamiento que define una familia de algoritmos intercambiables, los encapsula y los hace sustituibles en tiempo de ejecución sin alterar el código del cliente que los utiliza.")**: Usar Iterator para aplicar operaciones complejas o variar lógica de procesamiento.
+  * Fix: Si aplica múltiples operaciones a estructura → [Visitor](/arquitectura/design_patterns/comportamiento/visitor "El patrón Visitor es un patrón de comportamiento que separa algoritmos de las estructuras de objetos sobre las que operan, permitiendo añadir nuevas operaciones sin modificar las clases de los elementos visitados."). Si varía algoritmo completo → [Strategy](/arquitectura/design_patterns/comportamiento/strategy "El patrón Strategy es un patrón de comportamiento que define una familia de algoritmos intercambiables, los encapsula y los hace sustituibles en tiempo de ejecución sin alterar el código del cliente que los utiliza."). Si secuencia acceso uniforme → Iterator. No mezcle propósitos.
 * **Ignorar `reset()` o Estado Post-Fin**: Reutilizar iterador agotado sin reiniciar, causando comportamiento indefinido.
   * Fix: Lance excepción clara al llamar `next()` tras fin, o implemente `reset()` seguro. Documente ciclo de vida explícitamente.
 * **Overhead en Colecciones Simples**: Crear clase iteradora para arrays nativos donde `for...of` o `forEach` son más rápidos y seguros.
   * Fix: Use protocolos nativos del lenguaje. Reserve iteradores personalizados para estructuras complejas o traversal no lineal.
-* **State Leakage en Iteradores Concurrentes**: Múltiples hilos comparten cursor o buffer sin sincronización. Corrupción de datos.
+* **[State](/arquitectura/design_patterns/comportamiento/state "El patrón State es un patrón de comportamiento que permite a un objeto alterar su comportamiento cuando su estado interno cambia, haciendo que parezca que el objeto cambia de clase.") Leakage en Iteradores Concurrentes**: Múltiples hilos comparten cursor o buffer sin sincronización. Corrupción de datos.
   * Fix: Instancie iterador por hilo/request, use inmutabilidad, o locks por chunk. Nunca estado mutable compartido sin control explícito.
 * **Falta de Validación de Tipos/Nulls**: `next()` retorna `undefined`, `null` o tipos mixtos sin contrato claro.
   * Fix: Use `Option`/`Maybe`, `Result`/`Either`, o excepciones controladas. Documente contrato de retorno estrictamente.
@@ -261,7 +269,7 @@ Comparación rápida con patrones de comportamiento:
 
 ## 8. 💡 Mejores Prácticas y Consejos
 
-* **Prefiera Protocolos Nativos del Lenguaje**: `Iterable`/`Iterator` (JS), `__iter__`/`__next__` (Python), `java.util.Iterator`, Rust `std::iter::Iterator`. Evite reinvención innecesaria.
+* **Prefiera Protocolos Nativos del Lenguaje**: `Iterable`/`Iterator` (JS), `__iter__`/`__next__` ([Python](/python/python "Python es un lenguaje de programación de alto nivel, interpretado, interactivo y orientado a objetos.")), `java.util.Iterator`, [Rust](/rust/rust "Rust es un lenguaje de programación de sistemas enfocado en seguridad, concurrencia y rendimiento sin recolector de basura (GC).") `std::iter::Iterator`. Evite reinvención innecesaria.
 * **Documente Semántica de Mutación**: Especifique explícitamente si es fail-fast, fail-safe, o permite modificación controlada. Elimine suposiciones implícitas.
 * **Implemente Cleanup Explícito**: Asegure que `close()`, `dispose()`, o `finally` liberen recursos. Evite fugas en sistemas de larga ejecución.
 * **Use Generadores para Evaluación Perezosa**: `yield` maneja estado, excepciones y cleanup automáticamente. Reduce boilerplate y errores de cursor.
