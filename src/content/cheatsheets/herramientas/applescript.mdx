@@ -1,6 +1,6 @@
 ---
 title: "AppleScript y JXA"
-description: "AppleScript y JavaScript for Automation (JXA) son los lenguajes nativos de macOS para automatizar aplicaciones, controlar el sistema operativo y orquestar flujos de trabajo entre apps."
+description: "AppleScript es el lenguaje de automatización nativo de macOS desde 1993, con una sintaxis diseñada para parecerse al inglés natural y describir instrucciones hacia las aplicaciones del sistema."
 createdAt: 2026-05-20
 updatedAt: 2026-05-20
 tags: [applescript, jxa, macos, automatizacion, scripting, osx, workflow]
@@ -20,7 +20,7 @@ icon: "🍎"
 * **Objeto de aplicación (`Application`)**: El punto de entrada para interactuar con cualquier app. En AppleScript: `tell application "Finder"`. En JXA: `Application("Finder")`.
 * **`tell` block**: En AppleScript, establece el contexto de la aplicación destino para los comandos del bloque.
 * **System Events**: Aplicación especial de macOS que permite controlar elementos de UI de cualquier aplicación, incluso las que no tienen diccionario AppleScript propio.
-* **`do shell script`**: Comando de AppleScript para ejecutar comandos Bash/Zsh y capturar su salida como string. El puente entre AppleScript y el shell Unix.
+* **`do shell script`**: Comando de AppleScript para ejecutar comandos [Bash](/devops/bash "Bash (Bourne Again Shell) es un shell de Unix y lenguaje de comandos compatible con POSIX.")/Zsh y capturar su salida como string. El puente entre AppleScript y el shell Unix.
 * **Script Editor**: La IDE nativa de macOS para editar y ejecutar scripts AppleScript y JXA (en Applications → Utilities).
 * **osascript**: Herramienta de línea de comandos para ejecutar scripts AppleScript y JXA directamente desde Terminal.
 * **Automation**: En JXA, el objeto global que da acceso a las funcionalidades de automatización equivalentes a AppleScript.
@@ -164,7 +164,7 @@ end repeat
 
 -- repeat while
 set contador to 0
-repeat while contador < 5
+repeat while contador &lt; 5
     set contador to contador + 1
 end repeat
 
@@ -415,7 +415,7 @@ Finder.activate();
 
 // Obtener archivos del escritorio
 const archivos = Finder.desktop.files();
-archivos.forEach(archivo => {
+archivos.forEach(archivo =&gt; {
     console.log(archivo.name());
 });
 
@@ -477,14 +477,14 @@ function procesarDocumentos() {
     
     // Obtener todos los PDFs
     const carpeta = Finder.folders[carpetaSeleccionada.toString()];
-    const pdfs = carpeta.files().filter(f => f.name().endsWith(".pdf"));
+    const pdfs = carpeta.files().filter(f =&gt; f.name().endsWith(".pdf"));
     
     app.displayDialog(`Encontrados ${pdfs.length} PDFs. ¿Procesar?`, {
         buttons: ["Cancelar", "Procesar"],
         defaultButton: "Procesar"
     });
     
-    pdfs.forEach((pdf, i) => {
+    pdfs.forEach((pdf, i) =&gt; {
         // Notificar progreso
         app.displayNotification(`Procesando ${i + 1}/${pdfs.length}: ${pdf.name()}`, {
             withTitle: "Procesador PDF"
@@ -655,7 +655,7 @@ say "Error en el sistema" using "Alex" speaking rate 150 pitch 50
 
 * **JXA para lógica compleja, AppleScript para interacción con apps**: JXA es más potente para lógica de programación compleja (arrays, objetos, funciones). AppleScript suele ser más readable para comandos de aplicaciones.
 
-* **Combina con `do shell script`**: Para operaciones donde ni AppleScript ni JXA son suficientes, delega a scripts Bash, Python o cualquier herramienta de línea de comandos.
+* **Combina con `do shell script`**: Para operaciones donde ni AppleScript ni JXA son suficientes, delega a scripts [Bash](/devops/bash "Bash (Bourne Again Shell) es un shell de Unix y lenguaje de comandos compatible con POSIX."), [Python](/python/python "Python es un lenguaje de programación de alto nivel, interpretado, interactivo y orientado a objetos.") o cualquier herramienta de línea de comandos.
 
 * **Automator como alternativa visual**: Para workflows simples, Automator (también nativo en macOS) puede ser más rápido. Puede embeber AppleScript/JXA como pasos dentro de workflows visuales.
 
