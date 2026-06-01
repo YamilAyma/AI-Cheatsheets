@@ -34,7 +34,7 @@ La **Programación Orientada a Aspectos (AOP)** es un paradigma de programación
 *   **Weaving (Tejido)**: El proceso de inyectar el código del aspecto (Advice) en los Join Points seleccionados por el Pointcut. Es la acción de combinar los aspectos con el código principal.
 *   **Weaver (Tejedor)**: El componente que realiza el proceso de Weaving.
 *   **Target Object (Objeto Objetivo)**: La instancia de un objeto cuya ejecución de método o acceso a campo está siendo interceptada por un aspecto.
-*   **Proxy**: En algunas implementaciones de AOP (ej. Spring AOP), se crea un objeto "proxy" que envuelve al objeto objetivo y es a través de este proxy que se inyecta el Advice.
+*   **[Proxy](/arquitectura/design_patterns/estructurales/proxy "El patrón Proxy es un patrón estructural que proporciona un sustituto o intermediario para controlar el acceso a un objeto real, añadiendo comportamiento transversal sin modificar su implementación original.")**: En algunas implementaciones de AOP (ej. Spring AOP), se crea un objeto "proxy" que envuelve al objeto objetivo y es a través de este proxy que se inyecta el Advice.
 
 ---
 
@@ -80,9 +80,9 @@ El proceso de integrar los aspectos en el código.
 *   **Post-Compile Weaving (Binary / Load-Time Weaving - LTW)**:
     *   **Cuándo**: Después de que el código [Java](/java/java "Java es un lenguaje de programación de propósito general, concurrente, basado en clases y orientado a objetos.") ha sido compilado a bytecode (`.class` files), pero antes o durante la carga de las clases en la JVM.
     *   **Pros**: No requiere modificar el proceso de compilación del código fuente, útil para tejer aspectos en librerías de terceros.
-    *   **Contras**: Requiere un agente Java configurado en la JVM.
-*   **Runtime Weaving (Proxy-based)**:
-    *   **Cuándo**: En tiempo de ejecución. El framework (ej. Spring AOP) crea objetos "proxy" que envuelven a los objetos objetivo. Las llamadas a los métodos del objetivo pasan por el proxy, donde se ejecuta el Advice.
+    *   **Contras**: Requiere un agente [Java](/java/java "Java es un lenguaje de programación de propósito general, concurrente, basado en clases y orientado a objetos.") configurado en la JVM.
+*   **Runtime Weaving ([Proxy](/arquitectura/design_patterns/estructurales/proxy "El patrón Proxy es un patrón estructural que proporciona un sustituto o intermediario para controlar el acceso a un objeto real, añadiendo comportamiento transversal sin modificar su implementación original.")-based)**:
+    *   **Cuándo**: En tiempo de ejecución. El framework (ej. Spring AOP) crea objetos "[proxy](/arquitectura/design_patterns/estructurales/proxy "El patrón Proxy es un patrón estructural que proporciona un sustituto o intermediario para controlar el acceso a un objeto real, añadiendo comportamiento transversal sin modificar su implementación original.")" que envuelven a los objetos objetivo. Las llamadas a los métodos del objetivo pasan por el proxy, donde se ejecuta el Advice.
     *   **Pros**: No requiere herramientas de compilación especiales, fácil de configurar.
     *   **Contras**: Menos potente (generalmente solo soporta ejecución de métodos públicos), introduce una ligera sobrecarga por el uso de proxies.
 
@@ -103,14 +103,14 @@ El proceso de integrar los aspectos en el código.
 
 ## 6. 🌐 Frameworks Populares de AOP
 
-*   **AspectJ**:
-    *   El framework de AOP más maduro y potente para Java.
+*   **[AspectJ](/java/librerias/aspectj "AspectJ es una extensión 'seamless' (sin costuras) de Java que implementa la Programación Orientada a Aspectos (AOP).")**:
+    *   El framework de AOP más maduro y potente para [Java](/java/java "Java es un lenguaje de programación de propósito general, concurrente, basado en clases y orientado a objetos.").
     *   Soporta Compile-Time y Load-Time Weaving.
     *   Ofrece el conjunto más completo de Join Points y tipos de Advice (incluyendo Introducción/Inter-type Declarations).
 *   **Spring AOP**:
     *   Integrado en el Spring Framework.
     *   Basado en proxies en tiempo de ejecución.
-    *   Más simple de usar que AspectJ nativo, pero con menos capacidades (principalmente se enfoca en Join Points de ejecución de métodos públicos).
+    *   Más simple de usar que [AspectJ](/java/librerias/aspectj "AspectJ es una extensión 'seamless' (sin costuras) de Java que implementa la Programación Orientada a Aspectos (AOP).") nativo, pero con menos capacidades (principalmente se enfoca en Join Points de ejecución de métodos públicos).
     *   A menudo suficiente para la mayoría de los casos de uso comunes en aplicaciones Spring.
     *   Puede usar AspectJ como su "backend" de Weaving para capacidades completas de AspectJ si se configura LTW.
 *   **PostSharp (.NET)**: Un framework de AOP popular para el ecosistema .NET.
@@ -124,7 +124,7 @@ El proceso de integrar los aspectos en el código.
 *   **Precisión en los Pointcuts**: Sé lo más específico posible con tus expresiones de pointcut para evitar tejer aspectos donde no son necesarios o causar comportamientos inesperados.
 *   **Comprende el Flujo de Ejecución**: Es crucial entender el orden en que se ejecutan los diferentes tipos de Advice y cómo interactúan con el método objetivo. `Around` Advice es el más complejo en este sentido.
 *   **Facilita la Depuración**: AOP puede hacer que las trazas de pila (stack traces) sean más complejas. Usa herramientas de depuración que soporten AOP (si están disponibles) y mantén tus aspectos simples.
-*   **Impacto en el Rendimiento**: El Weaving (especialmente el de runtime/proxy) puede tener una ligera sobrecarga. Mide el rendimiento si es crítico.
+*   **Impacto en el Rendimiento**: El Weaving (especialmente el de runtime/[proxy](/arquitectura/design_patterns/estructurales/proxy "El patrón Proxy es un patrón estructural que proporciona un sustituto o intermediario para controlar el acceso a un objeto real, añadiendo comportamiento transversal sin modificar su implementación original.")) puede tener una ligera sobrecarga. Mide el rendimiento si es crítico.
 *   **Transparencia**: El código que utiliza aspectos puede ser menos obvio de entender para nuevos desarrolladores si no se documenta bien.
 *   **Consistencia**: Si usas AOP, aplícalo de forma consistente para las preocupaciones transversales en todo tu proyecto.
 *   **Evita la Inversión de Control Innecesaria**: Asegúrate de que el beneficio de modularizar con AOP supera la complejidad añadida.
