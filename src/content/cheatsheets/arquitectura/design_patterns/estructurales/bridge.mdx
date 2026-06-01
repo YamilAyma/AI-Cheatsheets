@@ -1,6 +1,14 @@
+---
+title: "bridge"
+description: "El patrón Bridge es un patrón estructural que desacopla una abstracción de su implementación, permitiendo que ambas dimensiones varíen de forma completamente independiente."
+createdAt: 2026-05-22
+updatedAt: 2026-05-22
+tags: [estructurales]
+icon: "📄"
+---
 # 🌉 Patrón Bridge — Cheatsheet Completo 🌉
 
-El patrón **Bridge** es un patrón estructural que desacopla una **abstracción** de su **implementación**, permitiendo que ambas dimensiones varíen de forma completamente independiente. Resuelve la explosión combinatoria de subclases, elimina el acoplamiento rígido por herencia y facilita la extensión cruzada de interfaces de dominio y motores de ejecución subyacentes. Nace para separar la capa de API o contrato de alto nivel de los detalles de plataforma, renderizado, protocolo o proveedor, garantizando que cambios en un eje no requieran modificar ni recompilar el otro. Este cheatsheet desglosa la intención arquitectónica real del patrón, contratos de delegación segura, implementaciones multi-paradigma, variantes de swapping dinámico y validación cruzada, impacto en testing y rendimiento, trampas de acoplamiento encubierto, y criterios estrictos para decidir cuándo la separación de ejes es una necesidad del dominio y no una abstracción innecesaria que añade fricción.
+El patrón **Bridge** es un patrón estructural que desacopla una **abstracción** de su **implementación**, permitiendo que ambas dimensiones varíen de forma completamente independiente. Resuelve la explosión combinatoria de subclases, elimina el acoplamiento rígido por herencia y facilita la extensión cruzada de interfaces de dominio y motores de ejecución subyacentes. Nace para separar la capa de [API](/conocimiento/api "Una API (Application Programming Interface) es un conjunto de reglas, protocolos y herramientas que permite que diferentes aplicaciones de software se comuniquen entre sí.") o contrato de alto nivel de los detalles de plataforma, renderizado, protocolo o proveedor, garantizando que cambios en un eje no requieran modificar ni recompilar el otro. Este cheatsheet desglosa la intención arquitectónica real del patrón, contratos de delegación segura, implementaciones multi-paradigma, variantes de swapping dinámico y validación cruzada, impacto en testing y rendimiento, trampas de acoplamiento encubierto, y criterios estrictos para decidir cuándo la separación de ejes es una necesidad del dominio y no una abstracción innecesaria que añade fricción.
 
 ---
 
@@ -16,7 +24,7 @@ El patrón **Bridge** es un patrón estructural que desacopla una **abstracción
   * Por qué importa: Encapsula la complejidad nativa. Cambiar de proveedor solo requiere sustituir esta clase, no tocar la abstracción ni el cliente.
 * **Composición sobre Herencia**: Reemplaza `extends` por `has-a`. La abstracción **delega** trabajo al implementor en lugar de heredar su comportamiento.
   * Por qué importa: Rompe la dependencia vertical. Permite matrices N×M de combinaciones sin generar N×M clases. Cumple Open/Closed en ambos ejes.
-* **Variación Independiente en Dos Ejes**: Eje X = Qué se hace (dominio/API). Eje Y = Cómo se hace (plataforma/tecnología).
+* **Variación Independiente en Dos Ejes**: Eje X = Qué se hace (dominio/[API](/conocimiento/api "Una API (Application Programming Interface) es un conjunto de reglas, protocolos y herramientas que permite que diferentes aplicaciones de software se comuniquen entre sí.")). Eje Y = Cómo se hace (plataforma/tecnología).
   * Por qué importa: La herencia mezcla ambos ejes, creando clases como `MySQLUserDAO`, `PostgresUserDAO`, `MongoUserDAO`. Bridge los separa limpiamente.
 * **Delegación Explícita y Pura**: La abstracción nunca implementa lógica crítica de bajo nivel. Solo orquesta, valida y delega.
   * Por qué importa: Mantiene la responsabilidad única. Si la abstracción implementa detalles de plataforma, el patrón colapsa en acoplamiento híbrido.
@@ -132,23 +140,23 @@ Se reemplaza herencia por closures, inyección de funciones o objetos inmutables
 ```javascript
 // Implementor como objeto de funciones
 const sqliteImpl = {
-  query: (sql, params) => db.prepare(sql).all(params),
-  execute: (sql, params) => db.prepare(sql).run(params)
+  query: (sql, params) =&gt; db.prepare(sql).all(params),
+  execute: (sql, params) =&gt; db.prepare(sql).run(params)
 };
 
 const postgresImpl = {
-  query: async (sql, params) => await client.query(sql, params),
-  execute: async (sql, params) => await client.query(sql, params)
+  query: async (sql, params) =&gt; await client.query(sql, params),
+  execute: async (sql, params) =&gt; await client.query(sql, params)
 };
 
 // Abstraction como función de orden superior
 function createRepository(engine) {
   return {
-    findById: async (id) => {
+    findById: async (id) =&gt; {
       const res = await engine.query('SELECT * FROM users WHERE id = $1', [id]);
       return res.rows[0] || null;
     },
-    updateStatus: async (id, status) => {
+    updateStatus: async (id, status) =&gt; {
       await engine.execute('UPDATE users SET status = $1 WHERE id = $2', [status, id]);
     }
   };
@@ -163,21 +171,21 @@ Uso de traits para definir contratos y structs para composición. Garantía en t
 
 ```rust
 pub trait PaymentProcessor {
-    fn process_charge(&self, amount: f64, currency: &str) -> Result<Transaction, Error>;
-    fn refund(&self, tx_id: &str) -> Result<Refund, Error>;
+    fn process_charge(&self, amount: f64, currency: &str) -&gt; Result<Transaction, Error>;
+    fn refund(&self, tx_id: &str) -&gt; Result<Refund, Error>;
 }
 
-pub struct PaymentGateway<'a, P: PaymentProcessor> {
+pub struct PaymentGateway&lt;'a, P: PaymentProcessor> {
     processor: &'a P,
     config: GatewayConfig,
 }
 
-impl<'a, P: PaymentProcessor> PaymentGateway<'a, P> {
-    pub fn new(processor: &'a P, config: GatewayConfig) -> Self {
+impl&lt;'a, P: PaymentProcessor> PaymentGateway&lt;'a, P> {
+    pub fn new(processor: &'a P, config: GatewayConfig) -&gt; Self {
         Self { processor, config }
     }
 
-    pub fn checkout(&self, amount: f64) -> Result<Receipt, Error> {
+    pub fn checkout(&self, amount: f64) -&gt; Result<Receipt, Error> {
         // Lógica de dominio (validación, límites, logs)
         self.config.validate_amount(amount)?;
         let tx = self.processor.process_charge(amount, self.config.currency())?;
@@ -203,7 +211,7 @@ class DynamicBridge {
   swap(newImpl: Implementor) {
     this.impl = newImpl;
     // Notifica a todas las abstracciones registradas
-    this.abstractions.forEach(a => a.setImplementor(newImpl));
+    this.abstractions.forEach(a =&gt; a.setImplementor(newImpl));
   }
 }
 // Útil para hot-reload, feature flags, o migración en vivo entre proveedores.
@@ -217,9 +225,9 @@ class DynamicBridge {
 |----------|-----------|-------------|-----------|
 | **Bridge Dinámico** | `setImplementor()` o inyección en runtime. | Hot-swapping, A/B testing, feature flags. | Complejidad de estado transitorio. Requiere sincronización si es concurrente. |
 | **Bridge con Validación de Capacidades** | `impl.supports(feature)` antes de delegar. | Motores con diferencias de API (WebGL 1 vs 2, SQLite vs PostgreSQL). | Overhead en llamadas. Requiere contrato de features explícito. |
-| **Bridge Lazy/Proxy** | Inicializa implementor solo en primera delegación. | Recursos costosos, conexiones pesadas, carga bajo demanda. | Retrasa fallos de configuración. Dificulta diagnóstico temprano. |
-| **Bridge + Strategy** | El implementor contiene un strategy para variar comportamiento interno. | Renderizadores con diferentes algoritmos de optimización o compresión. | Doble indirección. Puede oscurecer el flujo si no se documenta. |
-| **Bridge de Protocolo** | Adapta y desacopla simultáneamente (Bridge + Adapter híbrido). | Integrar APIs legacy bajo una abstracción moderna con múltiples backends. | Riesgo de violar Single Responsibility. Requiere límites claros. |
+| **Bridge Lazy/[Proxy](/arquitectura/design_patterns/estructurales/proxy "El patrón Proxy es un patrón estructural que proporciona un sustituto o intermediario para controlar el acceso a un objeto real, añadiendo comportamiento transversal sin modificar su implementación original.")** | Inicializa implementor solo en primera delegación. | Recursos costosos, conexiones pesadas, carga bajo demanda. | Retrasa fallos de configuración. Dificulta diagnóstico temprano. |
+| **Bridge + [Strategy](/arquitectura/design_patterns/comportamiento/strategy "El patrón Strategy es un patrón de comportamiento que define una familia de algoritmos intercambiables, los encapsula y los hace sustituibles en tiempo de ejecución sin alterar el código del cliente que los utiliza.")** | El implementor contiene un strategy para variar comportamiento interno. | Renderizadores con diferentes algoritmos de optimización o compresión. | Doble indirección. Puede oscurecer el flujo si no se documenta. |
+| **Bridge de Protocolo** | Adapta y desacopla simultáneamente (Bridge + [Adapter](/arquitectura/design_patterns/estructurales/adapter "El patrón Adapter es un patrón estructural que permite la cooperación entre objetos con interfaces incompatibles, actuando como un traductor o puente que convierte las llamadas de un contrato a otro.") híbrido). | Integrar APIs legacy bajo una abstracción moderna con múltiples backends. | Riesgo de violar Single Responsibility. Requiere límites claros. |
 | **Bridge con Caché de Resultados** | Almacena salidas del implementor por clave de entrada. | Motores de cálculo costosos, parsers, generadores de gráficos. | Invalidation compleja. Puede servir datos obsoletos si no se gestiona. |
 
 ---
@@ -236,10 +244,10 @@ class DynamicBridge {
 
 Comparación rápida con patrones estructurales y creacionales:
 * **Bridge**: Desacopla abstracción e implementación para variación independiente. Diseño anticipado.
-* **Adapter**: Traduce interfaces incompatibles existentes. Corrección post-factum.
-* **Strategy**: Intercambia algoritmos/comportamiento dinámicamente. Enfocado en lógica, no en plataforma.
+* **[Adapter](/arquitectura/design_patterns/estructurales/adapter "El patrón Adapter es un patrón estructural que permite la cooperación entre objetos con interfaces incompatibles, actuando como un traductor o puente que convierte las llamadas de un contrato a otro.")**: Traduce interfaces incompatibles existentes. Corrección post-factum.
+* **[Strategy](/arquitectura/design_patterns/comportamiento/strategy "El patrón Strategy es un patrón de comportamiento que define una familia de algoritmos intercambiables, los encapsula y los hace sustituibles en tiempo de ejecución sin alterar el código del cliente que los utiliza.")**: Intercambia algoritmos/comportamiento dinámicamente. Enfocado en lógica, no en plataforma.
 * **Abstract Factory**: Crea familias de objetos compatibles. Enfocado en creación, no en delegación.
-* **Facade**: Simplifica interfaces complejas. Enfocado en reducción de acoplamiento, no en separación de ejes.
+* **[Facade](/arquitectura/design_patterns/estructurales/facade "El patrón Facade es un patrón estructural que proporciona una interfaz unificada y simplificada a un subsistema complejo, conjunto de librerías o componentes altamente interdependientes.")**: Simplifica interfaces complejas. Enfocado en reducción de acoplamiento, no en separación de ejes.
 
 ---
 
@@ -272,8 +280,8 @@ Comparación rápida con patrones estructurales y creacionales:
   * Fix: Centralice en un módulo compartido. Registre en DI contenedor. Valide que solo exista una implementación por contrato técnico.
 * **Falta de Validación de Capacidades**: Delegar a un implementor que no soporta la operación solicitada.
   * Fix: Use `impl.supports(feature)` o lance `UnsupportedOperationException` controlada. Documente capacidades en el contrato.
-* **Confundir con Adapter o Strategy**: Usar Bridge para corregir interfaces incompatibles o variar algoritmos simples.
-  * Fix: Si corrige incompatibilidad post-factum → Adapter. Si varía comportamiento → Strategy. Si separa ejes de variación anticipadamente → Bridge.
+* **Confundir con [Adapter](/arquitectura/design_patterns/estructurales/adapter "El patrón Adapter es un patrón estructural que permite la cooperación entre objetos con interfaces incompatibles, actuando como un traductor o puente que convierte las llamadas de un contrato a otro.") o [Strategy](/arquitectura/design_patterns/comportamiento/strategy "El patrón Strategy es un patrón de comportamiento que define una familia de algoritmos intercambiables, los encapsula y los hace sustituibles en tiempo de ejecución sin alterar el código del cliente que los utiliza.")**: Usar Bridge para corregir interfaces incompatibles o variar algoritmos simples.
+  * Fix: Si corrige incompatibilidad post-factum → [Adapter](/arquitectura/design_patterns/estructurales/adapter "El patrón Adapter es un patrón estructural que permite la cooperación entre objetos con interfaces incompatibles, actuando como un traductor o puente que convierte las llamadas de un contrato a otro."). Si varía comportamiento → [Strategy](/arquitectura/design_patterns/comportamiento/strategy "El patrón Strategy es un patrón de comportamiento que define una familia de algoritmos intercambiables, los encapsula y los hace sustituibles en tiempo de ejecución sin alterar el código del cliente que los utiliza."). Si separa ejes de variación anticipadamente → Bridge.
 * **Serialización Rota**: Intentar serializar la abstracción sin considerar que contiene referencia al implementor.
   * Fix: Serialize solo DTOs o identificadores. Reconstruya el puente al deserializar. Marque referencias al implementor como `transient`/`non-serializable`.
 * **Estado Mutable Compartido entre Delegaciones**: El implementor mantiene estado entre llamadas que corrompe resultados concurrentes.
