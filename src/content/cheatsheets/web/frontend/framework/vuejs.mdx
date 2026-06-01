@@ -20,7 +20,7 @@ Vue.js es un framework progresivo para construir interfaces de usuario. Está di
 * **Props**: Datos que se pasan de un componente padre a un componente hijo.
 * **Emits (Eventos)**: Comunicación de un componente hijo a un componente padre.
 * **Composition [API](/conocimiento/api "Una API (Application Programming Interface) es un conjunto de reglas, protocolos y herramientas que permite que diferentes aplicaciones de software se comuniquen entre sí.") (Recomendado en Vue 3)**: Un conjunto de APIs que permiten organizar la lógica del componente por características, mejorando la reutilización y legibilidad del código.
-* **Options API (Legado/Alternativa)**: El enfoque tradicional para organizar la lógica del componente en objetos de opciones (`data`, `methods`, `computed`, `watch`, `lifecycle hooks`).
+* **Options [API](/conocimiento/api "Una API (Application Programming Interface) es un conjunto de reglas, protocolos y herramientas que permite que diferentes aplicaciones de software se comuniquen entre sí.") (Legado/Alternativa)**: El enfoque tradicional para organizar la lógica del componente en objetos de opciones (`data`, `methods`, `computed`, `watch`, `lifecycle hooks`).
 
 ---
 
@@ -61,7 +61,7 @@ La forma más recomendada para iniciar un proyecto Vue es con Vite.
 
 ## 3. 🧩 Componentes (Vue 3 - `setup` Script)
 
-Los componentes de un solo archivo (`.vue`) encapsulan template, script y style. El `<script setup>` es el enfoque moderno para usar Composition API.
+Los componentes de un solo archivo (`.vue`) encapsulan template, script y style. El `<script setup>` es el enfoque moderno para usar Composition [API](/conocimiento/api "Una API (Application Programming Interface) es un conjunto de reglas, protocolos y herramientas que permite que diferentes aplicaciones de software se comuniquen entre sí.").
 
 ```vue
 &lt;!-- src/components/Counter.vue -->
@@ -617,7 +617,7 @@ const changeMessage = () =&gt; {
 * **Validación de Props**: Define `type`, `default`, `required`, y funciones `validator` para tus props para componentes más robustos.
 * **Directivas Personalizadas / Plugins**: Extiende Vue con tus propias directivas o instala plugins para funcionalidades comunes (ej. validación de formularios).
 * **Vue DevTools**: Utiliza la extensión de navegador Vue DevTools. Es invaluable para inspeccionar el árbol de componentes, el estado, las props, los eventos y el rendimiento.
-* **TypeScript**: Considera usar TypeScript con Vue para una mayor seguridad de tipos y una mejor experiencia de desarrollo, especialmente en proyectos grandes.
+* **[TypeScript](/web/general/typescript "TypeScript es una herramienta fundamental en el desarrollo web moderno, especialmente para proyectos a gran escala, ya que añade seguridad de tipo y mejoras en la productividad.")**: Considera usar TypeScript con Vue para una mayor seguridad de tipos y una mejor experiencia de desarrollo, especialmente en proyectos grandes.
 
 ---
 
