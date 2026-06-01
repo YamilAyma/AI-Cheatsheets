@@ -21,14 +21,14 @@ icon: "📄"
 *   **Concern (Preocupación)**: Un área funcional de un programa (ej. lógica de negocio) o un área no funcional (ej. logging, seguridad, transacciones).
 *   **Cross-Cutting Concern (Preocupación Transversal)**: Una preocupación que afecta a múltiples partes del sistema y no puede encapsularse fácilmente en una sola unidad modular (clase, método). Si no se maneja con AOP, se dispersa (código duplicado) o se enreda (múltiples preocupaciones en un solo módulo).
 *   **Aspect (Aspecto)**: Una unidad modular que encapsula una preocupación transversal.
-    *   **Notación**: En AspectJ, los aspectos se escriben usando un sintaxis extendida de Java o anotaciones (estilo Spring AOP).
+    *   **Notación**: En AspectJ, los aspectos se escriben usando un sintaxis extendida de [Java](/java/java "Java es un lenguaje de programación de propósito general, concurrente, basado en clases y orientado a objetos.") o anotaciones (estilo Spring AOP).
 *   **Join Point (Punto de Unión)**: Un punto específico durante la ejecución de un programa donde un aspecto puede "engancharse" (ej. llamada a un método, ejecución de un método, acceso a un campo, lanzamiento de una excepción).
 *   **Pointcut (Punto de Corte)**: Una expresión que define dónde y cuándo se aplica un consejo (advice). Selecciona un conjunto de Join Points.
 *   **Advice (Consejo)**: El código que implementa la lógica de la preocupación transversal. Se inyecta en los Join Points seleccionados por el Pointcut.
     *   **Tipos de Advice**: Before, After, After Returning, After Throwing, Around.
 *   **Weaving (Tejido)**: El proceso de inyectar el código del aspecto (Advice) en los Join Points de la aplicación. Puede ocurrir en diferentes momentos:
     *   **Compile-Time Weaving**: En tiempo de compilación (AspectJ compila el código fuente).
-    *   **Post-Compile Weaving (Binary/Load-Time Weaving - LTW)**: Después de compilar el código Java (en bytecode). Para LTW, se necesita un agente Java en tiempo de ejecución.
+    *   **Post-Compile Weaving (Binary/Load-Time Weaving - LTW)**: Después de compilar el código [Java](/java/java "Java es un lenguaje de programación de propósito general, concurrente, basado en clases y orientado a objetos.") (en bytecode). Para LTW, se necesita un agente Java en tiempo de ejecución.
     *   **Runtime Weaving**: En tiempo de ejecución (Spring AOP usa proxies en tiempo de ejecución). AspectJ no hace esto.
 *   **Target Object (Objeto Objetivo)**: El objeto cuyo método se está ejecutando o el objeto que está siendo asesorado por un aspecto.
 
@@ -252,7 +252,7 @@ La sintaxis para seleccionar Join Points.
     *   `execution(void com.example..*.*(String, ..))`: Métodos `void` con al menos un `String` como primer argumento.
 *   **`within()`**: Selecciona Join Points dentro de un tipo.
     *   `within(com.example.myapp.service.*)`: Todos los Join Points dentro de cualquier clase en el paquete `com.example.myapp.service`.
-*   **`this()`**: Selecciona Join Points donde el objeto proxy (si AOP usa proxies) es una instancia de un tipo dado.
+*   **`this()`**: Selecciona Join Points donde el objeto [proxy](/arquitectura/design_patterns/estructurales/proxy "El patrón Proxy es un patrón estructural que proporciona un sustituto o intermediario para controlar el acceso a un objeto real, añadiendo comportamiento transversal sin modificar su implementación original.") (si AOP usa proxies) es una instancia de un tipo dado.
 *   **`target()`**: Selecciona Join Points donde el objeto objetivo (la instancia real) es una instancia de un tipo dado.
     *   `target(com.example.myapp.service.UserService)`
 *   **`args()`**: Selecciona Join Points basándose en los argumentos pasados al método.
@@ -306,7 +306,7 @@ Alternativa a Compile-Time Weaving, útil cuando no puedes modificar el proceso 
     ```bash
     java -javaagent:/path/to/aspectjweaver-1.9.21.jar -jar your_app.jar
     ```
-    *   Para Spring Boot, puedes añadir la dependencia `spring-aspects` y usar `--spring.profiles.active=aspectj` o configurar explícitamente el agente.
+    *   Para [Spring Boot](/web/backend/framework/spring/spring-boot "¡Absolutamente! Spring Boot es un framework increíble para construir aplicaciones Java robustas y de alto rendimiento de manera rápida y eficiente."), puedes añadir la dependencia `spring-aspects` y usar `--spring.profiles.active=aspectj` o configurar explícitamente el agente.
 
 ---
 
