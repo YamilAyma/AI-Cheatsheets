@@ -1,6 +1,6 @@
 ---
 title: "Lua"
-description: "Lua es el lenguaje de scripting embebido más rápido y ligero del mundo. Fundamental para extender Neovim, Nginx (OpenResty), Redis, motores de videojuegos y sistemas embebidos."
+description: "Lua (del portugués, \"Luna\") es un lenguaje de programación ligero, de alto rendimiento y fácilmente embebible, diseñado en la PUC-Río (Brasil) en 1993."
 createdAt: 2026-05-20
 updatedAt: 2026-05-20
 tags: [lua, scripting, embebido, neovim, nginx, redis, automatizacion]
@@ -19,7 +19,7 @@ icon: "🌙"
 * **Ocho tipos primitivos**: `nil`, `boolean`, `number`, `string`, `function`, `table`, `userdata`, `thread`.
 * **`nil`**: El valor de ausencia. Una variable no declarada devuelve `nil`. Asignar `nil` a una variable la elimina efectivamente.
 * **`table`**: La única estructura de datos del lenguaje. Puede comportarse como array, diccionario, objeto, namespace, módulo o clase — todo depende de cómo la uses.
-* **Indexación base-1**: A diferencia de C, Python o JavaScript, los arrays en Lua empiezan en el índice `1`.
+* **Indexación base-1**: A diferencia de C, [Python](/python/python "Python es un lenguaje de programación de alto nivel, interpretado, interactivo y orientado a objetos.") o JavaScript, los arrays en Lua empiezan en el índice `1`.
 * **Strings inmutables**: Las cadenas en Lua son inmutables e internadas (coercitioned). Lua las reutiliza en memoria si son iguales.
 * **Ámbito de variables (scope)**: Las variables son **globales** por defecto. Usa `local` para limitar el ámbito. Siempre prefieres `local`.
 * **`#` operador longitud**: Devuelve la longitud de un string (en bytes) o el límite de secuencia de una tabla (el mayor índice entero consecutivo).
@@ -151,7 +151,7 @@ print(-10)      -- -10 (negación unaria)
 print(10 == 10)  -- true
 print(10 ~= 9)   -- true (distinto de, NO es !=)
 print(10 > 5)    -- true
-print(10 >= 10)  -- true
+print(10 &gt;= 10)  -- true
 
 -- Operadores lógicos
 print(true and false)  -- false
@@ -268,7 +268,7 @@ end
 
 -- ===== WHILE =====
 local i = 0
-while i < 5 do
+while i &lt; 5 do
     i = i + 1
     print("i =", i)
 end
@@ -323,7 +323,7 @@ print(saludar())       -- Hola, Mundo!
 local function minmax(lista)
     local min, max = lista[1], lista[1]
     for _, v in ipairs(lista) do
-        if v < min then min = v end
+        if v &lt; min then min = v end
         if v > max then max = v end
     end
     return min, max
@@ -542,7 +542,7 @@ local clave = KEYS[1]
 local limite = tonumber(ARGV[1])
 local actual = tonumber(redis.call("GET", clave)) or 0
 
-if actual >= limite then
+if actual &gt;= limite then
     return redis.error_reply("Límite de tasa excedido")
 end
 
@@ -558,7 +558,7 @@ return actual + 1
 * **Variables globales accidentales**: Olvidar `local` crea variables globales que contaminan el entorno. Usa `local` siempre.
   * ❌ `resultado = calcular()` → ✅ `local resultado = calcular()`
 
-* **Índices base-1**: Venir de Python o JavaScript y asumir que los arrays empiezan en 0 causa bugs sutiles. En Lua: `tabla[1]` es el primer elemento.
+* **Índices base-1**: Venir de [Python](/python/python "Python es un lenguaje de programación de alto nivel, interpretado, interactivo y orientado a objetos.") o JavaScript y asumir que los arrays empiezan en 0 causa bugs sutiles. En Lua: `tabla[1]` es el primer elemento.
 
 * **`#` no es confiable para tablas con "agujeros"**: `#` retorna el límite de la secuencia, pero si una tabla tiene `nil` en medio (ej: `{1, nil, 3}`), el resultado es indefinido. Para tablas con agujeros, mantén un contador manual.
 
