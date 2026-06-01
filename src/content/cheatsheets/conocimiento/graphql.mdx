@@ -1,0 +1,265 @@
+---
+title: "graphql"
+description: "GraphQL es un lenguaje de consulta y runtime para APIs que permite a los clientes solicitar exactamente los datos que necesitan, evitando sobre-fetching y under-fetching."
+createdAt: 2026-06-01
+updatedAt: 2026-06-01
+tags: [conocimiento]
+icon: "📄"
+---
+# 🎯 GraphQL — Complete Cheatsheet 🎯
+
+GraphQL es un lenguaje de consulta y runtime para APIs que permite a los clientes solicitar exactamente los datos que necesitan, evitando sobre-fetching y under-fetching. Define un sistema de tipado estricto mediante SDL (Schema Definition Language) y resuelve las peticiones mediante un pipeline de resolvers que pueden integrar múltiples fuentes de datos. Este cheatsheet cubre desde la sintaxis SDL esencial hasta queries avanzadas, mutations, subscriptions, gestión del problema N+1, paginación tipo Relay, optimización con DataLoader, validación de complejidad y patrones de producción. Ideal para desarrolladores backend y frontend que migran desde REST y buscan APIs flexibles, tipadas y altamente eficientes.
+
+---
+
+## 1. 🌟 Conceptos Fundamentales
+
+* **Single Endpoint**: Todas las operaciones se envían a `/graphql`. El schema define qué está disponible; el cliente decide qué leer.
+* **Strongly Typed Schema (SDL)**: Contrato explícito entre cliente y servidor. Validación automática de tipos, nullabilidad y estructura en tiempo de compilación y ejecución.
+* **Client-Driven Fetching**: Los clientes componen queries para obtener solo campos necesarios. Reduce payloads, latencia y versiones de endpoints.
+* **Resolvers**: Funciones que resuelven cada campo del schema. Se ejecutan en paralelo por nivel del árbol de consulta, no secuencialmente.
+* **Contexto Global**: Objeto compartido entre todos los resolvers de una petición (DB, auth, loaders, config).
+* **N+1 Problem**: Patrón común donde un resolver de lista dispara N consultas adicionales (una por item). Se resuelve con batching (DataLoader).
+* **Evolución sin Versiones**: Schema se extiende con campos nuevos, se marcan obsoletos con `@deprecated`. Los clientes antiguos siguen funcionando.
+
+---
+
+## 2. 🛠️ Instalación y Entorno
+
+* **Setup básico con Node.js + [TypeScript](/web/general/typescript "TypeScript es una herramienta fundamental en el desarrollo web moderno, especialmente para proyectos a gran escala, ya que añade seguridad de tipo y mejoras en la productividad.")**:
+  ```bash
+  npm install graphql @graphql-yoga/node
+  npm i -D @types/node typescript
+  ```
+* **Servidor mínimo (GraphQL Yoga)**:
+  ```ts
+  import { createYoga } from 'graphql-yoga'
+  import { createServer } from 'node:http'
+
+  const typeDefs = `#graphql
+    type Query { hello: String! }
+  `
+  const resolvers = { Query: { hello: () =&gt; 'World' } }
+
+  const server = createServer(createYoga({ schema: { typeDefs, resolvers } }))
+  server.listen(4000, () =&gt; console.log('🚀 http://localhost:4000/graphql'))
+  ```
+* **Herramientas de desarrollo**:
+  * **GraphiQL / Apollo Sandbox**: IDE interactivo con autocompletado y schema introspection.
+  * **GraphQL Codegen**: Genera tipos TypeScript, hooks [React](/web/frontend/general/react/react "¡Excelente! React es la biblioteca de JavaScript más popular para construir interfaces de usuario.")/Vue/[Svelte](/web/frontend/framework/svelte "Svelte es un framework de compilación que traslada el trabajo reactivo a build time, generando código quirúrgico, altamente optimizado y sin Virtual DOM.") y SDKs cliente desde el schema.
+  * **Apollo Studio / Grafbase**: Métricas, tracing, schema registry y análisis de uso en producción.
+
+---
+
+## 3. 📝 SDL y Sistema de Tipos
+
+```graphql
+# Scalars nativos: ID, String, Int, Float, Boolean
+# Custom scalars: DateTime, JSON, URL, Email
+
+type User {
+  id: ID!
+  username: String!
+  email: String! @deprecated(reason: "Use 'contactEmail'")
+  contactEmail: String
+  role: Role!
+  posts: [Post!]!
+  stats: UserStats
+}
+
+enum Role { ADMIN USER MOD }
+
+type Post {
+  id: ID!
+  title: String!
+  author: User!
+  tags: [String!]
+}
+
+interface Node { id: ID! }
+
+type Image implements Node { id: ID! width: Int height: Int }
+type Video implements Node { id: ID! duration: Float }
+
+union Media = Image | Video
+
+input CreateUserInput {
+  username: String!
+  email: String!
+  role: Role = USER
+}
+
+type Query {
+  user(id: ID!): User
+  users(limit: Int = 10, offset: Int = 0): [User!]!
+}
+
+type Mutation {
+  createUser(input: CreateUserInput!): User!
+  deletePost(id: ID!): Boolean!
+}
+```
+
+* **Modificadores**: `!` (non-null), `[]` (lista), `input` (para mutaciones/args), `interface`/`union` (polimorfismo).
+* **Directivas built-in**: `@deprecated`, `@skip(if: Boolean)`, `@include(if: Boolean)`, `@specifiedBy(url: String)`.
+
+---
+
+## 4. 🔀 Queries, Mutations y Fragments
+
+```graphql
+# Query con variables y alias
+query GetUser($id: ID!, $withStats: Boolean!) {
+  alice: user(id: $id) {
+    username
+    role
+    stats @include(if: $withStats) { loginCount lastActive }
+  }
+}
+
+# Fragment para reutilización
+fragment PostDetails on Post {
+  id title createdAt author { username }
+}
+
+query GetFeed {
+  recentPosts: posts(limit: 5) { ...PostDetails }
+  featuredPosts: posts(limit: 1) { ...PostDetails }
+}
+
+# Mutation
+mutation CreatePost($input: CreatePostInput!) {
+  createPost(input: $input) {
+    id title author { id }
+  }
+}
+```
+
+* **Variables obligatorias**: Nunca inyectes valores directamente en el string de la query. Previenen inyecciones y habilitan caching.
+* **Aliasing**: Permite llamar al mismo campo múltiples veces con distintos argumentos.
+* **Fragments**: Agrupan campos reutilizables. Ideales para componentes UI que consumen subconjuntos de datos.
+
+---
+
+## 5. ⚙️ Resolvers, Contexto y Ciclo de Vida
+
+```ts
+// Firma estándar: (parent, args, context, info)
+const resolvers = {
+  Query: {
+    user: async (_, { id }, { db, loaders }) =&gt; {
+      return loaders.userById.load(id) // Batch + cache
+    }
+  },
+  User: {
+    posts: async (parent, _, { db }) =&gt; {
+      return db.posts.findMany({ where: { authorId: parent.id } })
+    },
+    stats: (parent) =&gt; parent.id // Si el campo coincide con una propiedad del parent, se resuelve automáticamente
+  }
+}
+```
+
+* **`parent`**: Valor retornado por el resolver del campo padre.
+* **`args`**: Argumentos pasados en la query/mutation.
+* **`context`**: Objeto creado por request. Ideal para DB, auth, `DataLoader`, `req`/`res`.
+* **`info`**: AST de la query, útil para optimizaciones avanzadas o proyecciones de DB.
+* **Ejecución en paralelo**: Los campos del mismo nivel se resuelven concurrentemente. No hay garantía de orden entre hermanos.
+
+---
+
+## 6. 🚀 Optimización: DataLoader y Problema N+1
+
+```ts
+import DataLoader from 'dataloader'
+
+// En creación de contexto (por request)
+const loaders = {
+  userById: new DataLoader(async (ids: readonly string[]) =&gt; {
+    const users = await db.users.findMany({ where: { id: { in: ids as string[] } } })
+    // Mantener orden exacto de `ids`, retornar null para no encontrados
+    return ids.map(id =&gt; users.find(u =&gt; u.id === id) || null)
+  })
+}
+```
+
+* **Batching**: Agrupa múltiples `.load(id)` en una sola llamada a DB.
+* **Caching por request**: Cachea resultados dentro del mismo contexto. No persiste entre requests.
+* **Uso correcto**: Instanciar **por petición**, nunca como global [singleton](/arquitectura/design_patterns/creacionales/singleton "El patrón Singleton es un patrón creacional estructural que garantiza que una clase tenga exactamente una instancia en todo el ciclo de vida de un ámbito definido, y proporciona un punto de acceso global a dicha instancia.").
+* **Alternativas**: `join-monster`, `TypeORM relations`, `Prisma `include`` (resuelve N+1 en query layer, no en resolver).
+
+---
+
+## 7. 🛡️ Paginación, Manejo de Errores y Seguridad
+
+### Paginación (Cursor-based / Relay Spec)
+```graphql
+type PageInfo { hasNextPage: Boolean! hasPreviousPage: Boolean! startCursor: String endCursor: String }
+type UserConnection { edges: [UserEdge!]! pageInfo: PageInfo! totalCount: Int! }
+type UserEdge { cursor: String! node: User! }
+
+type Query {
+  users(first: Int, after: String): UserConnection!
+}
+```
+
+* **Errores estándar**:
+  ```json
+  { "errors": [{ "message": "Not authorized", "path": ["deletePost"], "extensions": { "code": "FORBIDDEN" } }] }
+  ```
+* **Security hardening**:
+  * Desactivar introspection en producción (`introspection: false`).
+  * Limitar profundidad (`graphql-depth-limit`) y complejidad (`graphql-validation-complexity`).
+  * Rate limiting por IP/token.
+  * Persisted Queries: Cliente envía hash, servidor valida y ejecuta query pre-registrada. Elimina parsing/validation overhead y previene inyecciones.
+
+---
+
+## 8. 📦 Caching, Federation y Patrones Avanzados
+
+* **Client-side caching**: Apollo Client, URQL, Relay Store. Normalizan respuestas por `__typename + id`. Cache por query, mutación invalida automáticamente.
+* **Persisted Queries**: `@apollo/client` + `@apollo/server` registran queries en build. Runtime solo recibe `operationName` + `variables`.
+* **Schema Federation (v2)**: Múltiples subgrafos con `@key`, `@extends`, `@external`. Gateway resuelve cross-service queries sin acoplar datos.
+  ```graphql
+  # Servicio A
+  type Product @key(fields: "id") { id: ID! name: String! }
+  # Servicio B
+  extend type Product @key(fields: "id") { id: ID! @external reviews: [Review!]! }
+  ```
+* **Schema Stitching**: Merge manual de schemas. Útil para legacy, pero Federation es el estándar moderno.
+
+---
+
+## 9. ⚠️ Errores Comunes y Trampas
+
+* **Resolver sincrónico pesado**: `resolvers: { Query: { heavy: () =&gt; fs.readFileSync(...) } }` bloquea el event loop.
+  * Fix: Siempre `async` o delegar a threadpool/worker para CPU-bound.
+* **No instanciar DataLoader por request**: Comparte cache entre usuarios → fuga de memoria + datos cruzados.
+  * Fix: Crear en middleware/context factory: `context: () =&gt; ({ loaders: { ... } })`.
+* **Mutaciones para operaciones idempotentes**: `updateProfile` debe ser `Mutation`, pero `refreshToken` puede ser `Query` si es seguro/cacheable.
+  * Fix: Convención estricta: `Mutation` para efectos secundarios, `Query` para lecturas.
+* **Schema bloat con campos unused**: Exponer todo el modelo de DB infla el schema y la superficie de ataque.
+  * Fix: Diseñar schema orientado a casos de uso, no a tablas. Usar DTOs/Types específicos.
+* **Ignorar `null` vs `undefined` en listas**: `[Post]!` vs `[Post!]!` vs `[Post!]`.
+  * Fix: Preferir `[Post!]!` (lista non-null, items non-null) salvo que la [API](/conocimiento/api "Una API (Application Programming Interface) es un conjunto de reglas, protocolos y herramientas que permite que diferentes aplicaciones de software se comuniquen entre sí.") lo requiera explícitamente.
+* **Error handling en resolvers**: `throw new Error("DB failed")` expone stack traces en prod.
+  * Fix: Usar `GraphQLError` con `extensions: { code: "INTERNAL_SERVER_ERROR" }` y loguear stack solo en servidor.
+
+---
+
+## 10. 💡 Mejores Prácticas y Consejos de Experto
+
+* **Diseña el schema desde la perspectiva del cliente**: Piensa en pantallas/componentes, no en tablas. Agrupa datos por vistas, no por entidades.
+* **Usa `interface`/`union` para polimorfismo**: Evita campos opcionales masivos (`image? video? pdf?`). Modela con `Media = Image | Video | Pdf`.
+* **Implementa DataLoader desde el día 1**: El costo de refactorizar N+1 en producción es alto. Batch + cache por request es barato y escalable.
+* **Valida complejidad en gateway/[proxy](/arquitectura/design_patterns/estructurales/proxy "El patrón Proxy es un patrón estructural que proporciona un sustituto o intermediario para controlar el acceso a un objeto real, añadiendo comportamiento transversal sin modificar su implementación original.")**: Usa `graphql-cost-analysis` o Apollo Router para rechazar queries > límite de nodos/puntos.
+* **Prefiere paginación por cursor**: Offset falla con inserciones concurrentes. Cursor (base64 encode `id+timestamp`) es determinista y eficiente en índices.
+* **Mantén resolvers delgados**: Validación y reglas de negocio en `services/`. Resolvers solo orquestan datos y mapean a tipos GraphQL.
+* **Versiona vía evolución, no URL**: `v1/users` → anti-patrón. Extiende schema, marca `@deprecated`, migra clientes gradualmente.
+* **Integra tracing en CI/CD**: `apollo-server-plugin-response-cache` + Apollo Studio. Identifica campos lentos, queries redundantes y cache misses.
+* **Aprovecha GraphQL Codegen**: Genera tipos TS, hooks React/Vue/Svelte, y validación [Zod](/web/frontend/general/zod "¡Absolutamente! Zod es una librería increíble para la validación de esquemas y tipos en TypeScript/JavaScript, famosa por su simplicidad y excelente inferencia de tipos.") desde el schema. Elimina desincronización frontend/backend.
+* **Documenta con `@doc` o comentarios**: SDL soporta `""" Docstring """`. Úsalo para cada tipo, campo y enum. Clientes y herramientas lo consumen automáticamente.
+
+---
+
+Este cheatsheet proporciona una referencia completa para GraphQL, cubriendo SDL moderno, queries/mutations avanzadas, resolución eficiente con DataLoader, paginación tipo Relay, seguridad en producción, federación de esquemas y patrones de arquitectura, junto con las mejores prácticas para construir APIs flexibles, tipadas y altamente escalables en entornos reales.
