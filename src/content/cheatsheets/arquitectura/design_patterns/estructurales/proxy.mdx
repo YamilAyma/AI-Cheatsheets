@@ -1,3 +1,11 @@
+---
+title: "proxy"
+description: "El patrón Proxy es un patrón estructural que proporciona un sustituto o intermediario para controlar el acceso a un objeto real, añadiendo comportamiento transversal sin modificar su implementación original."
+createdAt: 2026-05-22
+updatedAt: 2026-05-22
+tags: [estructurales]
+icon: "📄"
+---
 # 🎯 Patrón Proxy — Cheatsheet Completo 🎯
 
 El patrón **Proxy** es un patrón estructural que proporciona un sustituto o intermediario para controlar el acceso a un objeto real, añadiendo comportamiento transversal sin modificar su implementación original. Envuelve al sujeto manteniendo su interfaz intacta, interceptando llamadas para aplicar políticas de seguridad, caché, inicialización diferida, comunicación remota o monitorización. Nace para resolver problemas de acceso no controlado, carga costosa de recursos, acoplamiento directo a sistemas externos y necesidad de observabilidad centralizada. Este cheatsheet desglosa la intención arquitectónica real del patrón, contratos de interceptación transparente, implementaciones multi-paradigma, variantes de control y rendimiento, impacto en profiling y debugging, trampas de recursión infinita y acoplamiento encubierto, y criterios estrictos para decidir cuándo la delegación controlada es una necesidad del dominio y no una capa de indirección que degrada la trazabilidad o introduce cuellos de botella operativos.
@@ -15,8 +23,8 @@ El patrón **Proxy** es un patrón estructural que proporciona un sustituto o in
 * **Interceptación Transparente**: El cliente invoca métodos del contrato sin conocer la existencia del proxy ni su lógica interna.
   * Por qué importa: Cumple el principio de sustitución de Liskov. Facilita swapping en runtime, testing aislado y evolución sin romper consumidores.
 * **Control de Acceso vs Extensión**: El proxy gestiona *cuándo*, *cómo* o *si* se ejecuta una operación. No añade nuevas firmas al contrato.
-  * Por qué importa: Diferencia estructural clave con Decorator. El proxy filtra/optimiza/redirige; el decorator acumula comportamiento nuevo.
-* **Estado y Ciclo de Vida**: El proxy puede mantener estado local (caché, contadores, timeouts, circuit state) o operar como componente stateless.
+  * Por qué importa: Diferencia estructural clave con [Decorator](/arquitectura/design_patterns/estructurales/decorator "El patrón Decorator es un patrón estructural que permite añadir responsabilidades a objetos de forma dinámica, sin modificar su clase original ni crear jerarquías de subclases infinitas."). El proxy filtra/optimiza/redirige; el decorator acumula comportamiento nuevo.
+* **Estado y Ciclo de Vida**: El proxy puede mantener estado local (caché, contadores, timeouts, circuit [state](/arquitectura/design_patterns/comportamiento/state "El patrón State es un patrón de comportamiento que permite a un objeto alterar su comportamiento cuando su estado interno cambia, haciendo que parezca que el objeto cambia de clase.")) o operar como componente stateless.
   * Por qué importa: Requiere gestión explícita de invalidación, thread-safety y limpieza. El estado compartido entre peticiones debe ser aislado o inmutable.
 * **Delegación Selectiva**: Algunas llamadas pasan directo al real, otras se bloquean, cachean o redirigen según políticas configuradas o contexto runtime.
   * Por qué importa: Permite control granular sin reescribir flujos completos. Habilita feature flags, rate limiting y fallbacks dinámicos.
@@ -238,10 +246,10 @@ impl UserClientProxy {
 
 Comparación rápida con patrones estructurales:
 * **Proxy**: Controla acceso, optimiza o intercepta. Enfocado en ciclo de vida y seguridad.
-* **Decorator**: Añade comportamiento dinámicamente manteniendo interfaz. Enfocado en extensión acumulativa.
-* **Adapter**: Traduce interfaces incompatibles existentes. Corrección post-factum.
-* **Facade**: Simplifica subsistemas complejos. Enfocado en reducción de acoplamiento y superficie.
-* **Strategy**: Intercambia algoritmos/comportamiento. Enfocado en variación de lógica, no en interceptación.
+* **[Decorator](/arquitectura/design_patterns/estructurales/decorator "El patrón Decorator es un patrón estructural que permite añadir responsabilidades a objetos de forma dinámica, sin modificar su clase original ni crear jerarquías de subclases infinitas.")**: Añade comportamiento dinámicamente manteniendo interfaz. Enfocado en extensión acumulativa.
+* **[Adapter](/arquitectura/design_patterns/estructurales/adapter "El patrón Adapter es un patrón estructural que permite la cooperación entre objetos con interfaces incompatibles, actuando como un traductor o puente que convierte las llamadas de un contrato a otro.")**: Traduce interfaces incompatibles existentes. Corrección post-factum.
+* **[Facade](/arquitectura/design_patterns/estructurales/facade "El patrón Facade es un patrón estructural que proporciona una interfaz unificada y simplificada a un subsistema complejo, conjunto de librerías o componentes altamente interdependientes.")**: Simplifica subsistemas complejos. Enfocado en reducción de acoplamiento y superficie.
+* **[Strategy](/arquitectura/design_patterns/comportamiento/strategy "El patrón Strategy es un patrón de comportamiento que define una familia de algoritmos intercambiables, los encapsula y los hace sustituibles en tiempo de ejecución sin alterar el código del cliente que los utiliza.")**: Intercambia algoritmos/comportamiento. Enfocado en variación de lógica, no en interceptación.
 
 ---
 
@@ -274,8 +282,8 @@ Comparación rápida con patrones estructurales:
   * Fix: Pase contexto explícitamente por parámetro o scope. Nunca estado global sin control. Use `AsyncLocal`, `HttpContext.Items` o factories por request.
 * **Supresión Silenciosa de Errores**: `try/catch` en proxy que no rethrow o transforma error incorrectamente, ocultando fallos al cliente.
   * Fix: Propague excepciones o use `Result`/`Either` patterns. Documente política de errores en contrato. Fail fast con trazabilidad.
-* **Confundir con Decorator o Adapter**: Usar Proxy para añadir comportamiento acumulativo o traducir contratos incompatibles.
-  * Fix: Si controla acceso/ciclo &gt; Proxy. Si extiende comportamiento manteniendo interfaz &gt; Decorator. Si traduce APIs &gt; Adapter. No mezcle propósitos.
+* **Confundir con [Decorator](/arquitectura/design_patterns/estructurales/decorator "El patrón Decorator es un patrón estructural que permite añadir responsabilidades a objetos de forma dinámica, sin modificar su clase original ni crear jerarquías de subclases infinitas.") o [Adapter](/arquitectura/design_patterns/estructurales/adapter "El patrón Adapter es un patrón estructural que permite la cooperación entre objetos con interfaces incompatibles, actuando como un traductor o puente que convierte las llamadas de un contrato a otro.")**: Usar Proxy para añadir comportamiento acumulativo o traducir contratos incompatibles.
+  * Fix: Si controla acceso/ciclo &gt; Proxy. Si extiende comportamiento manteniendo interfaz &gt; [Decorator](/arquitectura/design_patterns/estructurales/decorator "El patrón Decorator es un patrón estructural que permite añadir responsabilidades a objetos de forma dinámica, sin modificar su clase original ni crear jerarquías de subclases infinitas."). Si traduce APIs &gt; [Adapter](/arquitectura/design_patterns/estructurales/adapter "El patrón Adapter es un patrón estructural que permite la cooperación entre objetos con interfaces incompatibles, actuando como un traductor o puente que convierte las llamadas de un contrato a otro."). No mezcle propósitos.
 * **Serialización Rota**: `JSON.stringify()` o `pickle` falla con referencias a proxies o métodos no serializables.
   * Fix: Serialize solo DTOs o estado base. Reconstruya cadena de delegación al deserializar. Use `toJSON()`/`__reduce__` seguro.
 * **Invalidación de Caché Defectuosa**: Proxy cachea respuestas y no invalida cuando cambian datos remotos o políticas.
