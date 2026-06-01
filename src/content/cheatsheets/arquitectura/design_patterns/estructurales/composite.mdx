@@ -1,3 +1,11 @@
+---
+title: "composite"
+description: "El patrón Composite es un patrón estructural que permite componer objetos en estructuras de árbol para representar jerarquías parte-todo."
+createdAt: 2026-05-22
+updatedAt: 2026-05-22
+tags: [estructurales]
+icon: "📄"
+---
 # 🌳 Patrón Composite — Cheatsheet Completo 🌳
 
 El patrón **Composite** es un patrón estructural que permite componer objetos en estructuras de árbol para representar jerarquías **parte-todo**. Permite a los clientes tratar objetos individuales y composiciones de manera **uniforme** mediante una interfaz común, eliminando lógica condicional dispersa y habilitando operaciones recursivas predecibles. Nace para dominar la complejidad de estructuras anidadas (sistemas de archivos, interfaces gráficas, ASTs, gráficos de escena, organigramas), simplificar el traversal de datos jerárquicos y garantizar que la adición de nuevos tipos de nodos no rompa la lógica de alto nivel. Este cheatsheet desglosa la intención arquitectónica real, contratos de recursión segura, implementaciones multi-paradigma, variantes transparentes vs seguras, impacto en rendimiento y memoria, trampas de acoplamiento en árboles, y criterios estrictos para decidir cuándo la uniformidad estructural es una necesidad del dominio y no una abstracción que introduce overhead innecesario.
@@ -82,14 +90,14 @@ class Directory extends FileSystemNode {
 
   constructor(name: string) { super(name); }
   add(node: FileSystemNode) { this.children.push(node); }
-  remove(node: FileSystemNode) { this.children = this.children.filter(c => c !== node); }
+  remove(node: FileSystemNode) { this.children = this.children.filter(c =&gt; c !== node); }
   
   size(): number {
-    return this.children.reduce((sum, child) => sum + child.size(), 0);
+    return this.children.reduce((sum, child) =&gt; sum + child.size(), 0);
   }
   list(indent: number): void {
     console.log(' '.repeat(indent) + `📁 ${this.name}`);
-    this.children.forEach(child => child.list(indent + 2));
+    this.children.forEach(child =&gt; child.list(indent + 2));
   }
 }
 ```
@@ -114,14 +122,14 @@ public interface Graphic {
 }
 
 public class CompositeGraphic implements Graphic {
-    private List<Graphic> children = new ArrayList<>();
+    private List<Graphic> children = new ArrayList&lt;>();
 
     public void add(Graphic g) { children.add(g); }
     public void remove(Graphic g) { children.remove(g); }
     public Graphic getChild(int i) { return children.get(i); }
 
     public void draw() { children.forEach(Graphic::draw); }
-    public void move(int x, int y) { children.forEach(g -> g.move(x, y)); }
+    public void move(int x, int y) { children.forEach(g -&gt; g.move(x, y)); }
 }
 // Safe approach: leafs throw on structural methods. Client handles via try/catch or avoids calling them.
 ```
@@ -136,23 +144,23 @@ pub enum TreeNode {
 }
 
 impl TreeNode {
-    pub fn total_nodes(&self) -> usize {
+    pub fn total_nodes(&self) -&gt; usize {
         match self {
-            TreeNode::Leaf(_) => 1,
-            TreeNode::Composite(_, children) => {
+            TreeNode::Leaf(_) =&gt; 1,
+            TreeNode::Composite(_, children) =&gt; {
                 1 + children.iter().map(TreeNode::total_nodes).sum::<usize>()
             }
         }
     }
 
-    pub fn find_by_name(&self, target: &str) -> Option<&TreeNode> {
+    pub fn find_by_name(&self, target: &str) -&gt; Option&lt;&TreeNode> {
         match self {
-            TreeNode::Leaf(name) if name == target => Some(self),
-            TreeNode::Composite(name, children) if name == target => Some(self),
-            TreeNode::Composite(_, children) => {
+            TreeNode::Leaf(name) if name == target =&gt; Some(self),
+            TreeNode::Composite(name, children) if name == target =&gt; Some(self),
+            TreeNode::Composite(_, children) =&gt; {
                 children.iter().find_map(|c| c.find_by_name(target))
             }
-            _ => None,
+            _ =&gt; None,
         }
     }
 }
@@ -183,7 +191,7 @@ const tree = createComposite("root", {}, [
   ])
 ]);
 
-traverse(tree, (node) => console.log(`${node.type}:`, node.data));
+traverse(tree, (node) =&gt; console.log(`${node.type}:`, node.data));
 ```
 Nota: La validación de estructura recae en schemas (`zod`, `Pydantic`) o builders seguros. Evite mutación directa de `children` en producción.
 
@@ -209,7 +217,7 @@ class Composite extends Component {
   add(c: Component) { this.children.push(c); }
   accept(visitor: Visitor) {
     visitor.visitComposite(this);
-    this.children.forEach(c => c.accept(visitor));
+    this.children.forEach(c =&gt; c.accept(visitor));
   }
 }
 // Permite añadir operaciones sin modificar nodos. Cumple Open/Closed estrictamente.
@@ -223,10 +231,10 @@ class Composite extends Component {
 |----------|-----------|-------------|-----------|
 | **Transparente** | `add/remove` expuestos en `Component`. Hojas lanzan excepción o ignoran. | APIs flexibles, builders dinámicos, carga desde JSON/DB sin validación previa. | Errores en runtime si se llaman métodos estructurales en hojas. |
 | **Seguro** | Métodos de gestión solo en `Composite`. Cliente debe conocer tipo o usar downcast controlado. | Sistemas críticos, validación en compile-time, árboles inmutables. | Rompe uniformidad total. Requiere branching o visitors tipados. |
-| **Iterator/Traversal** | Expone iterador externo (`depthFirst()`, `breadthFirst()`). Separa recorrido de estructura. | Búsquedas complejas, lazy loading, streaming de nodos grandes. | Overhead de estado de iteración. Requiere gestión de cursores o generadores. |
-| **Lazy/Deferred** | Hijos se cargan o calculan bajo demanda. `children` es un proxy o thunk. | Árboles masivos, sistemas de archivos remotos, UIs virtuales. | Complejidad de invalidación. Fallos de red/carga pueden romper traversal. |
-| **Inmutable/Functional** | Cada mutación retorna nuevo árbol. Sin estado compartido. | Redux/Zustand stores, versionado, replay/debugging seguro. | Presión en GC. Requiere structural sharing (trie/hamt) para eficiencia. |
-| **Chunked/Partitioned** | Divide árboles grandes en subárboles procesables en paralelo. | Renderizado de escenas 3D, compilación de ASTs, procesamiento batch. | Complejidad de sincronización. Requiere merge strategy para resultados. |
+| **[Iterator](/arquitectura/design_patterns/comportamiento/iterator "El patrón Iterator es un patrón de comportamiento que proporciona una forma estandarizada de recorrer secuencialmente los elementos de una estructura agregada sin exponer su representación interna.")/Traversal** | Expone iterador externo (`depthFirst()`, `breadthFirst()`). Separa recorrido de estructura. | Búsquedas complejas, lazy loading, streaming de nodos grandes. | Overhead de estado de iteración. Requiere gestión de cursores o generadores. |
+| **Lazy/Deferred** | Hijos se cargan o calculan bajo demanda. `children` es un [proxy](/arquitectura/design_patterns/estructurales/proxy "El patrón Proxy es un patrón estructural que proporciona un sustituto o intermediario para controlar el acceso a un objeto real, añadiendo comportamiento transversal sin modificar su implementación original.") o thunk. | Árboles masivos, sistemas de archivos remotos, UIs virtuales. | Complejidad de invalidación. Fallos de red/carga pueden romper traversal. |
+| **Inmutable/Functional** | Cada mutación retorna nuevo árbol. Sin estado compartido. | [Redux](/web/frontend/general/react/redux "Redux es una librería de JavaScript para gestionar el estado de la aplicación.")/[Zustand](/web/frontend/general/zustand "¡Claro que sí! Zustand es una librería de gestión de estados para React (y vainilla JavaScript) conocida por su simplicidad, ligereza y rendimiento.") stores, versionado, replay/debugging seguro. | Presión en GC. Requiere structural sharing (trie/hamt) para eficiencia. |
+| **Chunked/Partitioned** | Divide árboles grandes en subárboles procesables en paralelo. | Renderizado de escenas 3D, compilación de ASTs, procesamiento batch. | Complejidad de sincronización. Requiere merge [strategy](/arquitectura/design_patterns/comportamiento/strategy "El patrón Strategy es un patrón de comportamiento que define una familia de algoritmos intercambiables, los encapsula y los hace sustituibles en tiempo de ejecución sin alterar el código del cliente que los utiliza.") para resultados. |
 
 ---
 
@@ -242,11 +250,11 @@ class Composite extends Component {
 
 Comparación rápida con patrones estructurales y de comportamiento:
 * **Composite**: Uniformidad en estructuras parte-todo. Enfocado en jerarquías y recursión.
-* **Adapter**: Traduce interfaces incompatibles. Enfocado en compatibilidad externa.
-* **Bridge**: Desacopla abstracción e implementación. Enfocado en variación independiente de ejes.
-* **Decorator**: Añade comportamiento dinámicamente. Enfocado en extensión sin modificar estructura base.
-* **Visitor**: Externaliza operaciones sobre estructuras estables. Enfocado en Open/Closed para algoritmos.
-* **Iterator**: Separa traversal de estructura. Enfocado en acceso secuencial sin exponer implementación interna.
+* **[Adapter](/arquitectura/design_patterns/estructurales/adapter "El patrón Adapter es un patrón estructural que permite la cooperación entre objetos con interfaces incompatibles, actuando como un traductor o puente que convierte las llamadas de un contrato a otro.")**: Traduce interfaces incompatibles. Enfocado en compatibilidad externa.
+* **[Bridge](/arquitectura/design_patterns/estructurales/bridge "El patrón Bridge es un patrón estructural que desacopla una abstracción de su implementación, permitiendo que ambas dimensiones varíen de forma completamente independiente.")**: Desacopla abstracción e implementación. Enfocado en variación independiente de ejes.
+* **[Decorator](/arquitectura/design_patterns/estructurales/decorator "El patrón Decorator es un patrón estructural que permite añadir responsabilidades a objetos de forma dinámica, sin modificar su clase original ni crear jerarquías de subclases infinitas.")**: Añade comportamiento dinámicamente. Enfocado en extensión sin modificar estructura base.
+* **[Visitor](/arquitectura/design_patterns/comportamiento/visitor "El patrón Visitor es un patrón de comportamiento que separa algoritmos de las estructuras de objetos sobre las que operan, permitiendo añadir nuevas operaciones sin modificar las clases de los elementos visitados.")**: Externaliza operaciones sobre estructuras estables. Enfocado en Open/Closed para algoritmos.
+* **[Iterator](/arquitectura/design_patterns/comportamiento/iterator "El patrón Iterator es un patrón de comportamiento que proporciona una forma estandarizada de recorrer secuencialmente los elementos de una estructura agregada sin exponer su representación interna.")**: Separa traversal de estructura. Enfocado en acceso secuencial sin exponer implementación interna.
 
 ---
 
@@ -277,8 +285,8 @@ Comparación rápida con patrones estructurales y de comportamiento:
   * Fix: Use inmutabilidad estructural, locks por rama, o copie subárboles antes de procesar. Documente thread-safety explícitamente.
 * **Operaciones O(N²) por Revisita Innecesaria**: `size()` recorre todo el árbol cada vez. Cuello de botella en árboles dinámicos.
   * Fix: Cachee resultados por nodo con invalidación controlada, o mantenga contadores incrementales en `add/remove`.
-* **Confundir con Decorator o Strategy**: Usar Composite para añadir comportamiento dinámico o variar algoritmos.
-  * Fix: Si envuelve un solo objeto para extender → Decorator. Si intercambia lógica → Strategy. Si anida partes en un todo → Composite.
+* **Confundir con [Decorator](/arquitectura/design_patterns/estructurales/decorator "El patrón Decorator es un patrón estructural que permite añadir responsabilidades a objetos de forma dinámica, sin modificar su clase original ni crear jerarquías de subclases infinitas.") o [Strategy](/arquitectura/design_patterns/comportamiento/strategy "El patrón Strategy es un patrón de comportamiento que define una familia de algoritmos intercambiables, los encapsula y los hace sustituibles en tiempo de ejecución sin alterar el código del cliente que los utiliza.")**: Usar Composite para añadir comportamiento dinámico o variar algoritmos.
+  * Fix: Si envuelve un solo objeto para extender → [Decorator](/arquitectura/design_patterns/estructurales/decorator "El patrón Decorator es un patrón estructural que permite añadir responsabilidades a objetos de forma dinámica, sin modificar su clase original ni crear jerarquías de subclases infinitas."). Si intercambia lógica → [Strategy](/arquitectura/design_patterns/comportamiento/strategy "El patrón Strategy es un patrón de comportamiento que define una familia de algoritmos intercambiables, los encapsula y los hace sustituibles en tiempo de ejecución sin alterar el código del cliente que los utiliza."). Si anida partes en un todo → Composite.
 * **Referencias Circulares Padre-Hijo**: `child.parent = this` crea ciclos que rompen serialización y recolección de basura.
   * Fix: Use IDs o weak references para navegación ascendente. Nunca almacene punteros fuertes bidireccionales sin gestión explícita.
 * **Serialización Rota**: `JSON.stringify()` falla con referencias cíclicas o métodos no serializables.
