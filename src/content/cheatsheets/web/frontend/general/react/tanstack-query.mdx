@@ -15,14 +15,14 @@ Este cheatsheet está diseñado para ser entregado a una IA conversacional, por 
 
 # 🚀 TanStack Query (React Query) Cheatsheet Completo 🚀
 
-TanStack Query (anteriormente React Query) es una poderosa librería para la gestión, el caching y la sincronización de datos asíncronos en aplicaciones React (y otras con TanStack Query). Elimina gran parte del trabajo repetitivo y las complejidades de la gestión de estados de servidor, mejorando drásticamente la experiencia del desarrollador y el usuario.
+TanStack Query (anteriormente [React](/web/frontend/general/react/react "¡Excelente! React es la biblioteca de JavaScript más popular para construir interfaces de usuario.") Query) es una poderosa librería para la gestión, el caching y la sincronización de datos asíncronos en aplicaciones React (y otras con TanStack Query). Elimina gran parte del trabajo repetitivo y las complejidades de la gestión de estados de servidor, mejorando drásticamente la experiencia del desarrollador y el usuario.
 
 ---
 
 ## 1. 🌟 Conceptos Clave
 
 * **`QueryClient`**: El "cerebro" de TanStack Query. Contiene el caché de todas tus queries y mutaciones.
-* **`QueryClientProvider`**: El componente React que envuelve tu aplicación, proveyendo la instancia de `QueryClient` a todos tus componentes.
+* **`QueryClientProvider`**: El componente [React](/web/frontend/general/react/react "¡Excelente! React es la biblioteca de JavaScript más popular para construir interfaces de usuario.") que envuelve tu aplicación, proveyendo la instancia de `QueryClient` a todos tus componentes.
 * **`Query Key`**: Un array único que identifica tus datos en el caché. ¡Es fundamental! Cuando los datos cambian, se invalidan o se refetchan usando su `Query Key`.
   * Ej: `['todos']`, `['todo', todoId]`, `['posts', { type: 'draft', page: 1 }]`
 * **`Query`**: Una operación para **leer** datos del servidor (GET). Los datos se cachean y se gestionan automáticamente.
@@ -238,7 +238,7 @@ const {
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 
 const addTodo = async (newTodo) =&gt; {
-  const res = await fetch('/api/todos', {
+  const res = await fetch('/[api](/conocimiento/api "Una API (Application Programming Interface) es un conjunto de reglas, protocolos y herramientas que permite que diferentes aplicaciones de software se comuniquen entre sí.")/todos', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(newTodo),
@@ -446,7 +446,7 @@ function InfinitePostList() {
   } = useInfiniteQuery({
     queryKey: ['posts', 'infinite'],
     queryFn: fetchPosts,
-    getNextPageParam: (lastPage) =&gt; lastPage.nextCursor, // Asume que la API devuelve { posts: [], nextCursor: '...' }
+    getNextPageParam: (lastPage) =&gt; lastPage.nextCursor, // Asume que la [API](/conocimiento/api "Una API (Application Programming Interface) es un conjunto de reglas, protocolos y herramientas que permite que diferentes aplicaciones de software se comuniquen entre sí.") devuelve { posts: [], nextCursor: '...' }
     initialPageParam: 0,
   });
 
