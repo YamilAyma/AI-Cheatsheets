@@ -18,7 +18,7 @@ Angular es un framework de desarrollo de aplicaciones web de código abierto, de
 
 ## 1. 🌟 Conceptos Clave
 
-* **Componentes**: Los bloques de construcción fundamentales de una aplicación Angular. Combinan lógica (TypeScript), vista (HTML) y estilo (CSS).
+* **Componentes**: Los bloques de construcción fundamentales de una aplicación Angular. Combinan lógica ([TypeScript](/web/general/typescript "TypeScript es una herramienta fundamental en el desarrollo web moderno, especialmente para proyectos a gran escala, ya que añade seguridad de tipo y mejoras en la productividad.")), vista (HTML) y estilo (CSS).
 * **Módulos (NgModule)**: (Opcional en v17+, con Standalone Components) Organizan las aplicaciones en bloques coherentes de funcionalidad. Declaran componentes, directivas, pipes y exportan elementos que otros módulos pueden usar.
 * **Componentes Standalone (Standalone Components)**: (Introducido en v14, estable y por defecto en v17) Permiten crear componentes, directivas y pipes sin la necesidad de un `NgModule`, simplificando la estructura del proyecto y el tree-shaking. **Este es el enfoque preferido en Angular 17+**.
 * **Templates (Plantillas)**: HTML con sintaxis de Angular para definir la vista de un componente.
@@ -27,17 +27,17 @@ Angular es un framework de desarrollo de aplicaciones web de código abierto, de
   * **Componentes**: Directivas con plantilla.
   * **Directivas Estructurales**: Modifican la estructura del DOM (`*ngIf`, `*ngFor`).
   * **Directivas de Atributo**: Cambian la apariencia o el comportamiento de un elemento (`ngClass`, `ngStyle`).
-* **Servicios**: Clases con lógica de negocio o datos compartidos, que se pueden inyectar en otros componentes o servicios (patrón Singleton por defecto).
+* **Servicios**: Clases con lógica de negocio o datos compartidos, que se pueden inyectar en otros componentes o servicios (patrón [Singleton](/arquitectura/design_patterns/creacionales/singleton "El patrón Singleton es un patrón creacional estructural que garantiza que una clase tenga exactamente una instancia en todo el ciclo de vida de un ámbito definido, y proporciona un punto de acceso global a dicha instancia.") por defecto).
 * **Inyección de Dependencias (DI)**: Un patrón de diseño central en Angular para proporcionar dependencias (servicios) a los componentes de forma declarativa y gestionada.
 * **Routing (Enrutamiento)**: Permite la navegación entre diferentes vistas de la aplicación.
 * **RxJS**: Librería para programación reactiva con JavaScript. Angular la utiliza para manejar eventos asíncronos y flujos de datos.
-* **TypeScript**: Lenguaje primario para escribir aplicaciones Angular, que ofrece tipado estático y características de ESNext.
+* **[TypeScript](/web/general/typescript "TypeScript es una herramienta fundamental en el desarrollo web moderno, especialmente para proyectos a gran escala, ya que añade seguridad de tipo y mejoras en la productividad.")**: Lenguaje primario para escribir aplicaciones Angular, que ofrece tipado estático y características de ESNext.
 
 ---
 
 ## 2. 🛠️ Configuración Inicial (Angular CLI)
 
-Angular CLI (Command Line Interface) es la herramienta oficial para inicializar, desarrollar y mantener aplicaciones Angular.
+Angular CLI ([Command](/arquitectura/design_patterns/comportamiento/command "El patrón Command es un patrón de comportamiento que encapsula una petición o acción como un objeto independiente, desacoplando el emisor de la petición del receptor que la ejecuta.") Line Interface) es la herramienta oficial para inicializar, desarrollar y mantener aplicaciones Angular.
 
 1. **Instalación Global de Angular CLI:**
    ```bash
@@ -224,7 +224,7 @@ Angular soporta varias formas de enlazar datos:
 
 * **Servicios**: Clases con lógica reutilizable. Se marcan con `@Injectable()`.
 * **`@Injectable()`**: Hace que un servicio pueda ser inyectado y también pueda tener otras dependencias inyectadas.
-  * `providedIn: 'root'`: El servicio es un singleton disponible en toda la aplicación (preferido).
+  * `providedIn: 'root'`: El servicio es un [singleton](/arquitectura/design_patterns/creacionales/singleton "El patrón Singleton es un patrón creacional estructural que garantiza que una clase tenga exactamente una instancia en todo el ciclo de vida de un ámbito definido, y proporciona un punto de acceso global a dicha instancia.") disponible en toda la aplicación (preferido).
   * `providedIn: 'platform'`, `'any'`, o un `NgModule` específico (menos común con Standalone Components).
 
 ```typescript
@@ -649,7 +649,7 @@ Angular CLI viene con soporte para Karma (para pruebas de unidad) y Protractor (
 * **Lazy Loading**: Carga módulos (o rutas) solo cuando son necesarios para mejorar los tiempos de carga inicial de la aplicación.
 * **Angular CLI**: Aprende y utiliza los comandos de la CLI; son tus mejores amigos para la productividad.
 * **RxJS Operators**: Familiarízate con los operadores comunes de RxJS (`map`, `filter`, `debounceTime`, `switchMap`, `combineLatest`) para manipular flujos de datos.
-* **Optimización de Rendimiento**: Considera `OnPush` change detection strategy, `trackBy` con `*ngFor`, y lazy loading.
+* **Optimización de Rendimiento**: Considera `OnPush` change detection [strategy](/arquitectura/design_patterns/comportamiento/strategy "El patrón Strategy es un patrón de comportamiento que define una familia de algoritmos intercambiables, los encapsula y los hace sustituibles en tiempo de ejecución sin alterar el código del cliente que los utiliza."), `trackBy` con `*ngFor`, y lazy loading.
 * **Documentación Oficial**: La documentación de Angular es exhaustiva y siempre está actualizada.
 
 ---
