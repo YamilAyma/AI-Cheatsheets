@@ -15,16 +15,16 @@ Aquí tienes un "cheatsheet" completo y bien estructurado de Zustand, optimizado
 
 # 🐻 Zustand Cheatsheet Completo 🐻
 
-**Zustand** es una librería de gestión de estados pequeña y rápida para React y JavaScript/[TypeScript](/web/general/typescript "  TypeScript es una herramienta fundamental en el desarrollo web moderno, especialmente para proyectos a gran escala, ya que añade seguridad de tipo y mejoras en la productividad."). Se basa en una [API](/conocimiento/api "Una API (Application Programming Interface) es un conjunto de reglas, protocolos y herramientas que permite que diferentes aplicaciones de software se comuniquen entre sí.") sencilla con hooks y evita el boilerplate, las inyecciones de proveedores (`Provider`) y el contexto complejo, lo que la hace muy fácil de aprender y usar.
+**Zustand** es una librería de gestión de estados pequeña y rápida para [React](/web/frontend/general/react/react "¡Excelente! React es la biblioteca de JavaScript más popular para construir interfaces de usuario.") y JavaScript/[TypeScript](/web/general/typescript "  TypeScript es una herramienta fundamental en el desarrollo web moderno, especialmente para proyectos a gran escala, ya que añade seguridad de tipo y mejoras en la productividad."). Se basa en una [API](/conocimiento/api "Una API (Application Programming Interface) es un conjunto de reglas, protocolos y herramientas que permite que diferentes aplicaciones de software se comuniquen entre sí.") sencilla con hooks y evita el boilerplate, las inyecciones de proveedores (`Provider`) y el contexto complejo, lo que la hace muy fácil de aprender y usar.
 
 ---
 
 ## 1. 🌟 Conceptos Clave
 
 *   **Store (Tienda)**: Un lugar centralizado donde resides el estado de tu aplicación. En Zustand, cada store es una función creada con `create()`.
-*   **Hooks-based**: Interactúa con el store dentro de componentes React usando hooks generados automáticamente.
+*   **Hooks-based**: Interactúa con el store dentro de componentes [React](/web/frontend/general/react/react "¡Excelente! React es la biblioteca de JavaScript más popular para construir interfaces de usuario.") usando hooks generados automáticamente.
 *   **No Boilerplate**: Mínimo código para configurar y usar.
-*   **No `Provider` Component**: No necesitas envolver tu aplicación con un componente `Provider` (como en Redux o Context API). Los stores se pueden usar directamente en cualquier componente.
+*   **No `Provider` Component**: No necesitas envolver tu aplicación con un componente `Provider` (como en [Redux](/web/frontend/general/react/redux "Redux es una librería de JavaScript para gestionar el estado de la aplicación.") o Context [API](/conocimiento/api "Una API (Application Programming Interface) es un conjunto de reglas, protocolos y herramientas que permite que diferentes aplicaciones de software se comuniquen entre sí.")). Los stores se pueden usar directamente en cualquier componente.
 *   **Estado Inmutable**: Aunque los métodos `set` de Zustand permiten una sintaxis de "mutación" (similar a Immer), internamente garantizan la inmutabilidad creando nuevas copias del estado.
 *   **Direct Access**: Puedes acceder y manipular el estado fuera de los componentes de React, lo que es útil para lógica de negocio en servicios o utilidades.
 
@@ -277,7 +277,7 @@ export default usePersistedStore;
 
 Zustand soporta middlewares para extender la funcionalidad del store. Se aplican envolviendo la función `create` o el `persist` middleware.
 
-*   **`devtools`**: Para integrar con la extensión Redux DevTools.
+*   **`devtools`**: Para integrar con la extensión [Redux](/web/frontend/general/react/redux "Redux es una librería de JavaScript para gestionar el estado de la aplicación.") DevTools.
     ```javascript
     import { create } from 'zustand';
     import { devtools } from 'zustand/middleware';
@@ -317,7 +317,7 @@ Zustand soporta middlewares para extender la funcionalidad del store. Se aplican
 *   **Inmutabilidad**: Aunque `set` y `immer` lo manejan por ti, piensa siempre en términos de inmutabilidad: las acciones "devuelven" un nuevo estado, no modifican el existente.
 *   **Selectores para Optimización**: Siempre que uses `useStore` en un componente, pasa una función selectora para extraer solo las propiedades que necesitas. Usa `shallow` si extraes múltiples propiedades para evitar re-renders innecesarios.
 *   **Separar Acciones y Estado (opcional)**: Para stores grandes, puedes organizar las acciones en un objeto separado y luego esparcirlas en la definición del store.
-*   **TypeScript**: Zustand tiene un excelente soporte de TypeScript. Define las interfaces para tu estado y para la función del store para una experiencia de desarrollo tipo-segura.
+*   **[TypeScript](/web/general/typescript "TypeScript es una herramienta fundamental en el desarrollo web moderno, especialmente para proyectos a gran escala, ya que añade seguridad de tipo y mejoras en la productividad.")**: Zustand tiene un excelente soporte de TypeScript. Define las interfaces para tu estado y para la función del store para una experiencia de desarrollo tipo-segura.
     ```typescript
     // type State = { bears: number; };
     // type Actions = { increasePopulation: () =&gt; void; };
