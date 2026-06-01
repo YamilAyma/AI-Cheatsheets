@@ -1,3 +1,11 @@
+---
+title: "builder"
+description: "El patrón Builder es un patrón creacional que separa la construcción de un objeto complejo de su representación final, permitiendo que el mismo proceso de ensamblaje genere diferentes variantes."
+createdAt: 2026-05-21
+updatedAt: 2026-05-22
+tags: [creacionales]
+icon: "📄"
+---
 # 🏗️ Patrón Builder — Cheatsheet Completo 🏗️
 
 El patrón **Builder** es un patrón creacional que separa la construcción de un objeto complejo de su representación final, permitiendo que el mismo proceso de ensamblaje genere diferentes variantes. Resuelve el problema de los constructores telescópicos, centraliza la validación de configuración progresiva y garantiza inmutabilidad en el producto terminado. Nace para dominar la complejidad de inicialización, evitar estados inválidos intermedios y proporcionar APIs legibles para configuraciones extensas. Este cheatsheet cubre la intención arquitectónica real, contratos de construcción paso a paso, implementaciones multi-paradigma, variantes fluent y funcionales, implicaciones en testing y validación, trampas de estado mutable, y criterios estrictos para decidir cuándo la construcción progresiva es una necesidad del dominio y no un sobre-ingeniería que añade fricción innecesaria.
@@ -124,7 +132,7 @@ public final class ServerConfig {
 
         public Builder host(String h) { this.host = h; return this; }
         public Builder port(int p) {
-            if (p < 1 || p > 65535) throw new IllegalArgumentException("Invalid port");
+            if (p &lt; 1 || p > 65535) throw new IllegalArgumentException("Invalid port");
             this.port = p; return this;
         }
         public Builder ssl(boolean s) { this.ssl = s; return this; }
@@ -226,8 +234,8 @@ class DocumentDirector {
 | Variante | Mecanismo | Caso de uso | Trade-off |
 |----------|-----------|-------------|-----------|
 | **Fluent Builder** | Métodos retornan `this` o nueva instancia inmutable para encadenamiento. | APIs legibles, DSLs internos, configuración progresiva. | Puede ocultar errores de orden si no se valida. |
-| **Static Nested Builder** | Clase interna estática dentro del Product. Encapsula visibilidad y acceso directo. | Java/C#/TS, evitar constructores telescópicos. | Aumenta complejidad de archivos. Dificulta testing aislado si es privado. |
-| **Builder con Validación Estricta** | `build()` lanza excepciones si faltan campos obligatorios o valores están fuera de rango. | Configuraciones de infraestructura, payloads de API, reglas de compliance. | Fail-fast puede ser ruidoso si se usa en exploración temprana. |
+| **Static Nested Builder** | Clase interna estática dentro del Product. Encapsula visibilidad y acceso directo. | [Java](/java/java "Java es un lenguaje de programación de propósito general, concurrente, basado en clases y orientado a objetos.")/C#/TS, evitar constructores telescópicos. | Aumenta complejidad de archivos. Dificulta testing aislado si es privado. |
+| **Builder con Validación Estricta** | `build()` lanza excepciones si faltan campos obligatorios o valores están fuera de rango. | Configuraciones de infraestructura, payloads de [API](/conocimiento/api "Una API (Application Programming Interface) es un conjunto de reglas, protocolos y herramientas que permite que diferentes aplicaciones de software se comuniquen entre sí."), reglas de compliance. | Fail-fast puede ser ruidoso si se usa en exploración temprana. |
 | **Builder Inmutable (Funcional)** | Cada método retorna un nuevo Builder con estado copiado. Sin mutación interna. | Concurrencia, sistemas deterministas, replay/debugging seguro. | Overhead de memoria/CPU por copias. Requiere GC eficiente. |
 | **Builder de Serialización** | Construye objetos desde JSON/XML/DB mediante pasos intermedios de parsing. | Deserialización segura, migración de esquemas, validación de contratos. | Lento para payloads grandes. Puede requerir `transient` fields. |
 | **Step-Enforced Builder (Tipado)** | Usa tipos genéricos para obligar pasos obligatorios antes de `build()`. | APIs donde el orden es crítico (ej. `init()` → `configure()` → `start()`). | Complejidad alta en lenguajes sin generics avanzados. |
@@ -240,7 +248,7 @@ class DocumentDirector {
 |------------------|-------------------|
 | El objeto tiene &gt; 4 parámetros opcionales o combinaciones complejas | El objeto es simple, con 1-2 campos y validación trivial. Usa constructor directo. |
 | Necesitas garantizar inmutabilidad y validación centralizada en `build()` | El rendimiento es crítico en loops tight. El overhead de métodos encadenados impacta. |
-| Quieres evitar el antipatrón de constructores telescópicos | La construcción requiere lógica de negocio compleja. Usa Factory + Strategy. |
+| Quieres evitar el antipatrón de constructores telescópicos | La construcción requiere lógica de negocio compleja. Usa Factory + [Strategy](/arquitectura/design_patterns/comportamiento/strategy "El patrón Strategy es un patrón de comportamiento que define una familia de algoritmos intercambiables, los encapsula y los hace sustituibles en tiempo de ejecución sin alterar el código del cliente que los utiliza."). |
 | El orden de configuración es flexible pero debe validarse al final | El Builder acumula estado global mutable que se filtra entre instancias. |
 | Necesitas generar múltiples representaciones desde el mismo flujo | Ya usas un contenedor DI que inyecta objetos completamente configurados. |
 
@@ -248,8 +256,8 @@ Comparación rápida con patrones creacionales:
 * **Builder**: Construye paso a paso. Enfocado en configuración progresiva, validación y inmutabilidad.
 * **Factory Method**: Delega creación a subclases. Enfocado en selección polimórfica de tipo.
 * **Abstract Factory**: Crea familias relacionadas. Enfocado en compatibilidad cruzada de componentes.
-* **Prototype**: Clona instancias existentes. Enfocado en replicación de estado y aislamiento.
-* **Singleton**: Garantiza unicidad. Enfocado en acceso global controlado.
+* **[Prototype](/arquitectura/design_patterns/creacionales/prototype "El patrón Prototype es un patrón creacional que permite crear nuevos objetos clonando una instancia existente en lugar de instanciarlos desde cero.")**: Clona instancias existentes. Enfocado en replicación de estado y aislamiento.
+* **[Singleton](/arquitectura/design_patterns/creacionales/singleton "El patrón Singleton es un patrón creacional estructural que garantiza que una clase tenga exactamente una instancia en todo el ciclo de vida de un ámbito definido, y proporciona un punto de acceso global a dicha instancia.")**: Garantiza unicidad. Enfocado en acceso global controlado.
 
 ---
 
