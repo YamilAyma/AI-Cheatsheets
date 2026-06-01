@@ -21,7 +21,7 @@ icon: "📄"
 Redux se adhiere a tres principios básicos:
 
 1.  **Única fuente de verdad (Single source of truth)**: El estado de toda tu aplicación se almacena en un solo objeto dentro de un `Store` único.
-2.  **El estado es de solo lectura (State is read-only)**: La única forma de cambiar el estado es emitiendo una `Action`, un objeto que describe lo que sucedió. No puedes modificar el estado directamente.
+2.  **El estado es de solo lectura ([State](/arquitectura/design_patterns/comportamiento/state "El patrón State es un patrón de comportamiento que permite a un objeto alterar su comportamiento cuando su estado interno cambia, haciendo que parezca que el objeto cambia de clase.") is read-only)**: La única forma de cambiar el estado es emitiendo una `Action`, un objeto que describe lo que sucedió. No puedes modificar el estado directamente.
 3.  **Los cambios se realizan con funciones puras (Changes are made with pure functions)**: Para especificar cómo el árbol de estado es transformado por las `Actions`, escribes `Reducers` puros.
 
 ---
@@ -45,7 +45,7 @@ Redux se adhiere a tres principios básicos:
 
 Redux Toolkit (RTK) es el enfoque recomendado y estándar para escribir lógica Redux. Simplifica el boilerplate y añade buenas prácticas.
 
-1.  **Instalación (con React Redux):**
+1.  **Instalación (con [React](/web/frontend/general/react/react "¡Excelente! React es la biblioteca de JavaScript más popular para construir interfaces de usuario.") Redux):**
     ```bash
     npm install @reduxjs/toolkit react-redux
     # o
@@ -65,7 +65,7 @@ Redux Toolkit (RTK) es el enfoque recomendado y estándar para escribir lógica 
       // devTools: process.env.NODE_ENV !== 'production', // Habilitar DevTools solo en desarrollo
     });
     ```
-3.  **Proveer el Store a la Aplicación React (`src/index.js` o `main.jsx`):**
+3.  **Proveer el Store a la Aplicación [React](/web/frontend/general/react/react "¡Excelente! React es la biblioteca de JavaScript más popular para construir interfaces de usuario.") (`src/index.js` o `main.jsx`):**
     ```jsx
     import React from 'react';
     import ReactDOM from 'react-dom/client';
@@ -231,12 +231,12 @@ const usersSlice = createSlice({
     // Reducers síncronos aquí si los hay
   },
   // Extra reducers: para manejar acciones que no están definidas en este slice (ej. acciones de thunks)
-  extraReducers: (builder) =&gt; {
-    builder
-      .addCase(fetchUsers.pending, (state) =&gt; {
-        state.status = 'loading';
+  extraReducers: ([builder](/arquitectura/design_patterns/creacionales/builder "El patrón Builder es un patrón creacional que separa la construcción de un objeto complejo de su representación final, permitiendo que el mismo proceso de ensamblaje genere diferentes variantes.")) =&gt; {
+    [builder](/arquitectura/design_patterns/creacionales/builder "El patrón Builder es un patrón creacional que separa la construcción de un objeto complejo de su representación final, permitiendo que el mismo proceso de ensamblaje genere diferentes variantes.")
+      .addCase(fetchUsers.pending, ([state](/arquitectura/design_patterns/comportamiento/state "El patrón State es un patrón de comportamiento que permite a un objeto alterar su comportamiento cuando su estado interno cambia, haciendo que parezca que el objeto cambia de clase.")) =&gt; {
+        [state](/arquitectura/design_patterns/comportamiento/state "El patrón State es un patrón de comportamiento que permite a un objeto alterar su comportamiento cuando su estado interno cambia, haciendo que parezca que el objeto cambia de clase.").status = 'loading';
       })
-      .addCase(fetchUsers.fulfilled, (state, action) =&gt; {
+      .addCase(fetchUsers.fulfilled, ([state](/arquitectura/design_patterns/comportamiento/state "El patrón State es un patrón de comportamiento que permite a un objeto alterar su comportamiento cuando su estado interno cambia, haciendo que parezca que el objeto cambia de clase."), action) =&gt; {
         state.status = 'succeeded';
         state.list = Array.isArray(action.payload) ? action.payload : [action.payload]; // Asegura que sea un array
       })
