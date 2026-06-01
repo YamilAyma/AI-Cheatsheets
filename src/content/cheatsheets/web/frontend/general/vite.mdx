@@ -1,0 +1,393 @@
+---
+title: "vite"
+description: "Vite es una herramienta de construcción frontend de última generación que combina un servidor de desarrollo ultrarrápido basado en módulos nativos del navegador con un empaquetador de producción optimizado mediante Rollup."
+createdAt: 2026-06-01
+updatedAt: 2026-06-01
+tags: [general]
+icon: "📄"
+---
+# 🎯 Vite — Complete Cheatsheet 🎯
+
+Vite es una herramienta de construcción frontend de última generación que combina un servidor de desarrollo ultrarrápido basado en módulos nativos del navegador con un empaquetador de producción optimizado mediante Rollup. Elimina la espera de rebundling completo durante el desarrollo, entrega HMR de latencia sub-100ms y mantiene bundles de producción altamente optimizados. Este cheatsheet cubre desde la instalación y configuración esencial hasta el sistema de plugins, manejo de entornos, SSR, modo librería, optimización avanzada y patrones de producción. Ideal para desarrolladores que buscan reemplazar Webpack, migrar a ESM nativo o crear nuevos proyectos con tiempos de arranque instantáneos y flujos de trabajo modernos.
+
+---
+
+## 1. 🌟 Conceptos Fundamentales
+
+* **Módulos Nativos ESM**: Vite sirve archivos directamente como `&lt;script type="module"&gt;`. El navegador resuelve imports bajo demanda, sin paso de compilación en dev.
+  * Por qué importa: Arranque instantáneo independiente del tamaño del proyecto.
+* **Pre-bundling de Dependencias**: Usa `esbuild` para convertir dependencias CJS/UMD a ESM y unificar múltiples módulos en un solo archivo caché.
+  * Reduce drásticamente la cantidad de peticiones HTTP y evita parseo de CommonJS en el navegador.
+* **HMR (Hot Module Replacement)**: Reemplaza solo el módulo modificado y sus dependientes sin recargar la página.
+  * Funciona vía WebSockets. Mantiene el estado de la aplicación y el contexto de ejecución.
+* **Rollup para Producción**: El build de producción delega en Rollup para tree-shaking avanzado, code splitting y optimización de assets.
+  * Dev y prod usan pipelines diferentes por diseño: velocidad vs optimización.
+* **Configuración Declarativa**: `vite.config.js` (o `.ts`) centraliza servidor, build, plugins y resolución. Soporta funciones asíncronas y entornos dinámicos.
+* **Aislamiento de Entornos**: Variables de cliente y servidor se separan explícitamente. Solo las prefijadas con `VITE_` se exponen al frontend.
+* **Plugin [API](/conocimiento/api "Una API (Application Programming Interface) es un conjunto de reglas, protocolos y herramientas que permite que diferentes aplicaciones de software se comuniquen entre sí.") Unificada**: Hereda la arquitectura de Rollup pero añade hooks específicos para dev (`handleHotUpdate`, `configureServer`).
+* **Framework Agnostic**: Base neutra que se adapta a [React](/web/frontend/general/react/react "¡Excelente! React es la biblioteca de JavaScript más popular para construir interfaces de usuario."), Vue, [Svelte](/web/frontend/framework/svelte "Svelte es un framework de compilación que traslada el trabajo reactivo a build time, generando código quirúrgico, altamente optimizado y sin Virtual DOM."), Solid, Preact o vanilla JS mediante plugins oficiales.
+
+---
+
+## 2. 🛠️ Instalación y Estructura
+
+* **Creación rápida con scaffolding**:
+  ```bash
+  npm create vite@latest my-app -- --template react
+  # Opciones: vanilla, vue, svelte, preact, solid, lit, qwik, react-ts, etc.
+  cd my-app
+  npm install
+  ```
+* **Instalación manual en proyecto existente**:
+  ```bash
+  npm install -D vite
+  # package.json scripts:
+  # "dev": "vite", "build": "vite build", "preview": "vite preview"
+  ```
+* **Estructura de proyecto estándar**:
+  ```
+  my-app/
+  ├── index.html          # Entry point real (NO está en src/)
+  ├── vite.config.ts      # Configuración principal
+  ├── package.json
+  ├── src/
+  │   ├── main.js         # Punto de entrada JS/TS
+  │   ├── App.jsx         # Componente raíz
+  │   └── assets/         # Imágenes, fuentes, estilos
+  ├── public/             # Assets estáticos (copiados sin transformación)
+  └── dist/               # Output de build (generado)
+  ```
+* **`index.html` como módulo raíz**:
+  ```html
+  &lt;!DOCTYPE html&gt;
+  &lt;html lang="es"&gt;
+    &lt;head&gt;
+      &lt;meta charset="UTF-8"&gt;
+      &lt;title&gt;Mi App Vite&lt;/title&gt;
+    &lt;/head&gt;
+    &lt;body&gt;
+      &lt;div id="app"&gt;&lt;/div&gt;
+      &lt;!-- Vite intercepta esta ruta y sirve main.js como ESM --&gt;
+      &lt;script type="module" src="/src/main.js"&gt;&lt;/script&gt;
+    &lt;/body&gt;
+  &lt;/html&gt;
+  ```
+
+---
+
+## 3. 📝 CLI y Comandos Esenciales
+
+| Comando | Descripción | Flags comunes |
+|---------|-------------|---------------|
+| `vite` | Inicia servidor de desarrollo | `--host`, `--port`, `--open`, `--strictPort` |
+| `vite build` | Compila para producción | `--outDir`, `--emptyOutDir`, `--sourcemap`, `--minify` |
+| `vite preview` | Sirve `dist/` localmente | `--port`, `--strictPort`, `--host` |
+| `vite optimize` | Fuerza re-bundling de dependencias | `--force` |
+
+* **Flags de servidor útiles**:
+  ```bash
+  vite --host 0.0.0.0 --port 3000 --open --strictPort
+  # Exponer en red, puerto fijo, abrir navegador, rechazar si puerto ocupado
+  ```
+* **Modos y perfiles**:
+  ```bash
+  vite build --mode staging   # Carga .env.staging
+  vite --mode production      # Fuerza producción en dev (útil para debug)
+  ```
+* **Limpieza de caché**:
+  ```bash
+  rm -rf node_modules/.vite   # Forzar recompilación de dependencias
+  vite optimize --force       # Reconstruir pre-bundle manualmente
+  ```
+
+---
+
+## 4. ⚙️ Configuración (`vite.config.js`)
+
+* **Estructura básica con [TypeScript](/web/general/typescript "TypeScript es una herramienta fundamental en el desarrollo web moderno, especialmente para proyectos a gran escala, ya que añade seguridad de tipo y mejoras en la productividad.")**:
+  ```ts
+  import { defineConfig } from 'vite'
+  import react from '@vitejs/plugin-react'
+
+  export default defineConfig({
+    plugins: [react()],
+    root: '.',                 // Directorio base (default: '.')
+    base: '/my-app/',          // Ruta pública base (CDN o subpath)
+    publicDir: 'public',       // Assets estáticos
+    clearScreen: true,         // Limpiar terminal al reiniciar
+    logLevel: 'info',          // 'info' | 'warn' | 'error' | 'silent'
+  })
+  ```
+* **Configuración del servidor (`server`)**:
+  ```ts
+  server: {
+    port: 5173,
+    strictPort: true,
+    host: true,                // '0.0.0.0' o 'localhost'
+    open: '/dashboard',        // Ruta inicial al abrir navegador
+    proxy: {
+      '/api': {
+        target: 'https://backend.dev',
+        changeOrigin: true,
+        secure: false,
+        rewrite: (path) =&gt; path.replace(/^\/api/, ''),
+      },
+    },
+    cors: true,
+    fs: { strict: true },      // Evitar acceso fuera de raíz del proyecto
+    watch: { ignored: ['**/node_modules/**', '**/.git/**'] },
+  }
+  ```
+* **Configuración de build (`build`)**:
+  ```ts
+  build: {
+    target: 'es2020',          // Target de transpilación
+    outDir: 'dist',
+    assetsDir: 'assets',
+    sourcemap: false,          // true | 'inline' | 'hidden'
+    minify: 'esbuild',         // 'esbuild' | 'terser' | false
+    cssCodeSplit: true,        // Dividir CSS por chunk
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          if (id.includes('node_modules/lodash')) return 'vendor-lodash'
+          if (id.includes('node_modules/moment')) return 'vendor-moment'
+        },
+        chunkFileNames: 'js/[name]-[hash].js',
+        assetFileNames: 'assets/[name]-[hash][extname]',
+      },
+    },
+  }
+  ```
+* **Resolución y CSS (`resolve` / `css`)**:
+  ```ts
+  resolve: {
+    alias: {
+      '@': path.resolve(__dirname, 'src'),
+      '@utils': path.resolve(__dirname, 'src/utils'),
+    },
+    extensions: ['.mjs', '.js', '.ts', '.jsx', '.tsx', '.json'],
+  },
+  css: {
+    preprocessorOptions: {
+      scss: { additionalData: '@import "src/styles/variables.scss";' },
+    },
+    modules: { localsConvention: 'camelCase' },
+    devSourcemap: true,
+  },
+  ```
+
+---
+
+## 5. 🔌 Sistema de Plugins
+
+* **Plugins oficiales**: `@vitejs/plugin-react`, `@vitejs/plugin-vue`, `@vitejs/plugin-legacy`, `@vitejs/plugin-basic-ssl`.
+* **Comunidad popular**: `vite-plugin-pwa`, `vite-plugin-svg-icons`, `unplugin-vue-components`, `vite-plugin-inspect`.
+* **Hook de configuración (`config`)**:
+  ```ts
+  export default {
+    name: 'vite-plugin-env-prefix',
+    config(config) {
+      return { define: { __APP_VERSION__: JSON.stringify('1.0.0') } }
+    },
+  }
+  ```
+* **Transformación de archivos (`transform`)**:
+  ```ts
+  transform(code, id) {
+    if (!id.endsWith('.md')) return
+    // Convertir Markdown a componente JS
+    const html = markdownToHtml(code)
+    return `export default function Markdown() { return \`${html}\` }`
+  }
+  ```
+* **Interceptar módulos no existentes (`load`)**:
+  ```ts
+  load(id) {
+    if (id === 'virtual:config') {
+      return `export const config = { theme: 'dark', lang: 'es' }`
+    }
+  }
+  ```
+* **Orden de ejecución**: Plugins se ejecutan en el orden definido. Los hooks `config` se resuelven en orden inverso para permitir sobrescritura. `enforce: 'pre'` o `enforce: 'post'` controla prioridad explícita.
+* **Dev-only vs Prod-only**:
+  ```ts
+  // Solo en dev
+  configureServer(server) { /* middleware express/connect */ }
+  // Solo en build
+  generateBundle(options, bundle) { /* manipular archivos finales */ }
+  ```
+
+---
+
+## 6. 🌍 Variables de Entorno y Modo
+
+* **Archivos `.env` soportados**:
+  | Archivo | Modo | Uso |
+  |---------|------|-----|
+  | `.env` | Todos | Valores compartidos |
+  | `.env.local` | Todos | Ignorado por [git](/herramientas/git/git "Git es un sistema de control de versiones distribuido (DVCS) diseñado para manejar proyectos pequeños o muy grandes con velocidad y eficiencia."), overrides locales |
+  | `.env.production` | `production` | Solo build/prod |
+  | `.env.development` | `development` | Solo dev |
+  | `.env.staging` | `staging` | `--mode staging` |
+
+* **Prefijo de seguridad**: Solo variables con `VITE_` se exponen al cliente.
+  ```env
+  # .env
+  VITE_API_URL=https://api.prod.com
+  DATABASE_SECRET=supersecret  # ❌ No llega al frontend
+  VITE_FEATURE_FLAG=true
+  ```
+* **Acceso en código**:
+  ```ts
+  const apiUrl = import.meta.env.VITE_API_URL
+  const isProd = import.meta.env.PROD      // true si mode === 'production'
+  const isDev = import.meta.env.DEV        // true si mode === 'development'
+  const mode = import.meta.env.MODE        // string del modo activo
+  ```
+* **Inyección en HTML**:
+  ```html
+  &lt;!-- Disponible en index.html --&gt;
+  &lt;title&gt;%VITE_APP_NAME%&lt;/title&gt;
+  &lt;meta name="description" content="%VITE_APP_DESC%"&gt;
+  ```
+* **Definición compile-time (`define`)**:
+  ```ts
+  define: {
+    __BUILD_TIME__: JSON.stringify(new Date().toISOString()),
+    __DEBUG__: process.env.NODE_ENV !== 'production',
+  }
+  // Se reemplaza estáticamente en el bundle (no es runtime)
+  ```
+
+---
+
+## 7. 📦 SSR y Modo Librería
+
+* **Build de librería (`build.lib`)**:
+  ```ts
+  build: {
+    lib: {
+      entry: path.resolve(__dirname, 'src/index.ts'),
+      name: 'MyLib',
+      formats: ['es', 'umd'],
+      fileName: (format) =&gt; `my-lib.${format}.js`,
+    },
+    rollupOptions: {
+      external: ['react', 'react-dom'],
+      output: { globals: { react: 'React', 'react-dom': 'ReactDOM' } },
+    },
+  }
+  ```
+* **Renderizado del lado del servidor (SSR)**:
+  ```bash
+  vite build --ssr src/entry-server.ts --outDir dist-server
+  ```
+  ```ts
+  build: {
+    ssr: true,
+    rollupOptions: { input: 'src/entry-server.ts' },
+  }
+  ```
+* **Hidratación básica**:
+  ```ts
+  // entry-server.ts
+  import { renderToString } from 'react-dom/server'
+  export function render(url) {
+    const html = renderToString(&lt;App /&gt;)
+    return `&lt;div id="app"&gt;${html}&lt;/div&gt;`
+  }
+  ```
+* **Externals en SSR**: `ssr.noExternal: ['my-local-pkg']` fuerza incluir dependencias en el bundle del servidor. Default: externaliza todo `node_modules`.
+* **Dynamic Imports para SSR**:
+  ```ts
+  const { default: component } = await import(`./pages/${route}.tsx`)
+  // Vite resuelve rutas dinámicas estáticamente durante build
+  ```
+
+---
+
+## 8. ⚡ Optimización y Rendimiento
+
+* **Pre-bundling optimizado (`optimizeDeps`)**:
+  ```ts
+  optimizeDeps: {
+    include: ['lodash/debounce', 'chart.js'],
+    exclude: ['my-local-package'],
+    esbuildOptions: { target: 'es2022', jsx: 'automatic' },
+  }
+  ```
+* **Code Splitting manual**:
+  ```ts
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          if (id.includes('node_modules')) {
+            return 'vendor'
+          }
+          if (id.includes('/pages/')) {
+            const page = id.split('/pages/')[1].split('.')[0]
+            return `page-${page}`
+          }
+        },
+      },
+    },
+  }
+  ```
+* **Precalentamiento de rutas (`server.warmup`)**:
+  ```ts
+  server: {
+    warmup: {
+      clientFiles: ['./src/components/**/*', './src/styles/main.css'],
+      ssrFiles: ['./src/server/api.ts'],
+    },
+  }
+  // Reduce latencia de primer request al transformar módulos críticos
+  ```
+* **Caché de transformaciones**: Vite cachea resultados en `node_modules/.vite`. Limpiar si hay corrupción o cambios drásticos de configuración.
+* **Assets grandes y `limit`**:
+  ```ts
+  build: {
+    assetsInlineLimit: 4096, // &gt;= 4KB se convierte en URL, &lt; se inlines como base64
+  }
+  ```
+* **Tree-shaking en dev**: Vite no hace tree-shaking en dev por diseño. Para validar eliminación de código, usar `vite build --watch` o `rollup-plugin-visualizer`.
+
+---
+
+## 9. ⚠️ Errores Comunes y Trampas
+
+* **Filtrar variables sin prefijo `VITE_`**: `API_KEY` no llega al frontend.
+  * Fix: Renombrar a `VITE_API_KEY` o usar `define` para compile-time.
+* **HMR no actualiza archivos no importados**: Vite solo rastrea el grafo de módulos ESM. Archivos en `public/` o inyectados dinámicamente sin `import` no disparan HMR.
+  * Fix: Importar explícitamente o usar `import.meta.hot.accept()` manual.
+* **Confusión entre `base` y `publicDir`**: `base` cambia rutas en build. `publicDir` copia archivos tal cual a `dist/`. Usar `base` para subpaths, no para assets estáticos relativos.
+  * Fix: Referenciar assets públicos con `/img/logo.png` (ruta absoluta), no `./img/logo.png`.
+* **Plugins en orden incorrecto**: Un plugin que transforma `.vue` debe ejecutarse antes de uno que analiza JSX.
+  * Fix: Usar `enforce: 'pre'` / `enforce: 'post'` y verificar `@rollup/pluginutils` order.
+* **Dependencias CJS rotas en dev**: Algunos paquetes usan `require()` en archivos no empaquetados.
+  * Fix: Agregar a `optimizeDeps.include` o reportar issue al autor para migrar a ESM.
+* **SSR Hydration Mismatch**: HTML generado en servidor difiere del cliente (fechas, random, `window` checks).
+  * Fix: Envolver lógica no-determinista en `useEffect` o `onMounted`. Validar `typeof window !== 'undefined'`.
+* **Dev-only code en producción**: `console.log` o `debugger` no se eliminan automáticamente si no usan `import.meta.env.DEV`.
+  * Fix: Envolver con `if (import.meta.env.DEV) { ... }` para tree-shaking seguro.
+
+---
+
+## 10. 💡 Mejores Prácticas y Consejos de Experto
+
+* **Usa `defineConfig` con TypeScript**: Habilita autocompletado, validación de tipos y detección temprana de configuraciones inválidas.
+* **Prefiere ESM nativo en dependencias**: Evita `cjs` siempre que sea posible. Si es inevitable, usa `optimizeDeps` y reporta a los mantenedores.
+* **Configura `server.watch` para monorepos**: Si usas workspaces, añade `ignored: ['!**/node_modules/my-internal-lib/**']` para que Vite observe cambios en paquetes locales.
+* **Valida el build de producción temprano**: Ejecuta `vite build` en CI antes de mergear. Dev y prod son pipelines distintos; errores de tree-shaking o externalización solo aparecen en build.
+* **Usa `vite-plugin-inspect` para debug**: Visualiza el grafo de módulos, transformaciones y tiempos de compilación en tiempo real. Invaluable para optimizar plugins lentos.
+* **Sustituye Webpack aliases con `resolve.alias`**: Mantén rutas cortas y consistentes. Usa `@` para `src/` y evitas `../../../` hell.
+* **Integra [Vitest](/web/frontend/testing/vitest "Vitest es un framework de testing nativo de Vite diseñado para velocidad extrema, compatibilidad con Jest y soporte de primera clase para ESM, TypeScript y JSX.") nativamente**: Compartir configuración de Vite con Vitest garantiza consistencia en resolución, alias y plugins entre app y tests.
+* **Evita transforms pesados en dev**: Plugins que ejecutan compiladores completos (ej. `sass`, `stylus`, `swc` custom) ralentizan HMR. Cachea resultados o usa alternativas nativas cuando sea posible.
+* **Perfila con `rollup-plugin-visualizer`**: Genera treemap del bundle final. Identifica dependencias ocultas, duplicados o chunks innecesarios antes de deploy.
+* **Documenta `VITE_` env vars en `.env.example`**: Centraliza la configuración requerida. Usa `zod` o `valibot` en `main.ts` para validar variables al inicio de la app y fallar rápido si faltan.
+
+---
+
+Este cheatsheet proporciona una referencia completa para Vite, cubriendo arquitectura ESM nativa, configuración avanzada, sistema de plugins, manejo de entornos, SSR y modo librería, optimización de builds y patrones de producción, junto con las mejores prácticas para mantener flujos de trabajo rápidos, seguros y escalables en entornos frontend modernos.
