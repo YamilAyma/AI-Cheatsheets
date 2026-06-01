@@ -1,6 +1,6 @@
 ---
 title: "JS/TS Scripting con Bun y Deno"
-description: "Scripting moderno con JavaScript y TypeScript usando Bun y Deno: ejecución directa de TS, shell nativo, APIs de sistema de archivos, HTTP y compilación a ejecutables autónomos."
+description: "Bun y Deno han transformado JavaScript y TypeScript en lenguajes de primera clase para el scripting de sistemas, eliminando la fricción histórica de Node.js (necesidad de compilar TS, node_modules, configuraciones complejas)."
 createdAt: 2026-05-20
 updatedAt: 2026-05-20
 tags: [javascript, typescript, bun, deno, scripting, automatizacion, cli, zx]
@@ -9,13 +9,13 @@ icon: "⚡"
 
 # ⚡ Scripting Moderno con JS/TS (Bun & Deno) — Cheatsheet Completo ⚡
 
-**Bun** y **Deno** han transformado JavaScript y TypeScript en lenguajes de primera clase para el scripting de sistemas, eliminando la fricción histórica de Node.js (necesidad de compilar TS, node_modules, configuraciones complejas). **Bun** es un runtime ultrarrápido (escrito en Zig sobre JavaScriptCore) con un shell JavaScript integrado, gestor de paquetes, bundler y test runner en un solo binario. **Deno** (creado por el autor original de Node.js, Ryan Dahl) es un runtime seguro por defecto con soporte nativo de TypeScript, URLs como imports y permisos explícitos. Junto con **zx** (la librería de Google para scripting Bash-like en JS), estas herramientas permiten escribir scripts de automatización robustos, tipados y mantenibles que escalan mucho mejor que los scripts Bash tradicionales.
+**Bun** y **Deno** han transformado JavaScript y [TypeScript](/web/general/typescript "TypeScript es una herramienta fundamental en el desarrollo web moderno, especialmente para proyectos a gran escala, ya que añade seguridad de tipo y mejoras en la productividad.") en lenguajes de primera clase para el scripting de sistemas, eliminando la fricción histórica de Node.js (necesidad de compilar TS, node_modules, configuraciones complejas). **Bun** es un runtime ultrarrápido (escrito en Zig sobre JavaScriptCore) con un shell JavaScript integrado, gestor de paquetes, bundler y test runner en un solo binario. **Deno** (creado por el autor original de Node.js, Ryan Dahl) es un runtime seguro por defecto con soporte nativo de TypeScript, URLs como imports y permisos explícitos. Junto con **zx** (la librería de Google para scripting [Bash](/devops/bash "Bash (Bourne Again Shell) es un shell de Unix y lenguaje de comandos compatible con POSIX.")-like en JS), estas herramientas permiten escribir scripts de automatización robustos, tipados y mantenibles que escalan mucho mejor que los scripts Bash tradicionales.
 
 ---
 
 ## 1. 🌟 Conceptos Clave y Fundamentos
 
-* **TypeScript sin compilación**: Tanto Bun como Deno ejecutan `.ts` directamente, sin `tsc` ni configuraciones de build.
+* **[TypeScript](/web/general/typescript "TypeScript es una herramienta fundamental en el desarrollo web moderno, especialmente para proyectos a gran escala, ya que añade seguridad de tipo y mejoras en la productividad.") sin compilación**: Tanto Bun como Deno ejecutan `.ts` directamente, sin `tsc` ni configuraciones de build.
 * **Bun Shell (`$`)**: Bun expone un template literal `$` que ejecuta comandos de shell y retorna objetos JavaScript, no strings de texto.
 * **Permisos en Deno**: Por defecto, Deno deniega acceso a red, archivos y variables de entorno. Debes conceder permisos explícitamente con flags (`--allow-net`, `--allow-read`, `--allow-env`).
 * **Importaciones nativas ESM**: Deno usa URLs como imports. Bun usa el sistema de módulos de Node pero admite URLs también.
@@ -99,7 +99,7 @@ zx mi_script.mjs
 
 ## 3. 🐚 Bun Shell — El Super Poder de Bun
 
-El Bun Shell permite ejecutar comandos como si estuvieras en Bash, pero con la potencia de TypeScript.
+El Bun Shell permite ejecutar comandos como si estuvieras en [Bash](/devops/bash "Bash (Bourne Again Shell) es un shell de Unix y lenguaje de comandos compatible con POSIX."), pero con la potencia de TypeScript.
 
 ```typescript
 import { $ } from "bun";
@@ -270,7 +270,7 @@ Bun.serve({
 });
 
 // Deno:
-Deno.serve({ port: 3000 }, (req) => {
+Deno.serve({ port: 3000 }, (req) =&gt; {
     return new Response(JSON.stringify({ status: "ok" }), {
         headers: { "Content-Type": "application/json" }
     });
@@ -418,17 +418,17 @@ deno compile --target aarch64-apple-darwin      --output mi-herramienta-mac   ./
 
 import { expect, test, describe, beforeAll, afterAll } from "bun:test";
 
-describe("procesarCSV", () => {
-    beforeAll(async () => {
+describe("procesarCSV", () =&gt; {
+    beforeAll(async () =&gt; {
         // Setup
     });
 
-    test("debe retornar array vacío para archivo vacío", async () => {
+    test("debe retornar array vacío para archivo vacío", async () =&gt; {
         const resultado = await procesarCSV("");
         expect(resultado).toBeArrayOfSize(0);
     });
 
-    test("debe contar filas correctamente", async () => {
+    test("debe contar filas correctamente", async () =&gt; {
         const csv = "nombre,email\nJuan,juan@e.com\nAna,ana@e.com";
         const resultado = await procesarCSV(csv);
         expect(resultado).toHaveLength(2);
@@ -445,11 +445,11 @@ describe("procesarCSV", () => {
 // archivo: mi-script_test.ts
 import { assertEquals, assertExists } from "https://deno.land/std/assert/mod.ts";
 
-Deno.test("suma correctamente", () => {
+Deno.test("suma correctamente", () =&gt; {
     assertEquals(1 + 1, 2);
 });
 
-Deno.test("fetch de la API", async () => {
+Deno.test("fetch de la API", async () =&gt; {
     const datos = await obtenerDatos();
     assertExists(datos.id);
 });
@@ -486,7 +486,7 @@ Deno.test("fetch de la API", async () => {
 
 * **TypeScript estricto desde el inicio**: Agrega `"strict": true` en `tsconfig.json`. El overhead de tipado se paga por sí solo en la reducción de bugs en scripts de automatización críticos.
 
-* **Valida variables de entorno al inicio del script con zod**:
+* **Valida variables de entorno al inicio del script con [zod](/web/frontend/general/zod "¡Absolutamente! Zod es una librería increíble para la validación de esquemas y tipos en TypeScript/JavaScript, famosa por su simplicidad y excelente inferencia de tipos.")**:
 ```typescript
 import { z } from "zod";
 const env = z.object({
@@ -499,7 +499,7 @@ const env = z.object({
 * **Usa `AbortController` para timeouts**:
 ```typescript
 const controller = new AbortController();
-const timeout = setTimeout(() => controller.abort(), 10_000);
+const timeout = setTimeout(() =&gt; controller.abort(), 10_000);
 try {
     const resp = await fetch(url, { signal: controller.signal });
 } finally {
