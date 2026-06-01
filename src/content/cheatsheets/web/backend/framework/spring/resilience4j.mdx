@@ -26,7 +26,7 @@ icon: "📄"
 *   **Retry (Reintento)**: Un patrón para reintentar automáticamente una operación fallida, especialmente útil para fallos transitorios.
 *   **Bulkhead (Mamparo)**: Un patrón que aísla los recursos del sistema, de modo que un fallo en un componente no derribe todo el sistema.
 *   **Time Limiter (Limitador de Tiempo)**: Un patrón que establece un límite de tiempo para que una operación se complete, cancelándola si excede el tiempo.
-*   **Decoración de Funciones**: Resilience4j funciona decorando funciones Java (lambdas, `Callable`, `Supplier`, `Function`, `Consumer`, etc.) para aplicar los patrones.
+*   **Decoración de Funciones**: Resilience4j funciona decorando funciones [Java](/java/java "Java es un lenguaje de programación de propósito general, concurrente, basado en clases y orientado a objetos.") (lambdas, `Callable`, `Supplier`, `Function`, `Consumer`, etc.) para aplicar los patrones.
 
 ---
 
@@ -360,7 +360,7 @@ public class FunctionalDecoratorsExample {
 *   **Configura `failureRateThreshold` y `waitDurationInOpenState` Cuidadosamente**: Estos son los parámetros más importantes del Circuit Breaker para evitar disparos falsos y permitir una recuperación adecuada.
 *   **Define Fallback Methods**: Siempre proporciona un método fallback para tus operaciones protegidas. Debe ser rápido, no lanzar excepciones y devolver una respuesta por defecto o en caché.
 *   **Granularidad de Instancias**: Crea instancias separadas de cada patrón de resiliencia para cada servicio externo o componente crítico con el que interactúas.
-*   **Usa Anotaciones en Spring Boot**: Son más concisas y legibles que los decoradores funcionales para la mayoría de los casos.
+*   **Usa Anotaciones en [Spring Boot](/web/backend/framework/spring/spring-boot "¡Absolutamente! Spring Boot es un framework increíble para construir aplicaciones Java robustas y de alto rendimiento de manera rápida y eficiente.")**: Son más concisas y legibles que los decoradores funcionales para la mayoría de los casos.
 *   **Monitorea tus Métricas**: Es crucial monitorear los estados de tus Circuit Breakers, la tasa de uso de tus Rate Limiters, y el rendimiento de tus retries para entender cómo se está comportando tu sistema.
 *   **Combinación de Patrones**: Los patrones de resiliencia a menudo se combinan:
     *   **Retry + Circuit Breaker**: Reintentar primero un par de veces para fallos transitorios, luego el Circuit Breaker entra en acción si los reintentos fallan persistentemente.
@@ -372,4 +372,4 @@ public class FunctionalDecoratorsExample {
 
 ---
 
-Este cheatsheet te proporciona una referencia completa de Resilience4j, cubriendo sus conceptos esenciales de resiliencia, cómo configurarlo en Spring Boot, el uso de sus anotaciones en código Java, las métricas clave y las mejores prácticas para construir microservicios robustos y tolerantes a fallos.
+Este cheatsheet te proporciona una referencia completa de Resilience4j, cubriendo sus conceptos esenciales de resiliencia, cómo configurarlo en [Spring Boot](/web/backend/framework/spring/spring-boot "¡Absolutamente! Spring Boot es un framework increíble para construir aplicaciones Java robustas y de alto rendimiento de manera rápida y eficiente."), el uso de sus anotaciones en código [Java](/java/java "Java es un lenguaje de programación de propósito general, concurrente, basado en clases y orientado a objetos."), las métricas clave y las mejores prácticas para construir microservicios robustos y tolerantes a fallos.
