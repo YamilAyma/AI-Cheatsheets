@@ -1,3 +1,11 @@
+---
+title: "singleton"
+description: "El patrón Singleton es un patrón creacional estructural que garantiza que una clase tenga exactamente una instancia en todo el ciclo de vida de un ámbito definido, y proporciona un punto de acceso global a dicha instancia."
+createdAt: 2026-05-21
+updatedAt: 2026-05-21
+tags: [creacionales]
+icon: "📄"
+---
 # 🎯 Patrón Singleton — Cheatsheet Completo 🎯
 
 El patrón **Singleton** es un patrón creacional estructural que garantiza que una clase tenga **exactamente una instancia** en todo el ciclo de vida de un ámbito definido, y proporciona un **punto de acceso global** a dicha instancia. Nace para coordinar recursos compartidos, centralizar configuraciones inmutables o gestionar sistemas donde la multiplicidad de objetos rompería la coherencia del dominio. Este cheatsheet desglosa la intención arquitectónica real del patrón, sus mecanismos de implementación multi-paradigma, implicaciones en testing y mantenibilidad, variantes seguras para entornos concurrentes, y alternativas modernas que mitigan sus riesgos inherentes de acoplamiento oculto y estado global no controlado.
@@ -64,10 +72,10 @@ En entornos concurrentes, esta versión básica falla. Se requiere sincronizaci�
 | **Lazy Básico** | `if (instance == null) instance = new();` | Ahorro de recursos si no se usa. | No es thread-safe. Condiciones de carrera en multi-hilo. |
 | **Double-Checked Locking** | Verificación rápida + bloque sincronizado + verificación interna. | Seguro y eficiente. Minimiza contención de hilos. | Complejidad aumentada. Requiere `volatile` o equivalente en algunos lenguajes. |
 | **Holder/Inner Class** | Clase interna estática que instancia al ser referenciada. | Lazy + thread-safe sin `synchronized` explícito. | Depende del cargador de clases del runtime. Menos legible. |
-| **Enum (Java)** | `enum Singleton { INSTANCE; }` | Thread-safe, serializable, reflexión bloqueada por diseño. | Limitado a Java/Kotlin. No soporta parámetros de construcción complejos. |
-| **Cache de Módulo (JS/Python/Go)** | `export const x = new X()` o `x = X()` a nivel de módulo. | Garantizado por especificación del loader. Simple y performante. | Dificulta mocking en tests. Recarga manual necesaria en algunos entornos. |
+| **Enum ([Java](/java/java "Java es un lenguaje de programación de propósito general, concurrente, basado en clases y orientado a objetos."))** | `enum Singleton { INSTANCE; }` | Thread-safe, serializable, reflexión bloqueada por diseño. | Limitado a Java/Kotlin. No soporta parámetros de construcción complejos. |
+| **Cache de Módulo (JS/[Python](/python/python "Python es un lenguaje de programación de alto nivel, interpretado, interactivo y orientado a objetos.")/Go)** | `export const x = new X()` o `x = X()` a nivel de módulo. | Garantizado por especificación del loader. Simple y performante. | Dificulta mocking en tests. Recarga manual necesaria en algunos entornos. |
 
-Implementación segura con Double-Checked Locking (C#/Java-like):
+Implementación segura con Double-Checked Locking (C#/[Java](/java/java "Java es un lenguaje de programación de propósito general, concurrente, basado en clases y orientado a objetos.")-like):
 ```csharp
 public sealed class ConnectionPool {
     private static volatile ConnectionPool _instance;
@@ -232,7 +240,7 @@ Cuándo migrar: Si el singleton crece &gt; 300 líneas, tiene &gt; 5 responsabil
 * **Evita Lógica de Negocio**: Un singleton debe ser un **coordinador de acceso**, no un procesador de reglas. Delega complejidad a servicios con responsabilidad única.
 * **Implementa `reset()` para Entornos de Prueba**: Facilita el aislamiento de tests sin recurrir a reflexión agresiva o recarga de módulos.
 * **Monitorea el Ciclo de Vida**: En aplicaciones de larga ejecución, registra métricas de creación, uso y disposición. Un singleton que nunca se libera es una fuga de memoria garantizada.
-* **Considera el Patrón `Lazy` del Lenguaje**: C#, Rust, Go y Kotlin ofrecen primitivas seguras para inicialización diferida thread-safe. Úsalas en lugar de reinventar locking manual.
+* **Considera el Patrón `Lazy` del Lenguaje**: C#, [Rust](/rust/rust "Rust es un lenguaje de programación de sistemas enfocado en seguridad, concurrencia y rendimiento sin recolector de basura (GC)."), Go y Kotlin ofrecen primitivas seguras para inicialización diferida thread-safe. Úsalas en lugar de reinventar locking manual.
 * **Valida en Tiempo de Compilación**: Usa analizadores estáticos o linters para detectar accesos directos a `getInstance()` en capas de dominio. Fuerza la inyección en la capa de aplicación.
 * **No lo uses "por si acaso"**: La tentación de centralizar "por facilidad" es el origen de arquitecturas rígidas. Aplica el patrón solo cuando la unicidad sea una **restricción inmutable del sistema**, no una conveniencia de implementación.
 
