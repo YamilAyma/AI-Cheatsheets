@@ -1,6 +1,6 @@
 ---
 title: "Perl"
-description: "Perl es el lenguaje pionero del scripting de administración de sistemas Unix, legendario por su procesamiento de texto y expresiones regulares avanzadas. Fundamental para mantener infraestructura legacy."
+description: "Perl (Practical Extraction and Report Language) fue creado por Larry Wall en 1987 y se convirtió en el lenguaje de referencia para la administración de sistemas Unix, el procesamiento de archivos de texto, la generación de reportes y el scripting de red antes de la popularización de Python."
 createdAt: 2026-05-20
 updatedAt: 2026-05-20
 tags: [perl, scripting, linux, regex, text-processing, sysadmin, legacy]
@@ -9,7 +9,7 @@ icon: "🐪"
 
 # 🐪 Perl — Cheatsheet Completo 🐪
 
-**Perl** (Practical Extraction and Report Language) fue creado por Larry Wall en 1987 y se convirtió en el lenguaje de referencia para la administración de sistemas Unix, el procesamiento de archivos de texto, la generación de reportes y el scripting de red antes de la popularización de Python. Con el lema *"There's more than one way to do it"* (TMTOWTDI), Perl es famoso por su potentísimo sistema de expresiones regulares (que sirvió de base a las PCRE usadas en casi todos los lenguajes modernos), su versatilidad en el procesamiento de registros y campos, y su presencia ubicua en servidores Linux de producción, sistemas de monitoreo, pipelines de bioinformática y código heredado de las eras 90s-2000s. Saber leer y mantener Perl es una habilidad valiosa en cualquier equipo de operaciones o SRE.
+**Perl** (Practical Extraction and Report Language) fue creado por Larry Wall en 1987 y se convirtió en el lenguaje de referencia para la administración de sistemas Unix, el procesamiento de archivos de texto, la generación de reportes y el scripting de red antes de la popularización de [Python](/python/python "Python es un lenguaje de programación de alto nivel, interpretado, interactivo y orientado a objetos."). Con el lema *"There's more than one way to do it"* (TMTOWTDI), Perl es famoso por su potentísimo sistema de expresiones regulares (que sirvió de base a las PCRE usadas en casi todos los lenguajes modernos), su versatilidad en el procesamiento de registros y campos, y su presencia ubicua en servidores Linux de producción, sistemas de monitoreo, pipelines de bioinformática y código heredado de las eras 90s-2000s. Saber leer y mantener Perl es una habilidad valiosa en cualquier equipo de operaciones o SRE.
 
 ---
 
@@ -17,8 +17,8 @@ icon: "🐪"
 
 * **Tres tipos de variables (sigils)**: Los sigils (`$`, `@`, `%`) identifican el tipo de variable. `$` para escalares, `@` para arrays, `%` para hashes. El sigil cambia dependiendo del contexto de acceso.
 * **Contexto (escalar vs lista)**: Perl evalúa expresiones diferente según el contexto. En contexto escalar, `@array` retorna su longitud. En contexto lista, retorna sus elementos.
-* **Variable implícita `$_`**: El comodín de Perl. Muchas funciones y construcciones actúan sobre `$_` si no se especifica una variable: `while (<>)` guarda cada línea en `$_`.
-* **`<>` (diamond operator)**: Lee desde STDIN o desde los archivos pasados como argumentos. La base de los filtros Unix en Perl.
+* **Variable implícita `$_`**: El comodín de Perl. Muchas funciones y construcciones actúan sobre `$_` si no se especifica una variable: `while (&lt;>)` guarda cada línea en `$_`.
+* **`&lt;>` (diamond operator)**: Lee desde STDIN o desde los archivos pasados como argumentos. La base de los filtros Unix en Perl.
 * **CPAN**: El repositorio de módulos Perl más grande del mundo (Comprehensive Perl Archive Network). Contiene módulos para prácticamente cualquier tarea.
 * **`use strict; use warnings;`**: Dos pragmas fundamentales que hacen Perl más seguro y menos propenso a bugs. Siempre al inicio del script.
 * **Expresiones regulares integradas**: Las regex son ciudadanos de primera clase en Perl, no solo librerías. Operadores `=~`, `s///`, `m//`, `tr///`.
@@ -76,8 +76,8 @@ use Scalar::Util qw(looks_like_number blessed reftype);
 
 # Constantes (con el módulo constant)
 use constant {
-    VERSION  => '1.0.0',
-    MAX_LINEAS => 10_000,
+    VERSION  =&gt; '1.0.0',
+    MAX_LINEAS =&gt; 10_000,
 };
 
 # Tu código aquí
@@ -107,11 +107,11 @@ print "0" + 0;        # 0
 print "hola" == 0;    # 1 (warning: "hola" es 0 en contexto numérico)
 
 # Comparaciones: DISTINTAS para números y strings
-# Números: ==  !=  <  >  <=  >=  <=>
+# Números: ==  !=  &lt;  >  &lt;=  &gt;=  &lt;=&gt;
 # Strings:  eq  ne lt  gt  le  ge   cmp
 print (5 == 5);         # 1 (true)
 print ("abc" eq "abc"); # 1 (true)
-print (5 <=> 3);        # 1 (positivo: izquierda mayor)
+print (5 &lt;=&gt; 3);        # 1 (positivo: izquierda mayor)
 print ("a" cmp "b");    # -1 (negativo: izquierda menor)
 
 # Operadores de string
@@ -149,15 +149,15 @@ splice(@frutas, 1, 1);       # Elimina 1 elemento en posición 1
 
 # Operaciones
 my @ordenado    = sort @frutas;
-my @ordenado_n  = sort { $a <=> $b } @numeros;  # Numérico
+my @ordenado_n  = sort { $a &lt;=&gt; $b } @numeros;  # Numérico
 my @revertido   = reverse @frutas;
 my @unicos      = do { my %vistos; grep { !$vistos{$_}++ } @frutas };
 
 # ===== HASHES (%) =====
 my %config = (
-    host => "localhost",
-    port => 5432,
-    ssl  => 1,
+    host =&gt; "localhost",
+    port =&gt; 5432,
+    ssl  =&gt; 1,
 );
 
 # Acceso (con $ porque se accede a un escalar)
@@ -200,18 +200,18 @@ print "Frio\n"      unless $temp > 15;  # unless = if not
 # ===== BUCLES =====
 # while
 my $i = 0;
-while ($i < 5) {
+while ($i &lt; 5) {
     print "$i\n";
     $i++;
 }
 
 # until (mientras NO sea verdadero)
-until ($i >= 10) {
+until ($i &gt;= 10) {
     $i++;
 }
 
 # for (estilo C)
-for (my $j = 0; $j < 5; $j++) {
+for (my $j = 0; $j &lt; 5; $j++) {
     print "$j\n";
 }
 
@@ -235,9 +235,9 @@ redo;    # Reiniciar la iteración actual (sin re-evaluar la condición)
 # ===== GIVEN/WHEN (switch) — experimental, evitar en Perl moderno =====
 # Usa if/elsif o un hash de dispatch en su lugar:
 my %acciones = (
-    start   => sub { print "Iniciando...\n" },
-    stop    => sub { print "Deteniendo...\n" },
-    restart => sub { print "Reiniciando...\n" },
+    start   =&gt; sub { print "Iniciando...\n" },
+    stop    =&gt; sub { print "Deteniendo...\n" },
+    restart =&gt; sub { print "Reiniciando...\n" },
 );
 my $accion = "start";
 $acciones{$accion}->() if exists $acciones{$accion};
@@ -321,16 +321,16 @@ use strict;
 use warnings;
 
 # ===== LEER ARCHIVO LÍNEA A LÍNEA =====
-open(my $fh, "<", "archivo.txt") or die "No se puede abrir: $!";
-while (my $linea = <$fh>) {
+open(my $fh, "&lt;", "archivo.txt") or die "No se puede abrir: $!";
+while (my $linea = &lt;$fh>) {
     chomp $linea;  # Eliminar \n al final
     print "$linea\n";
 }
 close $fh;
 
 # Patrón con $_ implícito (muy común en scripts Perl)
-open(my $fh2, "<", "log.txt") or die $!;
-while (<$fh2>) {
+open(my $fh2, "&lt;", "log.txt") or die $!;
+while (&lt;$fh2>) {
     chomp;
     next unless /ERROR/;     # Saltar líneas sin ERROR
     print "Error: $_\n";
@@ -349,14 +349,14 @@ print $append_fh "[" . localtime() . "] Nueva entrada\n";
 close $append_fh;
 
 # ===== LEER TODO EL ARCHIVO =====
-my $contenido = do { local $/; open my $f, "<", "archivo.txt"; <$f> };
+my $contenido = do { local $/; open my $f, "&lt;", "archivo.txt"; &lt;$f> };
 # $/ es el separador de entrada (normalmente \n). Poniendo undef, se lee todo.
 
 # ===== DIAMOND OPERATOR — filtro universal =====
 # Lee de STDIN o de archivos pasados como argumentos:
 # perl script.pl archivo1.txt archivo2.txt
 # o: cat archivo.txt | perl script.pl
-while (<>) {
+while (&lt;>) {
     chomp;
     s/error/ERROR/gi;    # Transformar
     print "$_\n";
@@ -425,8 +425,8 @@ sub estadisticas {
     my $suma   = 0;
     $suma += $_ for @datos;
     my $media  = $suma / scalar @datos;
-    my $min    = (sort { $a <=> $b } @datos)[0];
-    my $max    = (sort { $b <=> $a } @datos)[0];
+    my $min    = (sort { $a &lt;=&gt; $b } @datos)[0];
+    my $max    = (sort { $b &lt;=&gt; $a } @datos)[0];
     return ($suma, $media, $min, $max);
 }
 my ($total, $prom, $minimo, $maximo) = estadisticas(3, 1, 4, 1, 5, 9, 2, 6);
@@ -437,7 +437,7 @@ my $ref_array = \@array;    # Referencia a array
 push @$ref_array, 4;        # Deref con @$
 print $ref_array->[0];      # Acceso: 1
 
-my %hash = (a => 1);
+my %hash = (a =&gt; 1);
 my $ref_hash = \%hash;       # Referencia a hash
 $ref_hash->{b} = 2;          # Acceso: 2
 
@@ -448,7 +448,7 @@ print $duplicar->(5);        # 10
 # map, grep, sort con bloques
 my @cuadrados = map { $_ ** 2 } @array;
 my @pares     = grep { $_ % 2 == 0 } @array;
-my @ord       = sort { $b <=> $a } @array;   # Descendente
+my @ord       = sort { $b &lt;=&gt; $a } @array;   # Descendente
 ```
 
 ---
@@ -489,7 +489,7 @@ perl -ne 'print if /INICIO/../FIN/' archivo.txt
 perl -ne 'print unless $vistos{$_}++' archivo.txt
 
 # Invertir el orden de las líneas (como tac)
-perl -e 'print reverse <>' archivo.txt
+perl -e 'print reverse &lt;>' archivo.txt
 
 # Extraer emails de un texto
 perl -nE 'say $& while /[\w.+-]+@[\w-]+\.[\w.]+/g' archivo.txt
@@ -515,10 +515,10 @@ use HTTP::Request;
 
 # Crear agente HTTP
 my $ua = LWP::UserAgent->new(
-    timeout    => 30,
-    agent      => "MiScript/1.0",
+    timeout    =&gt; 30,
+    agent      =&gt; "MiScript/1.0",
 );
-$ua->default_header("Authorization" => "Bearer $ENV{TOKEN}");
+$ua->default_header("Authorization" =&gt; "Bearer $ENV{TOKEN}");
 
 # GET request
 my $resp = $ua->get("https://api.github.com/users/perl");
@@ -532,9 +532,9 @@ if ($resp->is_success) {
 
 # POST con JSON
 my $req = HTTP::Request->new(
-    POST => "https://api.ejemplo.com/eventos",
-    ["Content-Type" => "application/json"],
-    encode_json({ tipo => "deploy", version => "1.0" })
+    POST =&gt; "https://api.ejemplo.com/eventos",
+    ["Content-Type" =&gt; "application/json"],
+    encode_json({ tipo =&gt; "deploy", version =&gt; "1.0" })
 );
 my $resp2 = $ua->request($req);
 print $resp2->decoded_content;
@@ -548,7 +548,7 @@ print $resp2->decoded_content;
 
 * **Confundir operadores de comparación numérica y string**: `"10" == "9abc"` es **verdadero** (ambas se convierten a 10 y 9 respectivamente — ¡no!). `"10" == 10` sí es correcto. Para comparar strings, usa `eq`, `ne`, `lt`, `gt`.
 
-* **Olvidar `chomp` al leer líneas de archivo**: `<$fh>` incluye el `\n` al final. Sin `chomp`, los strings nunca coincidirán con lo esperado.
+* **Olvidar `chomp` al leer líneas de archivo**: `&lt;$fh>` incluye el `\n` al final. Sin `chomp`, los strings nunca coincidirán con lo esperado.
 
 * **El contexto escalar vs lista**: `my @arr = (1, 2, 3); my $n = @arr` — `$n` es `3` (longitud), no el array. Este cambio de contexto sorprende constantemente.
 
