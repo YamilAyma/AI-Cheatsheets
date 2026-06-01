@@ -1,3 +1,11 @@
+---
+title: "memento"
+description: "El patrón Memento es un patrón de comportamiento que permite capturar y externalizar el estado interno de un objeto sin violar su encapsulamiento, de modo que el objeto pueda ser restaurado a ese estado en un momento posterior."
+createdAt: 2026-05-22
+updatedAt: 2026-05-22
+tags: [comportamiento]
+icon: "📄"
+---
 # 🎯 Patrón Memento — Cheatsheet Completo 🎯
 
 El patrón **Memento** es un patrón de comportamiento que permite capturar y externalizar el estado interno de un objeto sin violar su encapsulamiento, de modo que el objeto pueda ser restaurado a ese estado en un momento posterior. Resuelve problemas de deshacer/rehacer, puntos de guardado, rollback transaccional y versionado de configuración, manteniendo estricta separación entre la lógica de estado y la gestión de historial. Nace para evitar la exposición de detalles internos, prevenir acoplamiento rígido entre orquestadores y modelos de dominio, y habilitar mecanismos de reversión deterministas en sistemas interactivos, editores, flujos de aprobación o motores de simulación. Este cheatsheet desglosa la intención arquitectónica real del patrón, contratos de inmutabilidad y opacidad, implementaciones multi-paradigma, variantes diferenciales y serializables, impacto en memoria y concurrencia, trampas de restauración parcial y fuga de referencias, y criterios estrictos para decidir cuándo la externalización de estado es una necesidad del dominio y no un mecanismo pesado que degrada el rendimiento o rompe invariantes de negocio.
@@ -103,7 +111,7 @@ Regla inquebrantable: El `Caretaker` **nunca** debe acceder a campos internos de
 El patrón se adapta al modelo de memoria, tipado y gestión de estado del entorno. No requiere necesariamente herencia clásica ni clases explícitas.
 
 ### 3.1. POO Clásica con Encapsulamiento Estricto (TypeScript / Java / C#)
-Uso de interfaces opacas, clases internas o paquetes protegidos. Ideal para editores, transacciones locales o state machines.
+Uso de interfaces opacas, clases internas o paquetes protegidos. Ideal para editores, transacciones locales o [state](/arquitectura/design_patterns/comportamiento/state "El patrón State es un patrón de comportamiento que permite a un objeto alterar su comportamiento cuando su estado interno cambia, haciendo que parezca que el objeto cambia de clase.") machines.
 
 ```java
 public interface CommandHistory {
@@ -178,7 +186,7 @@ class SystemConfig:
         self.rules = {}
         self.thresholds = {}
 
-    def snapshot(self) -> ConfigMemento:
+    def snapshot(self) -&gt; ConfigMemento:
         raw = json.dumps({"r": self.rules, "t": self.thresholds}).encode()
         compressed = zlib.compress(raw)
         return ConfigMemento(schema_version=2, payload=compressed)
@@ -226,7 +234,7 @@ class StateMachine {
 | **Wide Interface** | Memento expone getters limitados para comparación o merge. | Sincronización de configuración, resolución de conflictos. | Rompe opacidad estricta. Aumenta superficie de acoplamiento. |
 | **Differential** | Almacena deltas en lugar de snapshots completos. | Logs de auditoría, colaboración en tiempo real, CRDTs. | Complejidad de reconstrucción. Requiere versión base estable. |
 | **Serialized/Persistent** | Mementos persistidos en BD, filesystem o cloud storage. | Recuperación ante crash, workflows de aprobación largos. | Latencia de I/O. Requiere versionado de esquema y migración. |
-| **Command + Memento** | Comando captura memento antes de ejecutar. Undo restaura. | Transacciones de negocio, operaciones distribuidas complejas. | Doble indirección. Overhead de gestión coordinada. |
+| **[Command](/arquitectura/design_patterns/comportamiento/command "El patrón Command es un patrón de comportamiento que encapsula una petición o acción como un objeto independiente, desacoplando el emisor de la petición del receptor que la ejecuta.") + Memento** | Comando captura memento antes de ejecutar. Undo restaura. | Transacciones de negocio, operaciones distribuidas complejas. | Doble indirección. Overhead de gestión coordinada. |
 | **Time-Travel / Debug** | Historial completo con timestamps. Permite replay determinista. | Simuladores, debugging de estado, testing de edge cases. | Presión extrema en memoria. Requiere compresión o sampling. |
 
 ---
@@ -237,16 +245,16 @@ class StateMachine {
 |------------------|-------------------|
 | Necesitas undo/redo, puntos de guardado o rollback transaccional | El estado cambia miles de veces por segundo y la memoria es crítica. Usa event sourcing o log de deltas. |
 | Quieres preservar encapsulamiento al externalizar historial | El originador es inmutable por diseño. No requiere snapshots, solo versiones nuevas. |
-| Necesitas versionado de configuración o reglas de negocio | Ya usas un motor de persistencia con snapshots nativos (ej. DB con WAL, Git-like storage). |
-| Trabajas con editores interactivos, state machines o flujos de aprobación | La restauración parcial es inaceptable y el estado no puede validarse atómicamente. |
+| Necesitas versionado de configuración o reglas de negocio | Ya usas un motor de persistencia con snapshots nativos (ej. DB con WAL, [Git](/herramientas/git/git "Git es un sistema de control de versiones distribuido (DVCS) diseñado para manejar proyectos pequeños o muy grandes con velocidad y eficiencia.")-like storage). |
+| Trabajas con editores interactivos, [state](/arquitectura/design_patterns/comportamiento/state "El patrón State es un patrón de comportamiento que permite a un objeto alterar su comportamiento cuando su estado interno cambia, haciendo que parezca que el objeto cambia de clase.") machines o flujos de aprobación | La restauración parcial es inaceptable y el estado no puede validarse atómicamente. |
 | Requieres determinismo en testing o replay de sesiones | El acoplamiento temporal entre caretaker y originator degrada rendimiento en hot paths. |
 
 Comparación rápida con patrones de comportamiento y creacionales:
 * **Memento**: Captura estado interno para reversión. Enfocado en encapsulamiento y historial.
-* **Command**: Encapsula petición ejecutable. Enfocado en ejecución diferida, undo/redo o encolado.
-* **Prototype**: Clona objetos existentes. Enfocado en replicación de estado, no en historial.
-* **State**: Cambia comportamiento según estado interno. Enfocado en transición de lógica, no en snapshot.
-* **Visitor**: Externaliza operaciones sobre estructura estable. Enfocado en múltiples traversals.
+* **[Command](/arquitectura/design_patterns/comportamiento/command "El patrón Command es un patrón de comportamiento que encapsula una petición o acción como un objeto independiente, desacoplando el emisor de la petición del receptor que la ejecuta.")**: Encapsula petición ejecutable. Enfocado en ejecución diferida, undo/redo o encolado.
+* **[Prototype](/arquitectura/design_patterns/creacionales/prototype "El patrón Prototype es un patrón creacional que permite crear nuevos objetos clonando una instancia existente en lugar de instanciarlos desde cero.")**: Clona objetos existentes. Enfocado en replicación de estado, no en historial.
+* **[State](/arquitectura/design_patterns/comportamiento/state "El patrón State es un patrón de comportamiento que permite a un objeto alterar su comportamiento cuando su estado interno cambia, haciendo que parezca que el objeto cambia de clase.")**: Cambia comportamiento según estado interno. Enfocado en transición de lógica, no en snapshot.
+* **[Visitor](/arquitectura/design_patterns/comportamiento/visitor "El patrón Visitor es un patrón de comportamiento que separa algoritmos de las estructuras de objetos sobre las que operan, permitiendo añadir nuevas operaciones sin modificar las clases de los elementos visitados.")**: Externaliza operaciones sobre estructura estable. Enfocado en múltiples traversals.
 
 ---
 
@@ -255,7 +263,7 @@ Comparación rápida con patrones de comportamiento y creacionales:
 * **Aislamiento en Tests**: Prueba `createMemento()` y `restore()` por separado. Verifica que el estado restaurado sea idéntico al original antes de la mutación.
   * Técnica: Usa fixtures controlados. Aserta igualdad profunda (`deepEqual`, `assertStructurallyEqual`). Valida que `restore()` no mute referencias compartidas.
 * **Validación de Restauración Atómica**: Escribe tests que invoquen `restore()` con memento corrupto, schema viejo o datos incompletos. Verifique fallo controlado o fallback.
-  * Fix: `assert.throws(() => doc.restore(invalidMemento), /SchemaMismatch/)`. Valida mensajes y estado post-fallo (debe permanecer intacto).
+  * Fix: `assert.throws(() =&gt; doc.restore(invalidMemento), /SchemaMismatch/)`. Valida mensajes y estado post-fallo (debe permanecer intacto).
 * **Ciclo de Vida y Limpieza de Historial**: El `Caretaker` debe gestionar truncado, LRU, o TTL. Nunca dejar mementos huérfanos consumiendo memoria.
 * **Refactorización desde Estado Expuesto**: Identifique getters/setters directos usados por orquestadores para guardar historial. Envuelva en `Memento`. Deprecar acceso directo progresivamente.
 * **Impacto en Rendimiento**: La copia profunda añade overhead lineal al tamaño del estado. En CPUs modernas, negligible para &lt; 10MB. Solo impacta en estados masivos o alta frecuencia. Profile antes de optimizar.
@@ -277,8 +285,8 @@ Comparación rápida con patrones de comportamiento y creacionales:
   * Fix: Valide integridad antes de aplicar. Use transacción atómica o rollback completo si falla. Nunca mutar parcialmente.
 * **Memento con Referencias Compartidas**: Snapshot contiene punteros a objetos mutables externos. Restaurar corrompe otros componentes.
   * Fix: Copie profundamente (deep clone) o use inmutabilidad estructural. Nunca referencias crudas a estado externo compartido.
-* **Confundir con Command o Prototype**: Usar Memento para encolar peticiones o para clonar objetos sin intención de reversión.
-  * Fix: Si encapsula acción ejecutable → Command. Si replica objeto → Prototype. Si captura estado para rollback → Memento. No mezcle propósitos.
+* **Confundir con [Command](/arquitectura/design_patterns/comportamiento/command "El patrón Command es un patrón de comportamiento que encapsula una petición o acción como un objeto independiente, desacoplando el emisor de la petición del receptor que la ejecuta.") o [Prototype](/arquitectura/design_patterns/creacionales/prototype "El patrón Prototype es un patrón creacional que permite crear nuevos objetos clonando una instancia existente en lugar de instanciarlos desde cero.")**: Usar Memento para encolar peticiones o para clonar objetos sin intención de reversión.
+  * Fix: Si encapsula acción ejecutable → [Command](/arquitectura/design_patterns/comportamiento/command "El patrón Command es un patrón de comportamiento que encapsula una petición o acción como un objeto independiente, desacoplando el emisor de la petición del receptor que la ejecuta."). Si replica objeto → [Prototype](/arquitectura/design_patterns/creacionales/prototype "El patrón Prototype es un patrón creacional que permite crear nuevos objetos clonando una instancia existente en lugar de instanciarlos desde cero."). Si captura estado para rollback → Memento. No mezcle propósitos.
 * **Serialización Rota o Incompatible**: Cambio de campos en originador invalida mementos antiguos. `JSON.parse` lanza error.
   * Fix: Use versionado de esquema (`schemaVersion`). Implemente migradores o fallbacks seguros. Valide estructura antes de deserializar.
 * **Concurrent Modification durante Snapshot**: Otro hilo muta estado mientras se captura memento. Estado inconsistente.
@@ -294,7 +302,7 @@ Comparación rápida con patrones de comportamiento y creacionales:
 
 ## 8. 💡 Mejores Prácticas y Consejos
 
-* **Prefiera Inmutabilidad Estructural**: Si el lenguaje lo soporta (Rust `Clone`, JS `structuredClone`, Python `copy.deepcopy`), úselo para garantizar snapshots seguros sin mutación cruzada.
+* **Prefiera Inmutabilidad Estructural**: Si el lenguaje lo soporta ([Rust](/rust/rust "Rust es un lenguaje de programación de sistemas enfocado en seguridad, concurrencia y rendimiento sin recolector de basura (GC).") `Clone`, JS `structuredClone`, [Python](/python/python "Python es un lenguaje de programación de alto nivel, interpretado, interactivo y orientado a objetos.") `copy.deepcopy`), úselo para garantizar snapshots seguros sin mutación cruzada.
 * **Documente Contrato de Opacidad**: Especifique explícitamente que el caretaker no debe inspeccionar ni modificar el memento. Elimine suposiciones implícitas.
 * **Implemente Versionado de Esquema**: Incluya `schemaVersion` en cada memento. Valide antes de restaurar. Permita migración o fallback seguro si versión difiere.
 * **Use Diferenciales para Estados Masivos**: Reduzca huella de memoria almacenando deltas en lugar de copias completas. Reconstruya aplicando secuencia controlada.
@@ -303,7 +311,7 @@ Comparación rápida con patrones de comportamiento y creacionales:
 * **Profile antes de Desplegar**: No asuma overhead de copia trivial. Mide allocation por snapshot, tamaño promedio, y GC pressure. Optimice solo si el profiler lo indica.
 * **Pruebe Casos Límite y Fallos**: Valide mementos vacíos, corruptos, con versión vieja, con referencias cíclicas y con mutación concurrente. Detecte regresiones temprano.
 * **Mantenga Contratos Estables**: Cambiar la firma de `createMemento()` o estructura de snapshot rompe clientes. Use deprecación controlada, versionado semántico y adapters paralelos.
-* **No lo use "por moda"**: Si el estado es inmutable, simple o ya gestionado por infraestructura nativa (DB snapshots, git, event log), use esas herramientas. La implementación manual innecesaria es deuda técnica de rendimiento y mantenimiento.
+* **No lo use "por moda"**: Si el estado es inmutable, simple o ya gestionado por infraestructura nativa (DB snapshots, [git](/herramientas/git/git "Git es un sistema de control de versiones distribuido (DVCS) diseñado para manejar proyectos pequeños o muy grandes con velocidad y eficiencia."), event log), use esas herramientas. La implementación manual innecesaria es deuda técnica de rendimiento y mantenimiento.
 
 ---
 
