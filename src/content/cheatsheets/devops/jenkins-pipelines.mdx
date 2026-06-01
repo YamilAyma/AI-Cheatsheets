@@ -1,6 +1,6 @@
 ---
 title: "Jenkins Pipelines"
-description: "Guía completa de Jenkins Pipelines: Jenkinsfile declarativo y scripted, stages, parallel, credenciales, agentes, triggers y mejores prácticas para CI/CD profesional con Groovy."
+description: "Jenkins es el servidor de automatización de código abierto más adoptado del mundo, utilizado por miles de equipos para orquestar sus flujos de Integración Continua y Despliegue Continuo (CI/CD)."
 createdAt: 2026-05-20
 updatedAt: 2026-05-20
 tags: [jenkins, ci-cd, groovy, pipeline, devops, automatizacion, jenkinsfile]
@@ -19,10 +19,10 @@ icon: "🔧"
 * **Jenkinsfile**: El archivo de configuración del pipeline, versionado en el repositorio. Puede ser Declarativo o Scripted.
 * **Stage (Etapa)**: Una fase lógica del pipeline (Build, Test, Deploy). Visible en la UI de Jenkins como bloques coloreados.
 * **Step (Paso)**: La unidad mínima de trabajo dentro de un stage. Ejemplos: `sh`, `git`, `docker.build`, `echo`.
-* **Agent**: El nodo donde se ejecuta el pipeline. Puede ser el nodo master, un agente específico, o un contenedor Docker.
+* **Agent**: El nodo donde se ejecuta el pipeline. Puede ser el nodo master, un agente específico, o un contenedor [Docker](/devops/docker "Docker es una plataforma de código abierto que utiliza la contenerización para empaquetar una aplicación y todas sus dependencias en una unidad estándar para el desarrollo de software.").
 * **Workspace**: Directorio de trabajo del pipeline en el agente. El código fuente se clona aquí.
 * **Credenciales**: Secretos (contraseñas, tokens, certificados) gestionados de forma segura por Jenkins. Se inyectan con `withCredentials` o `credentials()`.
-* **Trigger**: Condición que inicia automáticamente el pipeline (push de git, schedule cron, llamada de webhook).
+* **Trigger**: Condición que inicia automáticamente el pipeline (push de [git](/herramientas/git/git "Git es un sistema de control de versiones distribuido (DVCS) diseñado para manejar proyectos pequeños o muy grandes con velocidad y eficiencia."), schedule cron, llamada de webhook).
 * **Stash/Unstash**: Mecanismo para pasar artefactos entre stages que se ejecutan en agentes diferentes.
 * **Shared Libraries**: Código Groovy reutilizable compartido entre múltiples Jenkinsfiles del equipo.
 * **Blue Ocean**: Interfaz visual moderna de Jenkins para pipelines (complementa la interfaz clásica).
@@ -263,7 +263,7 @@ stage('Deploy a Múltiples Regiones') {
     steps {
         script {
             def regiones = ['us-east-1', 'eu-west-1', 'ap-southeast-1']
-            def pasos = regiones.collectEntries { region ->
+            def pasos = regiones.collectEntries { region -&gt;
                 [region, {
                     sh "kubectl --context=${region} apply -f k8s/"
                 }]
@@ -480,7 +480,7 @@ stage('Lógica Compleja') {
 
             // Iterar sobre lista
             def entornos = ['dev', 'staging']
-            entornos.each { env_name ->
+            entornos.each { env_name -&gt;
                 echo "Notificando entorno: ${env_name}"
             }
         }
@@ -498,9 +498,9 @@ Las Shared Libraries permiten reutilizar código Groovy entre múltiples pipelin
 // En jenkins.yaml o Global Pipeline Libraries:
 // - Nombre: mi-libreria
 // - SCM: git repo con estructura:
-//   vars/         <- funciones globales (callable como steps)
-//   src/          <- clases Groovy reutilizables
-//   resources/    <- archivos de recursos
+//   vars/         &lt;- funciones globales (callable como steps)
+//   src/          &lt;- clases Groovy reutilizables
+//   resources/    &lt;- archivos de recursos
 
 // ===== vars/deployar.groovy =====
 def call(Map config) {
@@ -652,9 +652,9 @@ pipeline {
 
 ## 11. ⚠️ Errores Comunes y Pitfalls
 
-* **Hardcodear secretos en el Jenkinsfile**: Los Jenkinsfiles están versionados en Git. NUNCA incluyas contraseñas, tokens o credenciales directamente. Usa siempre el credential store de Jenkins con `credentials()` o `withCredentials`.
+* **Hardcodear secretos en el Jenkinsfile**: Los Jenkinsfiles están versionados en [Git](/herramientas/git/git "Git es un sistema de control de versiones distribuido (DVCS) diseñado para manejar proyectos pequeños o muy grandes con velocidad y eficiencia."). NUNCA incluyas contraseñas, tokens o credenciales directamente. Usa siempre el credential store de Jenkins con `credentials()` o `withCredentials`.
 
-* **No usar `set -e` en bloques `sh` multilínea**: Por defecto, Bash en un bloque `sh '''...\n...'''` continúa ejecutando aunque un comando falle. Añade `set -e` al inicio del bloque o usa `sh 'cmd1 && cmd2'`.
+* **No usar `set -e` en bloques `sh` multilínea**: Por defecto, [Bash](/devops/bash "Bash (Bourne Again Shell) es un shell de Unix y lenguaje de comandos compatible con POSIX.") en un bloque `sh '''...\n...'''` continúa ejecutando aunque un comando falle. Añade `set -e` al inicio del bloque o usa `sh 'cmd1 && cmd2'`.
 
 * **Concatenar variables de entorno con `+` en lugar de interpolación GString**: En Groovy, las strings con comillas simples `'...'` NO interpolan variables. Usa comillas dobles `"..."` para interpolación.
   * ❌ `sh 'echo $BUILD_NUMBER'` (imprime literalmente `$BUILD_NUMBER`)
@@ -689,4 +689,4 @@ pipeline {
 
 ---
 
-Este cheatsheet proporciona una referencia exhaustiva de **Jenkins Pipelines**, cubriendo desde la estructura del Jenkinsfile declarativo y scripted, agentes dinámicos con Docker y Kubernetes, ejecución paralela y matrices, manejo seguro de credenciales, steps esenciales, variables predefinidas, Shared Libraries, hasta un ejemplo completo de pipeline CI/CD con Docker y las mejores prácticas del sector.
+Este cheatsheet proporciona una referencia exhaustiva de **Jenkins Pipelines**, cubriendo desde la estructura del Jenkinsfile declarativo y scripted, agentes dinámicos con [Docker](/devops/docker "Docker es una plataforma de código abierto que utiliza la contenerización para empaquetar una aplicación y todas sus dependencias en una unidad estándar para el desarrollo de software.") y [Kubernetes](/devops/kubernetes "Kubernetes (K8s) es una plataforma portable y extensible de código abierto para gestionar cargas de trabajo y servicios en contenedores."), ejecución paralela y matrices, manejo seguro de credenciales, steps esenciales, variables predefinidas, Shared Libraries, hasta un ejemplo completo de pipeline CI/CD con Docker y las mejores prácticas del sector.
