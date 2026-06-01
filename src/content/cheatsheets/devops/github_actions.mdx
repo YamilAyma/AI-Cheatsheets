@@ -19,10 +19,10 @@ icon: "📜"
 ## 1. 🌟 Conceptos Clave
 
 * **Workflow (Flujo de Trabajo)**: Un proceso automatizado que se ejecuta en respuesta a un evento. Se define en un archivo YAML (`.github/workflows/*.yml`).
-* **Event (Evento)**: Una actividad específica en GitHub que dispara un workflow (ej. `push`, `pull_request`, `issue_comment`, `schedule`).
+* **Event (Evento)**: Una actividad específica en [GitHub](/herramientas/github "GitHub es una plataforma web para el alojamiento de repositorios de control de versiones Git diseñado para manejar proyectos pequeños o muy grandes con velocidad y eficiencia.').") que dispara un workflow (ej. `push`, `pull_request`, `issue_comment`, `schedule`).
 * **Job (Trabajo)**: Un conjunto de `steps` que se ejecutan en un mismo `runner`. Los jobs se ejecutan en paralelo por defecto, pero pueden definirse dependencias (`needs`).
 * **Step (Paso)**: Una tarea individual dentro de un `job`. Puede ser un comando de shell (`run`) o una `Action` reutilizable (`uses`).
-* **Action (Acción)**: Una aplicación empaquetada y reutilizable que realiza una tarea específica (ej. clonar un repositorio, configurar un entorno, publicar un paquete). Pueden ser creadas por la comunidad, por GitHub, o por ti.
+* **Action (Acción)**: Una aplicación empaquetada y reutilizable que realiza una tarea específica (ej. clonar un repositorio, configurar un entorno, publicar un paquete). Pueden ser creadas por la comunidad, por [GitHub](/herramientas/github "GitHub es una plataforma web para el alojamiento de repositorios de control de versiones Git diseñado para manejar proyectos pequeños o muy grandes con velocidad y eficiencia.')."), o por ti.
 * **Runner (Ejecutor)**: Una máquina virtual (VM) o un contenedor donde se ejecutan tus `jobs`. Pueden ser hosteados por GitHub (Linux, macOS, Windows) o auto-hosteados.
 * **Context (Contexto)**: Objetos que contienen información sobre el workflow, el job, el runner, el evento, etc. (ej. `github`, `env`, `job`, `steps`, `runner`, `secrets`, `strategy`).
 * **Secrets (Secretos)**: Variables de entorno cifradas que puedes usar en tus workflows para datos sensibles (tokens, contraseñas).
