@@ -23,7 +23,7 @@ React es una librería de JavaScript declarativa, eficiente y flexible para cons
 * **JSX (JavaScript XML)**: Una extensión de sintaxis para JavaScript que te permite escribir HTML dentro de JavaScript. Es compilado por Babel a llamadas a `React.createElement()`.
 * **Virtual DOM**: Una representación ligera en memoria del DOM real. React lo utiliza para optimizar las actualizaciones de la UI, minimizando las manipulaciones directas del DOM real.
 * **Props (Propiedades)**: Argumentos o datos que se pasan de un componente padre a un componente hijo. Son de solo lectura (inmutables).
-* **Estado (State)**: Datos que un componente gestiona internamente y que pueden cambiar con el tiempo, afectando el renderizado del componente. Es mutable.
+* **Estado ([State](/arquitectura/design_patterns/comportamiento/state "El patrón State es un patrón de comportamiento que permite a un objeto alterar su comportamiento cuando su estado interno cambia, haciendo que parezca que el objeto cambia de clase."))**: Datos que un componente gestiona internamente y que pueden cambiar con el tiempo, afectando el renderizado del componente. Es mutable.
 * **Flujo de Datos Unidireccional (One-Way Data Flow)**: Los datos fluyen en una sola dirección: de padres a hijos a través de las props.
 
 ---
@@ -740,7 +740,7 @@ Una extensión de navegador esencial para depurar aplicaciones React.
 
 * **Componentes Pequeños y Reutilizables**: Divide tu UI en componentes pequeños y específicos con una única responsabilidad.
 * **Separación de Preocupaciones**: Separa la lógica de presentación de la lógica de negocio.
-* **Prop Drilling vs. Context [API](/conocimiento/api "Una API (Application Programming Interface) es un conjunto de reglas, protocolos y herramientas que permite que diferentes aplicaciones de software se comuniquen entre sí.")**: Evita pasar props por muchos niveles (prop drilling). Usa Context API o librerías de gestión de estado (Redux, [Zustand](/web/frontend/general/zustand "¡Claro que sí! Zustand es una librería de gestión de estados para React (y vainilla JavaScript) conocida por su simplicidad, ligereza y rendimiento.")) para estado global.
+* **Prop Drilling vs. Context [API](/conocimiento/api "Una API (Application Programming Interface) es un conjunto de reglas, protocolos y herramientas que permite que diferentes aplicaciones de software se comuniquen entre sí.")**: Evita pasar props por muchos niveles (prop drilling). Usa Context API o librerías de gestión de estado ([Redux](/web/frontend/general/react/redux "Redux es una librería de JavaScript para gestionar el estado de la aplicación."), [Zustand](/web/frontend/general/zustand "¡Claro que sí! Zustand es una librería de gestión de estados para React (y vainilla JavaScript) conocida por su simplicidad, ligereza y rendimiento.")) para estado global.
 * **Inmutabilidad del Estado**: Cuando actualices el estado (especialmente objetos o arrays), crea nuevas copias en lugar de mutar el estado directamente.
   ```javascript
   // Incorrecto:
