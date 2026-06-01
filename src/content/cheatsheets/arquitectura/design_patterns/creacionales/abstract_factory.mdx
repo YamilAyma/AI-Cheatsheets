@@ -1,3 +1,11 @@
+---
+title: "abstract_factory"
+description: "El patrón Abstract Factory es un patrón creacional estructural que proporciona una interfaz para crear familias de objetos relacionados o dependientes sin especificar sus clases concretas."
+createdAt: 2026-05-21
+updatedAt: 2026-05-22
+tags: [creacionales]
+icon: "📄"
+---
 # 🏭 Patrón Abstract Factory — Cheatsheet Completo 🏭
 
 El patrón **Abstract Factory** es un patrón creacional estructural que proporciona una interfaz para crear **familias de objetos relacionados o dependientes** sin especificar sus clases concretas. Permite que un cliente trabaje exclusivamente con abstracciones, garantizando que los productos creados sean compatibles entre sí y pertenecan a la misma familia o configuración. Nace para resolver problemas de portabilidad, tematización, compatibilidad cruzada y encapsulamiento de variantes complejas, asegurando que el sistema nunca mezcle componentes de familias distintas.
@@ -199,11 +207,11 @@ registerFamily('high-contrast', () =&gt; new AccessibilityThemeFactory());
 
 | Variante | Mecanismo | Caso de uso | Trade-off |
 |----------|-----------|-------------|-----------|
-| **Factory Parametrizada** | `create(type, config)` genera productos con ajustes específicos. | Drivers con múltiples versiones de protocolo o dialectos SQL. | Aumenta complejidad de validación. Puede derivar en `switch` gigante. |
+| **Factory Parametrizada** | `create(type, config)` genera productos con ajustes específicos. | Drivers con múltiples versiones de protocolo o dialectos [SQL](/base_datos/sql "SQL es el lenguaje estándar utilizado para comunicarse con y gestionar bases de datos relacionales (RDBMS) como MySQL, PostgreSQL, Oracle, SQL Server, SQLite, entre otros."). | Aumenta complejidad de validación. Puede derivar en `switch` gigante. |
 | **Factory Perezosa (Lazy)** | Instancia familias bajo demanda, no al arranque. | Recursos costosos o familias rara vez usadas. | Dificulta detección temprana de errores de configuración. |
 | **Factory con Validación de Compatibilidad** | Verifica que todos los productos pertenezcan a la misma versión/familia antes de retornarlos. | Sistemas legacy con múltiples versiones de APIs o protocolos. | Overhead en creación. Requiere metadatos de versión en cada producto. |
 | **Factory de Configuración (Config-Driven)** | Lee YAML/JSON y construye la familia dinámicamente mediante reflexión o registro. | Plataformas multi-tenant con temas/drivers por cliente. | Pérdida de tipado fuerte. Depuración compleja en producción. |
-| **Factory Protocol/Adapter** | La factory retorna adaptadores que normalizan APIs distintas detrás de un contrato único. | Integración con múltiples proveedores externos (AWS, GCP, Azure). | Capa extra de indirección. Mantenimiento de adaptadores requiere disciplina. |
+| **Factory Protocol/[Adapter](/arquitectura/design_patterns/estructurales/adapter "El patrón Adapter es un patrón estructural que permite la cooperación entre objetos con interfaces incompatibles, actuando como un traductor o puente que convierte las llamadas de un contrato a otro.")** | La factory retorna adaptadores que normalizan APIs distintas detrás de un contrato único. | Integración con múltiples proveedores externos (AWS, GCP, Azure). | Capa extra de indirección. Mantenimiento de adaptadores requiere disciplina. |
 
 ---
 
@@ -220,8 +228,8 @@ registerFamily('high-contrast', () =&gt; new AccessibilityThemeFactory());
 Comparación rápida con patrones creacionales:
 * **Abstract Factory**: Crea familias completas relacionadas. Garantiza compatibilidad cruzada. Horizontal.
 * **Factory Method**: Crea un solo tipo de producto por jerarquía. Vertical. Delega a subclases.
-* **Builder**: Construye objetos complejos paso a paso. Enfocado en configuración interna, no en selección de familia.
-* **Prototype**: Clona instancias existentes. Útil cuando `new` es costoso o el estado inicial es complejo de replicar.
+* **[Builder](/arquitectura/design_patterns/creacionales/builder "El patrón Builder es un patrón creacional que separa la construcción de un objeto complejo de su representación final, permitiendo que el mismo proceso de ensamblaje genere diferentes variantes.")**: Construye objetos complejos paso a paso. Enfocado en configuración interna, no en selección de familia.
+* **[Prototype](/arquitectura/design_patterns/creacionales/prototype "El patrón Prototype es un patrón creacional que permite crear nuevos objetos clonando una instancia existente en lugar de instanciarlos desde cero.")**: Clona instancias existentes. Útil cuando `new` es costoso o el estado inicial es complejo de replicar.
 
 ---
 
@@ -230,7 +238,7 @@ Comparación rápida con patrones creacionales:
 * **Mocking por Familia**: Reemplaza la `AbstractFactory` completa con una `MockFactory` que retorne productos controlados. Aísla el cliente de implementaciones reales.
   * Técnica: Inyecta la factory en el constructor. En tests, usa `class TestFactory implements IUIFactory { createButton() = &gt; new MockButton(); ... }`.
 * **Validación de Compatibilidad en Tests**: Escribe tests que verifiquen que `factory.createA()` y `factory.createB()` interactúan correctamente. Evita mezclas accidentales.
-* **Ciclo de Vida y Ownership**: ¿Quién gestiona la vida de los productos creados? En GC, el problema es mínimo. En C++/Rust, la factory debe documentar si transfiere ownership, comparte referencias o usa pools.
+* **Ciclo de Vida y Ownership**: ¿Quién gestiona la vida de los productos creados? En GC, el problema es mínimo. En C++/[Rust](/rust/rust "Rust es un lenguaje de programación de sistemas enfocado en seguridad, concurrencia y rendimiento sin recolector de basura (GC)."), la factory debe documentar si transfiere ownership, comparte referencias o usa pools.
 * **Refactorización hacia DI**: Si tu sistema crece, reemplaza factories manuales por contenedores DI con scopes (`RequestScoped`, `TenantScoped`). Mantén la abstracción, delega la resolución.
 * **Impacto en Rendimiento**: La creación de familias añade indirección. En sistemas críticos, usa caching de factories o inicialización eager. Mide con profiling antes de optimizar.
 * **Gestión de Versiones**: Si una familia evoluciona (v1 a v2), mantenga interfaces estables. Use adapters o factories específicas por versión. Nunca rompa el contrato de `AbstractFactory`.
@@ -253,7 +261,7 @@ Comparación rápida con patrones creacionales:
 * **Serialización/Deserialización Rota**: Al restaurar estado, se pierden referencias a la factory o se instancian productos huérfanos.
   * Fix: Serialize solo identificadores o DTOs. Reconstruya la familia desde la factory al deserializar. Nunca serialice objetos concretos directamente.
 * **Confundir con Simple Factory**: Usar un `switch` gigante dentro de una clase y llamarlo "Abstract Factory".
-  * Fix: Si no hay múltiples métodos retornando diferentes tipos de una misma familia, no es Abstract Factory. Es Simple Factory o Strategy.
+  * Fix: Si no hay múltiples métodos retornando diferentes tipos de una misma familia, no es Abstract Factory. Es Simple Factory o [Strategy](/arquitectura/design_patterns/comportamiento/strategy "El patrón Strategy es un patrón de comportamiento que define una familia de algoritmos intercambiables, los encapsula y los hace sustituibles en tiempo de ejecución sin alterar el código del cliente que los utiliza.").
 
 ---
 
