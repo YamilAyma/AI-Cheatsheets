@@ -21,10 +21,10 @@ icon: "📄"
 *   **Service Mesh (Malla de Servicios)**: Una capa de infraestructura dedicada para gestionar las comunicaciones de servicio a servicio.
 *   **Control Plane (Plano de Control)**: El cerebro de Istio. Gestiona y configura el Data Plane. En versiones modernas de Istio, está consolidado en `istiod`.
 *   **Data Plane (Plano de Datos)**: Compuesto por **proxies Envoy** que se despliegan como "sidecars" junto a cada instancia de servicio (Pod en [Kubernetes](/devops/kubernetes "Kubernetes (K8s) es una plataforma portable y extensible de código abierto para gestionar cargas de trabajo y servicios en contenedores.")). Interceptan y gestionan todo el tráfico de red de entrada y salida del Pod.
-*   **Envoy Proxy**: Un proxy de servicio de alto rendimiento, de código abierto, diseñado para lenguajes de programación modernos. Es el proxy por defecto en Istio.
+*   **Envoy [Proxy](/arquitectura/design_patterns/estructurales/proxy "El patrón Proxy es un patrón estructural que proporciona un sustituto o intermediario para controlar el acceso a un objeto real, añadiendo comportamiento transversal sin modificar su implementación original.")**: Un proxy de servicio de alto rendimiento, de código abierto, diseñado para lenguajes de programación modernos. Es el proxy por defecto en Istio.
 *   **Sidecar Pattern (Patrón Sidecar)**: Un patrón de diseño donde un "contenedor sidecar" (Envoy) se ejecuta junto al contenedor principal de la aplicación dentro del mismo Pod. Comparten red y almacenamiento.
-*   **Inyección de Sidecar**: El proceso de añadir automáticamente el proxy Envoy como un contenedor sidecar a un Pod de Kubernetes.
-*   **CRDs (Custom Resource Definitions)**: Istio extiende Kubernetes añadiendo sus propios tipos de recursos personalizados para configurar sus funcionalidades (ej. `VirtualService`, `Gateway`, `DestinationRule`).
+*   **Inyección de Sidecar**: El proceso de añadir automáticamente el [proxy](/arquitectura/design_patterns/estructurales/proxy "El patrón Proxy es un patrón estructural que proporciona un sustituto o intermediario para controlar el acceso a un objeto real, añadiendo comportamiento transversal sin modificar su implementación original.") Envoy como un contenedor sidecar a un Pod de [Kubernetes](/devops/kubernetes "Kubernetes (K8s) es una plataforma portable y extensible de código abierto para gestionar cargas de trabajo y servicios en contenedores.").
+*   **CRDs (Custom Resource Definitions)**: Istio extiende [Kubernetes](/devops/kubernetes "Kubernetes (K8s) es una plataforma portable y extensible de código abierto para gestionar cargas de trabajo y servicios en contenedores.") añadiendo sus propios tipos de recursos personalizados para configurar sus funcionalidades (ej. `VirtualService`, `Gateway`, `DestinationRule`).
 
 ---
 
@@ -276,20 +276,20 @@ Istio proporciona seguridad en la capa de la malla de servicios.
 Istio proporciona telemetría sin instrumentación de código.
 
 *   **Métricas**: Recopila automáticamente métricas de 4 "golden signals" (latencia, tráfico, errores, saturación) para todos los servicios. Se integra con [Prometheus](/web/backend/framework/herramientas/prometheus "Prometheus es una solución de monitoreo de código abierto y sistema de alertado.") por defecto.
-    *   Acceso a Prometheus UI: `istioctl dashboard prometheus`
+    *   Acceso a [Prometheus](/web/backend/framework/herramientas/prometheus "Prometheus es una solución de monitoreo de código abierto y sistema de alertado.") UI: `istioctl dashboard prometheus`
 *   **Trazabilidad Distribuida**: Genera y propaga trazas para el seguimiento de solicitudes a través de múltiples servicios. Se integra con [Jaeger](/web/backend/framework/herramientas/jaeger "Jaeger es un sistema de trazabilidad distribuida de código abierto, inspirado en Dapper de Google y OpenZipkin.") o [Zipkin](/web/backend/framework/spring/zipkin "Zipkin es un sistema de trazabilidad distribuida de código abierto.").
-    *   Acceso a Jaeger UI: `istioctl dashboard jaeger`
-    *   Acceso a Zipkin UI: `istioctl dashboard zipkin`
+    *   Acceso a [Jaeger](/web/backend/framework/herramientas/jaeger "Jaeger es un sistema de trazabilidad distribuida de código abierto, inspirado en Dapper de Google y OpenZipkin.") UI: `istioctl dashboard jaeger`
+    *   Acceso a [Zipkin](/web/backend/framework/spring/zipkin "Zipkin es un sistema de trazabilidad distribuida de código abierto.") UI: `istioctl dashboard zipkin`
 *   **Registros (Access Logs)**: Recopila logs de acceso detallados del tráfico de la malla.
 *   **[Kiali](/web/backend/framework/herramientas/kiali "Kiali es una consola de operaciones para Istio, que proporciona un mapa de la malla de servicios, gráficos de flujo de tráfico, vistas detalladas de la salud de los servicios, y la capacidad de depurar y validar la configuración de Istio.")**: Un panel de control de visualización de mallas de servicios para Istio, que proporciona un mapa gráfico de la malla, métricas, trazas y configuraciones.
-    *   Acceso a Kiali UI: `istioctl dashboard kiali`
+    *   Acceso a [Kiali](/web/backend/framework/herramientas/kiali "Kiali es una consola de operaciones para Istio de código abierto que proporciona una capa de infraestructura transparente para gestionar las comunicaciones de servicio a servicio.'), que proporciona un mapa de la malla de servicios, gráficos de flujo de tráfico, vistas detalladas de la salud de los servicios, y la capacidad de depurar y validar la configuración de Istio.") UI: `istioctl dashboard kiali`
 
 ---
 
 ## 7. 🧰 Otros Recursos de Istio
 
 *   **`ServiceEntry`**: Permite a los servicios de la malla acceder a servicios externos (fuera de la malla de Istio) como si fueran parte de la malla.
-*   **`Sidecar`**: Controla el comportamiento del proxy Envoy para un Pod o un namespace (ej. restringir qué servicios puede alcanzar).
+*   **`Sidecar`**: Controla el comportamiento del [proxy](/arquitectura/design_patterns/estructurales/proxy "El patrón Proxy es un patrón estructural que proporciona un sustituto o intermediario para controlar el acceso a un objeto real, añadiendo comportamiento transversal sin modificar su implementación original.") Envoy para un Pod o un namespace (ej. restringir qué servicios puede alcanzar).
 *   **`RequestAuthentication`**: (Ver en Seguridad) Valida tokens JWT.
 *   **`WorkloadEntry`**: Registra manualmente instancias de carga de trabajo (VMs, bare-metals) en la malla.
 *   **`Telemetry`**: (Alpha/Beta) Un recurso para configurar la generación de telemetría (métricas, trazas, logs de acceso) para un servicio.
@@ -305,7 +305,7 @@ Istio proporciona telemetría sin instrumentación de código.
 *   **Definir Subsets en `DestinationRule`**: Es crucial para habilitar patrones avanzados de tráfico como Canary releases y A/B testing.
 *   **`mTLS STRICT` en Producción**: Habilita mTLS en modo `STRICT` en producción para asegurar todas las comunicaciones de servicio a servicio.
 *   **Políticas de Autorización Detalladas (`AuthorizationPolicy`)**: Define políticas de control de acceso granulares para proteger tus servicios.
-*   **Monitorea y Depura con Herramientas de Observabilidad**: Usa Prometheus, [Grafana](/herramientas/visualizacion_datos/grafana "Grafana es una herramienta de código abierto para la visualización y analítica de series de tiempo, diseñada para consultar, visualizar, alertar y comprender tus métricas dondequiera que se almacenen."), Jaeger/Zipkin y Kiali para entender el comportamiento de tu malla. Son indispensables.
+*   **Monitorea y Depura con Herramientas de Observabilidad**: Usa [Prometheus](/web/backend/framework/herramientas/prometheus "Prometheus es una solución de monitoreo de código abierto y sistema de alertado."), [Grafana](/herramientas/visualizacion_datos/grafana "Grafana es una herramienta de código abierto para la visualización y analítica de series de tiempo, diseñada para consultar, visualizar, alertar y comprender tus métricas dondequiera que se almacenen."), [Jaeger](/web/backend/framework/herramientas/jaeger "Jaeger es un sistema de trazabilidad distribuida de código abierto, inspirado en Dapper de Google y OpenZipkin.")/[Zipkin](/web/backend/framework/spring/zipkin "Zipkin es un sistema de trazabilidad distribuida de código abierto.") y [Kiali](/web/backend/framework/herramientas/kiali "Kiali es una consola de operaciones para Istio de código abierto que proporciona una capa de infraestructura transparente para gestionar las comunicaciones de servicio a servicio.'), que proporciona un mapa de la malla de servicios, gráficos de flujo de tráfico, vistas detalladas de la salud de los servicios, y la capacidad de depurar y validar la configuración de Istio.") para entender el comportamiento de tu malla. Son indispensables.
 *   **`istioctl analyze`**: Ejecuta esta herramienta regularmente para detectar problemas de configuración de Istio.
 *   **Actualizaciones**: Mantén Istio actualizado, ya que evoluciona rápidamente.
 *   **Riesgos de Rendimiento**: Aunque Istio es eficiente, la inyección de proxies introduce una latencia mínima. Mide el rendimiento de tus aplicaciones después de integrarlo.
