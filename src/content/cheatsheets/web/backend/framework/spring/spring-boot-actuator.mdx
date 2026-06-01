@@ -122,7 +122,7 @@ Todas las configuraciones se realizan en `application.properties` o `application
     info.app.description=Sistema de gestión de inventario
     info.app.version=1.0.0-SNAPSHOT
     ```
-*   **Desde `git.properties` / `build-info.properties`**: Spring Boot puede generar estos archivos con información del build y de Git.
+*   **Desde `git.properties` / `build-info.properties`**: [Spring Boot](/web/backend/framework/spring/spring-boot "¡Absolutamente! Spring Boot es un framework increíble para construir aplicaciones Java robustas y de alto rendimiento de manera rápida y eficiente.") puede generar estos archivos con información del build y de Git.
 *   **Con `InfoContributor`**:
     ```java
     import org.springframework.boot.actuate.info.Info;
@@ -170,7 +170,7 @@ Todas las configuraciones se realizan en `application.properties` o `application
 
 ### 5.3. Métricas Personalizadas (`/metrics`)
 
-*   Utiliza Micrometer (parte del ecosistema de Spring Boot).
+*   Utiliza Micrometer (parte del ecosistema de [Spring Boot](/web/backend/framework/spring/spring-boot "¡Absolutamente! Spring Boot es un framework increíble para construir aplicaciones Java robustas y de alto rendimiento de manera rápida y eficiente.")).
     ```java
     import io.micrometer.core.instrument.Counter;
     import io.micrometer.core.instrument.Gauge;
@@ -210,7 +210,7 @@ Todas las configuraciones se realizan en `application.properties` o `application
 *   **¡CRÍTICO en Producción!**
 *   Por defecto, [Spring Security](/web/backend/framework/spring/spring-security "Spring Security es un pilar fundamental para la seguridad en aplicaciones Spring y Spring Boot.") (si está en el classpath) asegurará automáticamente todos los endpoints de Actuator.
 *   Necesitarás un usuario/contraseña para acceder a la mayoría de los endpoints.
-*   Puedes configurar reglas de autorización en tu `SecurityConfig` de Spring Security.
+*   Puedes configurar reglas de autorización en tu `SecurityConfig` de [Spring Security](/web/backend/framework/spring/spring-security "Spring Security es un pilar fundamental para la seguridad en aplicaciones Spring y Spring Boot.").
     ```java
     import org.springframework.context.annotation.Bean;
     import org.springframework.context.annotation.Configuration;
@@ -240,7 +240,7 @@ Todas las configuraciones se realizan en `application.properties` o `application
 ## 8. 📊 Integración con Herramientas de Monitoreo
 
 *   **[Prometheus](/web/backend/framework/herramientas/prometheus "Prometheus es una solución de monitoreo de código abierto y sistema de alertado.")**: Expone métricas en un formato que Prometheus puede rastrear (`/actuator/prometheus`).
-*   **[Grafana](/herramientas/visualizacion_datos/grafana "Grafana es una herramienta de código abierto para la visualización y analítica de series de tiempo, diseñada para consultar, visualizar, alertar y comprender tus métricas dondequiera que se almacenen.")**: Utiliza Grafana para visualizar las métricas recolectadas por Prometheus.
+*   **[Grafana](/herramientas/visualizacion_datos/grafana "Grafana es una herramienta de código abierto para la visualización y analítica de series de tiempo, diseñada para consultar, visualizar, alertar y comprender tus métricas dondequiera que se almacenen.")**: Utiliza Grafana para visualizar las métricas recolectadas por [Prometheus](/web/backend/framework/herramientas/prometheus "Prometheus es una solución de monitoreo de código abierto y sistema de alertado.").
 *   **Spring Boot Admin**: Proporciona una interfaz de usuario centralizada para monitorear múltiples aplicaciones Spring Boot con Actuator.
 *   **JMX**: También puedes acceder a los endpoints a través de JMX ([Java](/java/java "Java es un lenguaje de programación de propósito general, concurrente, basado en clases y orientado a objetos.") Management Extensions) usando herramientas como JConsole o VisualVM.
 
@@ -255,7 +255,7 @@ Todas las configuraciones se realizan en `application.properties` o `application
 *   **Despliegue Separado**: Para entornos críticos, considera ejecutar Actuator en un puerto diferente al de la aplicación (`management.server.port`) y restringir el acceso a ese puerto solo desde redes de monitoreo.
 *   **Logging**: Combina los datos de Actuator con un sistema de logging centralizado para una visión completa del estado de la aplicación.
 *   **Ambientes (Profiles)**: Usa perfiles de Spring para configurar la exposición de Actuator de forma diferente para desarrollo, staging y producción.
-*   **No para Todo**: Actuator es excelente para monitoreo y gestión básicos. Para monitoreo a gran escala, combínalo con herramientas dedicadas de la industria (Prometheus, Grafana, ELK Stack, etc.).
+*   **No para Todo**: Actuator es excelente para monitoreo y gestión básicos. Para monitoreo a gran escala, combínalo con herramientas dedicadas de la industria ([Prometheus](/web/backend/framework/herramientas/prometheus "Prometheus es una solución de monitoreo de código abierto y sistema de alertado."), [Grafana](/herramientas/visualizacion_datos/grafana "Grafana es una herramienta de código abierto para la visualización y analítica de series de tiempo, diseñada para consultar, visualizar, alertar y comprender tus métricas dondequiera que se almacenen."), ELK Stack, etc.).
 
 ---
 
