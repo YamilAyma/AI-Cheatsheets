@@ -1,3 +1,11 @@
+---
+title: "adapter"
+description: "El patrón Adapter es un patrón estructural que permite la cooperación entre objetos con interfaces incompatibles, actuando como un traductor o puente que convierte las llamadas de un contrato a otro."
+createdAt: 2026-05-22
+updatedAt: 2026-05-22
+tags: [estructurales]
+icon: "📄"
+---
 # 🎯 Patrón Adapter — Cheatsheet Completo 🎯
 
 El patrón **Adapter** es un patrón estructural que permite la cooperación entre objetos con interfaces incompatibles, actuando como un traductor o puente que convierte las llamadas de un contrato a otro. Resuelve problemas de integración con sistemas legacy, librerías de terceros, APIs versionadas o componentes con semánticas divergentes, sin modificar el código fuente de ninguna de las partes. Nace para preservar la inversión en código existente, unificar múltiples proveedores bajo una interfaz homogénea y aislar la lógica de negocio de los detalles de integración externa. Este cheatsheet cubre la intención arquitectónica real, contratos de traducción seguros, implementaciones multi-paradigma, variantes de composición y delegación, impacto en testing y rendimiento, trampas de abstracción permeable, y criterios estrictos para decidir cuándo la adaptación es una necesidad del dominio y no una capa innecesaria que oculta incompatibilidades críticas.
@@ -8,7 +16,7 @@ El patrón **Adapter** es un patrón estructural que permite la cooperación ent
 
 * **Target (Objetivo)**: Interfaz o contrato que el cliente espera utilizar. Define los métodos, firmas y comportamientos estándar del sistema actual.
   * Por qué importa: Establece el límite de abstracción. El cliente solo depende de esta interfaz, nunca de implementaciones externas.
-* **Adaptee (Adaptado)**: Clase, servicio o API existente con una interfaz incompatible o semánticamente distinta. Contiene la funcionalidad real que se necesita aprovechar.
+* **Adaptee (Adaptado)**: Clase, servicio o [API](/conocimiento/api "Una API (Application Programming Interface) es un conjunto de reglas, protocolos y herramientas que permite que diferentes aplicaciones de software se comuniquen entre sí.") existente con una interfaz incompatible o semánticamente distinta. Contiene la funcionalidad real que se necesita aprovechar.
   * Por qué importa: Representa la realidad del ecosistema (legacy, vendor, protocolo). No puede ni debe modificarse directamente.
 * **Adapter (Adaptador)**: Componente que implementa `Target` y contiene una referencia a `Adaptee`. Traduce llamadas, mapea parámetros y normaliza respuestas.
   * Por qué importa: Centraliza la lógica de conversión. Cambiar de proveedor o versión solo requiere sustituir el adaptador, no reescribir la aplicación.
@@ -224,11 +232,11 @@ class APIv2Adapter implements APIv1Contract {
 | Variante | Mecanismo | Caso de uso | Trade-off |
 |----------|-----------|-------------|-----------|
 | **Object Adapter** | Composición + delegación. Contiene referencia al `Adaptee`. | Integración de SDKs, APIs REST, drivers. | Ligeramente más verboso. Requiere forwarding explícito. |
-| **Class Adapter** | Herencia múltiple o mix-in. El `Adapter` extiende `Target` y `Adaptee`. | Lenguajes que lo permiten (C++, Python mix-ins). | Acoplamiento rígido. Dificulta testing y evolución independiente. |
+| **Class Adapter** | Herencia múltiple o mix-in. El `Adapter` extiende `Target` y `Adaptee`. | Lenguajes que lo permiten (C++, [Python](/python/python "Python es un lenguaje de programación de alto nivel, interpretado, interactivo y orientado a objetos.") mix-ins). | Acoplamiento rígido. Dificulta testing y evolución independiente. |
 | **Bidireccional** | Traduce en ambas direcciones (`A &gt; B` y `B &gt; A`). | Sincronización de datos, bridges entre sistemas legacy y modernos. | Complejidad exponencial. Riesgo de loops de traducción o inconsistencia. |
 | **Default / Pluggable** | Adaptador con valores por defecto. Permite registrar múltiples `Adaptee` en runtime. | Plugins, proveedores de pago, auth providers (OAuth, SAML, LDAP). | Overhead de registro. Requiere validación de contratos en carga. |
-| **API Wrapper / Facade Hybrid** | Adapta múltiples endpoints en una interfaz cohesiva de alto nivel. | Unificar microservicios, SDKs fragmentados o protocolos mixtos (gRPC/REST). | Puede violar Single Responsibility si acumula demasiada lógica de mapeo. |
-| **Lazy / Proxy Adapter** | Inicializa `Adaptee` solo cuando se invoca el primer método. | Recursos costosos, conexiones pesadas, carga bajo demanda. | Retrasa fallos de configuración. Dificulta diagnóstico temprano. |
+| **[API](/conocimiento/api "Una API (Application Programming Interface) es un conjunto de reglas, protocolos y herramientas que permite que diferentes aplicaciones de software se comuniquen entre sí.") Wrapper / [Facade](/arquitectura/design_patterns/estructurales/facade "El patrón Facade es un patrón estructural que proporciona una interfaz unificada y simplificada a un subsistema complejo, conjunto de librerías o componentes altamente interdependientes.") Hybrid** | Adapta múltiples endpoints en una interfaz cohesiva de alto nivel. | Unificar microservicios, SDKs fragmentados o protocolos mixtos (gRPC/REST). | Puede violar Single Responsibility si acumula demasiada lógica de mapeo. |
+| **Lazy / [Proxy](/arquitectura/design_patterns/estructurales/proxy "El patrón Proxy es un patrón estructural que proporciona un sustituto o intermediario para controlar el acceso a un objeto real, añadiendo comportamiento transversal sin modificar su implementación original.") Adapter** | Inicializa `Adaptee` solo cuando se invoca el primer método. | Recursos costosos, conexiones pesadas, carga bajo demanda. | Retrasa fallos de configuración. Dificulta diagnóstico temprano. |
 
 ---
 
@@ -244,10 +252,10 @@ class APIv2Adapter implements APIv1Contract {
 
 Comparación rápida con patrones estructurales:
 * **Adapter**: Traduce interfaces incompatibles. Enfocado en compatibilidad y aislamiento de vendors.
-* **Facade**: Simplifica interfaces complejas. Enfocado en reducir acoplamiento y exponer APIs de alto nivel.
-* **Decorator**: Añade comportamiento dinámicamente. Enfocado en extensión sin modificar estructura base.
-* **Bridge**: Separa abstracción de implementación. Enfocado en variación independiente en dos dimensiones.
-* **Proxy**: Controla acceso o añade lógica pre/post. Enfocado en seguridad, caching o lazy loading.
+* **[Facade](/arquitectura/design_patterns/estructurales/facade "El patrón Facade es un patrón estructural que proporciona una interfaz unificada y simplificada a un subsistema complejo, conjunto de librerías o componentes altamente interdependientes.")**: Simplifica interfaces complejas. Enfocado en reducir acoplamiento y exponer APIs de alto nivel.
+* **[Decorator](/arquitectura/design_patterns/estructurales/decorator "El patrón Decorator es un patrón estructural que permite añadir responsabilidades a objetos de forma dinámica, sin modificar su clase original ni crear jerarquías de subclases infinitas.")**: Añade comportamiento dinámicamente. Enfocado en extensión sin modificar estructura base.
+* **[Bridge](/arquitectura/design_patterns/estructurales/bridge "El patrón Bridge es un patrón estructural que desacopla una abstracción de su implementación, permitiendo que ambas dimensiones varíen de forma completamente independiente.")**: Separa abstracción de implementación. Enfocado en variación independiente en dos dimensiones.
+* **[Proxy](/arquitectura/design_patterns/estructurales/proxy "El patrón Proxy es un patrón estructural que proporciona un sustituto o intermediario para controlar el acceso a un objeto real, añadiendo comportamiento transversal sin modificar su implementación original.")**: Controla acceso o añade lógica pre/post. Enfocado en seguridad, caching o lazy loading.
 
 ---
 
@@ -282,8 +290,8 @@ Comparación rápida con patrones estructurales:
   * Fix: Envuelva llamadas con `AbortController`, `retry` policies, o circuit breakers. Documente SLA esperado en contratos.
 * **Duplicación de Adaptadores**: Múltiples `Adapter` para el mismo `Adaptee` en distintos módulos. Inconsistencia de mapeo.
   * Fix: Centralice en un módulo compartido. Registre en DI contenedor. Valide que solo exista una implementación por `Target`.
-* **Confundir con Facade**: Usar `Adapter` para simplificar APIs complejas en lugar de traducir interfaces incompatibles.
-  * Fix: Si el `Adaptee` ya es compatible pero es complejo, use Facade. Si los contratos no coinciden, use Adapter. No mezcle propósitos.
+* **Confundir con [Facade](/arquitectura/design_patterns/estructurales/facade "El patrón Facade es un patrón estructural que proporciona una interfaz unificada y simplificada a un subsistema complejo, conjunto de librerías o componentes altamente interdependientes.")**: Usar `Adapter` para simplificar APIs complejas en lugar de traducir interfaces incompatibles.
+  * Fix: Si el `Adaptee` ya es compatible pero es complejo, use [Facade](/arquitectura/design_patterns/estructurales/facade "El patrón Facade es un patrón estructural que proporciona una interfaz unificada y simplificada a un subsistema complejo, conjunto de librerías o componentes altamente interdependientes."). Si los contratos no coinciden, use Adapter. No mezcle propósitos.
 * **Serialización Rota**: El `Adapter` retorna objetos con referencias circulares o campos no serializables.
   * Fix: Implemente `toJSON()`/`toString()` seguro. Valide estructura antes de exponer. Marque campos internos como `transient`.
 * **Estado por Defecto Peligroso**: Usar `null`, `""`, o `0` como fallbacks que el sistema acepta pero maneja incorrectamente.
