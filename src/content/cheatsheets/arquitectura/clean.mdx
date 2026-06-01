@@ -102,7 +102,7 @@ La Arquitectura Limpia organiza el código en capas concéntricas, donde cada c�
   1. `CasoDeUso` (Interna) necesita guardar datos. Define una interfaz: `interface IUserRepository { save(user: User): void; }`.
   2. `AdaptadorDeInterfaz` (Externa) implementa la interfaz: `class SQLUserRepository implements IUserRepository { /* ... lógica SQL ... */ }`.
   3. `Frameworks&Drivers` (Más externa) configura el contenedor de DI para que, cuando `IUserRepository` sea solicitada, se proporcione una instancia de `SQLUserRepository`.
-  4. `CasoDeUso` recibe una `IUserRepository`, sin saber que es una implementación SQL.
+  4. `CasoDeUso` recibe una `IUserRepository`, sin saber que es una implementación [SQL](/base_datos/sql "SQL es el lenguaje estándar utilizado para comunicarse con y gestionar bases de datos relacionales (RDBMS) como MySQL, PostgreSQL, Oracle, SQL Server, SQLite, entre otros.").
 
 ---
 

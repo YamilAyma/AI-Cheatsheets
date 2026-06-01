@@ -499,7 +499,7 @@ done
 ## 11. 💡 Buenas Prácticas y Consejos Pro
 
 * **Usa siempre ShellCheck**: Esta herramienta de análisis estático de código es obligatoria en cualquier flujo de trabajo serio en Bash. Te alertará de trampas de sintaxis, variables sin comillas y problemas de portabilidad al instante.
-* **Evita el anidamiento excesivo**: Si tu script Bash requiere múltiples niveles de bucles y condicionales anidados, considera migrar esa sección lógica a [Python](/python/python "Python es un lenguaje de programación de alto nivel, interpretado, interactivo y orientado a objetos.") o Go. Bash es ideal para orquestar herramientas, no para algoritmos densos de estructuras de datos.
+* **Evita el anidamiento excesivo**: Si tu script Bash requiere múltiples niveles de bucles y condicionales anidados, considera migrar esa sección lógica a [Python](/python/python "Python es un lenguaje de programación de alto nivel, interpretado, interactivo y orientado a objetos.") o [Go](/go/go "Go es un lenguaje compilado, concurrente y de tipado estático creado por Google."). Bash es ideal para orquestar herramientas, no para algoritmos densos de estructuras de datos.
 * **Nombre de archivos temporales controlados**: Utiliza `mktemp` en combinación con la directiva `trap` para limpiar el sistema de archivos al terminar, incluso si el script finaliza por errores o señales del sistema (`SIGINT`, `SIGTERM`).
 * **Escribe mensajes de error en `stderr`**: Los mensajes informativos de fallo deben enviarse al canal de error estándar `2` para no contaminar la salida de datos limpia del script (`stdout`).
   ```bash

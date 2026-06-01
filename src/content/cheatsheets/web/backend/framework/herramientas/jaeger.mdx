@@ -35,7 +35,7 @@ icon: "📄"
 
 Jaeger se compone de varios componentes principales:
 
-*   **Jaeger Client**: Librerías específicas de lenguaje ([Java](/java/java "Java es un lenguaje de programación de propósito general, concurrente, basado en clases y orientado a objetos."), Go, [Python](/python/python "Python es un lenguaje de programación de alto nivel, interpretado, interactivo y orientado a objetos."), Node.js, etc.) que instrumentan tu aplicación. Capturan Spans y los envían al Jaeger Agent.
+*   **Jaeger Client**: Librerías específicas de lenguaje ([Java](/java/java "Java es un lenguaje de programación de propósito general, concurrente, basado en clases y orientado a objetos."), [Go](/go/go "Go es un lenguaje compilado, concurrente y de tipado estático creado por Google."), [Python](/python/python "Python es un lenguaje de programación de alto nivel, interpretado, interactivo y orientado a objetos."), Node.js, etc.) que instrumentan tu aplicación. Capturan Spans y los envían al Jaeger Agent.
 *   **Jaeger Agent**: Un demonio de red que escucha a los Jaeger Clients y envía los Spans en lotes al Jaeger Collector. Generalmente se despliega como un sidecar en [Kubernetes](/devops/kubernetes "Kubernetes (K8s) es una plataforma portable y extensible de código abierto para gestionar cargas de trabajo y servicios en contenedores.") o en el mismo host que la aplicación.
 *   **Jaeger Collector**: Recibe Spans del Jaeger Agent, los valida, los procesa y los almacena en el backend de almacenamiento.
 *   **Jaeger Query**: Un servicio que recupera trazas del almacenamiento y las expone a la UI de Jaeger.

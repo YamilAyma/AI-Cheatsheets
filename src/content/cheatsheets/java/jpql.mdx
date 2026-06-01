@@ -216,7 +216,7 @@ Para pasar valores dinámicos a las consultas. Protege contra la inyección [SQL
     ```jpql
     SELECT p FROM Product p WHERE p.name = :productName AND p.price &lt; :maxPrice
     ```
-    *   En Java: `query.setParameter("productName", "Laptop"); query.setParameter("maxPrice", 1000.00);`
+    *   En [Java](/java/java "Java es un lenguaje de programación de propósito general, concurrente, basado en clases y orientado a objetos."): `query.setParameter("productName", "Laptop"); query.setParameter("maxPrice", 1000.00);`
 
 ---
 
@@ -249,7 +249,7 @@ JPQL tiene un conjunto limitado de funciones incorporadas, a menudo mapeadas a f
     *   Realizar parte de la lógica en Java (después de obtener datos).
     *   Crear una Vista en la base de datos.
     *   Usar Criteria [API](/conocimiento/api "Una API (Application Programming Interface) es un conjunto de reglas, protocolos y herramientas que permite que diferentes aplicaciones de software se comuniquen entre sí.") (más programático, para consultas dinámicas).
-    *   Usar SQL nativo (`@NamedNativeQuery` o `createNativeQuery`) si es una consulta muy específica de la base de datos o si no se puede expresar en JPQL.
+    *   Usar [SQL](/base_datos/sql "SQL es el lenguaje estándar utilizado para comunicarse con y gestionar bases de datos relacionales (RDBMS) como MySQL, PostgreSQL, Oracle, SQL Server, SQLite, entre otros.") nativo (`@NamedNativeQuery` o `createNativeQuery`) si es una consulta muy específica de la base de datos o si no se puede expresar en JPQL.
 *   **`@NamedQuery`**: Define consultas JPQL una vez en la entidad y refiérelas por nombre. Útil para la reutilización y para que las consultas se validen en tiempo de compilación.
 *   **Optimiza con `EXPLAIN`**: Si tu proveedor JPA lo soporta, puedes usar `query.unwrap(org.hibernate.query.Query.class).getQueryString()` para ver el SQL generado y luego usar `EXPLAIN` en tu base de datos para optimizar.
 *   **Pruebas**: Escribe pruebas unitarias/de integración para tus consultas JPQL para asegurarte de que devuelven los datos esperados y que no hay errores de sintaxis.

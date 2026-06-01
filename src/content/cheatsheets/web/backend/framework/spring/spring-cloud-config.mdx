@@ -221,7 +221,7 @@ Para que los clientes de configuración actualicen su configuración en caliente
         }
     }
     ```
-4.  **Disparar el Refresh (después de cambiar la config en Git y hacer push):**
+4.  **Disparar el Refresh (después de cambiar la config en [Git](/herramientas/git/git "Git es un sistema de control de versiones distribuido (DVCS) diseñado para manejar proyectos pequeños o muy grandes con velocidad y eficiencia.") y hacer push):**
     ```bash
     curl -X POST http://localhost:8080/actuator/refresh # Llama al endpoint de refresh del cliente
     ```

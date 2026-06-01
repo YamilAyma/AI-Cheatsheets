@@ -263,7 +263,7 @@ Comparación rápida con patrones de comportamiento:
 * **Olvidar Manejo de Errores Centralizado**: Un paso lanza excepción no capturada, dejando recursos abiertos o estado inconsistente.
   * Fix: Envuelva pasos en `try/catch/finally` en el método plantilla. Implemente rollback compensatorio o cleanup explícito. Propague error de dominio.
 * **Explosión de Subclases por Combinación**: Crear `CsvToJsonValidator`, `XmlToCsvValidator`, `JsonToXmlValidator` para cada variante.
-  * Fix: Separe dimensiones independientes. Use composición de pasos (Strategy por paso) en lugar de herencia cruzada. Evite combinatoria en clases.
+  * Fix: Separe dimensiones independientes. Use composición de pasos ([Strategy](/arquitectura/design_patterns/comportamiento/strategy "El patrón Strategy es un patrón de comportamiento que define una familia de algoritmos intercambiables, los encapsula y los hace sustituibles en tiempo de ejecución sin alterar el código del cliente que los utiliza.") por paso) en lugar de herencia cruzada. Evite combinatoria en clases.
 
 ---
 

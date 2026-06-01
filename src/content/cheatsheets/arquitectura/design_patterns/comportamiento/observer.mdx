@@ -203,7 +203,7 @@ class WeakObserverList:
 | **Weak/Disposable Observers** | Referencias débiles o tokens de cancelación. | UI components, short-lived handlers, context-scoped listeners. | Overhead de gestión de ciclo de vida. Posible pérdida de notificaciones si se recolecta prematuramente. |
 | **Filtered/Conditional** | Observador solo notificado si predicate cumple. | Logging por nivel, validación por estado, feature flags. | Evaluación adicional por evento. Puede ocultar bugs si el filtro es incorrecto. |
 | **Throttled/Debounced** | Agrupa o retrasa notificaciones frecuentes. | Resize events, scroll, búsqueda en tiempo real, métricas de alta frecuencia. | Pérdida de eventos intermedios. Requiere buffer o timer management. |
-| **Distributed/Event Bus** | Notificación vía message broker (Kafka, RabbitMQ, Redis). | Microservicios, event sourcing, sistemas multi-tenant o cross-process. | Latencia de red, garantía de entrega (at-least-once), serialización estricta. |
+| **Distributed/Event Bus** | Notificación vía message broker (Kafka, RabbitMQ, [Redis](/base_datos/nosql/redis "Redis es un almacén de datos en memoria, de código abierto y alto rendimiento, que actúa como base de datos, caché, broker de mensajes y motor de streaming.")). | Microservicios, event sourcing, sistemas multi-tenant o cross-process. | Latencia de red, garantía de entrega (at-least-once), serialización estricta. |
 
 ---
 

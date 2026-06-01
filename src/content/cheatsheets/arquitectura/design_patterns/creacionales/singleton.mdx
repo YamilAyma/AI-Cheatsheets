@@ -73,7 +73,7 @@ En entornos concurrentes, esta versión básica falla. Se requiere sincronizaci�
 | **Double-Checked Locking** | Verificación rápida + bloque sincronizado + verificación interna. | Seguro y eficiente. Minimiza contención de hilos. | Complejidad aumentada. Requiere `volatile` o equivalente en algunos lenguajes. |
 | **Holder/Inner Class** | Clase interna estática que instancia al ser referenciada. | Lazy + thread-safe sin `synchronized` explícito. | Depende del cargador de clases del runtime. Menos legible. |
 | **Enum ([Java](/java/java "Java es un lenguaje de programación de propósito general, concurrente, basado en clases y orientado a objetos."))** | `enum Singleton { INSTANCE; }` | Thread-safe, serializable, reflexión bloqueada por diseño. | Limitado a Java/Kotlin. No soporta parámetros de construcción complejos. |
-| **Cache de Módulo (JS/[Python](/python/python "Python es un lenguaje de programación de alto nivel, interpretado, interactivo y orientado a objetos.")/Go)** | `export const x = new X()` o `x = X()` a nivel de módulo. | Garantizado por especificación del loader. Simple y performante. | Dificulta mocking en tests. Recarga manual necesaria en algunos entornos. |
+| **Cache de Módulo (JS/[Python](/python/python "Python es un lenguaje de programación de alto nivel, interpretado, interactivo y orientado a objetos.")/[Go](/go/go "Go es un lenguaje compilado, concurrente y de tipado estático creado por Google."))** | `export const x = new X()` o `x = X()` a nivel de módulo. | Garantizado por especificación del loader. Simple y performante. | Dificulta mocking en tests. Recarga manual necesaria en algunos entornos. |
 
 Implementación segura con Double-Checked Locking (C#/[Java](/java/java "Java es un lenguaje de programación de propósito general, concurrente, basado en clases y orientado a objetos.")-like):
 ```csharp
@@ -172,7 +172,7 @@ Ventaja: Testabilidad extrema, sin efectos secundarios ocultos. Desventaja: Boil
 
 | ✅ Uso Legítimo | ❌ Antipatrón / Abuso |
 |----------------|----------------------|
-| **Pool de conexiones**: Un solo grupo gestiona sockets a BD/Redis. Multiplicarlos satura el servidor. | **God Object**: Un singleton que valida usuarios, renderiza UI, calcula impuestos y envía emails. |
+| **Pool de conexiones**: Un solo grupo gestiona sockets a BD/[Redis](/base_datos/nosql/redis "Redis es un almacén de datos en memoria, de código abierto y alto rendimiento, que actúa como base de datos, caché, broker de mensajes y motor de streaming."). Multiplicarlos satura el servidor. | **God Object**: Un singleton que valida usuarios, renderiza UI, calcula impuestos y envía emails. |
 | **Logger centralizado**: Unifica formato, nivel de verbosity y destino de salida. | **Estado global mutable no sincronizado**: Carrito de compras compartido sin locks en entornos concurrentes. |
 | **Cache de configuración**: Lee archivo/env una vez, expone valores inmutables. | **Service Locator disfrazado**: Oculta dependencias reales del constructor, rompiendo el principio de inversión de dependencias. |
 | **Coordinador de hardware**: Acceso exclusivo a puerto serial, GPU o dispositivo IoT. | **Session management per-process en SSR**: Un singleton de sesión mezcla datos de múltiples usuarios en el mismo servidor Node. |
@@ -223,7 +223,7 @@ Cuándo migrar: Si el singleton crece &gt; 300 líneas, tiene &gt; 5 responsabil
 * **Serialización clona la instancia**: Deserializar un singleton crea una segunda instancia, rompiendo la invariante.
   * Fix: Implementa `readResolve()` ([Java](/java/java "Java es un lenguaje de programación de propósito general, concurrente, basado en clases y orientado a objetos.")), marca campos como `[NonSerialized]`, o usa `enum` para serialización nativa.
 * **Reflexión invoca constructor privado**: Frameworks de test o DI bypassean la visibilidad y crean instancias adicionales.
-  * Fix: Lanza excepción en constructor si `instance != null`. En Java/C#, usa SecurityManager o atributos de restricción si el entorno lo permite.
+  * Fix: Lanza excepción en constructor si `instance != null`. En [Java](/java/java "Java es un lenguaje de programación de propósito general, concurrente, basado en clases y orientado a objetos.")/C#, usa SecurityManager o atributos de restricción si el entorno lo permite.
 * **Olvidar liberación de recursos**: Conexiones, streams o timers activos impiden la recolección de basura al finalizar la app.
   * Fix: Expón `dispose()`, `close()`, o `shutdown()`. Registra el método en `atexit`, `shutdown hooks`, o `finally` del contenedor.
 * **Uso como contenedor de configuración mutable**: Cambiar `Singleton.config.apiKey = 'x'` en runtime crea efectos secundarios impredecibles.

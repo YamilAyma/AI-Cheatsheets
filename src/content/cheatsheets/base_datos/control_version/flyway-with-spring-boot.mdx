@@ -113,7 +113,7 @@ spring.flyway.validate-on-migrate=true # Valida el checksum de las migraciones e
 
 ## 3. 📝 Comandos Comunes de Flyway (CLI/Maven/Gradle)
 
-Aunque Spring Boot lo hace automáticamente, estos son los comandos que Flyway ejecuta o que puedes usar para control manual.
+Aunque [Spring Boot](/web/backend/framework/spring/spring-boot "¡Absolutamente! Spring Boot es un framework increíble para construir aplicaciones Java robustas y de alto rendimiento de manera rápida y eficiente.") lo hace automáticamente, estos son los comandos que Flyway ejecuta o que puedes usar para control manual.
 
 * **`flyway:migrate`**: (Comando principal) Aplica todas las migraciones pendientes que no se han ejecutado en la base de datos.
   * **Automático en Spring Boot al inicio.**
@@ -226,7 +226,7 @@ public class V3__UpdateUserEmails extends BaseJavaMigration {
 
 * **Migraciones pequeñas y atómicas**: Cada migración debe hacer una cosa y hacerla bien.
 * **Prueba tus migraciones**: Ejecuta tus migraciones en un entorno de desarrollo o staging antes de ir a producción.
-* **Scripts SQL vs. Migraciones [Java](/java/java "Java es un lenguaje de programación de propósito general, concurrente, basado en clases y orientado a objetos.")**:
+* **Scripts [SQL](/base_datos/sql "SQL es el lenguaje estándar utilizado para comunicarse con y gestionar bases de datos relacionales (RDBMS) como MySQL, PostgreSQL, Oracle, SQL Server, SQLite, entre otros.") vs. Migraciones [Java](/java/java "Java es un lenguaje de programación de propósito general, concurrente, basado en clases y orientado a objetos.")**:
   * Usa SQL para la mayoría de los cambios de esquema y datos. Son más legibles y fáciles de versionar.
   * Usa migraciones [Java](/java/java "Java es un lenguaje de programación de propósito general, concurrente, basado en clases y orientado a objetos.") solo para transformaciones de datos complejas o lógica que no se puede expresar fácilmente en SQL.
 * **Datos de Referencia**: Usa migraciones repetibles (`R__`) para datos que cambian con frecuencia (ej. listas de categorías) o para funciones y vistas.

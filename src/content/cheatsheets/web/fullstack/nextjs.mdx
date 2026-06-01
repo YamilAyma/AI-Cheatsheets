@@ -216,7 +216,7 @@ El App Router está diseñado para fetch de datos en Server Components.
 ### 4.4. Fetching en Client Components (CSR)
 
 * Para datos que cambian con mucha frecuencia, dependen del estado del usuario, o no se pueden obtener en el servidor.
-* Usa `useEffect` con librerías como SWR o React Query.
+* Usa `useEffect` con librerías como SWR o [React](/web/frontend/general/react/react "¡Excelente! React es la biblioteca de JavaScript más popular para construir interfaces de usuario.") Query.
 
   ```jsx
   'use client';
@@ -291,7 +291,7 @@ El App Router está diseñado para fetch de datos en Server Components.
 
 ## 6. 🌐 API Routes (App Router - `/app/api` Directory)
 
-Permite crear endpoints [API](/conocimiento/api "Una API (Application Programming Interface) es un conjunto de reglas, protocolos y herramientas que permite que diferentes aplicaciones de software se comuniquen entre sí.") RESTful o GraphQL en tu aplicación.
+Permite crear endpoints [API](/conocimiento/api "Una API (Application Programming Interface) es un conjunto de reglas, protocolos y herramientas que permite que diferentes aplicaciones de software se comuniquen entre sí.") RESTful o [GraphQL](/conocimiento/graphql "GraphQL es un lenguaje de consulta y runtime para APIs que permite a los clientes solicitar exactamente los datos que necesitan, evitando sobre-fetching y under-fetching.") en tu aplicación.
 
 * **`app/api/route.js`**: El archivo que define la lógica de la API para una ruta.
 * **Exporta funciones para métodos HTTP**: `GET`, `POST`, `PUT`, `DELETE`, etc.
@@ -340,7 +340,7 @@ Permite crear endpoints [API](/conocimiento/api "Una API (Application Programmin
   }
   ```
 
-  * **Rutas Dinámicas en API Routes**: `app/api/users/[id]/route.ts`
+  * **Rutas Dinámicas en [API](/conocimiento/api "Una API (Application Programming Interface) es un conjunto de reglas, protocolos y herramientas que permite que diferentes aplicaciones de software se comuniquen entre sí.") Routes**: `app/api/users/[id]/route.ts`
     ```typescript
     // app/api/users/[id]/route.ts
     import { NextResponse } from 'next/server';

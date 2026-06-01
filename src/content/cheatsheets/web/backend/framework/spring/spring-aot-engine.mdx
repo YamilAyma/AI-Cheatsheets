@@ -33,7 +33,7 @@ El **Spring AOT Engine** (Ahead-of-Time Engine) es un conjunto de herramientas y
 ### 2.1. Requisitos
 
 *   **[Spring Boot](/web/backend/framework/spring/spring-boot "¡Absolutamente! Spring Boot es un framework increíble para construir aplicaciones Java robustas y de alto rendimiento de manera rápida y eficiente.") 3.0+**: Es esencial. Las versiones anteriores no tienen soporte AOT.
-*   **GraalVM**: Necesitas una instalación de GraalVM (Community Edition o Enterprise) y el componente `native-image` instalado (`gu install native-image`).
+*   **[GraalVM](/herramientas/machines/graalvm "GraalVM es una máquina virtual universal de alto rendimiento que extiende la JVM de Java.")**: Necesitas una instalación de GraalVM (Community Edition o Enterprise) y el componente `native-image` instalado (`gu install native-image`).
 *   **Maven o Gradle**: Las herramientas de construcción principales.
 
 ### 2.2. Configuración (Maven)
@@ -185,7 +185,7 @@ public class AppRuntimeHintsConfig {
 
 ## 4. 📈 Beneficios del Spring AOT Engine (al compilar a Nativo)
 
-*   **Arranque Instantáneo**: Las aplicaciones Spring Boot que tardaban segundos en arrancar, ahora lo hacen en milisegundos. Ideal para serverless, funciones como servicio (FaaS) y microservicios efímeros.
+*   **Arranque Instantáneo**: Las aplicaciones [Spring Boot](/web/backend/framework/spring/spring-boot "¡Absolutamente! Spring Boot es un framework increíble para construir aplicaciones Java robustas y de alto rendimiento de manera rápida y eficiente.") que tardaban segundos en arrancar, ahora lo hacen en milisegundos. Ideal para serverless, funciones como servicio (FaaS) y microservicios efímeros.
 *   **Bajo Consumo de Memoria**: La huella de memoria en tiempo de ejecución se reduce drásticamente (a menudo en 5-10 veces).
 *   **Tamaño de Despliegue Reducido**: Los ejecutables nativos son más pequeños que los JARs + JVM.
 *   **Eficiencia de Recursos**: Mejor utilización de CPU y RAM, lo que se traduce en menores costos en la nube.
@@ -199,7 +199,7 @@ public class AppRuntimeHintsConfig {
 *   **Dinamismo Restringido**: El uso intensivo de reflexión, carga dinámica de clases, proxies y JNI requiere que se registren hints explícitamente, lo que puede ser un desafío si no se conocen todas las rutas de código dinámico.
 *   **Depuración Compleja**: Depurar un ejecutable nativo es más difícil que depurar en una JVM tradicional.
 *   **Soporte de Librerías**: No todas las librerías de terceros son completamente compatibles con Native Image, o requieren sus propios hints. El ecosistema está en constante mejora.
-*   **Compromisos de Rendimiento de Pico**: Para aplicaciones de Java que tienen una ejecución *muy* larga (horas o días), el compilador JIT de una JVM tradicional (con Warm-up) podría eventualmente superar el rendimiento de pico de un ejecutable nativo.
+*   **Compromisos de Rendimiento de Pico**: Para aplicaciones de [Java](/java/java "Java es un lenguaje de programación de propósito general, concurrente, basado en clases y orientado a objetos.") que tienen una ejecución *muy* larga (horas o días), el compilador JIT de una JVM tradicional (con Warm-up) podría eventualmente superar el rendimiento de pico de un ejecutable nativo.
 *   **Plataforma Específica**: Los ejecutables nativos se compilan para una plataforma específica (Linux, Windows, macOS) y una arquitectura de CPU. No son WORA (Write Once, Run Anywhere) como los JARs.
 
 ---
