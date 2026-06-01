@@ -121,8 +121,8 @@ mi-aplicacion/
    * Utiliza los **Puertos Conducidos (Interfaces de Repositorio/Servicio)** (ej. `IProductRepository.save()`), inyectados vía DI, para interactuar con el exterior.
 4. **Adaptador Conducido (ej. Implementación de Repositorio)**:
    * Recibe la llamada del Puerto Conducido.
-   * Convierte el objeto de dominio al formato específico de la infraestructura (ej. JPA Entity, SQL).
-   * Interactúa con el sistema externo (BD, API de terceros).
+   * Convierte el objeto de dominio al formato específico de la infraestructura (ej. JPA Entity, [SQL](/base_datos/sql "SQL es el lenguaje estándar utilizado para comunicarse con y gestionar bases de datos relacionales (RDBMS) como MySQL, PostgreSQL, Oracle, SQL Server, SQLite, entre otros.")).
+   * Interactúa con el sistema externo (BD, [API](/conocimiento/api "Una API (Application Programming Interface) es un conjunto de reglas, protocolos y herramientas que permite que diferentes aplicaciones de software se comuniquen entre sí.") de terceros).
    * Devuelve el resultado (convertido de nuevo a objeto de dominio) al Caso de Uso.
 5. **Caso de Uso**: Recibe el resultado, lo procesa, y crea un `ResponseModel` (DTO).
 6. **Adaptador de Conducción**: Recibe el `ResponseModel` y lo convierte al formato de respuesta del agente externo (ej. JSON para HTTP Response).
@@ -135,7 +135,7 @@ mi-aplicacion/
 * **Agnosticismo de Infraestructura**: El núcleo de la aplicación no está acoplado a la UI, la base de datos o frameworks. Puedes cambiar cualquiera de ellos sin reescribir la lógica de negocio.
 * **Alta Testabilidad**: Los casos de uso y el dominio pueden probarse de forma aislada con pruebas unitarias rápidas y fiables, utilizando mocks o stubs para los puertos. No necesitas una BD real o un servidor web.
 * **Facilita el Desarrollo Paralelo**: Diferentes equipos pueden trabajar en adaptadores y en el núcleo simultáneamente, una vez que los puertos están definidos.
-* **Mayor Mantenibilidad**: Los cambios en los detalles de la infraestructura (ej. un nuevo ORM, un cambio en la API de un proveedor externo) no afectan la lógica de negocio.
+* **Mayor Mantenibilidad**: Los cambios en los detalles de la infraestructura (ej. un nuevo ORM, un cambio en la [API](/conocimiento/api "Una API (Application Programming Interface) es un conjunto de reglas, protocolos y herramientas que permite que diferentes aplicaciones de software se comuniquen entre sí.") de un proveedor externo) no afectan la lógica de negocio.
 * **Promueve un Diseño Centrado en el Dominio**: La lógica de negocio es la prioridad y está protegida en el centro.
 * **Facilita las Migraciones**: Migrar a una nueva tecnología de base de datos o un nuevo framework web se vuelve una tarea de reemplazar adaptadores, no de reescribir el sistema.
 
@@ -156,7 +156,7 @@ mi-aplicacion/
 La Arquitectura Hexagonal es conceptualmente muy similar a (y a menudo citada como precursora o sinónimo de) otras arquitecturas limpias:
 
 * **Arquitectura Limpia ([Clean](/arquitectura/clean "La Arquitectura Limpia es una filosofía de diseño de software que propone una organización de código basada en capas concéntricas, donde las dependencias siempre apuntan hacia adentro.") Architecture)**: Robert C. Martin se inspiró en la Arquitectura Hexagonal y la Arquitectura [Cebolla](/arquitectura/cebolla "La Arquitectura Cebolla, propuesta por Jeffrey Palermo, es un patrón de diseño de software que organiza el código en capas concéntricas, similar a las capas de una cebolla."), entre otras, para formar la Arquitectura Limpia. Comparten el principio central de independencia de la infraestructura y capas concéntricas con la regla de dependencia.
-* **Arquitectura Cebolla (Onion Architecture)**: Propuesta por Jeffrey Palermo. También se centra en la inversión de dependencias y un núcleo de dominio. La principal diferencia es su enfoque explícito en la persistencia como una capa separada dentro del "interior" pero fuera del dominio puro.
+* **Arquitectura [Cebolla](/arquitectura/cebolla "La Arquitectura Cebolla, propuesta por Jeffrey Palermo, es un patrón de diseño de software que organiza el código en capas concéntricas, similar a las capas de una cebolla.") (Onion Architecture)**: Propuesta por Jeffrey Palermo. También se centra en la inversión de dependencias y un núcleo de dominio. La principal diferencia es su enfoque explícito en la persistencia como una capa separada dentro del "interior" pero fuera del dominio puro.
 
 Todos estos patrones buscan lograr los mismos beneficios de desacoplamiento y testabilidad al poner la lógica de negocio en el centro y aislarla de los detalles externos.
 
