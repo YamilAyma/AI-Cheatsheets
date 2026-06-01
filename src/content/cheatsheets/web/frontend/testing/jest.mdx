@@ -1,0 +1,311 @@
+---
+title: "jest"
+description: "Jest es un framework de testing para JavaScript y TypeScript mantenido por Meta, diseñado para ofrecer un ciclo de desarrollo rápido, configuración mínima y herramientas integradas para aserciones, mocking, cobertura y snapshots."
+createdAt: 2026-06-01
+updatedAt: 2026-06-01
+tags: [testing]
+icon: "📄"
+---
+# 🎯 Jest — Complete Cheatsheet 🎯
+
+Jest es un framework de testing para JavaScript y [TypeScript](/web/general/typescript "TypeScript es una herramienta fundamental en el desarrollo web moderno, especialmente para proyectos a gran escala, ya que añade seguridad de tipo y mejoras en la productividad.") mantenido por Meta, diseñado para ofrecer un ciclo de desarrollo rápido, configuración mínima y herramientas integradas para aserciones, mocking, cobertura y snapshots. A diferencia de runners modulares, Jest empaqueta todo en un solo paquete, garantiza aislamiento entre archivos y ejecuta pruebas en paralelo con un scheduler inteligente. Este cheatsheet cubre desde la configuración esencial hasta mocking avanzado, manipulación de temporizadores, entornos personalizados, cobertura V8/Istanbul, snapshots, optimización de CI y patrones de producción. Ideal para desarrolladores frontend, backend y equipos que migran desde Mocha/Chai o buscan un ecosistema de pruebas robusto, determinista y ampliamente compatible.
+
+---
+
+## 1. 🌟 Conceptos Fundamentales
+
+* **Zero-Config + Auto-Discovery**: Jest escanea automáticamente archivos `*.test.js|ts`, `*.spec.js|ts` o en `__tests__/`. No requiere configuración inicial para proyectos estándar.
+* **Sandbox por Archivo**: Cada archivo de prueba se ejecuta en un entorno aislado. Variables globales, mocks y estado no se comparten entre suites a menos que se use `globalSetup`.
+* **Funciones Globales Integradas**: `describe`, `test`/`it`, `beforeEach`, `expect`, `jest` están disponibles sin imports (configurable vía `injectGlobals`).
+* **Ejecución Paralela Inteligente**: Distribuye suites entre workers basándose en duración histórica y dependencia de CPU/IO. Usa `--maxWorkers` para ajustar.
+* **Watch Mode Basado en [Git](/herramientas/git/git "Git es un sistema de control de versiones distribuido (DVCS) diseñado para manejar proyectos pequeños o muy grandes con velocidad y eficiencia.")**: `jest --watch` ejecuta solo archivos modificados o dependientes afectados por cambios no commiteados. Ideal para TDD.
+* **Mocking de Primera Clase**: `jest.fn()`, `jest.mock()`, `jest.spyOn()` y fábricas de módulos permiten simular cualquier dependencia sin librerías externas.
+* **Snapshot Testing Nativo**: Serializa outputs (JSX, JSON, strings, errores) y los compara con archivos `.snap`. Facilita detección de regresiones visuales o estructurales.
+* **Cobertura Integrada**: Instrumenta código en tiempo de ejecución (Istanbul por defecto, V8 opcional) y genera reportes con umbrales configurables.
+
+---
+
+## 2. 🛠️ Instalación y Configuración
+
+* **Instalación básica (JS/TS)**:
+  ```bash
+  npm i -D jest @types/jest ts-jest
+  npx ts-jest config:init  # Genera jest.config.ts preconfigurado
+  ```
+* **`jest.config.ts` estándar**:
+  ```ts
+  import type { Config } from 'jest'
+
+  const config: Config = {
+    testEnvironment: 'node',          // o 'jsdom', 'happy-dom'
+    transform: { '^.+\\.tsx?$': 'ts-jest' },
+    moduleFileExtensions: ['ts', 'tsx', 'js', 'jsx', 'json'],
+    roots: ['<rootDir>/src'],
+    testMatch: ['**/__tests__/**/*.ts', '**/?(*.)+(spec|test).ts'],
+    setupFilesAfterEnv: ['<rootDir>/jest.setup.ts'],
+    clearMocks: true,                 // Limpia mocks entre tests automáticamente
+    coverageProvider: 'v8',           // o 'babel' (default)
+    collectCoverageFrom: ['src/**/*.ts', '!src/**/*.d.ts', '!src/**/__tests__/**'],
+  }
+
+  export default config
+  ```
+* **Scripts en `package.json`**:
+  ```json
+  {
+    "scripts": {
+      "test": "jest",
+      "test:watch": "jest --watch",
+      "test:coverage": "jest --coverage",
+      "test:ci": "jest --ci --runInBand --coverage --reporters=default --reporters=jest-junit"
+    }
+  }
+  ```
+* **Resolución de Alias y Módulos**:
+  ```ts
+  moduleNameMapper: {
+    '^@/(.*)$': '<rootDir>/src/$1',
+    '\\.(css|less|scss)$': 'identity-obj-proxy',
+  }
+  ```
+
+---
+
+## 3. 📝 Sintaxis y Estructura de Pruebas
+
+```ts
+describe('UserService', () =&gt; {
+  // Orden de ejecución: beforeAll -&gt; beforeEach -&gt; test -&gt; afterEach -&gt; afterAll
+  beforeAll(async () =&gt; { await initDB() })
+  beforeEach(() =&gt; { vi?.clearAllMocks() }) // O jest.clearAllMocks()
+  afterEach(() =&gt; { /* cleanup */ })
+  afterAll(async () =&gt; { await closeDB() })
+
+  it('creates a user with valid data', async () =&gt; {
+    const user = await createUser({ name: 'Ana', email: 'ana@dev.com' })
+    expect(user).toHaveProperty('id')
+    expect(user.name).toBe('Ana')
+  })
+
+  it.skip('temporarily disabled', () =&gt; { /* ... */ })
+  it.only('focus during debugging', () =&gt; { /* ... */ })
+})
+
+// Test concurrente (Jest 27+)
+test.concurrent('parallel test A', async () =&gt; { /* ... */ })
+test.concurrent('parallel test B', async () =&gt; { /* ... */ })
+```
+
+---
+
+## 4. 🔀 Matchers y Aserciones
+
+| Categoría | Matchers Clave | Ejemplo |
+|-----------|----------------|---------|
+| **Igualdad** | `toBe`, `toEqual`, `toStrictEqual` | `expect(obj).toStrictEqual({ a: 1, b: undefined })` |
+| **Tipos** | `toBeNull`, `toBeUndefined`, `toBeTypeOf` | `expect(val).toBeTypeOf('function')` |
+| **Números** | `toBeGreaterThan`, `toBeCloseTo`, `toBeNaN` | `expect(0.1 + 0.2).toBeCloseTo(0.3, 5)` |
+| **Strings/Regex** | `toMatch`, `toContain`, `toHaveLength` | `expect(email).toMatch(/@.+\.com$/)` |
+| **Arrays/Obj** | `toContainEqual`, `toHaveProperty`, `toMatchObject` | `expect(users).toContainEqual({ id: 1 })` |
+| **Promesas** | `resolves`, `rejects` | `await expect(apiCall()).resolves.toMatchObject({ ok: true })` |
+| **Errores** | `toThrow`, `toThrowErrorMatchingSnapshot` | `expect(() =&gt; fn()).toThrow(/Invalid input/)` |
+
+* **Negación**: `expect(val).not.toBeFalsy()`
+* **Matchers personalizados**:
+  ```ts
+  expect.extend({
+    toBeWithinRange(received, min, max) {
+      const pass = received &gt;= min && received &lt;= max
+      return { pass, message: () =&gt; `expected ${received} ${pass ? 'not ' : ''}to be in [${min}, ${max}]` }
+    }
+  })
+  ```
+
+---
+
+## 5. 🎭 Mocking y Spying
+
+```ts
+import { jest } from '@jest/globals' // O usar globals si injectGlobals: true
+import * as db from './database'
+
+// Mock automático (hoisted al top del archivo durante transformación)
+jest.mock('./database', () =&gt; ({
+  query: jest.fn().mockResolvedValue({ rows: [] }),
+}))
+
+describe('Data Layer', () =&gt; {
+  it('calls DB with correct params', async () =&gt; {
+    db.query.mockReturnValueOnce({ rows: [{ id: 1 }] })
+    const result = await fetchUser(1)
+    expect(db.query).toHaveBeenCalledWith('SELECT * FROM users WHERE id = $1', [1])
+  })
+
+  it('spies on console', () =&gt; {
+    const spy = jest.spyOn(console, 'warn').mockImplementation(() =&gt; {})
+    console.warn('test')
+    expect(spy).toHaveBeenCalledWith('test')
+    spy.mockRestore() // Restaurar implementación original
+  })
+
+  it('clears mock state between tests', () =&gt; {
+    // jest.clearAllMocks() en afterEach o clearMocks: true en config
+    db.query.mockClear() // Solo resetea contadores e historial de llamadas
+  })
+})
+```
+
+* **`__mocks__/`**: Carpeta manual en `src/` o raíz. Jest la usa automáticamente si el nombre coincide con el módulo importado.
+* **Fábricas dinámicas**:
+  ```ts
+  jest.mock('fs', () =&gt; ({
+    ...jest.requireActual('fs'),
+    readFileSync: jest.fn(() =&gt; 'mocked content')
+  }))
+  ```
+* **Limpieza recomendada**: `jest.resetAllMocks()` (resetea implementaciones + contadores) vs `jest.clearAllMocks()` (solo contadores). Configurar `resetMocks: true` en `jest.config.ts` es seguro para aislamiento.
+
+---
+
+## 6. ⏱️ Testing Asíncrono y Temporizadores
+
+```ts
+import { jest } from '@jest/globals'
+
+describe('Timers & Async', () =&gt; {
+  beforeEach(() =&gt; { jest.useFakeTimers() })
+  afterEach(() =&gt; { jest.useRealTimers() })
+
+  it('debounces callback', () =&gt; {
+    const cb = jest.fn()
+    debounce(cb, 1000)()
+    
+    jest.advanceTimersByTime(999)
+    expect(cb).not.toHaveBeenCalled()
+    
+    jest.advanceTimersByTime(1)
+    expect(cb).toHaveBeenCalledTimes(1)
+  })
+
+  it('mocks Date.now()', () =&gt; {
+    jest.setSystemTime(new Date('2024-01-01T00:00:00Z'))
+    expect(new Date().toISOString()).toBe('2024-01-01T00:00:00.000Z')
+  })
+
+  it('handles promises correctly', async () =&gt; {
+    // ✅ Correcto: await + resolves
+    await expect(asyncFn()).resolves.toBe('ok')
+    
+    // ❌ Incorrecto: expect sin await (no espera la promesa)
+    // expect(asyncFn()).resolves.toBe('ok')
+  })
+})
+```
+
+* `jest.runAllTimers()`: Ejecuta todos los timers pendientes (cuidado con loops infinitos).
+* `jest.runOnlyPendingTimers()`: Ejecuta solo los ya programados, no los recursivos.
+* `jest.advanceTimersToNextTimer()`: Avanza al siguiente timer sin ejecutar callbacks pendientes.
+
+---
+
+## 7. 🌍 Entornos y Setup Global
+
+| Entorno | Uso | Instalación |
+|---------|-----|-------------|
+| `node` | Lógica pura, CLI, APIs | Built-in |
+| `jsdom` | DOM completo, compatibilidad legacy | `npm i -D jest-environment-jsdom` |
+| `happy-dom` | DOM rápido, modern APIs | `npm i -D happy-dom jest-environment-happy-dom` |
+| `edge-runtime` | Workers, serverless | `npm i -D @edge-runtime/vm jest-environment-edge` |
+
+```ts
+// jest.setup.ts
+import '@testing-library/jest-dom' // Matchers extendidos para DOM
+import { jest } from '@jest/globals'
+
+// Polyfills o mocks globales
+global.ResizeObserver = jest.fn().mockImplementation(() =&gt; ({
+  observe: jest.fn(),
+  unobserve: jest.fn(),
+  disconnect: jest.fn()
+}))
+
+// globalSetup.ts (ejecuta UNA VEZ antes de todos los tests)
+export default async function globalSetup() {
+  const server = await startMockServer()
+  process.env.MOCK_SERVER_URL = server.url
+  return async () =&gt; { await server.close() } // globalTeardown
+}
+```
+
+* `setupFiles` → Se ejecuta **antes** de cada archivo de prueba (ideal para polyfills).
+* `setupFilesAfterEnv` → Se ejecuta **después** de que el entorno esté listo (ideal para `expect.extend`, `@testing-library`).
+* `globalSetup` / `globalTeardown` → Funciones async que retornan cleanup. Útiles para DBs, brokers o servidores compartidos.
+
+---
+
+## 8. 📊 Cobertura, Snapshots y Reportes
+
+* **Cobertura**:
+  ```bash
+  jest --coverage --coverageReporters=text --coverageReporters=html
+  ```
+  ```ts
+  coverageThreshold: {
+    global: {
+      branches: 75,
+      functions: 80,
+      lines: 85,
+      statements: 85
+    }
+  }
+  ```
+* **Snapshots**:
+  ```ts
+  it('renders card', () =&gt; {
+    const { container } = render(<Card title="Test" />)
+    expect(container).toMatchSnapshot()
+  })
+
+  // Inline (más estable en PRs)
+  it('formats date', () =&gt; {
+    expect(formatDate('2024-06-15')).toMatchInlineSnapshot(`"15/06/2024"`)
+  })
+  ```
+  * Actualizar: `jest -u` o `npx jest --updateSnapshot`
+* **Reportes CI**: `--reporters=default --reporters=jest-junit` genera `junit.xml` para [GitHub](/herramientas/github "GitHub es una plataforma web para el alojamiento de repositorios de control de versiones Git diseñado para manejar proyectos pequeños o muy grandes con velocidad y eficiencia.').")/GitLab/Jenkins.
+
+---
+
+## 9. ⚠️ Errores Comunes y Trampas
+
+* **`jest.mock()` después de imports**: El mock se aplica tarde y el test usa la implementación real.
+  *Fix*: Colocar `jest.mock()` en la primera línea o usar `jest.requireActual()` dentro de la fábrica.
+* **Promesas no manejadas en `expect().resolves`**: `expect(fn()).resolves.toBe()` no detiene el test si falla.
+  *Fix*: `await expect(fn()).resolves.toBe()` o `return expect(fn()).resolves.toBe()`.
+* **Timers no restaurados entre tests**: `jest.useFakeTimers()` contamina suites posteriores.
+  *Fix*: `afterEach(() =&gt; { jest.useRealTimers() })` o configurar `fakeTimers: { enableGlobally: true }` con limpieza automática.
+* **Snapshots con datos dinámicos**: IDs, fechas o clases CSS cambian en cada ejecución.
+  *Fix*: Usar `expect.addSnapshotSerializer()` o mocks consistentes. Prefiere `toMatchInlineSnapshot()` para lógica pequeña.
+* **Fugas de memoria en `globalSetup`**: No retornar función de cleanup o no manejar señales `SIGINT`/`SIGTERM`.
+  *Fix*: Siempre retornar `async () =&gt; { /* cleanup */ }` y registrar handlers de proceso.
+* **Confundir `clearMocks` vs `resetMocks`**: `clear` solo borra historial de llamadas. `reset` borra implementación y historial.
+  *Fix*: Usar `resetMocks: true` en config para aislamiento estricto, o llamar `jest.clearAllMocks()` en `afterEach`.
+
+---
+
+## 10. 💡 Mejores Prácticas y Consejos de Experto
+
+* **Aísla estado entre tests**: Nunca confíes en el orden de ejecución. Usa `beforeEach` para reiniciar fixtures y mocks.
+* **Prefiere `@testing-library` sobre implementaciones internas**: Testea comportamiento visible, no detalles de implementación. Reduce fragilidad en refactorings.
+* **Usa `injectGlobals: false` en librerías TS**: Importa explícitamente `import { describe, it, expect } from '@jest/globals'` para evitar conflictos de tipos y mejorar IDE support.
+* **Configura umbrales de cobertura en CI**: Falla el pipeline si `coverageThreshold` no se cumple. Mantén `lines ≥ 80%`, `functions ≥ 80%`.
+* **Snapshots inline para lógica pura**: `toMatchInlineSnapshot()` mantiene el snapshot junto al código, facilita review en PRs y evita archivos `.snap` desalineados.
+* **Optimiza `maxWorkers` en CI**: `--maxWorkers=2` o `--maxWorkers=50%` evita contención de CPU/memoria en runners compartidos.
+* **Evita `test.only` en commits**: Usa `--testNamePattern` o `--testPathPattern` localmente. Deja `only/skip` fuera del repositorio.
+* **Valida mocks con `expect.hasAssertions()`**: Garantiza que cada test contiene al menos una aserción. Configúralo en `setupFilesAfterEnv`.
+* **Perfila suites lentas**: `jest --verbose --bail=1` identifica cuellos. Usa `jest.setTimeout(10000)` localmente, pero mantén `5000` en CI.
+* **Documenta `globalSetup` y `setupFiles`**: Centraliza mocks de red, polyfills y limpieza en archivos nombrados. Facilita onboarding y debugging en entornos distribuidos.
+
+---
+
+Este cheatsheet proporciona una referencia completa para Jest, cubriendo configuración zero-config, [API](/conocimiento/api "Una API (Application Programming Interface) es un conjunto de reglas, protocolos y herramientas que permite que diferentes aplicaciones de software se comuniquen entre sí.") de aserciones, mocking avanzado, manipulación de temporizadores, entornos personalizados, cobertura V8/Istanbul, snapshots, optimización de CI y patrones de producción, junto con las mejores prácticas para mantener suites rápidas, deterministas y escalables en entornos reales.

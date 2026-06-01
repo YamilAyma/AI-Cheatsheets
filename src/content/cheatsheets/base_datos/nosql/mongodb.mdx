@@ -1,0 +1,616 @@
+---
+title: "mongodb"
+description: "MongoDB es una base de datos NoSQL orientada a documentos que almacena datos en formato BSON (Binary JSON), permitiendo esquemas flexibles y escalabilidad horizontal nativa."
+createdAt: 2026-06-01
+updatedAt: 2026-06-01
+tags: [nosql]
+icon: "🗄️"
+---
+# 🎯 MongoDB — Complete Cheatsheet 🎯
+
+MongoDB es una base de datos NoSQL orientada a documentos que almacena datos en formato BSON (Binary JSON), permitiendo esquemas flexibles y escalabilidad horizontal nativa. Diseñada para cargas de trabajo modernas con datos semi-estructurados, ofrece consultas ricas, índices secundarios, transacciones ACID (desde v4.0), replica sets para alta disponibilidad y sharding para distribución masiva. Este cheatsheet cubre desde el modelado de datos y operaciones CRUD hasta el Aggregation Framework, optimización de índices, replica sets, sharding, transacciones distribuidas, seguridad y patrones de producción. Ideal para desarrolladores backend, arquitectos de datos y equipos que migran desde bases de datos relacionales o buscan escalabilidad horizontal sin sacrificar consistencia.
+
+---
+
+## 1. 🌟 Conceptos Fundamentales
+
+* **Document-Oriented**: Los datos se almacenan como documentos BSON (similar a JSON pero con tipos adicionales: Date, ObjectId, Binary, Decimal128). No hay tablas ni filas, sino colecciones y documentos.
+  * Por qué importa: Permite esquemas dinámicos, anidamiento natural y representación 1:1 con objetos de aplicación.
+* **Esquema Flexible (Schemaless)**: No hay definición estricta de campos. Documentos en la misma colección pueden tener estructuras distintas.
+  * Implicación: La validación se aplica a nivel de aplicación o mediante JSON Schema en la BD. Flexibilidad vs gobernanza.
+* **Consulta Rica**: Soporta consultas por campos anidados, rangos, regex, geoespaciales, texto completo y agregaciones complejas. No es solo key-value.
+* **Índices Secundarios**: Índices B-tree, hash, texto, geoespaciales y TTL. Soporta índices compuestos, parciales y wildcard.
+* **Replica Sets**: Grupo de nodos (primario + secundarios) con replicación automática y failover. Garantiza alta disponibilidad y lectura escalada.
+* **Sharding**: Distribución horizontal de datos en múltiples máquinas mediante shard keys. Transparente para la aplicación.
+* **Transacciones ACID**: Desde v4.0 (multi-document en replica sets) y v4.2 (transacciones distribuidas en sharded clusters).
+* **Aggregation Framework**: Pipeline de transformaciones (similar a GROUP BY + JOIN + FILTER en [SQL](/base_datos/sql "SQL es el lenguaje estándar utilizado para comunicarse con y gestionar bases de datos relacionales (RDBMS) como MySQL, PostgreSQL, Oracle, SQL Server, SQLite, entre otros.")) para análisis complejo sin salir de la BD.
+
+---
+
+## 2. 🛠️ Instalación y Configuración
+
+* **MongoDB Atlas (Cloud - Recomendado)**:
+  ```bash
+  # Crear cluster gratuito en https://cloud.mongodb.com
+  # Obtener connection string:
+  mongodb+srv://<username>:<password>@cluster0.xxxxx.mongodb.net/mydb?retryWrites=true&w=majority
+  ```
+* **Instalación Local ([Docker](/devops/docker "Docker es una plataforma de código abierto que utiliza la contenerización para empaquetar una aplicación y todas sus dependencias en una unidad estándar para el desarrollo de software."))**:
+  ```bash
+  docker run -d --name mongodb \
+    -p 27017:27017 \
+    -e MONGO_INITDB_ROOT_USERNAME=admin \
+    -e MONGO_INITDB_ROOT_PASSWORD=secret \
+    -v mongo-data:/data/db \
+    mongo:7.0
+  ```
+* **Instalación Nativa (Ubuntu)**:
+  ```bash
+  wget -qO - https://www.mongodb.org/static/pgp/server-7.0.asc | sudo apt-key add -
+  echo "deb [ arch=amd64,arm64 ] https://repo.mongodb.org/apt/ubuntu focal/mongodb-org/7.0 multiverse" | sudo tee /etc/apt/sources.list.d/mongodb-org-7.0.list
+  sudo apt update && sudo apt install -y mongodb-org
+  sudo systemctl start mongod
+  sudo systemctl enable mongod
+  ```
+* **Drivers Oficiales**:
+  ```bash
+  # Node.js
+  npm install mongodb
+  # Python
+  pip install pymongo
+  # Java
+  # implementation 'org.mongodb:mongodb-driver-sync:4.11.0'
+  ```
+* **MongoDB Shell (`mongosh`)**:
+  ```bash
+  mongosh "mongodb+srv://cluster0.xxxxx.mongodb.net/mydb" --username admin
+  # Comandos básicos:
+  show dbs                    # Listar bases de datos
+  use mydb                    # Cambiar/crear BD
+  show collections            # Listar colecciones
+  db.stats()                  # Estadísticas de la BD actual
+  ```
+
+---
+
+## 3. 📝 Operaciones CRUD
+
+### 3.1. Insert
+```javascript
+// Insertar un documento
+db.users.insertOne({
+  name: "Ana García",
+  email: "ana@example.com",
+  age: 28,
+  roles: ["admin", "user"],
+  createdAt: new Date()
+})
+
+// Insertar múltiples
+db.users.insertMany([
+  { name: "Luis", email: "luis@example.com", age: 32 },
+  { name: "Carla", email: "carla@example.com", age: 25 }
+])
+```
+
+### 3.2. Query (Read)
+```javascript
+// Encontrar uno
+db.users.findOne({ email: "ana@example.com" })
+
+// Encontrar múltiples con filtros
+db.users.find({
+  age: { $gte: 25, $lte: 35 },
+  roles: "admin"
+}).sort({ createdAt: -1 }).limit(10)
+
+// Proyección (seleccionar campos)
+db.users.find({}, { name: 1, email: 1, _id: 0 })
+
+// Contar documentos
+db.users.countDocuments({ age: { $gt: 30 } })
+
+// Distinct values
+db.users.distinct("roles")
+```
+
+### 3.3. Update
+```javascript
+// Actualizar uno
+db.users.updateOne(
+  { email: "ana@example.com" },
+  { 
+    $set: { age: 29, "address.city": "Madrid" },
+    $inc: { loginCount: 1 },
+    $currentDate: { lastLogin: true }
+  }
+)
+
+// Actualizar múltiples
+db.users.updateMany(
+  { age: { $lt: 18 } },
+  { $set: { status: "minor" } }
+)
+
+// Upsert (insertar si no existe)
+db.users.updateOne(
+  { email: "new@example.com" },
+  { $set: { name: "New User", age: 30 } },
+  { upsert: true }
+)
+
+// Reemplazar documento completo
+db.users.replaceOne(
+  { email: "ana@example.com" },
+  { name: "Ana García", email: "ana@example.com", age: 30, roles: ["user"] }
+)
+```
+
+### 3.4. Delete
+```javascript
+// Eliminar uno
+db.users.deleteOne({ email: "ana@example.com" })
+
+// Eliminar múltiples
+db.users.deleteMany({ status: "inactive" })
+
+// Eliminar colección completa
+db.users.drop()
+```
+
+---
+
+## 4. 🔍 Filtros y Operadores de Consulta
+
+| Operador | Descripción | Ejemplo |
+|----------|-------------|---------|
+| `$eq` | Igual a | `{ age: { $eq: 25 } }` o `{ age: 25 }` |
+| `$ne` | No igual | `{ status: { $ne: "active" } }` |
+| `$gt`, `$gte` | Mayor que / mayor o igual | `{ age: { $gt: 18 } }` |
+| `$lt`, `$lte` | Menor que / menor o igual | `{ price: { $lt: 100 } }` |
+| `$in` | En array | `{ role: { $in: ["admin", "mod"] } }` |
+| `$nin` | No en array | `{ country: { $nin: ["US", "UK"] } }` |
+| `$and` | Y lógico | `{ $and: [{ age: { $gt: 18 } }, { status: "active" }] }` |
+| `$or` | O lógico | `{ $or: [{ role: "admin" }, { role: "mod" }] }` |
+| `$not` | Negación | `{ age: { $not: { $gt: 30 } } }` |
+| `$exists` | Campo existe | `{ phone: { $exists: true } }` |
+| `$type` | Tipo BSON | `{ age: { $type: "int" } }` |
+| `$regex` | Expresión regular | `{ name: { $regex: /^ana/i } }` |
+
+### Consultas Anidadas y Arrays
+```javascript
+// Campo anidado
+db.users.find({ "address.city": "Madrid" })
+
+// Array contiene elemento
+db.users.find({ roles: "admin" })
+
+// Array contiene todos los elementos
+db.users.find({ roles: { $all: ["admin", "user"] } })
+
+// Array por posición
+db.users.find({ "scores.0": { $gt: 90 } })
+
+// Array por tamaño
+db.users.find({ tags: { $size: 3 } })
+
+// Filtrar elementos de array (elemMatch)
+db.orders.find({
+  items: { $elemMatch: { product: "laptop", qty: { $gt: 1 } } }
+})
+```
+
+---
+
+## 5. 📊 Operadores de Update
+
+| Operador | Descripción | Ejemplo |
+|----------|-------------|---------|
+| `$set` | Establecer valor | `{ $set: { name: "Ana" } }` |
+| `$unset` | Eliminar campo | `{ $unset: { phone: "" } }` |
+| `$inc` | Incrementar numérico | `{ $inc: { views: 1 } }` |
+| `$mul` | Multiplicar | `{ $mul: { price: 1.1 } }` |
+| `$min` | Mínimo (solo si nuevo valor &lt; actual) | `{ $min: { lowScore: 50 } }` |
+| `$max` | Máximo (solo si nuevo valor > actual) | `{ $max: { highScore: 100 } }` |
+| `$rename` | Renombrar campo | `{ $rename: { oldField: "newField" } }` |
+| `$currentDate` | Fecha/hora actual | `{ $currentDate: { lastModified: true } }` |
+| `$push` | Añadir a array | `{ $push: { tags: "new" } }` |
+| `$pull` | Eliminar de array | `{ $pull: { roles: "guest" } }` |
+| `$addToSet` | Añadir si no existe (único) | `{ $addToSet: { skills: "mongodb" } }` |
+| `$pop` | Eliminar primero/último | `{ $pop: { items: 1 } }` (último) o `-1` (primero) |
+
+### Updates con Array Filters
+```javascript
+db.students.updateOne(
+  { _id: 1 },
+  { $set: { "grades.$[elem]": 100 } },
+  { arrayFilters: [{ "elem": { $gte: 80 } }] }
+)
+```
+
+---
+
+## 6. 🚀 Índices y Optimización
+
+### Creación de Índices
+```javascript
+// Índice simple
+db.users.createIndex({ email: 1 })  // 1 = ascendente, -1 = descendente
+
+// Índice único
+db.users.createIndex({ email: 1 }, { unique: true })
+
+// Índice compuesto
+db.users.createIndex({ lastName: 1, firstName: 1 })
+
+// Índice de texto (búsqueda full-text)
+db.articles.createIndex({ title: "text", content: "text" })
+db.articles.find({ $text: { $search: "mongodb index" } })
+
+// Índice geoespacial (2dsphere para GeoJSON)
+db.locations.createIndex({ location: "2dsphere" })
+db.locations.find({
+  location: {
+    $near: {
+      $geometry: { type: "Point", coordinates: [-3.70379, 40.41678] },
+      $maxDistance: 5000  // metros
+    }
+  }
+})
+
+// Índice TTL (expiración automática)
+db.sessions.createIndex({ createdAt: 1 }, { expireAfterSeconds: 3600 })
+
+// Índice parcial (solo documentos que cumplen condición)
+db.users.createIndex(
+  { email: 1 },
+  { partialFilterExpression: { status: "active" } }
+)
+
+// Índice wildcard (campos dinámicos)
+db.products.createIndex({ "attributes.$**": 1 })
+```
+
+### Análisis de Queries
+```javascript
+// Explicar plan de ejecución
+db.users.find({ email: "ana@example.com" }).explain("executionStats")
+
+// Métricas clave en output:
+// - winningPlan: índice usado
+// - totalDocsExamined vs nReturned (ratio ideal = 1)
+// - executionTimeMillis
+
+// Listar índices de colección
+db.users.getIndexes()
+
+// Eliminar índice
+db.users.dropIndex("email_1")
+
+// Forzar uso de índice
+db.users.find({ age: { $gt: 25 } }).hint({ age: 1 })
+```
+
+---
+
+## 7. 🔀 Aggregation Framework (Pipeline)
+
+```javascript
+db.orders.aggregate([
+  // 1. Filtrar documentos
+  { $match: { status: "completed", createdAt: { $gte: ISODate("2024-01-01") } } },
+  
+  // 2. Unir con otra colección (JOIN)
+  { $lookup: {
+      from: "users",
+      localField: "userId",
+      foreignField: "_id",
+      as: "user"
+  }},
+  
+  // 3. Desanidar array resultante
+  { $unwind: "$user" },
+  
+  // 4. Proyectar campos
+  { $project: {
+      _id: 1,
+      total: 1,
+      userName: "$user.name",
+      month: { $month: "$createdAt" }
+  }},
+  
+  // 5. Agrupar y calcular
+  { $group: {
+      _id: { userId: "$userId", month: "$month" },
+      totalSpent: { $sum: "$total" },
+      orderCount: { $sum: 1 },
+      avgOrder: { $avg: "$total" }
+  }},
+  
+  // 6. Ordenar
+  { $sort: { totalSpent: -1 } },
+  
+  // 7. Limitar
+  { $limit: 10 }
+])
+```
+
+### Etapas Comunes del Pipeline
+| Etapa | Propósito |
+|-------|-----------|
+| `$match` | Filtrar documentos (ideal al inicio para usar índices) |
+| `$project` | Seleccionar/transformar campos |
+| `$group` | Agrupar y calcular agregaciones |
+| `$sort` | Ordenar resultados |
+| `$limit` / `$skip` | Paginación |
+| `$lookup` | JOIN con otra colección |
+| `$unwind` | Desanidar arrays |
+| `$addFields` | Añadir campos calculados |
+| `$replaceRoot` | Reemplazar documento raíz |
+| `$facet` | Múltiples pipelines en paralelo |
+| `$bucket` | Agrupar en rangos (histogramas) |
+
+### Operadores de Acumulación
+```javascript
+{ $group: {
+    _id: "$category",
+    totalSales: { $sum: "$amount" },
+    avgPrice: { $avg: "$price" },
+    maxOrder: { $max: "$amount" },
+    minOrder: { $min: "$amount" },
+    count: { $sum: 1 },
+    uniqueCustomers: { $addToSet: "$customerId" }
+}}
+```
+
+---
+
+## 8. 🏗️ Modelado de Datos: Embed vs Reference
+
+### Embedding (Documentos Anidados)
+```javascript
+// ✅ Ideal para: relaciones 1:pocos, datos que se leen juntos
+{
+  _id: ObjectId("..."),
+  title: "Post Title",
+  author: {
+    name: "Ana García",
+    email: "ana@example.com",
+    avatar: "https://..."
+  },
+  comments: [
+    { userId: ObjectId("..."), text: "Great post!", createdAt: ISODate("...") },
+    { userId: ObjectId("..."), text: "Thanks!", createdAt: ISODate("...") }
+  ]
+}
+```
+**Ventajas**: Lectura en una sola query, atomicidad natural, locality de datos.
+**Desventajas**: Documentos > 16MB no permitidos. Actualizaciones frecuentes causan reubicación.
+
+### Referencing (Normalización)
+```javascript
+// ✅ Ideal para: relaciones 1:muchos, datos que crecen ilimitadamente
+// Colección: users
+{ _id: ObjectId("user123"), name: "Ana", email: "ana@example.com" }
+
+// Colección: posts
+{ _id: ObjectId("post456"), title: "Post", authorId: ObjectId("user123") }
+
+// Colección: comments
+{ _id: ObjectId("comm789"), postId: ObjectId("post456"), userId: ObjectId("user123"), text: "..." }
+```
+**Ventajas**: Sin límite de tamaño, actualizaciones independientes, evita duplicación.
+**Desventajas**: Requiere `$lookup` (JOIN), más queries, consistencia eventual.
+
+### Patrón Híbrido (Bucket Pattern)
+```javascript
+// Agrupar documentos relacionados en "buckets" de tamaño controlado
+{
+  _id: ObjectId("..."),
+  userId: ObjectId("user123"),
+  bucketStart: ISODate("2024-01-01"),
+  readings: [
+    { timestamp: ISODate("2024-01-01T10:00:00"), value: 42 },
+    { timestamp: ISODate("2024-01-01T11:00:00"), value: 45 },
+    // ... máximo ~100 elementos por bucket
+  ]
+}
+```
+
+---
+
+## 9. 🔄 Replica Sets y Sharding
+
+### Replica Set (Alta Disponibilidad)
+```bash
+# Iniciar 3 nodos (puertos 27017, 27018, 27019)
+mongod --replSet rs0 --port 27017 --dbpath /data/db1
+mongod --replSet rs0 --port 27018 --dbpath /data/db2
+mongod --replSet rs0 --port 27019 --dbpath /data/db3
+
+# Conectar al primario y configurar
+mongosh --port 27017
+rs.initiate({
+  _id: "rs0",
+  members: [
+    { _id: 0, host: "localhost:27017" },
+    { _id: 1, host: "localhost:27018" },
+    { _id: 2, host: "localhost:27019" }
+  ]
+})
+
+# Verificar estado
+rs.status()
+rs.isMaster()  # Quién es primario
+```
+**Read Preferences**: `primary`, `primaryPreferred`, `secondary`, `secondaryPreferred`, `nearest`.
+**Write Concern**: `w: 1` (primario), `w: "majority"` (majority de nodos), `w: 0` (fire-and-forget).
+
+### Sharding (Escalabilidad Horizontal)
+```bash
+# 1. Iniciar Config Servers (replica set)
+mongod --configsvr --replSet cfgReplSet --port 27019
+
+# 2. Iniciar Query Routers (mongos)
+mongos --configdb cfgReplSet/localhost:27019 --port 27017
+
+# 3. Añadir Shard Servers (replica sets)
+mongosh --port 27017  # Conectar al mongos
+sh.addShard("shardReplSet1/localhost:27018")
+sh.addShard("shardReplSet2/localhost:27020")
+
+# 4. Habilitar sharding en BD y colección
+sh.enableSharding("mydb")
+sh.shardCollection("mydb.users", { userId: "hashed" })  // Shard key
+```
+**Shard Keys**: Campo(s) usados para distribuir datos. Ideal: alta cardinalidad, bajo crecimiento, consultas frecuentes.
+**Tipos**: `hashed` (distribución uniforme), `ranged` (rangos específicos).
+
+---
+
+## 10. 🔐 Transacciones ACID
+
+```javascript
+// Transacción multi-documento (replica set)
+const session = db.getMongo().startSession({ readPreference: "primary" })
+session.startTransaction({
+  readConcern: { level: "snapshot" },
+  writeConcern: { w: "majority" }
+})
+
+try {
+  const accountsCollection = session.getDatabase("mydb").getCollection("accounts")
+  
+  accountsCollection.updateOne(
+    { accountId: "A", balance: { $gte: 100 } },
+    { $inc: { balance: -100 } }
+  )
+  
+  accountsCollection.updateOne(
+    { accountId: "B" },
+    { $inc: { balance: 100 } }
+  )
+  
+  session.commitTransaction()
+} catch (error) {
+  session.abortTransaction()
+  throw error
+} finally {
+  session.endSession()
+}
+```
+**Niveles de Aislamiento**: `readConcern: "snapshot"` (default en transacciones), `readConcern: "majority"`.
+**Limitaciones**: No soporta operaciones DDL (createIndex, drop). Timeout default = 5s (ajustable con `maxTransactionLockRequestTimeoutMillis`).
+
+---
+
+## 11. 🛡️ Seguridad y Hardening
+
+### Autenticación y Autorización
+```javascript
+// Crear usuario admin
+use admin
+db.createUser({
+  user: "admin",
+  pwd: "StrongP@ssw0rd!",
+  roles: [{ role: "root", db: "admin" }]
+})
+
+// Crear usuario de aplicación (solo lectura/escritura en mydb)
+use mydb
+db.createUser({
+  user: "appUser",
+  pwd: "AppP@ssw0rd!",
+  roles: [
+    { role: "readWrite", db: "mydb" },
+    { role: "dbAdmin", db: "mydb" }
+  ]
+})
+
+// Roles personalizados
+db.createRole({
+  role: "readMetrics",
+  privileges: [
+    { resource: { db: "mydb", collection: "metrics" }, actions: ["find"] }
+  ],
+  roles: []
+})
+```
+
+### Configuración de Seguridad (`mongod.conf`)
+```yaml
+net:
+  port: 27017
+  bindIp: 127.0.0.1  # Nunca 0.0.0.0 en producción
+  tls:
+    mode: requireTLS
+    certificateKeyFile: /etc/ssl/mongodb.pem
+    CAFile: /etc/ssl/ca.pem
+
+security:
+  authorization: enabled
+  keyFile: /etc/mongodb/keyfile  # Para replica sets/sharding
+
+auditLog:
+  destination: file
+  path: /var/log/mongodb/audit.log
+  format: JSON
+```
+
+### Encriptación
+```bash
+# Encriptación en tránsito (TLS/SSL)
+# Encriptación en reposo (Encryption at Rest)
+# MongoDB Enterprise: WiredTiger encryption engine
+# MongoDB Community: Filesystem-level encryption (LUKS, etc.)
+
+# Field-Level Encryption (Client-Side)
+# Encriptar campos específicos antes de enviar a MongoDB
+```
+
+---
+
+## 12. ⚠️ Errores Comunes y Trampas
+
+* **No índices en queries frecuentes**: Collections scan en datasets grandes causa latencia alta y uso excesivo de CPU.
+  * Fix: Analizar queries con `.explain()`, crear índices compuestos que cubran filtros + sort. Usar `indexStats` para identificar índices no usados.
+* **Documentos > 16MB**: MongoDB rechaza documentos que excedan el límite BSON.
+  * Fix: Usar GridFS para archivos grandes, o patrón bucket para arrays ilimitados.
+* **Actualizar sin `$set`**: `db.users.updateOne({ _id: 1 }, { name: "Ana" })` reemplaza todo el documento.
+  * Fix: Usar `$set: { name: "Ana" }` para actualizar campos específicos.
+* **Shard key inmutable**: Una vez sharded, no se puede cambiar el shard key sin migración costosa.
+  * Fix: Analizar patrones de consulta antes de elegir shard key. Preferir campos de alta cardinalidad y baja write amplification.
+* **Transacciones largas**: Bloquean recursos y causan timeouts.
+  * Fix: Mantener transacciones cortas (&lt; 5s). Usar operaciones idempotentes y retry logic.
+* **Ignorar write concern en réplicas**: `w: 1` no garantiza durabilidad si el primario falla antes de replicar.
+  * Fix: Usar `w: "majority"` para datos críticos. Aceptar latencia adicional vs riesgo de pérdida.
+* **Aggregation sin `$match` al inicio**: Pipeline procesa todos los documentos antes de filtrar.
+  * Fix: Colocar `$match` lo antes posible para usar índices y reducir documentos en etapas posteriores.
+* **Conexiones no cerradas**: Drivers mantienen pool de conexiones. No cerrar sesiones o cerrar app abruptamente deja conexiones zombie.
+  * Fix: Usar connection pooling, cerrar sesiones explícitamente, configurar `maxPoolSize` y `minPoolSize`.
+* **Falta de validación de esquema**: Documentos inconsistentes causan errores en aplicación.
+  * Fix: Usar JSON Schema validation en colección o validar en capa de aplicación con [Zod](/web/frontend/general/zod "¡Absolutamente! Zod es una librería increíble para la validación de esquemas y tipos en TypeScript/JavaScript, famosa por su simplicidad y excelente inferencia de tipos.")/Joi/Pydantic.
+* **Backup sin consistencia**: `mongodump` en replica set secundario puede capturar estado inconsistente.
+  * Fix: Usar `mongodump --readPreference secondary` o snapshots de volumen con `db.fsyncLock()`.
+
+---
+
+## 13. 💡 Mejores Prácticas y Consejos de Experto
+
+* **Modela para acceso, no para normalización**: Si siempre lees usuario + posts juntos, embed. Si crecen ilimitadamente, reference. Optimiza para patrones de lectura.
+* **Índices compuestos siguen ESR rule**: Equality (campos exactos) → Sort (campos ordenados) → Range (campos de rango). Orden importa.
+* **Usa Explain Plan en CI/CD**: Automatiza análisis de queries lentas. Alerta si `totalDocsExamined / nReturned > 10`.
+* **Prefiere Atlas para producción**: Backup automático, monitoring, scaling, security hardening out-of-the-box. Ahorra tiempo de ops.
+* **Connection pooling en aplicación**: Reutiliza conexiones. Configura `maxPoolSize: 100` (default) y ajusta según carga.
+* **Validación de esquema en BD**: `db.createCollection("users", { validator: { $jsonSchema: { ... } } })` previene datos inválidos desde la fuente.
+* **Monitorea con [Prometheus](/web/backend/framework/herramientas/prometheus "Prometheus es una solución de monitoreo de código abierto y sistema de alertado.") + [Grafana](/herramientas/visualizacion_datos/grafana "Grafana es una herramienta de código abierto para la visualización y analítica de series de tiempo, diseñada para consultar, visualizar, alertar y comprender tus métricas dondequiera que se almacenen.")**: `mongodb_exporter` expone métricas. Alertas en `connections > 80%`, `opcounters`, `replset lag`, `disk usage`.
+* **Backup [strategy](/arquitectura/design_patterns/comportamiento/strategy "El patrón Strategy es un patrón de comportamiento que define una familia de algoritmos intercambiables, los encapsula y los hace sustituibles en tiempo de ejecución sin alterar el código del cliente que los utiliza.") 3-2-1**: 3 copias, 2 medios distintos, 1 offsite. Usa `mongodump` + snapshots + Atlas continuous backup.
+* **Perfila con Slow Query Log**: `profiling level: 1` captura queries > 100ms. Analiza patrones y optimiza antes de escalar verticalmente.
+* **Usa Change Streams paraCDC**: `db.collection.watch()` notifica cambios en tiempo real. Ideal para sincronización, triggers, auditoría.
+* **Documenta patrones de modelado**: Mantén `schema-design.md` con decisiones de embed vs reference, índices, shard keys. Facilita onboarding y evita drift.
+* **Testea con datos reales**: `mongodump` de producción (anonimizado) → entorno staging. Queries que funcionan con 100 docs fallan con 10M.
+* **Upgrade planning**: Lee release notes. Testea en staging antes de producción. Usa `featureCompatibilityVersion` para rollback seguro.
+
+---
+
+Este cheatsheet proporciona una referencia completa para MongoDB, cubriendo modelado de datos flexible, operaciones CRUD, consultas avanzadas, Aggregation Framework, índices y optimización, replica sets y sharding, transacciones ACID, seguridad y hardening, junto con las mejores prácticas para construir aplicaciones escalables, de alto rendimiento y altamente disponibles en entornos de producción reales.

@@ -1,0 +1,396 @@
+---
+title: "vitest"
+description: "Vitest es un framework de testing nativo de Vite diseñado para velocidad extrema, compatibilidad con Jest y soporte de primera clase para ESM, TypeScript y JSX."
+createdAt: 2026-06-01
+updatedAt: 2026-06-01
+tags: [testing]
+icon: "📄"
+---
+# 🎯 Vitest — Complete Cheatsheet 🎯
+
+Vitest es un framework de testing nativo de [Vite](/web/frontend/general/vite "Vite es una herramienta de construcción frontend de última generación que combina un servidor de desarrollo ultrarrápido basado en módulos nativos del navegador con un empaquetador de producción optimizado mediante Rollup.") diseñado para velocidad extrema, compatibilidad con [Jest](/web/frontend/testing/jest "Jest es un framework de testing para JavaScript y TypeScript mantenido por Meta, diseñado para ofrecer un ciclo de desarrollo rápido, configuración mínima y herramientas integradas para aserciones, mocking, cobertura y snapshots.") y soporte de primera clase para ESM, [TypeScript](/web/general/typescript "TypeScript es una herramienta fundamental en el desarrollo web moderno, especialmente para proyectos a gran escala, ya que añade seguridad de tipo y mejoras en la productividad.") y JSX. A diferencia de herramientas tradicionales, Vitest comparte el mismo motor de transformación que Vite, lo que elimina la necesidad de configuraciones duplicadas, habilita HMR durante las pruebas y reduce el tiempo de feedback a milisegundos. Este cheatsheet cubre desde la instalación y [API](/conocimiento/api "Una API (Application Programming Interface) es un conjunto de reglas, protocolos y herramientas que permite que diferentes aplicaciones de software se comuniquen entre sí.") básica hasta mocking avanzado, manipulación de tiempo, entornos aislados, cobertura con V8, modo navegador, workspaces para monorepos y patrones de producción. Ideal para desarrolladores frontend, fullstack y equipos que migran desde Jest o buscan un ciclo de prueba instantáneo sin sacrificar compatibilidad ni ecosistema.
+
+---
+
+## 1. 🌟 Conceptos Fundamentales
+
+* **Vite-Native**: Reutiliza el pipeline de transformación de Vite (`esbuild`, `rollup`, plugins oficiales). No requiere compilación separada para tests.
+  * Por qué importa: Arranque instantáneo, HMR real durante `vitest --watch`, cero configuración duplicada.
+* **Compatibilidad con Jest**: API idéntica (`describe`, `it`, `expect`, `beforeEach`, `jest.mock` alias). Migración drop-in en la mayoría de proyectos.
+  * Diferencia clave: Vitest usa `vi` en lugar de `jest` para mocks/timers, evitando conflictos con módulos globales.
+* **ESM-First**: Resuelve módulos nativos de Node y navegadores. Soporta `import`/`export` sin transpilación previa a CommonJS.
+  * Implicación: `__dirname`, `require`, y `module.exports` no están disponibles por defecto. Usa `import.meta.url` y `path` o `node:url`.
+* **Watch Mode Inteligente**: Solo vuelve a ejecutar archivos modificados o dependientes afectados. Detecta cambios en `src/`, `tests/` y configs en tiempo real.
+* **Entornos Aislados**: Ejecuta cada archivo en un contexto limpio por defecto. Previene contaminación de estado entre tests.
+* **Concurrencia Nativa**: `describe.concurrent` y `--pool-threads` permiten ejecución paralela segura sin bloquear el event loop.
+* **Coverage con V8**: Usa `@vitest/coverage-v8` para análisis preciso de cobertura basado en instrumentación nativa del motor JS, sin sobrecarga de Babel/Istanbul.
+
+---
+
+## 2. 🛠️ Instalación y Configuración
+
+* **Instalación básica**:
+  ```bash
+  npm install -D vitest
+  # Opción recomendada: usar con Vite existente
+  npm install -D vitest jsdom @vitest/coverage-v8
+  ```
+* **Inicialización automática**:
+  ```bash
+  npx vitest init
+  # Genera vitest.config.ts y actualiza package.json scripts
+  ```
+* **`package.json` scripts**:
+  ```json
+  {
+    "scripts": {
+      "test": "vitest",
+      "test:ui": "vitest --ui",
+      "test:coverage": "vitest run --coverage",
+      "test:watch": "vitest --watch",
+      "test:ci": "vitest run --reporter=verbose --coverage"
+    }
+  }
+  ```
+* **`vitest.config.ts` estándar**:
+  ```ts
+  import { defineConfig } from 'vitest/config'
+  import react from '@vitejs/plugin-react'
+
+  export default defineConfig({
+    plugins: [react()],
+    test: {
+      globals: true,           // Opcional: evita importar 'describe', 'it', 'expect'
+      environment: 'jsdom',    // o 'happy-dom', 'node' (default)
+      setupFiles: './tests/setup.ts',
+      coverage: {
+        provider: 'v8',
+        reporter: ['text', 'json', 'html'],
+        exclude: ['**/*.test.ts', '**/*.spec.ts', 'node_modules/', 'dist/'],
+      },
+    },
+  })
+  ```
+* **Flags CLI esenciales**:
+  | Flag | Función |
+  |------|---------|
+  | `--watch` | Modo interactivo (default) |
+  | `--run` | Ejecuta una vez y sale (CI) |
+  | `--ui` | Abre dashboard visual en `localhost:51204` |
+  | `--coverage` | Genera reporte de cobertura |
+  | `--reporter=verbose` | Muestra cada test individualmente |
+  | `--bail=N` | Detiene tras `N` fallos |
+  | `--shard=x/y` | Divide suite en `y` partes, ejecuta `x` (CI paralela) |
+
+---
+
+## 3. 📝 Sintaxis y Assertions Básicos
+
+```ts
+import { describe, it, expect, beforeEach, afterEach } from 'vitest'
+
+describe('Math Utilities', () =&gt; {
+  // beforeEach/afterEach por archivo o describe
+  beforeEach(() =&gt; { /* reset state */ })
+  afterEach(() =&gt; { vi.restoreAllMocks() }) // Limpieza automática recomendada
+
+  it('sums two positive numbers', () =&gt; {
+    expect(2 + 3).toBe(5)
+  })
+
+  it('throws on invalid input', () =&gt; {
+    expect(() =&gt; divide(10, 0)).toThrow('Division by zero')
+  })
+})
+
+// Test sin describe (flat structure)
+it('validates email format', () =&gt; {
+  expect(isValidEmail('user@domain.com')).toBe(true)
+})
+
+// Test.only / it.skip (filtrado rápido)
+it.only('focuses this test during debug', () =&gt; { /* ... */ })
+it.skip('temporarily disabled', () =&gt; { /* ... */ })
+```
+
+---
+
+## 4. 🔀 Matchers Avanzados y Modificadores
+
+| Categoría | Matchers Clave | Ejemplo de Uso |
+|-----------|----------------|----------------|
+| **Igualdad** | `toBe`, `toEqual`, `toStrictEqual` | `expect(obj).toEqual({ a: 1 })` (ignora prototipo) |
+| **Tipos** | `toBeNull`, `toBeUndefined`, `toBeTruthy`, `toBeTypeOf` | `expect(val).toBeTypeOf('string')` |
+| **Números** | `toBeGreaterThan`, `toBeCloseTo`, `toBeNaN` | `expect(0.1 + 0.2).toBeCloseTo(0.3, 5)` |
+| **Strings** | `toMatch`, `toContain`, `toHaveLength` | `expect(text).toMatch(/^https?:\/\//)` |
+| **Arrays/Obj** | `toContainEqual`, `toHaveProperty`, `toMatchObject` | `expect(arr).toContainEqual({ id: 1 })` |
+| **Async/Promises** | `resolves`, `rejects` | `await expect(fetchData()).resolves.toMatchObject({ status: 200 })` |
+
+* **Modificadores de negación**: `expect(val).not.toBe(null)`
+* **Asertos personalizados**:
+  ```ts
+  import { expect } from 'vitest'
+
+  expect.extend({
+    toBeWithinRange(received, floor, ceiling) {
+      const pass = received &gt;= floor && received &lt;= ceiling
+      return {
+        pass,
+        message: () =&gt;
+          `expected ${received} ${pass ? 'not ' : ''}to be within ${floor} - ${ceiling}`,
+      }
+    },
+  })
+
+  expect(5).toBeWithinRange(1, 10) // ✅
+  ```
+
+---
+
+## 5. 🎭 Mocking, Spies y Simulación
+
+```ts
+import { vi, describe, it, expect } from 'vitest'
+import { fetchUser } from './api'
+import * as db from './database'
+
+// Mock completo de módulo (debe ir ANTES de importaciones si se usa vi.mock)
+vi.mock('./database', () =&gt; ({
+  default: { query: vi.fn() }
+}))
+
+describe('API Layer', () =&gt; {
+  it('returns mocked user', async () =&gt; {
+    db.query.mockResolvedValue({ id: 1, name: 'Alice' })
+    
+    const user = await fetchUser(1)
+    expect(user.name).toBe('Alice')
+    expect(db.query).toHaveBeenCalledWith('SELECT * FROM users WHERE id = ?', [1])
+  })
+
+  it('tracks spy calls', () =&gt; {
+    const consoleSpy = vi.spyOn(console, 'log').mockImplementation(() =&gt; {})
+    console.log('hidden')
+    expect(consoleSpy).toHaveBeenCalledTimes(1)
+    expect(consoleSpy).toHaveBeenCalledWith('hidden')
+  })
+
+  it('auto-restore after test', () =&gt; {
+    const timerSpy = vi.spyOn(global, 'setTimeout').mockReturnValue(123)
+    // Vitest restaura automáticamente si usas vi.restoreAllMocks() en afterEach
+  })
+})
+```
+
+* **Hoisting de mocks**: `vi.mock()` y `vi.hoisted()` se elevan al top del archivo durante transformación. Úsalos para simular módulos antes de cargar dependencias.
+* **Fábricas dinámicas**:
+  ```ts
+  vi.mock('./utils', async (importOriginal) =&gt; {
+    const actual = await importOriginal<typeof import('./utils')>()
+    return {
+      ...actual,
+      formatDate: vi.fn(() =&gt; '2024-01-01'),
+    }
+  })
+  ```
+
+---
+
+## 6. ⏱️ Testing Asíncrono y Manipulación del Tiempo
+
+```ts
+import { vi, it, expect, describe } from 'vitest'
+
+// Control de temporizadores (setTimeout, setInterval, Date)
+vi.useFakeTimers()
+
+describe('Time-sensitive logic', () =&gt; {
+  it('schedules callback correctly', () =&gt; {
+    const callback = vi.fn()
+    setTimeout(callback, 1000)
+    expect(callback).not.toHaveBeenCalled()
+
+    vi.advanceTimersByTime(999)
+    expect(callback).not.toHaveBeenCalled()
+
+    vi.advanceTimersByTime(1) // Total 1000ms
+    expect(callback).toHaveBeenCalledTimes(1)
+  })
+
+  it('mocks Date.now()', () =&gt; {
+    const fixedDate = new Date('2024-06-01T00:00:00Z')
+    vi.setSystemTime(fixedDate)
+    expect(new Date().toISOString()).toBe('2024-06-01T00:00:00.000Z')
+  })
+})
+
+// Async sin fake timers
+it('polls until condition met', async () =&gt; {
+  vi.useFakeTimers()
+  const poll = vi.fn(() =&gt; Promise.resolve({ ready: false }))
+  poll.mockResolvedValueOnce({ ready: true })
+
+  const promise = waitForReady(poll)
+  vi.advanceTimersByTime(500)
+  await expect(promise).resolves.toEqual({ ready: true })
+})
+```
+
+* **Restauración**: `vi.useRealTimers()` revierte al comportamiento nativo. Siempre restaura en `afterEach`.
+* **Promesas y microtasks**: `vi.advanceTimersByTimeAsync()` espera `Promise` y `queueMicrotask`. Vital para [React](/web/frontend/general/react/react "¡Excelente! React es la biblioteca de JavaScript más popular para construir interfaces de usuario.") `act()` o frameworks async.
+
+---
+
+## 7. 🌍 Entornos y Estado Global
+
+| Entorno | Uso típico | Instalación |
+|---------|------------|-------------|
+| `node` | Lógica pura, CLI, APIs | Built-in |
+| `jsdom` | DOM completo, compatibilidad legacy | `npm i -D jsdom` |
+| `happy-dom` | DOM rápido, modern APIs | `npm i -D happy-dom` |
+| `edge-runtime` | Deno, Cloudflare Workers | `npm i -D @edge-runtime/vm` |
+
+```ts
+// vitest.config.ts
+export default defineConfig({
+  test: {
+    environment: 'happy-dom',
+    globals: true,
+    setupFiles: ['./tests/setup.ts'],
+    globalSetup: ['./tests/globalSetup.ts'], // Ejecuta antes/después de TODOS los tests
+  },
+})
+```
+
+* **`setupFiles`**: Se ejecuta antes de cada archivo de prueba. Ideal para mock globales, `expect.extend`, polyfills.
+* **`globalSetup`**: Función async que retorna `teardown`. Perfecto para iniciar DBs locales, servidores mock o limpiar caches.
+  ```ts
+  // globalSetup.ts
+  export default async function globalSetup() {
+    const server = await startMockServer()
+    return async () =&gt; {
+      await server.close()
+    }
+  }
+  ```
+* **Variables de entorno por test**: `import.meta.env.VITE_API_URL` se inyecta desde `vitest.config.ts` o `.env.test`.
+
+---
+
+## 8. 📊 Cobertura, Snapshots y Reportes
+
+* **Cobertura V8**:
+  ```bash
+  npm run test:coverage
+  # Genera coverage/index.html, coverage/coverage-final.json
+  ```
+  ```ts
+  coverage: {
+    thresholds: {
+      lines: 80,
+      branches: 75,
+      functions: 90,
+      statements: 85,
+    },
+    watermarks: {
+      lines: [80, 95],
+      functions: [70, 90],
+    },
+  }
+  ```
+* **Snapshots**:
+  ```ts
+  it('renders user card correctly', () =&gt; {
+    const html = renderCard({ name: 'Ana', role: 'admin' })
+    expect(html).toMatchSnapshot()
+  })
+  ```
+  * Actualización: `vitest -u` o `npx vitest --update`
+  * Snapshots inline: `expect(html).toMatchInlineSnapshot()`
+* **Reportes visuales**: `--reporter=default` o `--reporter=json` para integración con CI/CD ([GitHub](/herramientas/github "GitHub es una plataforma web para el alojamiento de repositorios de control de versiones Git diseñado para manejar proyectos pequeños o muy grandes con velocidad y eficiencia.').") Actions, GitLab, Jenkins).
+* **Filtrado por cobertura**: `coverage.include` y `coverage.exclude` usan patrones glob. Excluye tests, configs y assets estáticos.
+
+---
+
+## 9. 🚀 Workspaces, Browser Mode y UI
+
+* **Workspaces (Monorepos)**:
+  ```ts
+  // vitest.workspace.ts
+  export default [
+    'packages/ui/vitest.config.ts',
+    'packages/api/vitest.config.ts',
+    { test: { include: ['tests/e2e/**/*.spec.ts'] } },
+  ]
+  ```
+  * Ejecuta `vitest` en raíz. Orquesta suites paralelas con reporting unificado.
+* **Browser Mode (Experimental/Nativo)**:
+  ```ts
+  test: {
+    browser: {
+      enabled: true,
+      name: 'chrome', // o 'firefox', 'webkit'
+      headless: true,
+      provider: 'playwright', // o 'webdriverio'
+    },
+  }
+  ```
+  * Ejecuta tests reales en navegadores. Ideal para componentes UI, Web APIs y compatibilidad cross-browser.
+* **UI Dashboard**: `vitest --ui` abre interfaz web para filtrar tests, ver logs, ejecutar individualmente y navegar errores con stack traces enriquecidos.
+* **Test Context**: Pasa datos entre `beforeEach`, `it` y `afterEach` sin variables globales.
+  ```ts
+  it('uses test context', ({ expect }) =&gt; {
+    expect(1 + 1).toBe(2)
+  })
+  // O con fixtures custom
+  export const test = vitest.extend&lt;{ db: MockDB }>({
+    db: async ({}, use) =&gt; {
+      const db = new MockDB()
+      await use(db)
+      await db.cleanup()
+    },
+  })
+  ```
+
+---
+
+## 10. ⚠️ Errores Comunes y Trampas
+
+* **Mocks no restaurados entre tests**: `vi.fn()` mantiene contadores entre `it`. Causa falsos positivos.
+  * Fix: `afterEach(() =&gt; { vi.restoreAllMocks(); vi.clearAllMocks() })` en setup global.
+* **`vi.mock()` después de imports**: El mock se aplica después de cargar el módulo real. El test usa la implementación original.
+  * Fix: Coloca `vi.mock()` en la primera línea del archivo o usa `vi.hoisted()` para lógica dinámica.
+* **Confundir `toBe` vs `toEqual`**: `toBe` usa `===` (referencia). `toEqual` compara estructura recursiva.
+  * Fix: Usa `toStrictEqual` para igualdad exacta (incluye propiedades `undefined` vs ausentes).
+* **Async sin `await` en assertions**: `expect(promise).resolves.toBe(5)` falla si no se `await` o no se maneja la promesa.
+  * Fix: `await expect(fn()).resolves.toBe(5)` o `expect(fn()).resolves.toBe(5)` sin `await` si solo verificas la promesa.
+* **Cobertura inflada por mocks**: Instrumentación V8 cuenta líneas de mocks como ejecutadas.
+  * Fix: Excluye `__mocks__/` y archivos de setup en `coverage.exclude`. Usa `coverage.ignoreEmptyLines: true`.
+* **Snapshots frágiles en UI**: Renderizado con fechas, IDs aleatorios o clases generadas cambia en cada ejecución.
+  * Fix: Usa `expect.addSnapshotSerializer()` para normalizar, o mocks consistentes para datos dinámicos.
+* **Entorno incorrecto para DOM**: Ejecutar tests de componentes en `node` causa `ReferenceError: window is not defined`.
+  * Fix: Configura `environment: 'jsdom'` o `'happy-dom'` en `vitest.config.ts` o usa `// @vitest-environment jsdom` por archivo.
+
+---
+
+## 11. 💡 Mejores Prácticas y Consejos de Experto
+
+* **Aísla mocks por test**: Usa `vi.fn()` dentro de `it` o restaura en `afterEach`. Evita `vi.mock()` a nivel global salvo para módulos infraestructurales (router, store).
+* **Prefiere `happy-dom` sobre `jsdom`**: Más rápido, API moderna, mejor soporte para `fetch` y `MutationObserver`. Reduce tiempo de CI en ~30-40%.
+* **Usa `@testing-library` con Vitest**: Combina `screen`, `userEvent` y `render` para tests centrados en usuario, no en implementación.
+  ```ts
+  import { render, screen } from '@testing-library/react'
+  import userEvent from '@testing-library/user-event'
+  // Vitest maneja el bundling, @testing-library maneja la interacción
+  ```
+* **Configura `coverage.thresholds` en CI**: Falla el pipeline si la cobertura cae debajo del umbral. Mantén `lines &gt;= 80%`, `functions &gt;= 85%`.
+* **Evita `globals: true` en librerías públicas**: Importa explícitamente `import { describe, it, expect } from 'vitest'` para evitar conflictos con Jest u otros runners.
+* **Perfila tests lentos**: `vitest --reporter=verbose --bail=1` identifica cuellos. Usa `vi.setConfig({ testTimeout: 5000 })` localmente, pero mantén `5000` en CI.
+* **Snapshots inline para lógica pequeña**: `toMatchInlineSnapshot()` mantiene snapshots junto al código, facilita review en PRs y reduce drift.
+* **Workspaces para monorepos**: Define `vitest.workspace.ts` en raíz. Permite ejecutar `vitest` una vez y obtener reporte consolidado sin configurar cada paquete.
+* **Browser mode solo para integración real**: No uses `browser.enabled: true` para unit tests. Úsalo para validar CSS, Web APIs o compatibilidad cross-browser antes de release.
+* **Documenta `setupFiles` y `globalSetup`**: Centraliza mocks de red, polyfills y limpieza en archivos nombrados. Facilita onboarding y debugging en CI.
+
+---
+
+Este cheatsheet proporciona una referencia completa para Vitest, cubriendo arquitectura Vite-native, API de assertions, mocking avanzado, manipulación de tiempo, entornos aislados, cobertura V8, workspaces para monorepos, modo navegador y patrones de producción, junto con las mejores prácticas para mantener suites rápidas, deterministas y escalables en entornos reales.

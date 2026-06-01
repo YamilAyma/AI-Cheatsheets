@@ -1,0 +1,305 @@
+---
+title: "fastapi"
+description: "FastAPI es un framework web moderno y de alto rendimiento para construir APIs con Python 3.8+."
+createdAt: 2026-06-01
+updatedAt: 2026-06-01
+tags: [fastapi]
+icon: "📄"
+---
+# 🎯 FastAPI — Complete Cheatsheet 🎯
+
+FastAPI es un framework web moderno y de alto rendimiento para construir APIs con [Python](/python/python "Python es un lenguaje de programación de alto nivel, interpretado, interactivo y orientado a objetos.") 3.8+. Basado en Starlette y Pydantic v2, ofrece velocidad comparable a [NodeJS](/web/general/nodejs "Node.js es un entorno de ejecución de JavaScript basado en el motor V8 de Chrome.") y [Go](/go/go "Go es un lenguaje compilado, concurrente y de tipado estático creado por Google."), validación automática de datos, generación nativa de documentación [OpenAPI](/herramientas/openapi "OpenAPI Specification (OAS) es un formato de descripción de API es un conjunto de reglas, protocolos y herramientas que permite que diferentes aplicaciones de software se comuniquen entre sí.') estándar, independiente del lenguaje, legible tanto por humanos como por máquinas.")/Swagger e inyección de dependencias intuitiva. Este cheatsheet cubre desde la instalación y rutas básicas hasta Pydantic v2, inyección de dependencias avanzada, concurrencia async, manejo de errores, despliegue con Uvicorn y patrones de producción. Ideal para desarrolladores que migran desde [Flask](/web/backend/framework/flask/flask "Flask es un microframework web para Python que proporciona las herramientas esenciales para construir aplicaciones web, dejando la elección de otras herramientas (como ORM o templating) en manos del desarrollador.")/[Django](/web/backend/framework/django/django "Django es un framework web de alto nivel en Python que fomenta el desarrollo rápido y un diseño limpio y pragmático.") o buscan un stack backend rápido, tipado y escalable.
+
+---
+
+## 1. 🌟 Conceptos Fundamentales
+
+* **Starlette Base**: Routing, middleware, WebSockets y eventos de ciclo de vida. FastAPI añade validación, serialización y OpenAPI sobre este núcleo async-first.
+* **Pydantic v2**: Validación y serialización basada en type hints. Compilada en [Rust](/rust/rust "Rust es un lenguaje de programación de sistemas enfocado en seguridad, concurrencia y rendimiento sin recolector de basura (GC).") (`pydantic-core`), es ~5-50x más rápida que v1 y soporta modelos estrictos, discriminados y conversión automática.
+* **OpenAPI Nativo**: Documentación automática en `/docs` (Swagger) y `/redoc`. Esquema JSON en `/openapi.json`. Totalmente extensible con decoradores y `response_model`.
+* **Inyección de Dependencias**: `Depends()` permite inyectar sesiones de DB, usuarios autenticados, cachés o validadores. Soporta scopes, caché automático y sub-dependencias.
+* **Type Hints Obligatorios**: FastAPI usa anotaciones para validar, serializar y generar docs. Sin type hints, no hay validación automática.
+* **Async por Defecto, Sync Compatible**: `async def` se ejecuta en el event loop principal. `def` se ejecuta en un threadpool aislado. El framework gestiona la concurrencia según la firma.
+
+---
+
+## 2. 🛠️ Instalación y Estructura
+
+* **Instalación moderna (recomendado con `uv`)**:
+  ```bash
+  uv pip install "fastapi[standard]" uvicorn
+  # O tradicional: pip install "fastapi[standard]" uvicorn
+  ```
+* **Estructura de proyecto escalable**:
+  ```text
+  app/
+  ├── main.py              # Factory o app entry point
+  ├── routers/             # APIRouter por dominio
+  ├── models/              # SQLAlchemy/SQLModel/Prisma
+  ├── schemas/             # Pydantic v2 models
+  ├── services/            # Lógica de negocio
+  ├── dependencies.py      # DB, auth, cache, rate limit
+  └── config.py            # pydantic-settings
+  ```
+* **Arranque rápido**:
+  ```python
+  # app/main.py
+  from fastapi import FastAPI
+
+  app = FastAPI(title="API", version="1.0.0", docs_url="/api/docs")
+
+  @app.get("/health")
+  def health_check(): return {"status": "ok"}
+  ```
+  ```bash
+  uvicorn app.main:app --reload --port 8000
+  ```
+
+---
+
+## 3. 📝 Rutas y Parámetros
+
+```python
+from fastapi import FastAPI, Path, Query, Body
+
+app = FastAPI()
+
+# Path params (validación inline)
+@app.get("/items/{item_id}")
+def get_item(item_id: int = Path(gt=0, le=1000)):
+    return {"item_id": item_id}
+
+# Query params (opcionales con default)
+@app.get("/search")
+def search(q: str = Query(min_length=3, max_length=50, alias="query"), page: int = 1):
+    return {"q": q, "page": page}
+
+# Request Body + Response Model
+@app.post("/users", response_model=UserOut, status_code=201)
+def create_user(user: UserIn):
+    # FastAPI valida, parsea y serializa automáticamente
+    return {"id": 123, **user.model_dump()}
+```
+
+* **Orden de precedencia**: `Path > Query > Body/Header/Cookie`
+* **Múltiples cuerpos**: Usa `Body(..., embed=True)` o agrupa en un Pydantic model.
+* **Status codes explícitos**: `status_code=201`, `204`, `422` (automático en validación fallida).
+
+---
+
+## 4. 🔌 Pydantic v2 y Validación
+
+```python
+from pydantic import BaseModel, Field, field_validator, model_validator, ConfigDict
+
+class UserIn(BaseModel):
+    model_config = ConfigDict(from_attributes=True, str_strip_whitespace=True)
+    
+    username: str = Field(min_length=3, max_length=30, pattern="^[a-zA-Z0-9_]+$")
+    email: str
+    age: int = Field(gt=0, le=150)
+    role: str = Field(default="user", pattern="^(user|admin|mod)$")
+    password: str
+    
+    @field_validator("email")
+    @classmethod
+    def validate_email(cls, v):
+        if "@" not in v: raise ValueError("Invalid email")
+        return v.lower()
+        
+    @model_validator(mode="after")
+    def check_password_strength(self):
+        if len(self.password) &lt; 8:
+            raise ValueError("Password too short")
+        return self
+```
+
+* **`from_attributes=True`**: Reemplaza `orm_mode=True` para convertir ORM objects a Pydantic.
+* **`str_strip_whitespace=True`**: Limpia espacios en strings automáticamente.
+* **Validadores**: `@field_validator` (por campo), `@model_validator` (multi-campo), `BeforeValidator`/`WrapValidator` para lógica avanzada.
+* **Serialización**: `model.model_dump()`, `model.model_dump_json()`, `model.model_validate(data)` para parsing.
+
+---
+
+## 5. 🔗 Inyección de Dependencias
+
+```python
+from fastapi import Depends, HTTPException
+from sqlalchemy.orm import Session
+
+# Patrón estándar de sesión DB
+def get_db():
+    db = SessionLocal()
+    try:
+        yield db  # FastAPI maneja finally automáticamente
+    finally:
+        db.close()
+
+# Uso en rutas
+@app.get("/users/{user_id}")
+def read_user(user_id: int, db: Session = Depends(get_db)):
+    user = db.get(User, user_id)
+    if not user: raise HTTPException(404, "Not found")
+    return user
+
+# Dependencia con caché (default: True por request)
+def get_current_user(db: Session = Depends(get_db)):
+    # ... lógica de auth ...
+    return user
+
+@app.get("/profile")
+def profile(user: User = Depends(get_current_user)):
+    return user
+```
+
+* **`use_cache=False`**: Fuerza re-evaluación por cada llamada a `Depends`.
+* **Sub-dependencias**: `Depends(Depends(func))` se resuelve automáticamente.
+* **Seguridad**: `OAuth2PasswordBearer`, `APIKeyHeader`, `HTTPBearer` se inyectan igual.
+
+---
+
+## 6. ⚡ Concurrencia y Async
+
+| Tipo de Ruta | Ejecución | Uso recomendado |
+|--------------|-----------|-----------------|
+| `async def` | Event Loop principal | I/O no bloqueante (DB async, HTTP, [Redis](/base_datos/nosql/redis "Redis es un almacén de datos en memoria, de código abierto y alto rendimiento, que actúa como base de datos, caché, broker de mensajes y motor de streaming."), archivos async) |
+| `def` | ThreadPool de Starlette | Código sincrónico, librerías blocking, CPU-bound ligero |
+
+```python
+import asyncio
+from fastapi import BackgroundTasks
+
+@app.post("/process")
+async def process_data(task: BackgroundTasks):
+    task.add_function(send_email, "user@test.com", "Report ready")
+    return {"status": "processing"}
+
+# Evita blocking en async:
+# ❌ time.sleep(2)  → bloquea event loop
+# ✅ await asyncio.sleep(2) → libera event loop
+
+# Para código sincrónico pesado en ruta async:
+loop = asyncio.get_event_loop()
+result = await loop.run_in_executor(None, heavy_sync_function, arg)
+```
+
+* **BackgroundTasks**: Se ejecuta tras retornar respuesta. Ideal para emails, logs, caché warming.
+* **Concurrencia masiva**: Usa `asyncio.gather(*tasks)` o `anyio` para paralelizar I/O seguro.
+
+---
+
+## 7. 🌐 Middleware, Errores y Seguridad
+
+```python
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi import HTTPException, Request
+from fastapi.responses import JSONResponse
+
+# CORS
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["https://app.com"],
+    allow_credentials=True,
+    allow_methods=["GET", "POST"],
+    allow_headers=["*"],
+)
+
+# Manejo global de excepciones
+@app.exception_handler(ValueError)
+async def value_error_handler(request: Request, exc: ValueError):
+    return JSONResponse(status_code=400, content={"detail": str(exc)})
+
+@app.exception_handler(404)
+async def custom_404(request: Request, exc: HTTPException):
+    return JSONResponse(status_code=404, content={"error": "Ruta no encontrada"})
+
+# Middleware custom (orden LIFO en response)
+@app.middleware("http")
+async def log_requests(request: Request, call_next):
+    start = time.time()
+    response = await call_next(request)
+    response.headers["X-Process-Time"] = str(time.time() - start)
+    return response
+```
+
+* **Orden de middleware**: Se ejecutan en orden de registro en request, inverso en response.
+* **Seguridad base**: HTTPS obligatorio, CORS restrictivo, rate limiting externo (Redis/Nginx), validación estricta en Pydantic.
+
+---
+
+## 8. 📦 Configuración, Testing y Despliegue
+
+* **Configuración validada (`pydantic-settings`)**:
+  ```python
+  from pydantic_settings import BaseSettings, SettingsConfigDict
+
+  class Settings(BaseSettings):
+      model_config = SettingsConfigDict(env_file=".env", case_sensitive=False)
+      database_url: str
+      secret_key: str
+      debug: bool = False
+
+  settings = Settings()
+  ```
+* **Testing con `pytest`**:
+  ```python
+  from fastapi.testclient import TestClient
+  from app.main import app
+
+  def test_health():
+      client = TestClient(app)
+      res = client.get("/health")
+      assert res.status_code == 200
+      assert res.json()["status"] == "ok"
+  ```
+* **Despliegue producción**:
+  ```bash
+  # Multi-worker con Gunicorn
+  gunicorn app.main:app -k uvicorn.workers.UvicornWorker -w 4 -b 0.0.0.0:8000
+  ```
+* **[Docker](/devops/docker "Docker es una plataforma de código abierto que utiliza la contenerización para empaquetar una aplicación y todas sus dependencias en una unidad estándar para el desarrollo de software.") optimizado**:
+  ```dockerfile
+  FROM python:3.12-slim
+  WORKDIR /app
+  COPY requirements.txt .
+  RUN pip install --no-cache-dir -r requirements.txt
+  COPY . .
+  USER 1000
+  CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+  ```
+
+---
+
+## 9. ⚠️ Errores Comunes y Trampas
+
+* **Blocking code en `async def`**: `requests`, `time.sleep`, `sqlite3` bloquean el event loop.
+  * Fix: Usa `httpx.AsyncClient`, `asyncio.sleep`, o ejecuta en `def` (threadpool) con `run_in_executor`.
+* **Pydantic v1 syntax en v2**: `class Config`, `orm_mode`, `@validator` están deprecados.
+  * Fix: Usa `model_config = ConfigDict(...)`, `from_attributes=True`, `@field_validator`.
+* **Fugas de conexión DB**: No usar `yield` o olvidar `finally` en `get_db`.
+  * Fix: Patrón `try: yield db finally: db.close()` es obligatorio.
+* **N+1 Queries en ORM**: Pydantic serializa relaciones lazy-loaded disparando consultas extra.
+  * Fix: Usa `joinedload`/`selectinload` en SQLAlchemy o desactiva `from_attributes` si no es necesario.
+* **`response_model` filtra campos inesperados**: FastAPI elimina campos no definidos. Puede droppear datos si el schema es estricto.
+  * Fix: Usa `response_model_exclude_unset=True` o ajusta el schema para incluir campos opcionales.
+* **Dependencias circulares**: `routers.py` importa `dependencies.py` y viceversa.
+  * Fix: Centraliza `Depends` en `dependencies.py`, inyecta por string o usa `APIRouter` con `dependencies=[Depends(...)]`.
+
+---
+
+## 10. 💡 Mejores Prácticas y Consejos de Experto
+
+* **Modulariza con `APIRouter`**: Agrupa por dominio (`/users`, `/items`, `/auth`). Usa `prefix`, `tags`, y `dependencies` compartidos.
+* **Mantén rutas delgadas**: Validación y serialización en Pydantic, lógica de negocio en `services/`, persistencia en `models/`.
+* **Cachea dependencias pesadas**: `@lru_cache` para config, `use_cache=True` (default) para auth/DB por request.
+* **Prefiere `httpx.AsyncClient` para tests async**: `TestClient` usa `requests` (sincrónico). Para async real, usa `pytest-httpx` o `httpx.AsyncClient`.
+* **Valida en el borde**: Nunca confíes en datos externos. Usa `pydantic` estricto, `Pattern`, `ConstrainedStr`, y sanitiza en `services/`.
+* **Perfila con `py-spy` y APM**: FastAPI es rápido, pero tu DB o lógica sincrónica puede ser el cuello. Usa Sentry/Datadog para trazas reales.
+* **Genera schemas temprano**: Define `UserCreate`, `UserRead`, `UserUpdate` separados. Evita mutaciones accidentales y expone solo lo necesario.
+* **Desactiva debug en prod**: `debug=False` oculta stack traces, desactiva recarga y mejora seguridad. Usa variables de entorno.
+* **Integra CI/CD con `ruff` + `mypy` + `pytest`**: `ruff` para linting rápido, `mypy --strict` para type safety, `pytest` para coverage.
+* **Documenta respuestas de error**: Usa `responses={400: {...}, 404: {...}}` en decoradores para Swagger completo y clientes SDK generables.
+
+---
+
+Este cheatsheet proporciona una referencia completa para FastAPI, cubriendo Pydantic v2 moderno, inyección de dependencias, concurrencia async, manejo de errores, despliegue con Uvicorn/Gunicorn y patrones de producción, junto con las mejores prácticas para construir APIs rápidas, seguras y altamente mantenibles en entornos reales.

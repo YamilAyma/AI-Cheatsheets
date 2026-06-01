@@ -1,0 +1,359 @@
+---
+title: "redis"
+description: "Redis es un almacén de datos en memoria, de código abierto y alto rendimiento, que actúa como base de datos, caché, broker de mensajes y motor de streaming."
+createdAt: 2026-06-01
+updatedAt: 2026-06-01
+tags: [nosql]
+icon: "📄"
+---
+# 🎯 Redis — Complete Cheatsheet 🎯
+
+Redis es un almacén de datos en memoria, de código abierto y alto rendimiento, que actúa como base de datos, caché, broker de mensajes y motor de streaming. Diseñado para operaciones de latencia sub-milisegunda, utiliza un modelo single-threaded (con I/O multiplexado) para evitar bloqueos y garantizar atomicidad nativa en operaciones simples. Este cheatsheet cubre desde los conceptos fundamentales y comandos esenciales hasta estructuras de datos avanzadas, persistencia RDB/AOF, replicación, clúster distribuido, scripting [Lua](/devops/lua "Lua (del portugués, 'Luna') es un lenguaje de programación ligero, de alto rendimiento y fácilmente embebible, diseñado en la PUC-Río (Brasil) en 1993."), streams, hardening y patrones de producción. Ideal para desarrolladores, arquitectos y DevOps que buscan aprovechar Redis como capa de aceleración, cola de eventos o almacén de estado distribuido con garantías de consistencia y escalabilidad horizontal.
+
+---
+
+## 1. 🌟 Conceptos Fundamentales
+
+* **In-Memory First**: Los datos residen principalmente en RAM, con respaldo opcional a disco. Esto elimina overhead de I/O y garantiza lecturas/escrituras en microsegundos.
+* **Single-Threaded Event Loop**: Redis procesa comandos secuencialmente en un único hilo principal. No hay race conditions en operaciones atómicas, pero operaciones bloqueantes pueden detener todo el servidor.
+* **Estructuras de Datos como Tipo**: No son simples key-value strings. Redis expone tipos nativos optimizados (String, List, Hash, Set, Sorted Set, Bitmap, HyperLogLog, Geospatial, Stream) con operaciones específicas.
+* **Atomicidad por Comando**: Cada operación individual es atómica. Transacciones (`MULTI`/`EXEC`) agrupan comandos pero no ofrecen rollback; `WATCH` añade control optimista de concurrencia.
+* **Persistencia Opcional**: Redis no requiere persistencia para funcionar. RDB (snapshots) y AOF (append-only log) se pueden combinar o desactivar según el caso de uso (caché vs estado crítico).
+* **Replicación Asíncrona**: Los réplicas reciben actualizaciones del master vía stream de cambios. La replicación es eventual; fallos de red pueden causar pérdida de escrituras recientes.
+* **Pub/Sub vs Streams**: Pub/Sub es fire-and-forget (mensajes perdidos si nadie escucha). Streams persisten mensajes, permiten consumidores con offset y garantizan entrega al menos una vez.
+* **Eviction Policies**: Cuando la memoria se llena, Redis elimina claves según la política configurada (`allkeys-lru`, `volatile-ttl`, `noeviction`, etc.). Crucial para cachés de tamaño fijo.
+
+---
+
+## 2. 🛠️ Instalación y Configuración
+
+* **Instalación rápida (Linux/macOS)**:
+  ```bash
+  # Ubuntu/Debian
+  sudo apt update && sudo apt install redis-server
+  # macOS (Homebrew)
+  brew install redis
+  # Docker (producción)
+  docker run -d -p 6379:6379 --name redis-stack redis/redis-stack:latest
+  ```
+* **Verificación y CLI**:
+  ```bash
+  redis-cli ping          # Respuesta esperada: PONG
+  redis-cli monitor       # Stream en vivo de todos los comandos (debug, no prod)
+  redis-cli info server   # Métricas de versión, uptime, conexiones
+  redis-cli --latency     # Mide latencia de red en tiempo real
+  ```
+* **`redis.conf` esencial**:
+  ```conf
+  bind 127.0.0.1          # Restringir interfaces (nunca 0.0.0.0 en prod)
+  port 6379
+  protected-mode yes      # Rechaza conexiones externas sin password
+  requirepass StrongP@ssw0rd!  # Autenticación obligatoria
+  maxmemory 2gb           # Límite estricto de RAM
+  maxmemory-policy allkeys-lru  # Política de expulsión recomendada para caché
+  appendonly yes          # Habilitar AOF
+  save ""                 # Desactivar RDB si solo se usa AOF
+  ```
+* **Comandos de gestión**:
+  ```bash
+  redis-server /etc/redis/redis.conf  # Iniciar con config custom
+  redis-cli shutdown save             # Apagado seguro con snapshot
+  redis-cli acl whoami                # Ver usuario activo
+  ```
+
+---
+
+## 3. 📝 Comandos Básicos y Tipos de Datos
+
+### 3.1. Strings y Contadores
+```redis
+SET user:1001:name "Ana" EX 3600      # Set con expiración (TTL)
+GET user:1001:name                    # Retrieval
+MSET key1 "v1" key2 "v2"              # Set múltiple atómico
+INCR counter                          # Atómico: +1 (inicializa en 0 si no existe)
+DECR counter                          # Atómico: -1
+INCRBY score 5                        # Incremento personalizado
+APPEND log " [INFO] Request ok"       # Concatenar al final (útil para logs ligeros)
+STRLEN user:1001:name                 # Longitud del valor
+```
+
+### 3.2. Listas (Colas y Pilas)
+```redis
+LPUSH queue:tasks "job1" "job2"       # Push izquierda (pila/cola LIFO)
+RPUSH queue:tasks "job3"              # Push derecha
+LPOP queue:tasks                      # Pop izquierda (consume job1)
+RPOP queue:tasks                      # Pop derecha
+LRANGE queue:tasks 0 -1               # Ver toda la lista (evitar en listas grandes)
+LLEN queue:tasks                      # Longitud actual
+BRPOP queue:tasks 5                   # Bloqueante: espera 5s si está vacía (ideal para workers)
+```
+
+### 3.3. Hashes (Objetos Estructurados)
+```redis
+HSET user:1001 name "Luis" age 30 role "admin"
+HGET user:1001 name                   # "Luis"
+HMGET user:1001 name age role         # Múltiples campos
+HGETALL user:1001                     # Todos los pares (puede ser costoso si es grande)
+HINCRBY user:1001 age 1               # Incrementar campo numérico
+HDEL user:1001 role                   # Eliminar campo específico
+HEXISTS user:1001 email               # Verificar existencia (0/1)
+```
+
+---
+
+## 4. 🔧 Estructuras de Datos Avanzadas
+
+### 4.1. Sets y Sorted Sets
+```redis
+# Sets (únicos, no ordenados)
+SADD tags:post:42 "redis" "cache" "nosql"
+SREM tags:post:42 "nosql"
+SMEMBERS tags:post:42
+SCARD tags:post:42                    # Cardinalidad
+SISMEMBER tags:post:42 "redis"        # 1 si existe
+SINTER tags:post:42 tags:post:99      # Intersección
+SUNION tags:post:42 tags:post:99      # Unión
+SDIFF tags:post:42 tags:post:99       # Diferencia
+
+# Sorted Sets (score + valor, ordenados por score)
+ZADD leaderboard 100 "ana" 250 "luis" 150 "carla"
+ZINCRBY leaderboard 50 "ana"          # Ana = 150
+ZRANGE leaderboard 0 2 WITHSCORES     # Top 3 ascendente
+ZREVRANGE leaderboard 0 2 WITHSCORES  # Top 3 descendente
+ZSCORE leaderboard "luis"             # 250
+ZRANK leaderboard "carla"             # Posición (0-based)
+ZCOUNT leaderboard 100 200            # Elementos en rango de scores
+```
+
+### 4.2. Bitmaps, HyperLogLog y Geospatial
+```redis
+# Bitmaps (bits individuales, ideal para flags diarios)
+SETBIT daily:login:2024-06-01 1001 1  # Usuario 1001 logueado
+GETBIT daily:login:2024-06-01 1001
+BITCOUNT daily:login:2024-06-01       # Usuarios únicos del día
+
+# HyperLogLog (conteo aproximado con 0.81% error, usa ~12KB)
+PFADD unique:visitors "ip1" "ip2" "ip3"
+PFCOUNT unique:visitors               # ~3
+PFMERGE all:visitors daily:v1 daily:v2
+
+# Geospatial (coordenadas, cálculos de distancia/radio)
+GEOADD cities -3.70379 40.41678 "Madrid"
+GEODIST cities "Madrid" "Barcelona" km
+GEORADIUS cities -3.70379 40.41678 50 km WITHDIST
+```
+
+---
+
+## 5. 🔄 Transacciones y Atomicidad
+
+```redis
+# MULTI/EXEC: Agrupa comandos, no rollback, ejecución secuencial
+MULTI
+  INCR counter
+  SET log:1 "incremented"
+EXEC
+
+# WATCH: Control optimista de concurrencia (comparar y intercambiar)
+WATCH balance:user:1001
+current = GET balance:user:1001
+if current &gt;= 100:
+  MULTI
+    DECRBY balance:user:1001 100
+    LPUSH tx:history "deduct_100"
+  EXEC  # Falla si otro cliente modificó balance:user:1001 entre WATCH y EXEC
+else:
+  UNWATCH
+  # Reintentar o rechazar
+
+# Evalúa atomicidad: cada comando individual es atómico. MULTI no rollbackea si falla un comando intermedio (solo ignora los restantes en Redis &lt; 7, ejecuta parcialmente en versiones nuevas con flags).
+```
+
+---
+
+## 6. 📢 Pub/Sub, Streams y Event Sourcing
+
+### 6.1. Pub/Sub (Fire-and-Forget)
+```redis
+# Publisher
+PUBLISH channel:news "Breaking update"
+PUBLISH channel:alerts "CPU &gt; 90%"
+
+# Subscriber (bloqueante)
+SUBSCRIBE channel:news channel:alerts
+# Opcional: patrones
+PSUBSCRIBE channel:events.*
+# Salida en vivo: 1) "message" 2) "channel:news" 3) "Breaking update"
+```
+
+### 6.2. Streams (Persistente, Consumidores, Offset)
+```redis
+# Añadir mensaje (ID auto o explícito timestamp-sequence)
+XADD stream:logs * sensor "temp" value 42.5 level "info"
+XADD stream:logs 1717200000000-0 sensor "hum" value 80.2
+
+# Leer sin consumir (peek)
+XRANGE stream:logs - + COUNT 5
+
+# Consumir con grupo (acknowledgment, retry)
+XGROUP CREATE stream:logs group:workers 0 MKSTREAM
+XREADGROUP GROUP group:workers consumer1 COUNT 10 BLOCK 5000 STREAMS stream:logs &gt;
+# Salida: ID + campos. Procesa y confirma:
+XACK stream:logs group:workers 1717200000000-0
+
+# Mensajes pendantes (no confirmados)
+XPENDING stream:logs group:workers
+XCLAIM stream:logs group:workers consumer2 3600000 1717200000000-0
+```
+
+---
+
+## 7. 💾 Persistencia: RDB vs AOF
+
+| Característica | RDB (Snapshot) | AOF (Append-Only) |
+|----------------|----------------|-------------------|
+| **Frecuencia** | Configurable (`SAVE` o `BGSAVE` cada `X` seg) | Cada write o por fsync (`everysec` default) |
+| **Tamaño** | Compacto, binario | Mayor, texto Redis commands |
+| **Recuperación** | Rápida, pero puede perder datos desde último snapshot | Más lenta, pero pérdida máxima = 1s (o 0 con `always`) |
+| **Uso típico** | Backups, clones, caché tolerante a pérdida | Estado crítico, réplicas, recovery preciso |
+| **Comando** | `BGSAVE` | `BGREWRITEAOF` (compactar log) |
+
+* **Configuración híbrida (recomendada)**:
+  ```conf
+  save 900 1    # 1 cambio en 15 min
+  save 300 10   # 10 cambios en 5 min
+  save 60 10000 # 10000 cambios en 1 min
+  appendonly yes
+  appendfsync everysec  # Balance rendimiento/seguridad
+  auto-aof-rewrite-percentage 100
+  auto-aof-rewrite-min-size 64mb
+  ```
+* **Restauración**: Colocar `dump.rdb` o `appendonly.aof` en `dir` configurado y reiniciar. Redis detecta automáticamente.
+
+---
+
+## 8. 🌐 Réplicas, Clúster y Alta Disponibilidad
+
+### 8.1. Replicación Maestro-Réplica
+```conf
+# En réplica (replica.conf)
+replicaof 192.168.1.10 6379
+masterauth StrongP@ssw0rd!
+replica-read-only yes
+```
+* **Sincronización inicial**: `FULLRESYNC` (envía RDB completo) &gt; stream incremental.
+* **Promoción manual**: `redis-cli replicaof no one` (convierte réplica en master).
+* **Lag de replicación**: Monitorear con `INFO replication` → `master_repl_offset` vs `slave_repl_offset`.
+
+### 8.2. Redis Cluster (Sharding Automático)
+```bash
+# Crear clúster (12 nodos: 6 master, 6 replica)
+redis-cli --cluster create \
+  10.0.0.1:7000 10.0.0.2:7000 10.0.0.3:7000 \
+  10.0.0.4:7000 10.0.0.5:7000 10.0.0.6:7000 \
+  --cluster-replicas 1
+```
+* **Hash Slots**: 16384 slots distribuidos entre masters. `CRC16(key) % 16384` determina nodo.
+* **Cross-Node Keys**: `MGET` o `MULTI` fallan si las claves están en nodos distintos. Fix: Hash tags `{user:1001}:name` y `{user:1001}:email` fuerzan mismo slot.
+* **Failover automático**: Sentinel o Cluster interno promueve réplica si master cae. Latencia de elección: ~1-3s.
+
+---
+
+## 9. 🧮 Scripting Lua y Pipelining
+
+### 9.1. Lua Scripts (Atómicos y Reutilizables)
+```lua
+-- eval.lua
+local key = KEYS[1]
+local limit = tonumber(ARGV[1])
+local current = tonumber(redis.call('GET', key) or "0")
+if current &lt; limit then
+  redis.call('INCR', key)
+  return 1  -- Permitido
+else
+  return 0  -- Rate limited
+end
+```
+```bash
+# Cargar script (cachea SHA en servidor)
+SCRIPT LOAD "$(cat eval.lua)"
+# Ejecutar por SHA (evita reenvío de código)
+EVALSHA a27e2e8b... 1 rate:ip:192.168.1.5 100
+```
+* **Reglas Lua**: Solo comandos Redis permitidos. No bloquear event loop. Determinista (sin `math.random` o `os.time`).
+
+### 9.2. Pipelining (Batch de Comandos)
+```python
+# Python (redis-py)
+pipe = r.pipeline()
+pipe.set('a', 1)
+pipe.incr('a')
+pipe.get('a')
+results = pipe.execute()  # [True, 2, b'2']
+```
+* **Beneficio**: Reduce round-trips de red. Envía comandos en buffer, recibe respuestas en bloque.
+* **Advertencia**: No ofrece atomicidad (a menos que se envuelva en `MULTI`). Usa para lecturas/escrituras independientes.
+
+---
+
+## 10. 🔒 Seguridad, Hardening y Monitoreo
+
+* **Autenticación y ACLs** (Redis 6+):
+  ```redis
+  ACL SETUSER app1 on &gt;pass1 ~cache:* +GET +SET +EXPIRE
+  ACL SETUSER admin allkeys allcommands on &gt;admin_pass
+  ACL LIST   # Ver reglas activas
+  ACL SAVE   # Persistir en archivo
+  ```
+* **Renombrar comandos peligrosos** (`redis.conf`):
+  ```conf
+  rename-command FLUSHDB ""
+  rename-command FLUSHALL ""
+  rename-command CONFIG ""
+  ```
+* **Monitoreo esencial**:
+  ```bash
+  redis-cli info memory        # used_memory, maxmemory, fragmentation_ratio
+  redis-cli info stats         # ops/sec, hit/miss ratio, expired keys
+  redis-cli slowlog get 10     # Comandos &gt; slowlog-log-slower-than (μs)
+  redis-cli latency latest     # Eventos de bloqueo reciente
+  ```
+* **Métricas clave**: `instantaneous_ops_per_sec`, `keyspace_hits` / `(hits+misses)`, `blocked_clients`, `evicted_keys`.
+
+---
+
+## 11. ⚠️ Errores Comunes y Trampas
+
+* **`KEYS *` en producción**: Bloquea el event loop hasta escanear toda la base. En datasets grandes, causa timeout o caída de servicio.
+  * Fix: Usar `SCAN 0 MATCH "prefix:*" COUNT 100` con cursor paginado.
+* **TTL en keys grandes sin expiración**: Acumula memoria hasta colapsar RAM. Redis no elimina automáticamente sin política o TTL.
+  * Fix: Configurar `maxmemory-policy` y aplicar `EXPIRE` o `SET ... EX` en creación.
+* **Pipelining con dependencias secuenciales**: `pipe.set('x', 1); pipe.get('x')` retorna valor viejo porque se ejecutan en batch sin esperar.
+  * Fix: Dividir en múltiples ejecuciones o usar `EVAL`/`WATCH` si se requiere coherencia.
+* **Lua scripts bloqueantes**: Buclos infinitos o comandos pesados (`KEYS`, `SORT` grande) congelan Redis.
+  * Fix: Validar complejidad antes de desplegar. Usar `lua-time-limit` (default 5s) para abortar automáticamente.
+* **Replicación síncrona mal configurada**: Redis no soporta sync nativo. Forzar `WAIT` para ack de réplicas añade latencia y no garantiza durabilidad ante fallos de red.
+  * Fix: Usar `WAIT 2 1000` solo para casos estrictos, o migrar a Redis Cluster con quorum.
+* **Ignorar `maxmemory-policy`**: Default es `noeviction`. Si la memoria se llena, Redis retorna `OOM command not allowed` y rechaza escrituras.
+  * Fix: Definir política explícita (`allkeys-lru`, `volatile-lfu`, `allkeys-random`) según caso de uso.
+* **Cross-Node en Clúster**: `MGET a b c` falla si `a`, `b`, `c` están en masters distintos. Error: `CROSSSLOT Keys in request don't hash to the same slot`.
+  * Fix: Usar hash tags `{group}:key` para forzar co-localización, o ejecutar comandos en cliente con routing inteligente.
+
+---
+
+## 12. 💡 Mejores Prácticas y Consejos de Experto
+
+* **Diseña keys con convención estricta**: `namespace:entity:id:field` (ej. `app:session:uid7f3:token`). Facilita `SCAN`, debugging y limpieza programática.
+* **Perfila antes de optimizar**: Usa `SLOWLOG GET` y `MEMORY USAGE key` para identificar cuellos. La mayoría de problemas son claves grandes (>100KB) o comandos O(N) en datasets crecientes.
+* **Prefiere `SET`/`GET` + TTL sobre hashes para caché simple**: Si solo almacenas JSON/string, evita overhead de `HSET`. Serializa con `msgpack` o `zstd` si el payload &gt; 1KB.
+* **Usa `SCAN` + `UNLINK` para limpieza segura**: `UNLINK` elimina en background (non-blocking). `DEL` bloquea. Combinar con `SCAN` en scripts de mantenimiento.
+* **Centraliza configuración con Sentinel o Redis Enterprise**: Para HA automática, failover transparente y descubrimiento de topología sin hardcodear IPs.
+* **Monitorea fragmentación de memoria**: `mem_fragmentation_ratio` &gt; 1.5 indica memoria no reclamada por el OS. Ejecuta `MEMORY PURGE` (si supported) o reinicia en ventana de mantenimiento.
+* **Valida payloads antes de `EVAL` o `ZADD`**: Scores infinitos, NaN o strings vacíos en sorted sets causan comportamiento indefinido. Sanitiza en capa de aplicación.
+* **Implementa circuit breaker en clientes**: Si Redis cae o rechaza conexiones, falla rápido en la app. No reintentes indefinidamente; usa backoff exponencial y fallback a DB/cache secundario.
+* **Documenta esquemas de datos**: Redis no tiene schema validation. Mantén un `schema.md` con formatos de key, TTL esperados, tipos de datos y políticas de expiración. Evita drift en equipos grandes.
+* **Integra con observabilidad moderna**: Exporta métricas vía `redis_exporter` → [Prometheus](/web/backend/framework/herramientas/prometheus "Prometheus es una solución de monitoreo de código abierto y sistema de alertado.") → [Grafana](/herramientas/visualizacion_datos/grafana "Grafana es una herramienta de código abierto para la visualización y analítica de series de tiempo, diseñada para consultar, visualizar, alertar y comprender tus métricas dondequiera que se almacenen."). Alertas en `used_memory &gt; 85%`, `hit_rate &lt; 70%`, `blocked_clients &gt; 50`.
+
+---
+
+Este cheatsheet proporciona una referencia completa para Redis, cubriendo conceptos fundamentales, comandos esenciales, estructuras de datos avanzadas, transacciones, pub/sub y streams, persistencia RDB/AOF, clúster distribuido, scripting Lua, hardening y monitoreo, junto con las mejores prácticas para construir sistemas de baja latencia, altamente disponibles y escalables en entornos de producción reales.

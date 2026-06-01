@@ -1,0 +1,828 @@
+---
+title: "mongoose"
+description: "Mongoose es una biblioteca ODM (Object-Document Mapping) para MongoDB y Node.js que proporciona un esquema basado en validación, modelado de relaciones, middleware pre/post, transformación de consultas y herramientas de tipado estricto con TypeScript."
+createdAt: 2026-06-01
+updatedAt: 2026-06-01
+tags: [nosql]
+icon: "📄"
+---
+# 🎯 Mongoose — Complete Cheatsheet 🎯
+
+Mongoose es una biblioteca ODM (Object-Document Mapping) para [MongoDB](/base_datos/nosql/mongodb "MongoDB es una base de datos NoSQL orientada a documentos que almacena datos en formato BSON (Binary JSON), permitiendo esquemas flexibles y escalabilidad horizontal nativa.") y Node.js que proporciona un esquema basado en validación, modelado de relaciones, middleware pre/post, transformación de consultas y herramientas de tipado estricto con [TypeScript](/web/general/typescript "TypeScript es una herramienta fundamental en el desarrollo web moderno, especialmente para proyectos a gran escala, ya que añade seguridad de tipo y mejoras en la productividad."). Construye una capa de abstracción sobre el driver nativo de MongoDB, añadiendo esquemas, validación, hooks, population, transacciones y plugins reutilizables. Este cheatsheet cubre desde la instalación y definición de esquemas hasta population avanzada, agregaciones, transacciones ACID, discriminators, plugins personalizados, optimización de índices y patrones de producción. Ideal para desarrolladores backend que construyen APIs con Node.js/TypeScript y buscan estructura, validación y productividad sobre MongoDB sin sacrificar rendimiento ni control.
+
+---
+
+## 1. 🌟 Conceptos Fundamentales
+
+* **Schema-first design**: Todo comienza con un `Schema`, que define estructura, tipos, validación, índices y comportamiento de un documento. MongoDB es schemaless, pero Mongoose impone estructura en el lado del cliente.
+* **Modelos como constructores**: Un `Model` se compila desde un Schema y actúa como clase para instanciar documentos y ejecutar operaciones contra la colección.
+* **Documentos con comportamiento**: Los documentos no son objetos planos; tienen métodos, hooks, validación y estado interno (`isNew`, `isModified`, `$locals`).
+* **Validación antes de persistir**: Mongoose valida tipos, requeridos, enums, regex y validadores custom antes de enviar a MongoDB. Falla rápido y local.
+* **Middleware (pre/post hooks)**: Intercepta operaciones como `save`, `find`, `update`, `remove` para añadir lógica transversal (auditoría, encriptación, soft delete).
+* **Population nativa**: Referencias entre documentos se resuelven con `populate()`, similar a un JOIN en [SQL](/base_datos/sql "SQL es el lenguaje estándar utilizado para comunicarse con y gestionar bases de datos relacionales (RDBMS) como MySQL, PostgreSQL, Oracle, SQL Server, SQLite, entre otros.") pero lazy y explícito.
+* **Query [API](/conocimiento/api "Una API (Application Programming Interface) es un conjunto de reglas, protocolos y herramientas que permite que diferentes aplicaciones de software se comuniquen entre sí.") chainable**: Las consultas son *thenables* y construyen un pipeline ejecutable. Permiten composición dinámica de filtros, proyecciones y opciones.
+* **TypeScript first-class**: Desde v6+, los tipos se infieren automáticamente desde el schema. Zero-cost type safety sin duplicar interfaces.
+* **Plugins y composición**: Lógica transversal (timestamps, soft delete, slugify) se encapsula en plugins reutilizables entre schemas.
+
+---
+
+## 2. 🛠️ Instalación y Conexión
+
+* **Instalación básica**:
+  ```bash
+  npm install mongoose
+  npm install -D @types/mongoose  # TypeScript
+  ```
+* **Conexión estándar (Mongoose 7/8)**:
+  ```ts
+  import mongoose from 'mongoose'
+
+  // Conexión con opciones recomendadas
+  await mongoose.connect('mongodb://localhost:27017/myapp', {
+    // Mongoose 8 usa el driver nativo directamente
+    // Las opciones pool ya no son necesarias (defaults optimizados)
+  })
+
+  // Eventos de conexión (recomendado en producción)
+  mongoose.connection.on('connected', () =&gt; console.log('✅ MongoDB connected'))
+  mongoose.connection.on('error', (err) =&gt; console.error('❌ MongoDB error:', err))
+  mongoose.connection.on('disconnected', () =&gt; console.warn('⚠️ MongoDB disconnected'))
+  ```
+* **Conexión con variables de entorno**:
+  ```ts
+  import mongoose from 'mongoose'
+  import { config } from 'dotenv'
+  config()
+
+  const MONGO_URI = process.env.MONGO_URI || 'mongodb://localhost:27017/dev'
+
+  export async function connectDB() {
+    try {
+      await mongoose.connect(MONGO_URI)
+    } catch (error) {
+      console.error('MongoDB connection failed:', error)
+      process.exit(1)
+    }
+  }
+  ```
+* **Múltiples conexiones (microservicios / multi-tenancy)**:
+  ```ts
+  import mongoose from 'mongoose'
+
+  const tenantDb = mongoose.createConnection('mongodb://host/tenant_abc')
+  const User = tenantDb.model('User', userSchema)
+  // Conexiones independientes con sus propios modelos
+  ```
+* **Graceful shutdown**:
+  ```ts
+  process.on('SIGINT', async () =&gt; {
+    await mongoose.connection.close()
+    process.exit(0)
+  })
+  ```
+
+---
+
+## 3. 📝 Schemas y Modelos Básicos
+
+### 3.1. Definición de Schema
+```ts
+import { Schema, model } from 'mongoose'
+
+// Schema con tipos básicos
+const userSchema = new Schema({
+  name: { type: String, required: true, trim: true },
+  email: { type: String, required: true, unique: true, lowercase: true },
+  age: { type: Number, min: 18, max: 120 },
+  role: { type: String, enum: ['user', 'admin', 'mod'], default: 'user' },
+  isActive: { type: Boolean, default: true },
+  tags: [String],                          // Array de strings
+  metadata: { type: Map, of: String },     // Map dinámico
+}, {
+  timestamps: true,   // createdAt, updatedAt automáticos
+  toJSON: { virtuals: true, transform: (doc, ret) =&gt; { delete ret.__v; return ret } },
+})
+
+const User = model('User', userSchema)
+```
+
+### 3.2. Inferencia de Tipos con TypeScript
+```ts
+import { InferSchemaType, model } from 'mongoose'
+
+const postSchema = new Schema({
+  title: { type: String, required: true },
+  content: String,
+  views: { type: Number, default: 0 },
+  publishedAt: Date,
+}, { timestamps: true })
+
+// Infiera el tipo automáticamente (recomendado)
+type Post = InferSchemaType&lt;typeof postSchema&gt;
+const Post = model('Post', postSchema)
+
+// Uso tipado
+const p = await Post.findOne({ title: 'Hello' })
+p?.title  // string | undefined
+```
+
+### 3.3. Schema Opciones Clave
+| Opción | Efecto |
+|--------|--------|
+| `timestamps: true` | Añade `createdAt`, `updatedAt` automáticos |
+| `versionKey: false` | Desactiva el campo `__v` (optimistic concurrency) |
+| `minimize: false` | Permite guardar objetos vacíos `{}` |
+| `strict: 'throw'` | Lanza error si se intenta guardar campo no definido |
+| `toObject`, `toJSON` | Controla serialización (virtuals, transforms) |
+| `collection: 'custom_name'` | Sobrescribe el nombre de la colección |
+
+---
+
+## 4. 🔧 Tipos de Datos y Validación
+
+### 4.1. Tipos Soportados
+```ts
+const exampleSchema = new Schema({
+  string: String,                 // String
+  number: Number,                 // Number (64-bit float)
+  date: Date,                     // Date
+  buffer: Buffer,                 // Buffer (binarios)
+  boolean: Boolean,               // Boolean
+  mixed: Schema.Types.Mixed,      // Cualquiera (sin validación)
+  objectId: Schema.Types.ObjectId, // Referencia a otro documento
+  array: [],                      // Array
+  decimal: Schema.Types.Decimal128, // Precisión decimal (dinero)
+  map: { type: Map, of: String }, // Map dinámico
+  uuid: Schema.Types.UUID,        // UUID (v7+)
+})
+```
+
+### 4.2. Validadores Built-in
+```ts
+const productSchema = new Schema({
+  sku: {
+    type: String,
+    required: [true, 'SKU es obligatorio'], // mensaje custom
+    unique: true,
+    trim: true,
+    uppercase: true,
+    minlength: [5, 'Mínimo 5 caracteres'],
+    maxlength: 20,
+    match: [/^[A-Z0-9-]+$/, 'Formato inválido'], // regex
+  },
+  price: {
+    type: Number,
+    min: [0, 'El precio no puede ser negativo'],
+    max: 1_000_000,
+    get: (v: number) =&gt; Math.round(v * 100) / 100, // transform al leer
+    set: (v: number) =&gt; Math.round(v * 100) / 100, // transform al escribir
+  },
+  email: {
+    type: String,
+    validate: {
+      validator: (v: string) =&gt; /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v),
+      message: 'Email inválido',
+    },
+  },
+  stock: {
+    type: Number,
+    validate: {
+      // Validador async (útil para check en DB)
+      validator: async function(v: number) {
+        const product = await Product.findById(this._id)
+        return v &gt;= (product?.reserved || 0)
+      },
+      message: 'Stock insuficiente para reservas activas',
+    },
+  },
+})
+```
+
+### 4.3. Validación Manual
+```ts
+const user = new User({ name: '', email: 'bad' })
+
+// Validación completa
+try {
+  await user.validate()
+} catch (err) {
+  if (err.name === 'ValidationError') {
+    console.log(err.errors) // { name: {...}, email: {...} }
+    // err.errors.email.message → 'Email inválido'
+  }
+}
+
+// Validar solo campos específicos
+await user.validate({ pathsToSkip: ['age'] })
+```
+
+---
+
+## 5. 🔄 Operaciones CRUD
+
+### 5.1. Create
+```ts
+// Insertar uno
+const user = await User.create({ name: 'Ana', email: 'ana@dev.com' })
+
+// Insertar múltiples (orden no garantizado, más rápido)
+const users = await User.insertMany([
+  { name: 'Luis', email: 'luis@dev.com' },
+  { name: 'Carla', email: 'carla@dev.com' },
+], { ordered: false }) // continúa aunque falle alguno
+
+// Alternativa: instancia + save (ejecuta middleware 'save')
+const u = new User({ name: 'Test', email: 't@x.com' })
+u.age = 25               // marca campos modificados
+await u.save()
+```
+
+### 5.2. Read
+```ts
+// Buscar uno
+const user = await User.findById(id)
+const byEmail = await User.findOne({ email: 'ana@dev.com' })
+
+// Buscar muchos con filtros, proyección, orden, paginación
+const list = await User.find(
+  { age: { $gte: 18 }, role: 'user' }, // filtro
+  { name: 1, email: 1, _id: 0 },       // proyección
+)
+  .sort({ createdAt: -1 })
+  .skip(20)
+  .limit(10)
+  .lean()                  // ← objetos JS planos, más rápido
+
+// Contar
+const total = await User.countDocuments({ isActive: true })
+
+// distinct
+const roles = await User.distinct('role')
+
+// exists (solo booleano, sin cargar doc)
+const exists = await User.exists({ email: 'ana@dev.com' })
+```
+
+### 5.3. Update
+```ts
+// Actualizar uno
+await User.updateOne(
+  { email: 'ana@dev.com' },
+  { $set: { age: 30 }, $inc: { loginCount: 1 } }
+)
+
+// Actualizar muchos
+await User.updateMany(
+  { role: 'guest' },
+  { $set: { role: 'user' } }
+)
+
+// findByIdAndUpdate (retorna el documento)
+const updated = await User.findByIdAndUpdate(
+  id,
+  { $set: { name: 'Ana G.' } },
+  { new: true, runValidators: true } // retorna nuevo, valida schema
+)
+
+// findOneAndReplace (reemplaza todo el doc)
+await User.findOneAndReplace({ email: 'ana@dev.com' }, { name: 'Ana' })
+```
+
+### 5.4. Delete
+```ts
+await User.deleteOne({ email: 'test@x.com' })
+await User.deleteMany({ isActive: false })
+await User.findByIdAndDelete(id)
+
+// Con documento (ejecuta middleware remove)
+const u = await User.findById(id)
+await u?.deleteOne()
+```
+
+---
+
+## 6. 🔍 Consultas Avanzadas y Filtros
+
+### 6.1. Operadores de Comparación
+```ts
+User.find({ age: { $gt: 18, $lte: 65 } })
+User.find({ role: { $in: ['admin', 'mod'] } })
+User.find({ role: { $nin: ['guest'] } })
+User.find({ name: { $regex: /^ana/i } })
+User.find({ $or: [{ role: 'admin' }, { age: { $gt: 50 } }] })
+```
+
+### 6.2. Consultas sobre Arrays y Objetos Anidados
+```ts
+// Campo anidado
+User.find({ 'address.city': 'Madrid' })
+
+// Array contiene elemento
+User.find({ tags: 'premium' })
+
+// Array contiene TODOS
+User.find({ tags: { $all: ['vip', 'verified'] } })
+
+// Array por tamaño
+User.find({ posts: { $size: 5 } })
+
+// Filtrar elementos de array con condiciones
+User.find({
+  orders: {
+    $elemMatch: { total: { $gt: 100 }, status: 'paid' }
+  }
+})
+```
+
+### 6.3. Query Helpers Custom
+```ts
+userSchema.query.byRole = function(role: string) {
+  return this.where({ role })
+}
+userSchema.query.active = function() {
+  return this.where({ isActive: true })
+}
+
+// Uso encadenado
+await User.find().byRole('admin').active().sort('-createdAt')
+```
+
+### 6.4. Proyecciones y `select`
+```ts
+// Incluir campos
+User.find().select('name email')
+User.find().select({ name: 1, email: 1 })
+
+// Excluir campos
+User.find().select('-password -__v')
+
+// Condicional
+const fields = includeSensitive ? 'name email secret' : 'name email'
+await User.find().select(fields)
+```
+
+---
+
+## 7. 👥 Population y Relaciones
+
+### 7.1. Referencias Básicas
+```ts
+const postSchema = new Schema({
+  title: String,
+  author: { type: Schema.Types.ObjectId, ref: 'User', required: true },
+  comments: [{ type: Schema.Types.ObjectId, ref: 'Comment' }],
+})
+const Post = model('Post', postSchema)
+
+// Population simple
+const post = await Post.findById(id).populate('author')
+post.author.name // ahora es el doc completo
+
+// Múltiples campos
+await Post.find().populate('author comments')
+
+// Population con filtro y proyección
+await Post.findById(id).populate({
+  path: 'author',
+  select: 'name email',
+  match: { isActive: true },
+  options: { lean: true },
+})
+
+// Population anidado (deep populate)
+await Comment.find().populate({
+  path: 'author',
+  populate: { path: 'company' }
+})
+```
+
+### 7.2. Population Dinámica (`refPath`)
+```ts
+const activitySchema = new Schema({
+  kind: { type: String, enum: ['Post', 'Comment'] },
+  targetId: { type: Schema.Types.ObjectId },
+  target: {
+    type: Schema.Types.ObjectId,
+    refPath: 'kind',  // referencia dinámica
+  },
+})
+
+// Populate resuelve automáticamente según 'kind'
+await Activity.find().populate('target')
+```
+
+### 7.3. Virtual Population (sin almacenar ObjectId)
+```ts
+const userSchema = new Schema({ name: String })
+userSchema.virtual('posts', {
+  ref: 'Post',
+  localField: '_id',
+  foreignField: 'author',
+  justOne: false,        // array si false, doc si true
+  options: { sort: { createdAt: -1 }, limit: 5 },
+})
+
+// Debe habilitar virtuals en toJSON/toObject
+const user = await User.findById(id).populate('posts')
+```
+
+---
+
+## 8. 🧩 Middleware (Hooks)
+
+### 8.1. Tipos de Middleware
+```ts
+// PRE middleware (antes)
+userSchema.pre('save', function(next) {
+  // 'this' es el documento
+  if (this.isModified('password')) {
+    this.password = bcrypt.hashSync(this.password, 10)
+  }
+  next()
+})
+
+// POST middleware (después)
+userSchema.post('save', function(doc) {
+  console.log(`User saved: ${doc._id}`)
+})
+
+// Middleware de query (filtrar globalmente)
+userSchema.pre('find', function() {
+  this.where({ isActive: true }) // soft delete global
+})
+
+// Middleware error (captura fallos)
+userSchema.post('save', function(error, doc, next) {
+  if (error.name === 'MongoServerError' &amp;&amp; error.code === 11000) {
+    next(new Error('Email duplicado'))
+  } else {
+    next(error)
+  }
+})
+```
+
+### 8.2. Operaciones con Middleware
+| Operación | Middlewares soportados |
+|-----------|------------------------|
+| **Document** | `save`, `validate`, `remove`, `deleteOne` |
+| **Query** | `find`, `findOne`, `findOneAndUpdate`, `updateMany`, `deleteMany`, `countDocuments` |
+| **Aggregate** | `aggregate` |
+| **Model** | `insertMany` |
+
+### 8.3. Pre Hooks con Async
+```ts
+userSchema.pre('save', async function() {
+  // no requiere next() si es async
+  if (this.isNew) {
+    this.slug = slugify(this.name)
+  }
+})
+```
+
+---
+
+## 9. 🎭 Virtuals, Methods y Statics
+
+### 9.1. Virtuals (campos computados)
+```ts
+userSchema.virtual('fullName').get(function() {
+  return `${this.firstName} ${this.lastName}`
+})
+
+userSchema.virtual('fullName').set(function(v: string) {
+  const [first, ...rest] = v.split(' ')
+  this.firstName = first
+  this.lastName = rest.join(' ')
+})
+
+// Los virtuals NO se guardan en DB, NO aparecen en queries
+const u = await User.findById(id)
+u.fullName = 'Ana García' // setea firstName y lastName
+```
+
+### 9.2. Instance Methods
+```ts
+userSchema.methods.greet = function() {
+  return `Hola, soy ${this.name}`
+}
+
+userSchema.methods.comparePassword = async function(pwd: string) {
+  return bcrypt.compare(pwd, this.password)
+}
+
+const u = await User.findById(id)
+u.greet()
+```
+
+### 9.3. Static Methods (a nivel de modelo)
+```ts
+userSchema.statics.findByEmail = function(email: string) {
+  return this.findOne({ email: email.toLowerCase() })
+}
+
+userSchema.statics.createAdmin = function(data: CreateUserDto) {
+  return this.create({ ...data, role: 'admin' })
+}
+
+await User.findByEmail('ana@dev.com')
+await User.createAdmin({ name: 'Admin', email: 'a@x.com' })
+```
+
+---
+
+## 10. 📊 Aggregation Framework
+
+```ts
+const stats = await Order.aggregate([
+  // 1. Filtrar (usa índices si existen)
+  { $match: { status: 'completed', createdAt: { $gte: new Date('2024-01-01') } } },
+
+  // 2. Join con otra colección
+  { $lookup: {
+      from: 'users',
+      localField: 'userId',
+      foreignField: '_id',
+      as: 'user',
+  }},
+  { $unwind: '$user' },
+
+  // 3. Agrupar
+  { $group: {
+      _id: { userId: '$userId', month: { $month: '$createdAt' } },
+      total: { $sum: '$amount' },
+      count: { $sum: 1 },
+      avg: { $avg: '$amount' },
+  }},
+
+  // 4. Ordenar y limitar
+  { $sort: { total: -1 } },
+  { $limit: 10 },
+])
+
+// Population desde aggregación
+await Order.aggregate([
+  { $match: { status: 'paid' } },
+  { $lookup: { from: 'users', localField: 'userId', foreignField: '_id', as: 'user' } },
+  { $unwind: '$user' },
+])
+
+// Mongoose populate en aggregation (v6+)
+await Order.aggregate([
+  { $match: { status: 'paid' } },
+]).lookup({
+  from: 'users',
+  localField: 'userId',
+  foreignField: '_id',
+  as: 'user',
+})
+```
+
+---
+
+## 11. 🔐 Índices y Optimización
+
+### 11.1. Definición de Índices
+```ts
+userSchema.index({ email: 1 }, { unique: true })
+userSchema.index({ name: 'text', bio: 'text' })       // full-text search
+userSchema.index({ createdAt: -1 }, { expireAfterSeconds: 86400 * 30 }) // TTL
+userSchema.index({ role: 1, createdAt: -1 })          // compuesto
+userSchema.index({ 'address.city': 1 }, { sparse: true }) // parcial
+
+// Índices únicos compuestos
+userSchema.index({ tenantId: 1, email: 1 }, { unique: true })
+```
+
+### 11.2. Creación en Background
+```ts
+// Mongoose crea índices al arrancar (development)
+await mongoose.connect(uri)
+await User.init() // fuerza creación de índices si no existen
+
+// En producción, mejor crearlos manualmente para no bloquear
+// db.users.createIndex({ email: 1 }, { background: true })
+```
+
+### 11.3. Explicar Queries
+```ts
+const plan = await User.find({ email: 'a@x.com' }).explain('executionStats')
+console.log(plan.queryPlanner.winningPlan)
+console.log(plan.executionStats.totalDocsExamined)
+console.log(plan.executionStats.executionTimeMillis)
+```
+
+---
+
+## 12. 🗄️ Transacciones ACID
+
+```ts
+import mongoose from 'mongoose'
+
+const session = await mongoose.startSession()
+session.startTransaction()
+
+try {
+  const from = await Account.findOne({ userId: 'A' }).session(session)
+  const to = await Account.findOne({ userId: 'B' }).session(session)
+
+  if (!from || from.balance &lt; 100) {
+    throw new Error('Saldo insuficiente')
+  }
+
+  from.balance -= 100
+  to.balance += 100
+
+  await from.save({ session })
+  await to.save({ session })
+
+  await session.commitTransaction()
+} catch (error) {
+  await session.abortTransaction()
+  throw error
+} finally {
+  session.endSession()
+}
+```
+
+* **Requisitos**: Replica set o sharded cluster (no standalone).
+* **Duración máxima**: 60 segundos por defecto (ajustable).
+* **Usar `session` en todas las operaciones** dentro de la transacción.
+
+---
+
+## 13. 🧠 Discriminators y Patrones Avanzados
+
+### 13.1. Discriminators (herencia de schemas)
+```ts
+const eventSchema = new Schema(
+  { timestamp: Date, userId: Schema.Types.ObjectId },
+  { discriminatorKey: 'kind' }
+)
+const Event = model('Event', eventSchema)
+
+const clickSchema = new Schema({ element: String, page: String })
+const ClickEvent = Event.discriminator('Click', clickSchema)
+
+const purchaseSchema = new Schema({
+  product: String,
+  amount: Schema.Types.Decimal128,
+})
+const PurchaseEvent = Event.discriminator('Purchase', purchaseSchema)
+
+// Uso
+await ClickEvent.create({ timestamp: new Date(), userId: 'u1', element: 'btn', page: '/home' })
+await PurchaseEvent.create({ timestamp: new Date(), userId: 'u2', product: 'Shoe', amount: 99.99 })
+
+// Todos los documentos están en la misma colección 'events'
+const all = await Event.find().sort('-timestamp')
+```
+
+### 13.2. Mapas Dinámicos
+```ts
+const productSchema = new Schema({
+  name: String,
+  attributes: { type: Map, of: String }
+})
+
+const p = new Product({ name: 'Laptop', attributes: { cpu: 'i7', ram: '16GB' } })
+p.attributes.get('cpu')           // 'i7'
+p.attributes.set('gpu', 'RTX4060')
+await p.save()
+```
+
+### 13.3. Subdocuments Embebidos
+```ts
+const addressSchema = new Schema({
+  street: String,
+  city: String,
+  country: String,
+})
+
+const userSchema = new Schema({
+  name: String,
+  addresses: [addressSchema],   // array de subdocs
+})
+
+const u = await User.findById(id)
+u.addresses.push({ street: 'Calle 1', city: 'Madrid', country: 'ES' })
+// Los subdocs tienen _id propio, métodos y validación
+await u.save()
+```
+
+---
+
+## 14. 🔌 Plugins y Extensión
+
+### 14.1. Crear un Plugin
+```ts
+// plugins/soft-delete.ts
+import { Schema } from 'mongoose'
+
+export function softDeletePlugin(schema: Schema) {
+  schema.add({ deletedAt: { type: Date, default: null } })
+
+  // Filtrar eliminados en queries por defecto
+  schema.pre('find', function() {
+    this.where({ deletedAt: null })
+  })
+
+  // Sobrescribir delete para soft delete
+  schema.methods.softDelete = function() {
+    this.deletedAt = new Date()
+    return this.save()
+  }
+
+  schema.statics.findDeleted = function() {
+    return this.find({ deletedAt: { $ne: null } })
+  }
+}
+
+// plugins/paginate.ts
+export function paginatePlugin(schema: Schema) {
+  schema.statics.paginate = async function(
+    filter: object,
+    { page = 1, limit = 20, sort = '-createdAt' }: { page?: number; limit?: number; sort?: string }
+  ) {
+    const skip = (page - 1) * limit
+    const [docs, total] = await Promise.all([
+      this.find(filter).sort(sort).skip(skip).limit(limit),
+      this.countDocuments(filter),
+    ])
+    return {
+      docs,
+      total,
+      page,
+      limit,
+      pages: Math.ceil(total / limit),
+    }
+  }
+}
+```
+
+### 14.2. Aplicar Plugins
+```ts
+userSchema.plugin(softDeletePlugin)
+userSchema.plugin(paginatePlugin)
+
+// Plugin global (todos los schemas)
+import mongoose from 'mongoose'
+mongoose.plugin(softDeletePlugin)
+```
+
+---
+
+## 15. ⚠️ Errores Comunes y Trampas
+
+* **`new` olvidado al crear documentos**: `User({ name: 'x' })` lanza error.
+  * Fix: Siempre `new User({ name: 'x' })` o `User.create({ name: 'x' })`.
+* **`updateOne` no ejecuta validadores por defecto**: `$set` bypassa el schema.
+  * Fix: `{ runValidators: true }` o usar `doc.set()` + `save()`.
+* **Population en producción sin índice**: `populate()` dispara N+1 queries internas.
+  * Fix: Indexar el campo `foreignField` en la colección referenciada.
+* **`this` perdido en arrow functions de middleware**: `() =&gt; {}` no tiene `this` del documento.
+  * Fix: Usar `function() {}` en hooks para acceder a `this`.
+* **`toJSON` sin virtuals**: Los virtuals no aparecen al serializar.
+  * Fix: `schema.set('toJSON', { virtuals: true })`.
+* **Conexión sin reconexión automática**: En redes inestables, Mongoose 8 reintenta pero sin backoff configurado puede saturar.
+  * Fix: Configurar `serverSelectionTimeoutMS` y manejar eventos `disconnected` con backoff.
+* **`findByIdAndUpdate` retorna el doc viejo**: Por defecto retorna el estado previo al update.
+  * Fix: `{ new: true }` para obtener el actualizado.
+* **Sobrecarga con `populate` profundo**: Populations anidadas generan muchas queries.
+  * Fix: Limitar profundidad, usar `lean()`, o denormalizar datos frecuentes.
+* **Subdocs con `_id` no deseado**: Cada subdoc genera un `_id` automáticamente.
+  * Fix: `{ _id: false }` en el schema del subdoc si no se necesita.
+* **Validación bypassed en `updateMany`**: Solo `save()` y `create()` validan por defecto.
+  * Fix: `{ runValidators: true, context: 'query' }` en updates.
+* **Memory leak con muchos modelos**: Crear modelos en cada request o función.
+  * Fix: Definir modelos una vez (`model()`) y reutilizar. Validar con `mongoose.models['Name']`.
+* **TypeScript genéricos sin `InferSchemaType`**: Duplicar interfaces y schema causa drift.
+  * Fix: Usar `InferSchemaType&lt;typeof schema&gt;` como fuente única de verdad.
+
+---
+
+## 16. 💡 Mejores Prácticas y Consejos de Experto
+
+* **Schemas granulares, no monolíticos**: Divide por dominio (user, order, product). Evita schemas de 50+ campos.
+* **Valida en schema, no solo en controller**: Mongoose validación + [Zod](/web/frontend/general/zod "¡Absolutamente! Zod es una librería increíble para la validación de esquemas y tipos en TypeScript/JavaScript, famosa por su simplicidad y excelente inferencia de tipos.")/Joi en API = doble defensa, pero schema es la fuente de verdad de DB.
+* **`lean()` para lecturas masivas**: `User.find().lean()` retorna POJOs, 2-10x más rápido para reportes o APIs read-only.
+* **Índices cubiertos (covered queries)**: Si todos los campos consultados están en el índice, MongoDB no toca documentos. Prioriza índices compuestos que incluyan proyección.
+* **`createCollection` explícito en CI/CD**: Crea colecciones e índices antes del primer deploy. No dependas de auto-creación en producción.
+* **Evita `Mixed` types**: Pierdes validación y type safety. Usa `map`, subdocs, o discriminated unions.
+* **Soft delete con plugin global**: Centraliza lógica, aplica filtros en middleware y añade `deletedAt` uniforme.
+* **Auditoría con pre-hooks**: Registra `updatedBy`, `lastModifiedAt` automáticamente en cada save.
+* **Encriptación de campos sensibles**: Usa `mongoose-field-encryption` o encripta en pre-save con crypto nativo. Nunca dejes passwords en claro.
+* **Conexión pooling**: Mongoose mantiene pool (default 100). No crees conexiones por request; reutiliza la global.
+* **Migraciones explícitas**: No dependas de cambios automáticos de schema. Usa scripts de migración versionados (`migrate-mongo`).
+* **Monitoreo con APM**: Integra `mongoose` con OpenTelemetry o Datadog para trazar queries lentas, population costosa y conexiones.
+* **Tests con `mongodb-memory-server`**: Base de datos en memoria para tests aislados y rápidos sin tocar dev/prod.
+* **Documenta schemas con JSDoc**: `/** User entity with email-based auth */` ayuda al IDE y genera docs automáticas.
+* **Perfila con `debug: true`**: `mongoose.set('debug', true)` loguea todas las queries a MongoDB. Útil en desarrollo, desactiva en prod.
+* **Versionado semántico en cambios de schema**: Cambios breaking (renombrar campos, cambiar tipos) requieren migración + nueva versión de API.
+* **Paginación por cursor sobre offset**: Para datasets grandes, usa paginación basada en `_id` o `createdAt` en lugar de `skip/limit`.
+* **Transactions solo cuando sea necesario**: Operaciones multi-documento son costosas. Si puedes usar atomicidad nativa (`updateOne` con operadores), prefierela.
+* **Plugins sobre herencia**: Mongoose no soporta herencia real. Plugins + composición es el patrón idiomático.
+* **TypeScript strict**: Habilita `strict: true` en `tsconfig.json`. Mongoose types funcionan mejor con strict mode y detectan errores temprano.
+
+---
+
+Este cheatsheet proporciona una referencia completa para Mongoose, cubriendo schemas tipados con TypeScript, validación robusta, operaciones CRUD eficientes, population avanzada, middleware hooks, virtuals y methods, aggregation framework, índices optimizados, transacciones ACID, discriminators y plugins personalizados, junto con las mejores prácticas para construir aplicaciones Node.js/TypeScript escalables, mantenibles y de alto rendimiento sobre MongoDB en entornos de producción reales.

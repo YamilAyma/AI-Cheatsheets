@@ -1,0 +1,254 @@
+---
+title: "cypress"
+description: "Cypress es un framework de testing end-to-end y de componentes que se ejecuta directamente dentro del navegador, eliminando la sobrecarga de drivers externos y proporcionando recargas en tiempo real, depuración con time-travel y aserciones con reintentos automáticos."
+createdAt: 2026-06-01
+updatedAt: 2026-06-01
+tags: [testing]
+icon: "📄"
+---
+# 🎯 Cypress — Complete Cheatsheet 🎯
+
+Cypress es un framework de testing end-to-end y de componentes que se ejecuta directamente dentro del navegador, eliminando la sobrecarga de drivers externos y proporcionando recargas en tiempo real, depuración con time-travel y aserciones con reintentos automáticos. Su arquitectura de bucle de eventos compartido garantiza estabilidad, velocidad y una experiencia de desarrollo altamente interactiva. Este cheatsheet cubre desde la instalación y configuración esencial hasta stubbing de red, testing de componentes, comandos personalizados, gestión de estado, integración con CI, debugging avanzado y patrones de producción. Ideal para equipos QA y desarrolladores que migran desde Selenium o [Playwright](/web/frontend/testing/playwright "Playwright es un framework de testing end-to-end de código abierto mantenido por Microsoft, diseñado para automatizar navegadores modernos (Chromium, Firefox, WebKit) con una API unificada, auto-waiting inteligente, aserciones web-first y aislamiento de estado por defecto.") y buscan un flujo de prueba predecible, rápido y acoplado al comportamiento real del usuario.
+
+---
+
+## 1. 🌟 Conceptos Fundamentales
+
+* **Ejecución en el Navegador**: Cypress corre en el mismo bucle de eventos que tu aplicación. No usa Selenium/WebDriver ni proxies externos.
+  * Por qué importa: Control total del DOM, red y tiempo. Permite interceptar y modificar tráfico en tiempo real.
+* **Reintentos Automáticos (Retry-ability)**: Comandos (`cy.get()`) y aserciones (`.should()`) reintentan automáticamente hasta que la condición se cumple o alcanza el timeout.
+  * Elimina `sleep`, `waitFor` manuales y flakiness por timing.
+* **[API](/conocimiento/api "Una API (Application Programming Interface) es un conjunto de reglas, protocolos y herramientas que permite que diferentes aplicaciones de software se comuniquen entre sí.") Encadenada (Chainable)**: Sintaxis fluida `cy.visit().get().type().click().should()`. Cada comando devuelve un `Chainable` que se resuelve asíncronamente en segundo plano.
+* **Time-Travel Debugging**: Captura snapshots del DOM y estado después de cada comando. Permite inspeccionar, retroceder y depurar pasos específicos desde la UI.
+* **Aislamiento por Test**: Cada `it()` reinicia cookies, `localStorage` y `sessionStorage` por defecto. Previene contaminación entre suites.
+* **Stubbing de Red Nativo**: `cy.intercept()` espía, mockea o modifica peticiones HTTP/HTTPS sin configuración adicional.
+* **Testing de Componentes**: Renderiza componentes [React](/web/frontend/general/react/react "¡Excelente! React es la biblioteca de JavaScript más popular para construir interfaces de usuario.")/Vue/[Angular](/web/frontend/framework/angular "Angular es un framework de desarrollo de aplicaciones web de código abierto, desarrollado por Google, para construir aplicaciones de una sola página (SPA) y aplicaciones móviles de alto rendimiento.") en aislamiento, sin servidor completo ni bundling pesado.
+* **Configuración Declarativa**: `cypress.config.ts` centraliza `baseUrl`, timeouts, viewport, plugins y entornos. Soporta variables de entorno dinámicas.
+
+---
+
+## 2. 🛠️ Instalación y Configuración
+
+* **Inicialización rápida**:
+  ```bash
+  npm init cypress
+  # O instalación manual: npm i -D cypress
+  npx cypress open  # Abre Test Runner UI por primera vez y crea estructura
+  ```
+* **Estructura estándar**:
+  ```
+  cypress/
+  ├── e2e/            # Tests end-to-end
+  ├── component/      # Tests de componentes
+  ├── fixtures/       # Datos estáticos para mock (JSON, XML)
+  └── support/        # e2e.ts, component.ts, commands.ts
+  cypress.config.ts
+  ```
+* **`cypress.config.ts` esencial**:
+  ```ts
+  import { defineConfig } from 'cypress'
+
+  export default defineConfig({
+    e2e: {
+      baseUrl: 'http://localhost:3000',
+      specPattern: 'cypress/e2e/**/*.cy.{js,jsx,ts,tsx}',
+      supportFile: 'cypress/support/e2e.ts',
+      viewportWidth: 1280,
+      viewportHeight: 720,
+      video: false,
+      screenshotOnRunFailure: true,
+      defaultCommandTimeout: 8000,
+    },
+    component: {
+      devServer: { framework: 'react', bundler: 'vite' },
+    },
+  })
+  ```
+* **Scripts recomendados**:
+  ```json
+  {
+    "scripts": {
+      "cy:open": "cypress open",
+      "cy:run": "cypress run",
+      "cy:run:ci": "cypress run --browser chrome --headless --record --parallel",
+      "cy:component": "cypress open --component"
+    }
+  }
+  ```
+
+---
+
+## 3. 📝 Sintaxis y API Básica
+
+```ts
+describe('Authentication Flow', () =&gt; {
+  beforeEach(() =&gt; {
+    cy.visit('/login')
+  })
+
+  it('logs in with valid credentials', () =&gt; {
+    // Encadenamiento idiomático
+    cy.get('[data-cy="email"]').type('user@example.com')
+    cy.get('[data-cy="password"]').type('secret{enter}')
+
+    // Aserciones con reintentos automáticos
+    cy.url().should('include', '/dashboard')
+    cy.get('[data-cy="welcome"]').should('contain.text', 'Bienvenido')
+    cy.get('[data-cy="nav-menu"]').should('be.visible')
+  })
+
+  it('shows error on invalid credentials', () =&gt; {
+    cy.get('[data-cy="email"]').type('wrong@test.com')
+    cy.get('[data-cy="submit"]').click()
+
+    cy.get('[data-cy="error-alert"]')
+      .should('be.visible')
+      .and('contain.text', 'Credenciales inválidas')
+  })
+})
+```
+
+* **Comandos clave**: `cy.visit()`, `cy.get()`, `cy.contains()`, `cy.type()`, `cy.click()`, `cy.select()`, `cy.check()`, `cy.clear()`, `cy.wait()`
+* **Aserciones (should/expect)**: `.should('be.visible')`, `.should('have.class', 'active')`, `.should('contain', 'text')`, `.should('have.length', 3)`, `expect(list).to.have.length(3)`
+* **Control de flujo**: `.then()`, `.each()`, `.spread()`, `cy.wrap()` para convertir valores en chainables.
+
+---
+
+## 4. 🔍 Selectores y Locators
+
+| Estrategia | Recomendación | Ejemplo |
+|------------|---------------|---------|
+| **Data Attributes** | ✅ Preferido (estable, desacoplado) | `cy.get('[data-cy="submit"]')` |
+| **Role/Label** | ✅ Bueno para accesibilidad | `cy.contains('button', 'Enviar')` |
+| **Text Content** | ⚠️ Útil pero sensible a i18n | `cy.contains('Confirmar pedido')` |
+| **CSS/XPath** | ❌ Fallback (frágil ante refactors) | `cy.get('form > div:nth-child(2) > input')` |
+
+* **Traversal & Filtering**:
+  ```ts
+  cy.get('.user-list').find('li').first().click()
+  cy.get('.row').filter('.active').should('have.length', 2)
+  cy.get('table').find('tbody tr').not('.disabled')
+  ```
+* **Shadow DOM**: `cy.get('my-component').shadow().find('button').click()` (atraviesa automáticamente desde v10+)
+* **Selector Playground**: `cypress open` → ícono de mira → clic en elemento → copia selector optimizado.
+
+---
+
+## 5. 🌐 Interceptación de Red y Mocking
+
+```ts
+// Mockear respuesta estática
+cy.intercept('GET', '**/api/users', { fixture: 'users.json' }).as('getUsers')
+
+// Simular error de servidor
+cy.intercept('POST', '**/api/login', { statusCode: 500, body: { error: 'Server down' } }).as('loginFail')
+
+// Modificar respuesta al vuelo
+cy.intercept('GET', '**/api/products', (req) =&gt; {
+  req.reply((res) =&gt; {
+    res.body = res.body.filter(p =&gt; p.stock > 0)
+  })
+})
+
+// Esperar y verificar
+cy.visit('/products')
+cy.wait('@getUsers').its('response.statusCode').should('eq', 200)
+cy.wait('@getUsers').its('response.body').should('have.length.greaterThan', 0)
+```
+
+* **Throttling & Latencia**: `cy.intercept('**/api/**', { delay: 1500 })` para simular redes lentas.
+* **Espiar sin mockear**: `cy.intercept('GET', '**/api/**').as('allApi')` → `cy.wait('@allApi').its('request.url')`
+* **Dynamic Aliasing**: Usa `cy.intercept()` antes de `cy.visit()` o `cy.click()`. Cypress espera implícitamente a que se dispare.
+
+---
+
+## 6. 🎛️ Fixtures, Comandos y Gestión de Estado
+
+* **Cargar datos mock**:
+  ```ts
+  cy.fixture('login-credentials.json').then(creds =&gt; {
+    cy.get('[data-cy="email"]').type(creds.email)
+  })
+  // O inline: cy.fixture('users').as('users')
+  ```
+* **Custom Commands (`support/commands.ts`)**:
+  ```ts
+  Cypress.Commands.add('login', (email: string, password: string) =&gt; {
+    cy.visit('/login')
+    cy.get('[data-cy="email"]').type(email)
+    cy.get('[data-cy="password"]').type(password)
+    cy.get('[data-cy="submit"]').click()
+    cy.url().should('include', '/dashboard')
+  })
+  // Uso: cy.login('admin@test.com', 'admin123')
+  ```
+* **`cy.session()` (Reutilización de Auth)**:
+  ```ts
+  cy.session('admin-user', () =&gt; {
+    cy.login('admin@test.com', 'adminpass')
+  }, { cacheAcrossSpecs: true })
+  // Caché de cookies, storage y tokens entre spec files
+  ```
+* **API Testing directo**: `cy.request('POST', '/api/login', { email, password })` para preparar estado sin UI.
+
+---
+
+## 7. 📊 Testing de Componentes y Debugging
+
+* **Component Testing básico**:
+  ```ts
+  import { mount } from 'cypress/react'
+  import { Button } from './Button'
+
+  it('emits click event', () =&gt; {
+    const onClick = cy.stub().as('onClick')
+    mount(<Button onClick={onClick}>Click me</Button>)
+    cy.get('button').click()
+    cy.get('@onClick').should('have.been.calledOnce')
+  })
+  ```
+* **UI Mode (`cypress open`)**: Time-travel, live reload, panel de red, consola integrada, ejecución interactiva.
+* **Debugging avanzado**:
+  ```ts
+  cy.get('.loader').should('not.exist')
+  cy.pause()          // Detiene ejecución, abre DevTools
+  cy.get('.item').debug() // Inspecciona en consola
+  // O breakpoint nativo en .then(): cy.get('.el').then($el =&gt; { debugger })
+  ```
+* **Reportes CI**: `--reporter=junit` o `--reporter=mochawesome` + integración con [GitHub](/herramientas/github "GitHub es una plataforma web para el alojamiento de repositorios de control de versiones Git diseñado para manejar proyectos pequeños o muy grandes con velocidad y eficiencia.').")/GitLab/Jenkins.
+
+---
+
+## 8. ⚠️ Errores Comunes y Trampas
+
+* **Usar `async/await` con comandos Cypress**: `cy.get()` devuelve un `Chainable`, no una `Promise`. `await cy.get()` rompe la cola de comandos.
+  * Fix: Encadena con `.then()` o usa `cy.wrap()`. Cypress maneja la asincronía internamente.
+* **Condiciones `if` basadas en estado del DOM**: `if (cy.get('.modal').length) { ... }` no funciona. Cypress es asíncrono y no expone valores sincrónicos.
+  * Fix: Usa `.should()` para validar estado o `.then($el =&gt; { if ($el.length) ... })`.
+* **No esperar aliases de red**: Interactuar con UI antes de que `cy.wait('@api')` se resuelva causa flakiness.
+  * Fix: Siempre `cy.wait('@alias')` antes de `cy.get()` que depende de esa respuesta.
+* **Locators frágiles**: `cy.get('div > span:nth-child(2)')` falla con cambios menores de CSS.
+  * Fix: `data-cy`, `cy.contains()` o atributos de rol accesible.
+* **Ignorar `cy.session()` o limpiar estado manualmente**: Re-login en cada test ralentiza ejecución x5-x10.
+  * Fix: Usa `cy.session()` con `cacheAcrossSpecs: true` y valida aislamiento con `cy.clearCookies()` solo cuando sea necesario.
+* **Cross-Origin restrictions**: Cypress limita navegación fuera del `baseUrl` por seguridad.
+  * Fix: Usa `cy.origin('https://auth.provider.com', () =&gt; { ... })` (v12+) para flujos SSO o pasarelas de pago.
+
+---
+
+## 9. 💡 Mejores Prácticas y Consejos de Experto
+
+* **Prioriza `data-cy`/`data-testid`**: Aísla tests de cambios visuales y refactors. Configura `eslint-plugin-cypress` para validar su uso.
+* **Encadena aserciones, no sleeps**: `cy.get().should('be.visible').click()` aprovecha reintentos automáticos y reduce flakiness.
+* **Mockea APIs con `cy.intercept()`**: Evita dependencias de backend en E2E. Usa fixtures para respuestas estáticas y `cy.request()` para setup de datos.
+* **Reutiliza auth con `cy.session()`**: Reduce tiempo de ejecución en >70%. Habilita `cacheAcrossSpecs: true` en CI para suites largas.
+* **Estructura con Page Objects (opcional)**: Encapsula selectores y acciones en módulos (`pages/LoginPage.ts`). Útil para apps enterprise, pero evita sobre-ingeniería en proyectos pequeños.
+* **Configura timeouts por contexto**: `Cypress.config('defaultCommandTimeout', 10000)` global o `{ timeout: 15000 }` por comando para endpoints lentos.
+* **Integra con CI correctamente**: `cypress run --browser chrome --record --parallel` + Cypress Dashboard. Usa `--config baseUrl=$CYPRESS_BASE_URL` para entornos dinámicos.
+* **Valida snapshots de UI**: `cy.screenshot()` + integración con Percy/Chromatic para detectar regresiones visuales en componentes y layouts.
+* **Evita `cy.wait(ms)`**: Indica acoplamiento a timing frágil. Reemplaza con `cy.wait('@alias')`, aserciones o `.should('not.exist')`.
+* **Documenta `support/commands.ts`**: Centraliza helpers de auth, navegación y validación. Facilita onboarding, revisión de código y mantenimiento a largo plazo.
+
+---
+
+Este cheatsheet proporciona una referencia completa para Cypress, cubriendo arquitectura nativa de navegador, reintentos automáticos, stubbing de red, testing de componentes, gestión de estado con `cy.session()`, debugging con time-travel, optimización de CI y patrones de producción, junto con las mejores prácticas para construir suites de testing rápidas, deterministas y escalables en entornos reales.

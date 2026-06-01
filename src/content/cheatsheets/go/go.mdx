@@ -1,0 +1,509 @@
+---
+title: "go"
+description: "Go es un lenguaje compilado, concurrente y de tipado estático creado por Google."
+createdAt: 2026-06-01
+updatedAt: 2026-06-01
+tags: [go]
+icon: "📄"
+---
+# 🎯 Go (Golang) — Complete Cheatsheet 🎯
+
+Go es un lenguaje compilado, concurrente y de tipado estático creado por Google. Destaca por su simplicidad sintáctica, gestión automática de memoria (GC concurrente y de baja latencia), modelo de concurrencia basado en CSP (`goroutines` y `channels`) y tiempos de compilación rápidos. Este cheatsheet cubre desde la sintaxis esencial hasta concurrencia avanzada, manejo de errores idiomático, genéricos, módulos y patrones de producción. Ideal para desarrolladores que migran desde [Python](/python/python "Python es un lenguaje de programación de alto nivel, interpretado, interactivo y orientado a objetos."), JavaScript o C++ y buscan rendimiento nativo con código limpio, mantenible y seguro.
+
+---
+
+## 1. 🌟 Conceptos Fundamentales
+
+* **Compilación estática rápida**: Genera binarios autocontenidos sin dependencias externas en tiempo de ejecución.
+* **Tipado estático con inferencia**: `:=` infiere tipos en inicialización; el compilador verifica seguridad sin necesidad de anotaciones redundantes.
+* **GC de baja latencia**: Tricolor concurrente que mantiene pausas &lt; 1ms en la mayoría de cargas de producción.
+* **Concurrencia nativa (CSP)**: `goroutines` (hilos ligeros ~2KB) + `channels` (comunicación segura) + `select` (multiplexación).
+* **Composición sobre herencia**: No hay clases ni jerarquías. Se usa `struct` + embedding de interfaces para reutilizar comportamiento.
+* **Manejo de errores explícito**: Los errores son valores (`error`), no excepciones. Se propagan y manejan con `if err != nil`.
+* **Zero-value usable**: Variables no inicializadas tienen valores seguros (`0`, `false`, `nil`, slice/map vacíos listos para `append`/`range`).
+* **Simplicidad deliberada**: Pocas palabras clave, sintaxis predecible, `gofmt` obligatorio. Prioriza legibilidad sobre magia sintáctica.
+
+---
+
+## 2. 🛠️ Instalación y Entorno
+
+* **Instalación oficial**:
+  ```bash
+  # Linux/macOS (Homebrew o manual)
+  brew install go
+  # O descargar binario desde https://go.dev/dl/
+  ```
+* **Verificación y configuración**:
+  ```bash
+  go version          # Verificar instalación
+  go env              # Variables de entorno (GOPATH, GOMODCACHE, etc.)
+  go env -w GO111MODULE=on  # Módulos habilitados por defecto desde Go 1.16
+  ```
+* **Estructura de proyecto moderna**:
+  ```
+  my_app/
+  ├── go.mod          # Nombre del módulo y dependencias
+  ├── go.sum          # Checksums de dependencias (no editar manualmente)
+  ├── cmd/
+  │   └── myapp/
+  │       └── main.go # Binario entry point
+  ├── internal/       # Paquetes privados (no importables externamente)
+  └── pkg/            # Paquetes públicos reutilizables
+  ```
+* **Comandos esenciales**:
+  ```bash
+  go mod init <module_name>  # Inicializar módulo
+  go mod tidy                # Agregar/quitar dependencias automáticamente
+  go build ./...             # Compilar todo
+  go run ./cmd/myapp         # Compilar y ejecutar
+  go test ./...              # Ejecutar tests
+  go vet ./...               # Análisis estático de errores comunes
+  go fmt ./...               # Formateo automático (idiomático)
+  go doc fmt.Println         # Ver documentación local
+  ```
+
+---
+
+## 3. 📝 Sintaxis Básica
+
+### 3.1. Variables y Tipos
+
+```go
+// Declaración explícita
+var count int = 10
+var name string = "Go"
+
+// Inferencia con := (solo dentro de funciones)
+age := 30
+isActive := true
+
+// Múltiples valores
+var (
+    host = "localhost"
+    port = 8080
+)
+
+// Tipos primitivos
+var i int8 = -128
+var u uint32 = 4294967295
+var f float64 = 3.14
+var b bool = false
+var c complex64 = 1 + 2i
+var r rune = '🚀' // alias de int32
+```
+
+### 3.2. Funciones
+
+```go
+// Firma básica con múltiples retornos
+func divide(a, b float64) (float64, error) {
+    if b == 0 {
+        return 0, fmt.Errorf("división por cero")
+    }
+    return a / b, nil
+}
+
+// Retornos nombrados + defer
+func readConfig(path string) (data []byte, err error) {
+    defer func() {
+        if err != nil {
+            log.Printf("Error leyendo %s: %v", path, err)
+        }
+    }()
+    return os.ReadFile(path)
+}
+
+// Variádicas
+func sum(nums ...int) int {
+    total := 0
+    for _, n := range nums {
+        total += n
+    }
+    return total
+}
+```
+
+### 3.3. Paquetes y Visibilidad
+
+```go
+// main.go
+package main
+
+import (
+    "fmt"
+    "os"
+    m "math" // Alias
+    _ "net/http/pprof" // Solo efectos secundarios (init)
+)
+
+// Público: primera letra mayúscula
+func PublicFunc() { fmt.Println("Exportado") }
+
+// Privado: primera letra minúscula
+func privateFunc() { fmt.Println("Solo paquete actual") }
+```
+
+---
+
+## 4. 🔀 Control de Flujo
+
+```go
+// If con inicialización (scope limitado)
+if err := doWork(); err != nil {
+    return err
+}
+
+// For (único bucle en Go)
+for i := 0; i &lt; 5; i++ {
+    fmt.Println(i)
+}
+
+// For como while
+count := 3
+for count > 0 {
+    count--
+}
+
+// For infinito
+for {
+    break // o return
+}
+
+// Switch (sin fall-through por defecto)
+switch day {
+case "Mon", "Tue":
+    fmt.Println("Inicio semana")
+case "Fri":
+    fmt.Println("Fin de semana cerca")
+default:
+    fmt.Println("Entre semana")
+}
+
+// Type switch
+func describe(v any) {
+    switch v.(type) {
+    case int:
+        fmt.Println("Entero")
+    case string:
+        fmt.Println("Texto")
+    default:
+        fmt.Println("Desconocido")
+    }
+}
+```
+
+---
+
+## 5. 📦 Estructuras de Datos y Punteros
+
+### 5.1. Slices y Arrays
+
+```go
+// Array (tamaño fijo, valor)
+var arr [3]int = [3]int{1, 2, 3}
+
+// Slice (dinámico, referencia)
+nums := []int{1, 2, 3}
+nums = append(nums, 4, 5)
+
+// Slice de slice
+sub := nums[1:3] // [2, 3]
+
+// make para slices/map/channels
+buf := make([]byte, 0, 100) // len=0, cap=100
+```
+
+### 5.2. Maps
+
+```go
+// Inicialización obligatoria
+scores := make(map[string]int)
+scores["Alice"] = 95
+
+// Literal
+users := map[string]User{
+    "u1": {Name: "Ana", Age: 28},
+}
+
+// Existencia segura
+val, ok := scores["Bob"]
+if !ok {
+    fmt.Println("No existe")
+}
+
+// Eliminación
+delete(scores, "Alice")
+```
+
+### 5.3. Structs y Punteros
+
+```go
+type User struct {
+    Name string
+    Age  int
+}
+
+// Valor vs Puntero
+u := User{Name: "Luis", Age: 30}
+p := &u
+
+// Métodos con receptor valor
+func (u User) Greet() string { return "Hola " + u.Name }
+
+// Métodos con receptor puntero (modifica original)
+func (u *User) Birthday() { u.Age++ }
+
+// Embedding (composición)
+type Admin struct {
+    User
+    Role string
+}
+```
+
+---
+
+## 6. 🛡️ Manejo de Errores
+
+```go
+// Interfaz estándar
+type error interface {
+    Error() string
+}
+
+// Crear errores
+err := errors.New("fallo de red")
+err2 := fmt.Errorf("timeout: %w", err) // %w para wrapping
+
+// Comparación segura (Go 1.13+)
+if errors.Is(err, os.ErrNotExist) {
+    fmt.Println("Archivo no encontrado")
+}
+
+// Type assertion para errores personalizados
+var appErr *AppError
+if errors.As(err, &appErr) {
+    fmt.Printf("Código: %d\n", appErr.Code)
+}
+
+// Múltiples errores (Go 1.20+)
+err3 := errors.Join(err, err2)
+unwrapped := errors.Unwrap(err3) // Devuelve el primer error envuelto
+```
+
+---
+
+## 7. 🧵 Concurrencia Nativa
+
+### 7.1. Goroutines y WaitGroup
+
+```go
+var wg sync.WaitGroup
+for i := 0; i &lt; 3; i++ {
+    wg.Add(1)
+    go func(id int) {
+        defer wg.Done()
+        fmt.Println("Worker", id)
+    }(i) // Pasar por valor para evitar closure capture
+}
+wg.Wait()
+```
+
+### 7.2. Canales y Select
+
+```go
+// Unbuffered (síncrono)
+ch := make(chan string)
+go func() { ch &lt;- "datos" }()
+msg := &lt;-ch
+
+// Buffered
+bufCh := make(chan int, 2)
+bufCh &lt;- 1
+bufCh &lt;- 2
+// bufCh &lt;- 3 // Bloquearía hasta consumo
+
+// Select multiplexado
+select {
+case res := &lt;-ch:
+    fmt.Println("Recibido:", res)
+case err := &lt;-errCh:
+    fmt.Println("Error:", err)
+case &lt;-time.After(2 * time.Second):
+    fmt.Println("Timeout")
+}
+```
+
+### 7.3. Contexto y Sync Primitives
+
+```go
+ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+defer cancel()
+
+// Propagación a llamadas I/O
+req, _ := http.NewRequestWithContext(ctx, "GET", url, nil)
+
+// Mutex para estado compartido
+var mu sync.Mutex
+mu.Lock()
+counter++
+mu.Unlock()
+
+// RWMutex para lecturas frecuentes
+rwmu.RLock()
+// leer
+rwmu.RUnlock()
+```
+
+---
+
+## 8. 🧩 Interfaces y Genéricos
+
+### 8.1. Interfaces Implícitas
+
+```go
+type Reader interface {
+    Read(p []byte) (n int, err error)
+}
+
+// Implementación automática si firma coincide
+type File struct {}
+func (f File) Read(p []byte) (int, error) { return 0, nil }
+
+var r Reader = File{} // ✅ Válido sin "implements"
+```
+
+### 8.2. Genéricos (Go 1.18+)
+
+```go
+// Tipo genérico
+type Stack[T any] struct {
+    items []T
+}
+
+func (s *Stack[T]) Push(v T) { s.items = append(s.items, v) }
+func (s *Stack[T]) Pop() (T, bool) {
+    if len(s.items) == 0 { var zero T; return zero, false }
+    idx := len(s.items) - 1
+    v := s.items[idx]
+    s.items = s.items[:idx]
+    return v, true
+}
+
+// Restricciones (constraints)
+func Max[T cmp.Ordered](a, b T) T {
+    if a > b { return a }
+    return b
+}
+
+// Interfaz de constraint personalizada
+type Number interface {
+    ~int | ~float64
+}
+func Sum[T Number](vals []T) T { ... }
+```
+
+---
+
+## 9. 📦 Módulos, Paquetes y Tooling
+
+### 9.1. go.mod y Versionado
+
+```go
+module github.com/user/myapp
+
+go 1.22
+
+require (
+    github.com/gin-gonic/gin v1.9.1
+    golang.org/x/crypto v0.14.0
+)
+
+replace github.com/old/pkg =&gt; ../local/pkg
+```
+
+### 9.2. Workspaces (Go 1.18+)
+
+```bash
+go work init
+go work use ./lib ./api
+# Desarrolla múltiples módulos localmente sin publicar
+```
+
+### 9.3. Compilación y Optimización
+
+```bash
+# Binario estático sin CGO
+CGO_ENABLED=0 go build -ldflags="-s -w" -o app
+
+# Cross-compilation
+GOOS=linux GOARCH=amd64 go build
+GOOS=windows GOARCH=arm64 go build
+```
+
+---
+
+## 10. 📝 Logging, Testing y Profiling (Go 1.21+)
+
+```go
+// Logging estructurado nativo (slog)
+logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
+logger.Info("Inicio", "version", "1.0", "port", 8080)
+logger.Error("Fallo", "err", err)
+
+// Table-driven tests
+func TestSum(t *testing.T) {
+    tests := []struct{
+        name string
+        a, b int
+        want int
+    }{
+        {"positivos", 2, 3, 5},
+        {"negativos", -1, -1, -2},
+    }
+    for _, tt := range tests {
+        t.Run(tt.name, func(t *testing.T) {
+            if got := Sum(tt.a, tt.b); got != tt.want {
+                t.Errorf("Sum(%d,%d) = %d, want %d", tt.a, tt.b, got, tt.want)
+            }
+        })
+    }
+}
+
+// Benchmarks
+func BenchmarkSort(b *testing.B) {
+    for i := 0; i &lt; b.N; i++ {
+        sort.Ints([]int{3,1,4,1,5})
+    }
+}
+// Ejecutar: go test -bench=. -benchmem
+```
+
+---
+
+## 11. ⚠️ Errores Comunes y Trampas
+
+* **Captura de variables en closures `go func()`**: Antes de Go 1.22, la variable de bucle se compartía. **Fix**: Pasa como parámetro o usa Go 1.22+ (scope fijo por iteración).
+* **Slices compartiendo backing array**: `sub := slice[:2]` modifica el original si no hay suficiente capacidad. **Fix**: Usa `make` + `copy()` o `append()` con slice nuevo.
+* **Mapas no inicializados**: `var m map[string]int; m["k"]=1` → panic. **Fix**: `m := make(map[string]int)` o literal.
+* **Ignorar `error` o `defer` en bucles**: Acumula recursos o oculta fallos. **Fix**: Maneja errores explícitamente; `defer` se ejecuta al salir de la función, no en cada iteración.
+* **Pasar structs grandes por valor**: Copia costosa en cada llamada. **Fix**: Usa punteros `*T` o interfaces.
+* **Canales sin cerrar**: Bloquea `range` o `select` indefinidamente. **Fix**: Cierra solo el escritor, o usa `context` para timeouts/cancelación.
+* **Confundir `nil` con zero value**: `var s []int` es `nil` pero `len(s)==0`. **Fix**: Usa `len()` en lugar de `s != nil` para lógica de negocio.
+
+---
+
+## 12. 💡 Mejores Prácticas y Consejos de Experto
+
+* **Interfaces pequeñas**: `io.Reader`, `fmt.Stringer`. Define solo lo necesario; deja que el consumidor dependa de la abstracción.
+* **`context` en todas las funciones I/O o largas**: Propaga timeouts, cancelación y valores de request (`http.Request.Context()`).
+* **Zero-value design**: Diseña structs usables sin constructor (`var db Database; db.Connect()`).
+* **Evita globals mutables**: Inyecta dependencias vía structs o interfaces. Facilita testing y concurrencia.
+* **`golangci-lint` en CI**: Combina `go vet`, `staticcheck`, `errcheck`, `gocritic`. Ejecuta `golangci-lint run --fix`.
+* **Perfila antes de optimizar**: Usa `go tool pprof` con `net/http/pprof` o `testing` flags. Los cuellos suelen ser I/O o allocations, no CPU.
+* **Preferencia por composición**: Embedding de structs/interfaces > herencia simulada. Mantiene código plano y testeable.
+* **Documenta con ejemplos ejecutables**: `Example*` functions en `_test.go` aparecen en `pkg.go.dev`.
+* **Usa `slog` en lugar de `log` estándar**: Logging estructurado, niveles, handlers reemplazables, nativo desde Go 1.21.
+
+---
+
+Este cheatsheet proporciona una referencia completa para Go, cubriendo concurrencia nativa, manejo de errores idiomático, genéricos modernos, módulos, testing avanzado y patrones de producción, junto con las mejores prácticas para escribir código rápido, seguro y mantenible en entornos reales.

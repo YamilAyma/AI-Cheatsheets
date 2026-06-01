@@ -1,0 +1,279 @@
+---
+title: "playwright"
+description: "Playwright es un framework de testing end-to-end de código abierto mantenido por Microsoft, diseñado para automatizar navegadores modernos (Chromium, Firefox, WebKit) con una API unificada, auto-waiting inteligente, aserciones web-first y aislamiento de estado por defecto."
+createdAt: 2026-06-01
+updatedAt: 2026-06-01
+tags: [testing]
+icon: "📄"
+---
+# 🎯 Playwright — Complete Cheatsheet 🎯
+
+Playwright es un framework de testing end-to-end de código abierto mantenido por Microsoft, diseñado para automatizar navegadores modernos (Chromium, Firefox, WebKit) con una [API](/conocimiento/api "Una API (Application Programming Interface) es un conjunto de reglas, protocolos y herramientas que permite que diferentes aplicaciones de software se comuniquen entre sí.") unificada, auto-waiting inteligente, aserciones web-first y aislamiento de estado por defecto. Elimina la fragilidad típica de las pruebas de UI mediante locators resilientes, interceptación de red nativa, trazado paso a paso y ejecución paralela sin configuración compleja. Este cheatsheet cubre desde la instalación y configuración esencial hasta fixtures avanzados, mocking de red, autenticación reutilizable, UI mode, trazas, optimización de CI y patrones de producción. Ideal para equipos QA, desarrolladores fullstack y proyectos que migran desde [Cypress](/web/frontend/testing/cypress "Cypress es un framework de testing end-to-end y de componentes que se ejecuta directamente dentro del navegador, eliminando la sobrecarga de drivers externos y proporcionando recargas en tiempo real, depuración con time-travel y aserciones con reintentos automáticos."), Selenium o Puppeteer y buscan estabilidad, velocidad y mantenibilidad a escala.
+
+---
+
+## 1. 🌟 Conceptos Fundamentales
+
+* **Motores multi-navegador nativos**: Chromium, Firefox y WebKit se descargan e instalan automáticamente. APIs idénticas sin adaptadores por navegador.
+* **Auto-Waiting Integrado**: Acciones como `click()`, `fill()` o `check()` esperan implícitamente a que el elemento esté visible, habilitado y estable. Elimina `sleep` y `waitForSelector` manuales.
+* **Web-First Assertions**: `expect(locator).toBeVisible()` reintenta automáticamente hasta que la condición se cumple o alcanza timeout. Asincronía transparente.
+* **Aislamiento por Contexto**: Cada test recibe un `BrowserContext` limpio. Cookies, `localStorage`, `sessionStorage` y caché no se comparten entre tests.
+* **Paralelismo Nativo**: Ejecuta múltiples workers en paralelo sin locks ni configuración de grids. Escala linealmente con CPUs disponibles.
+* **Trace Viewer**: Grabación completa de DOM, red, consola, logs y snapshots por acción. Reproducción frame-by-frame para debugging determinista.
+* **Fixtures Modulares**: `test.extend` permite crear setup/teardown reutilizable, inyectar páginas autenticadas, mocks o datos de prueba con scope por test/describe.
+
+---
+
+## 2. 🛠️ Instalación y Configuración
+
+* **Inicialización rápida**:
+  ```bash
+  npm init playwright@latest
+  # Selecciona: TS/JS, test dir, GitHub Actions, instalar browsers
+  ```
+* **`playwright.config.ts` estándar**:
+  ```ts
+  import { defineConfig, devices } from '@playwright/test'
+
+  export default defineConfig({
+    testDir: './tests',
+    fullyParallel: true,
+    forbidOnly: !!process.env.CI,
+    retries: process.env.CI ? 2 : 0,
+    workers: process.env.CI ? 1 : undefined,
+    reporter: [['html'], ['json', { outputFile: 'results.json' }]],
+    use: {
+      baseURL: 'http://localhost:3000',
+      trace: 'on-first-retry',
+      screenshot: 'only-on-failure',
+      video: 'retain-on-failure',
+    },
+    projects: [
+      { name: 'chromium', use: { ...devices['Desktop Chrome'] } },
+      { name: 'firefox', use: { ...devices['Desktop Firefox'] } },
+      { name: 'webkit', use: { ...devices['Desktop Safari'] } },
+      { name: 'mobile', use: { ...devices['iPhone 14'] } },
+    ],
+  })
+  ```
+* **Scripts esenciales**:
+  ```json
+  {
+    "scripts": {
+      "test": "playwright test",
+      "test:ui": "playwright test --ui",
+      "test:codegen": "playwright codegen http://localhost:3000",
+      "test:report": "playwright show-report",
+      "test:show-trace": "playwright show-trace trace.zip"
+    }
+  }
+  ```
+
+---
+
+## 3. 📝 Sintaxis y API Básica
+
+```ts
+import { test, expect } from '@playwright/test'
+
+test.describe('Authentication Flow', () =&gt; {
+  test('logs in with valid credentials', async ({ page }) =&gt; {
+    await page.goto('/login')
+    await page.getByLabel('Email').fill('user@example.com')
+    await page.getByLabel('Password').fill('secret123')
+    await page.getByRole('button', { name: 'Ingresar' }).click()
+
+    await expect(page.getByRole('heading', { name: 'Dashboard' })).toBeVisible()
+    await expect(page).toHaveURL(/\/dashboard$/)
+  })
+
+  test('shows error on invalid login', async ({ page }) =&gt; {
+    await page.goto('/login')
+    await page.getByLabel('Email').fill('bad@user.com')
+    await page.getByRole('button', { name: 'Ingresar' }).click()
+
+    await expect(page.getByText('Credenciales inválidas')).toBeVisible()
+    await expect(page).toHaveURL(/\/login$/)
+  })
+})
+
+// Aserciones web-first (reintento automático)
+await expect(locator).toBeVisible()
+await expect(locator).toHaveText('Success')
+await expect(locator).toHaveValue('John Doe')
+await expect(locator).toBeChecked()
+await expect(page).toHaveTitle(/App/)
+```
+
+---
+
+## 4. 🔍 Selectores y Locators (Web-First)
+
+| Estrategia | Uso recomendado | Ejemplo |
+|------------|-----------------|---------|
+| **Role** | Preferido (accesibilidad + estabilidad) | `page.getByRole('button', { name: /submit/i })` |
+| **Label** | Formularios | `page.getByLabel('Contraseña')` |
+| **Placeholder** | Inputs sin label | `page.getByPlaceholder('Buscar...')` |
+| **Text** | Contenido visible | `page.getByText('Confirmar pedido')` |
+| **TestId** | Componentes dinámicos | `page.getByTestId('user-card-123')` |
+| **CSS/XPath** | Fallback | `page.locator('css=div.panel > h2')` |
+
+* **Filtrado y chain**:
+  ```ts
+  const list = page.getByRole('list')
+  const firstItem = list.getByRole('listitem').first()
+  const adminRow = list.getByRole('row').filter({ hasText: 'admin' })
+  ```
+* **Frames & Shadow DOM**: `page.frameLocator('#payment-frame').getByRole('textbox')`
+  * Playwright atraviesa shadow DOM automáticamente. No se necesita `/deep/`.
+* **Esperas explícitas (cuando auto-wait no basta)**:
+  ```ts
+  await page.waitForLoadState('networkidle')
+  await page.waitForURL(/\/success$/)
+  await expect.poll(() =&gt; api.getHealth()).toBe('ok') // Polling async
+  ```
+
+---
+
+## 5. 🎛️ Fixtures, Estado y Aislamiento
+
+* **Fixtures built-in**: `page`, `context`, `browser`, `request` (API testing)
+* **Custom fixture con `test.extend`**:
+  ```ts
+  import { test as base } from '@playwright/test'
+
+  export const test = base.extend&lt;{
+    adminPage: Page
+    authHeaders: { Authorization: string }
+  }>({
+    adminPage: async ({ page }, use) =&gt; {
+      await page.goto('/login')
+      await page.getByLabel('Email').fill('admin@test.com')
+      await page.getByRole('button', { name: 'Ingresar' }).click()
+      await page.waitForURL(/\/admin/)
+      await use(page) // Inyecta página autenticada
+    },
+  })
+
+  test('deletes user', async ({ adminPage }) =&gt; {
+    await adminPage.getByRole('row', { name: 'testuser' }).getByRole('button').click()
+  })
+  ```
+* **Reutilizar estado de autenticación**:
+  ```bash
+  # Generar state una vez
+  npx playwright test --project=setup --grep="@setup"
+  ```
+  ```ts
+  // tests/auth.setup.ts
+  import { test as setup } from '@playwright/test'
+  setup('authenticate', async ({ page }) =&gt; {
+    // ... login flow ...
+    await page.context().storageState({ path: 'storage/admin.json' })
+  })
+  ```
+  ```ts
+  // En config: projects que heredan storageState
+  { name: 'admin', use: { storageState: 'storage/admin.json' } }
+  ```
+
+---
+
+## 6. 🌐 Interceptación de Red y Mocking
+
+```ts
+test('mocks API response', async ({ page }) =&gt; {
+  await page.route('**/api/users', async (route) =&gt; {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify([{ id: 1, name: 'Ana' }]),
+    })
+  })
+
+  await page.goto('/users')
+  await expect(page.getByText('Ana')).toBeVisible()
+})
+
+// Continuar con modificación
+await page.route('**/api/**', async (route) =&gt; {
+  const response = await route.fetch()
+  const json = await response.json()
+  json.mocked = true
+  await route.fulfill({ response, json })
+})
+
+// Abortar o offline
+await page.route('**/analytics/**', (route) =&gt; route.abort())
+await page.context().setOffline(true)
+```
+
+* **HAR Recording/Replay**:
+  ```bash
+  npx playwright open --save-har network.har https://app.com
+  ```
+  ```ts
+  await page.routeFromHAR('network.har', { url: '**/api/**', update: false })
+  ```
+
+---
+
+## 7. 📊 Trazas, Debugging y Reportes
+
+* **UI Mode**: `npx playwright test --ui` → Interfaz visual para ejecutar, filtrar, ver snapshots y logs en tiempo real.
+* **Trace Viewer**:
+  ```bash
+  npx playwright test --trace on
+  npx playwright show-trace test-results/trace.zip
+  ```
+  * Navega acciones, ve DOM/network/console por paso, exporta pasos individuales.
+* **Reporters**:
+  | Reporter | Uso |
+  |----------|-----|
+  | `list` / `dot` | Terminal rápido |
+  | `html` | Dashboard local (`playwright show-report`) |
+  | `json` / `junit` | Integración CI/CD |
+  | `github` / `line` | GitHub Actions, logs compactos |
+* **Screenshots & Videos** (config `use`):
+  ```ts
+  screenshot: 'only-on-failure',
+  video: 'retain-on-failure', // 'on', 'off', 'on-first-retry'
+  ```
+* **Adjuntar archivos al reporte**:
+  ```ts
+  await testInfo.attach('csv-export', { path: './exports/report.csv', contentType: 'text/csv' })
+  ```
+
+---
+
+## 8. ⚠️ Errores Comunes y Trampas
+
+* **Usar `page.waitForTimeout()`**: Introduce flakiness y ralentiza suites. **Fix**: Confiar en auto-waiting o usar `expect(locator).toBeVisible()` / `expect.poll()`.
+* **Locators frágiles (XPath/CSS genéricos)**: Cambian con refactors visuales. **Fix**: `getByRole`, `getByTestId` o `getByText` con regex.
+* **No `await` en acciones/asserions**: `page.click()` es async. Sin `await`, el test continúa antes de que la acción termine. **Fix**: Siempre `await` en interacciones y `expect`.
+* **Contexto compartido entre tests**: Reutilizar `page` sin reiniciar estado causa contaminación. **Fix**: Depender de fixtures; Playwright aísla automáticamente por defecto.
+* **Trazas demasiado grandes**: Grabar todo en CI consume memoria/disco. **Fix**: `trace: 'on-first-retry'` y `video: 'retain-on-failure'`.
+* **Ignorar `storageState` para auth**: Re-login en cada test ralentiza x10. **Fix**: Usar setup project + `storageState` heredado.
+* **Confundir `page` vs `context`**: `page` es una pestaña. `context` es sesión (cookies, storage). Para auth multi-taba, usa `context`.
+
+---
+
+## 9. 💡 Mejores Prácticas y Consejos de Experto
+
+* **Prioriza accesibilidad en tests**: `getByRole` alinea pruebas con usuarios reales y reduce mantenimiento ante cambios de UI.
+* **Usa `expect.poll()` para condiciones asíncronas no-UI**: Verifica APIs, WebSockets o estado de cola sin sleeps.
+* **Aísla datos de prueba**: Genera usuarios/pedidos únicos por test o usa `beforeEach` con cleanup. Evita conflictos en CI paralelo.
+* **Mockea servicios externos en unit/integration e2e**: Usa `page.route()` para respuestas deterministas. Reserva red real para smoke tests.
+* **Ejecuta en modo headless en CI, headed solo para debug**: `--headed` o `playwright test --ui` local. No lo commitees.
+* **Configura `retries` y `shard` en CI**:
+  ```bash
+  npx playwright test --shard=1/3  # Divide suite en 3 jobs
+  ```
+* **Valida traces automáticamente**: Usa `trace: 'retain-on-failure'` + [GitHub](/herramientas/github "GitHub es una plataforma web para el alojamiento de repositorios de control de versiones Git diseñado para manejar proyectos pequeños o muy grandes con velocidad y eficiencia.').") Action `playwright-report` para revisar flakiness sin SSH.
+* **Estructura con Page Objects (opcional)**: Encapsula lógica de UI en clases. Útil para apps complejas, pero evita sobre-ingeniería en proyectos pequeños.
+* **Integra con API testing**: `test.request` permite validar endpoints, autenticar usuarios y preparar estado antes de UI tests.
+* **Mantén `baseURL` y `testDir` en config**: Centraliza rutas. Usa `page.goto('/path')` relativo. Facilita cambio de entornos (dev/staging/prod).
+
+---
+
+Este cheatsheet proporciona una referencia completa para Playwright, cubriendo auto-waiting inteligente, locators web-first, fixtures modulares, interceptación de red, reutilización de autenticación, trazado avanzado, optimización de CI y patrones de producción, junto con las mejores prácticas para construir suites de testing end-to-end rápidas, deterministas y escalables en entornos reales.

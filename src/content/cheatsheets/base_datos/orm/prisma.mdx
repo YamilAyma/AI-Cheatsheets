@@ -1,0 +1,928 @@
+---
+title: "prisma"
+description: "Prisma ORM es un toolkit de base de datos de próxima generación para Node.js y TypeScript que adopta un enfoque schema-first: un único archivo schema.prisma define el modelo de datos, las relaciones, las validaciones y la fuente de datos, y a partir de él se genera automáticamente un cliente tipado (PrismaClient)."
+createdAt: 2026-06-01
+updatedAt: 2026-06-01
+tags: [orm]
+icon: "📄"
+---
+# 🎯 Prisma ORM — Complete Cheatsheet 🎯
+
+Prisma ORM es un toolkit de base de datos de próxima generación para Node.js y [TypeScript](/web/general/typescript "TypeScript es una herramienta fundamental en el desarrollo web moderno, especialmente para proyectos a gran escala, ya que añade seguridad de tipo y mejoras en la productividad.") que adopta un enfoque *schema-first*: un único archivo `schema.prisma` define el modelo de datos, las relaciones, las validaciones y la fuente de datos, y a partir de él se genera automáticamente un cliente tipado (`PrismaClient`). Esto elimina el mapeo manual objeto-relacional, garantiza type safety end-to-end y acelera drásticamente el desarrollo. Este cheatsheet cubre desde el modelado de esquemas y relaciones hasta consultas anidadas, transacciones, migraciones, raw [SQL](/base_datos/sql "SQL es el lenguaje estándar utilizado para comunicarse con y gestionar bases de datos relacionales (RDBMS) como MySQL, PostgreSQL, Oracle, SQL Server, SQLite, entre otros."), extensión del cliente, middlewares, performance, Prisma Accelerate y patrones de producción. Ideal para desarrolladores backend que migran desde TypeORM, Sequelize, [Mongoose](/base_datos/nosql/mongoose "Mongoose es una biblioteca ODM (Object-Document Mapping) para MongoDB y Node.js que proporciona un esquema basado en validación, modelado de relaciones, middleware pre/post, transformación de consultas y herramientas de tipado estricto con TypeScript.") o SQL directo y buscan un ORM moderno, tipado y con excelente DX.
+
+---
+
+## 1. 🌟 Conceptos Fundamentales
+
+* **Schema-first**: Toda la estructura de la BD se declara en `prisma/schema.prisma`. Es la única fuente de verdad; no hay decoradores en clases ni migraciones manuales.
+* **Cliente autogenerado**: `prisma generate` produce `@prisma/client` con tipos TypeScript derivados del schema. Autocompletado, validación de tipos y detección temprana de errores.
+  * Por qué importa: cambias el schema → regeneras → toda tu app queda tipada automáticamente.
+* **Type Safety End-to-End**: Desde la query hasta el resultado, todo está tipado. `findUnique` sobre un campo `@unique` retorna `T | null`, `findFirst` retorna `T | null`, `findMany` retorna `T[]`.
+* **Migraciones declarativas**: `prisma migrate dev` genera SQL de migración a partir del diff del schema. Versionadas en [git](/herramientas/git/git "Git es un sistema de control de versiones distribuido (DVCS) diseñado para manejar proyectos pequeños o muy grandes con velocidad y eficiencia."), reproducibles, aplicables en CI.
+* **Query [Builder](/arquitectura/design_patterns/creacionales/builder "El patrón Builder es un patrón creacional que separa la construcción de un objeto complejo de su representación final, permitiendo que el mismo proceso de ensamblaje genere diferentes variantes.") fluido**: [API](/conocimiento/api "Una API (Application Programming Interface) es un conjunto de reglas, protocolos y herramientas que permite que diferentes aplicaciones de software se comuniquen entre sí.") encadenable y composable (`prisma.user.findMany({ where: {...}, include: {...} })`). No es SQL stringificado, es código tipado.
+* **Nested Writes / Reads**: Crear, actualizar o leer relaciones en una sola operación atómica. Elimina queries manuales para joins o inserts relacionados.
+* **Transacciones ACID nativas**: `prisma.$transaction([...])` o `prisma.$transaction(async (tx) =&gt; {...})` para operaciones multi-escritura.
+* **Multi-database**: Soporta PostgreSQL, MySQL, MariaDB, SQL Server, SQLite, CockroachDB y [MongoDB](/base_datos/nosql/mongodb "MongoDB es una base de datos NoSQL orientada a documentos que almacena datos en formato BSON (Binary JSON), permitiendo esquemas flexibles y escalabilidad horizontal nativa."). Un mismo schema con `provider` cambiado.
+* **Extensiones del cliente**: `prisma.$extends()` permite añadir métodos custom, middlewares y lógica transversal sin tocar el schema.
+
+---
+
+## 2. 🛠️ Instalación y Configuración Inicial
+
+* **Instalación en proyecto existente**:
+  ```bash
+  npm install prisma --save-dev
+  npm install @prisma/client
+  npx prisma init
+  # Crea prisma/schema.prisma y .env con DATABASE_URL
+  ```
+* **Estructura resultante**:
+  ```text
+  project/
+  ├── prisma/
+  │   ├── schema.prisma     # Modelo de datos + datasource + generator
+  │   └── migrations/       # SQL versionado generado por migrate
+  ├── src/
+  └── .env                  # DATABASE_URL="postgresql://..."
+  ```
+* **`schema.prisma` mínimo**:
+  ```prisma
+  datasource db {
+    provider = "postgresql"
+    url      = env("DATABASE_URL")
+  }
+
+  generator client {
+    provider = "prisma-client-js"
+  }
+
+  model User {
+    id    Int     @id @default(autoincrement())
+    email String  @unique
+    name  String?
+  }
+  ```
+* **Comandos esenciales del CLI**:
+  | Comando | Función |
+  |---------|---------|
+  | `npx prisma init` | Inicializa proyecto Prisma |
+  | `npx prisma generate` | Genera PrismaClient desde schema |
+  | `npx prisma migrate dev` | Crea y aplica migración en dev |
+  | `npx prisma migrate deploy` | Aplica migraciones pendientes en prod |
+  | `npx prisma migrate reset` | Resetea DB + reaplica migraciones + seeds |
+  | `npx prisma db push` | Sincroniza schema sin generar migración (dev rápido) |
+  | `npx prisma db seed` | Ejecuta script de seed |
+  | `npx prisma studio` | Abre UI visual para explorar/editar datos |
+  | `npx prisma validate` | Valida sintaxis del schema |
+  | `npx prisma format` | Formatea `schema.prisma` |
+
+* **Cliente [singleton](/arquitectura/design_patterns/creacionales/singleton "El patrón Singleton es un patrón creacional estructural que garantiza que una clase tenga exactamente una instancia en todo el ciclo de vida de un ámbito definido, y proporciona un punto de acceso global a dicha instancia.") (recomendado)**:
+  ```typescript
+  // src/lib/prisma.ts
+  import { PrismaClient } from '@prisma/client'
+
+  const globalForPrisma = globalThis as unknown as { prisma: PrismaClient }
+
+  export const prisma =
+    globalForPrisma.prisma ??
+    new PrismaClient({
+      log: process.env.NODE_ENV === 'development' ? ['query', 'warn', 'error'] : ['error'],
+    })
+
+  if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = prisma
+  ```
+
+---
+
+## 3. 📝 Modelado Básico y Tipos
+
+### 3.1. Definición de Modelos
+```prisma
+model User {
+  id        Int      @id @default(autoincrement())
+  email     String   @unique
+  name      String?
+  age       Int?
+  isActive  Boolean  @default(true)
+  balance   Decimal  @db.Decimal(10, 2)
+  role      Role     @default(USER)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  posts     Post[]
+
+  @@index([email])
+  @@map("users")  // nombre de tabla en DB
+}
+
+enum Role {
+  USER
+  ADMIN
+  MODERATOR
+}
+```
+
+### 3.2. Tipos Escalares y Atributos
+* **Escalares**: `String`, `Int`, `BigInt`, `Float`, `Decimal`, `Boolean`, `DateTime`, `Json`, `Bytes`.
+* **Atributos de campo**:
+  | Atributo | Efecto |
+  |----------|--------|
+  | `@id` | Clave primaria |
+  | `@unique` | Índice único |
+  | `@default(value)` | Valor por defecto (`autoincrement()`, `now()`, `uuid()`, `cuid()`) |
+  | `@updatedAt` | Actualiza automáticamente a `now()` en cada cambio |
+  | `@map("db_column")` | Renombra en la BD |
+  | `@db.VarChar(255)` | Tipo nativo específico del provider |
+  | `@ignore` | Ignorado por Prisma (útil en legado) |
+* **Atributos de modelo**:
+  | Atributo | Efecto |
+  |----------|--------|
+  | `@@id([a, b])` | Clave primaria compuesta |
+  | `@@unique([a, b])` | Índice único compuesto |
+  | `@@index([a, b])` | Índice normal |
+  | `@@index([email(sort: Desc)])` | Índice con orden |
+  | `@@map("table_name")` | Renombra la tabla |
+  | `@@schema("custom")` | Schema/namespace (Postgres) |
+
+### 3.3. Claves Compuestas y Tipos Nativos
+```prisma
+model PostView {
+  postId  Int
+  userId  Int
+  viewedAt DateTime
+
+  post Post @relation(fields: [postId], references: [id])
+  user User @relation(fields: [userId], references: [id])
+
+  @@id([postId, userId, viewedAt])  // PK compuesta
+}
+
+// Tipos nativos Postgres
+model Product {
+  id        Int       @id @default(autoincrement())
+  price     Decimal   @db.Decimal(10, 2)
+  tags      String[]  // array nativo en Postgres
+  metadata  Json      @db.JsonB
+  location  Unsupported("geometry")  // PostGIS
+}
+```
+
+---
+
+## 4. 🔗 Relaciones (1-1, 1-n, m-n)
+
+### 4.1. Uno a Muchos (1-n)
+```prisma
+model User {
+  id    Int    @id @default(autoincrement())
+  email String @unique
+  posts Post[]
+}
+
+model Post {
+  id       Int    @id @default(autoincrement())
+  title    String
+  authorId Int
+  author   User   @relation(fields: [authorId], references: [id], onDelete: Cascade)
+}
+```
+* `authorId` es la **foreign key** en Post.
+* `onDelete: Cascade` elimina posts cuando se borra el user. Opciones: `Cascade`, `SetNull`, `Restrict`, `NoAction`, `SetDefault`.
+
+### 4.2. Uno a Uno (1-1)
+```prisma
+model User {
+  id      Int      @id @default(autoincrement())
+  profile Profile?
+}
+
+model Profile {
+  id     Int  @id @default(autoincrement())
+  bio    String
+  userId Int  @unique   // ← la unicidad en el FK convierte en 1-1
+  user   User @relation(fields: [userId], references: [id])
+}
+```
+
+### 4.3. Muchos a Muchos (m-n)
+```prisma
+// Implícita (Prisma gestiona la tabla intermedia)
+model Post {
+  id    Int    @id @default(autoincrement())
+  tags  Tag[]
+}
+
+model Tag {
+  id    Int    @id @default(autoincrement())
+  name  String @unique
+  posts Post[]
+}
+// Crea automáticamente tabla "_PostToTag"
+
+// Explícita (cuando necesitas campos extra en la relación)
+model Post {
+  id          Int            @id @default(autoincrement())
+  categories  PostCategory[]
+}
+
+model Category {
+  id    Int            @id @default(autoincrement())
+  name  String         @unique
+  posts PostCategory[]
+}
+
+model PostCategory {
+  postId     Int
+  categoryId Int
+  addedAt    DateTime @default(now())
+  post       Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  category   Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  @@id([postId, categoryId])
+}
+```
+
+### 4.4. Relaciones Auto-referenciales
+```prisma
+model Employee {
+  id         Int        @id @default(autoincrement())
+  name       String
+  managerId  Int?
+  manager    Employee?  @relation("ManagerReports", fields: [managerId], references: [id])
+  reports    Employee[] @relation("ManagerReports")
+}
+```
+
+### 4.5. Relaciones con Nombre Disambiguado
+```prisma
+model User {
+  id            Int    @id @default(autoincrement())
+  sentMessages  Message[] @relation("SentMessages")
+  receivedMessages Message[] @relation("ReceivedMessages")
+}
+
+model Message {
+  id         Int    @id @default(autoincrement())
+  senderId   Int
+  receiverId Int
+  sender     User   @relation("SentMessages", fields: [senderId], references: [id])
+  receiver   User   @relation("ReceivedMessages", fields: [receiverId], references: [id])
+}
+```
+
+---
+
+## 5. 🔍 Lecturas: `findUnique`, `findFirst`, `findMany`
+
+```typescript
+// findUnique: por campo @unique o @id. Retorna T | null
+const user = await prisma.user.findUnique({
+  where: { email: 'ana@dev.com' },
+  include: { posts: true },
+})
+
+// findUniqueOrThrow: lanza error si no existe
+const user = await prisma.user.findUniqueOrThrow({
+  where: { id: 1 },
+})
+
+// findFirst: primer match (con orden, filtros complejos)
+const admin = await prisma.user.findFirst({
+  where: { role: 'ADMIN' },
+  orderBy: { createdAt: 'desc' },
+})
+
+// findMany: todos los matches
+const users = await prisma.user.findMany({
+  where: { isActive: true },
+  skip: 20,
+  take: 10,
+  orderBy: [{ createdAt: 'desc' }, { name: 'asc' }],
+  select: { id: true, email: true, name: true },
+})
+```
+
+---
+
+## 6. ✍️ Creación: `create` y `createMany`
+
+```typescript
+// Create simple
+const user = await prisma.user.create({
+  data: { email: 'ana@dev.com', name: 'Ana' },
+})
+
+// Create con relación anidada
+const user = await prisma.user.create({
+  data: {
+    email: 'ana@dev.com',
+    name: 'Ana',
+    posts: {
+      create: [
+        { title: 'Post 1', content: '...' },
+        { title: 'Post 2', content: '...' },
+      ],
+    },
+    profile: {
+      create: { bio: 'Dev' },
+    },
+  },
+  include: { posts: true, profile: true },
+})
+
+// Connect a registro existente
+const post = await prisma.post.create({
+  data: {
+    title: 'Nuevo',
+    author: { connect: { id: 1 } },  // vincula al user id=1
+  },
+})
+
+// createMany: inserción masiva eficiente (no retorna registros)
+const result = await prisma.user.createMany({
+  data: [
+    { email: 'a@x.com', name: 'A' },
+    { email: 'b@x.com', name: 'B' },
+    { email: 'c@x.com', name: 'C' },
+  ],
+  skipDuplicates: true,  // ignora duplicados en campos únicos
+})
+// result.count = 3
+```
+
+---
+
+## 7. 🔄 Actualización: `update`, `updateMany`, `upsert`
+
+```typescript
+// update simple
+await prisma.user.update({
+  where: { id: 1 },
+  data: { name: 'Ana García', age: { increment: 1 } },
+})
+
+// Operadores numéricos en update
+await prisma.product.update({
+  where: { id: 1 },
+  data: {
+    stock: { decrement: 5 },
+    price: { multiply: 1.1 },
+    views: { increment: 1 },
+  },
+})
+
+// upsert: update si existe, create si no
+const user = await prisma.user.upsert({
+  where: { email: 'ana@dev.com' },
+  update: { name: 'Ana G.' },
+  create: { email: 'ana@dev.com', name: 'Ana G.', role: 'USER' },
+})
+
+// updateMany (no retorna registros, solo cuenta)
+const result = await prisma.user.updateMany({
+  where: { role: 'GUEST', createdAt: { lt: oneMonthAgo } },
+  data: { isActive: false },
+})
+// result.count = 42
+
+// Actualizar relaciones
+await prisma.post.update({
+  where: { id: 1 },
+  data: {
+    author: { connect: { id: 5 } },       // cambiar autor
+    tags: {
+      connect: [{ id: 10 }, { id: 11 }],  // añadir tags
+      disconnect: [{ id: 3 }],            // quitar tag
+      set: [{ id: 10 }, { id: 12 }],      // reemplazar todos
+    },
+  },
+})
+```
+
+---
+
+## 8. 🗑️ Eliminación: `delete`, `deleteMany`
+
+```typescript
+// delete simple
+await prisma.user.delete({ where: { id: 1 } })
+
+// delete con relación anidada (soft delete o limpieza)
+await prisma.user.update({
+  where: { id: 1 },
+  data: {
+    posts: { deleteMany: { published: false } },  // elimina posts no publicados
+  },
+})
+
+// deleteMany
+await prisma.session.deleteMany({
+  where: { expiresAt: { lt: new Date() } },
+})
+
+// Soft delete con campo deletedAt
+await prisma.user.update({
+  where: { id: 1 },
+  data: { deletedAt: new Date() },
+})
+```
+
+* **Cascadas**: si el schema define `onDelete: Cascade`, eliminar un `User` elimina automáticamente sus `Post` relacionados.
+
+---
+
+## 9. 🎯 Filtros y Operadores (Where Clauses)
+
+```typescript
+// Comparación básica
+prisma.user.findMany({ where: { age: { gte: 18, lte: 65 } } })
+
+// Lógico
+prisma.user.findMany({
+  where: {
+    AND: [
+      { isActive: true },
+      { OR: [{ role: 'ADMIN' }, { age: { gt: 50 } }] },
+    ],
+    NOT: { email: { contains: 'spam' } },
+  },
+})
+
+// Strings
+prisma.user.findMany({
+  where: {
+    name: { contains: 'ana', mode: 'insensitive' },  // ILIKE
+    email: { startsWith: 'admin', endsWith: '@dev.com' },
+  },
+})
+
+// Nullability
+prisma.user.findMany({ where: { phone: null } })
+prisma.user.findMany({ where: { phone: { not: null } } })
+
+// Arrays (Postgres)
+prisma.post.findMany({
+  where: {
+    tags: { has: 'typescript' },          // contiene elemento
+    tags: { hasEvery: ['typescript', 'prisma'] },
+    tags: { hasSome: ['react', 'vue'] },
+    tags: { isEmpty: false },
+  },
+})
+
+// Relaciones
+prisma.user.findMany({
+  where: {
+    posts: { some: { published: true } }, // tiene al menos un post publicado
+    posts: { every: { published: true } },// todos sus posts publicados
+    posts: { none: { published: false } },// ningún post sin publicar
+  },
+})
+```
+
+---
+
+## 10. 📦 `include`, `select` y Proyecciones
+
+```typescript
+// include: trae relación completa
+const user = await prisma.user.findUnique({
+  where: { id: 1 },
+  include: {
+    posts: true,
+    profile: true,
+  },
+})
+
+// include anidado con filtros
+const user = await prisma.user.findUnique({
+  where: { id: 1 },
+  include: {
+    posts: {
+      where: { published: true },
+      orderBy: { createdAt: 'desc' },
+      take: 5,
+      include: { tags: true },
+    },
+  },
+})
+
+// select: proyección precisa (solo campos pedidos)
+const user = await prisma.user.findUnique({
+  where: { id: 1 },
+  select: {
+    id: true,
+    email: true,
+    posts: {
+      select: { id: true, title: true },
+    },
+  },
+})
+
+// Mezcla select + include anidado con _count
+const user = await prisma.user.findUnique({
+  where: { id: 1 },
+  select: {
+    id: true,
+    email: true,
+    _count: { select: { posts: true, comments: true } },
+    latestPost: { select: { id: true, title: true } },
+  },
+})
+```
+
+* **Regla**: `select` y `include` son mutuamente excluyentes a nivel del mismo objeto. Usa `select` para máxima eficiencia.
+
+---
+
+## 11. 📊 Agregaciones, Agrupación y Conteos
+
+```typescript
+// Conteos
+const total = await prisma.user.count({ where: { isActive: true } })
+
+// Agregaciones globales
+const stats = await prisma.order.aggregate({
+  where: { status: 'PAID' },
+  _count: true,
+  _sum: { amount: true },
+  _avg: { amount: true },
+  _min: { amount: true, createdAt: true },
+  _max: { amount: true },
+})
+// stats._sum.amount, stats._avg.amount, etc.
+
+// GroupBy (GROUP BY SQL)
+const byMonth = await prisma.order.groupBy({
+  by: ['status'],
+  where: { createdAt: { gte: new Date('2024-01-01') } },
+  _count: { _all: true },
+  _sum: { amount: true },
+  _avg: { amount: true },
+  having: {
+    amount: { _sum: { gt: 1000 } },  // HAVING
+  },
+  orderBy: { _sum: { amount: 'desc' } },
+})
+
+// Conteos por relación sin cargar datos
+const users = await prisma.user.findMany({
+  select: {
+    id: true,
+    name: true,
+    _count: { select: { posts: true, comments: true } },
+  },
+})
+// users[0]._count.posts = 12
+```
+
+---
+
+## 12. 🔀 Transacciones
+
+```typescript
+// Transacción interactiva (recomendada para lógica compleja)
+const result = await prisma.$transaction(async (tx) =&gt; {
+  const from = await tx.account.findUniqueOrThrow({ where: { id: 'A' } })
+  if (from.balance &lt; 100) throw new Error('Saldo insuficiente')
+
+  await tx.account.update({
+    where: { id: 'A' },
+    data: { balance: { decrement: 100 } },
+  })
+
+  await tx.account.update({
+    where: { id: 'B' },
+    data: { balance: { increment: 100 } },
+  })
+
+  return await tx.transfer.create({
+    data: { fromId: 'A', toId: 'B', amount: 100 },
+  })
+})
+
+// Transacción por lotes (array de operaciones, ejecución secuencial)
+const [user, post, tag] = await prisma.$transaction([
+  prisma.user.create({ data: { email: 'a@x.com' } }),
+  prisma.post.create({ data: { title: 'Hola' } }),
+  prisma.tag.upsert({
+    where: { name: 'new' },
+    create: { name: 'new' },
+    update: {},
+  }),
+])
+
+// Opciones avanzadas
+await prisma.$transaction(
+  async (tx) =&gt; { /* ... */ },
+  {
+    maxWait: 5000,        // ms esperando transacción disponible
+    timeout: 10000,       // ms antes de abortar
+    isolationLevel: 'Serializable',  // ReadUncommitted, ReadCommitted, RepeatableRead, Serializable
+  }
+)
+```
+
+---
+
+## 13. 🚧 Migraciones con `prisma migrate`
+
+* **Flujo dev (crear/aplicar migraciones)**:
+  ```bash
+  npx prisma migrate dev --name add_posts_table
+  # 1. Detecta cambios en schema
+  # 2. Genera SQL en prisma/migrations/YYYYMMDDHHMMSS_add_posts_table/migration.sql
+  # 3. Aplica a la BD
+  # 4. Regenera PrismaClient automáticamente
+  ```
+* **Flujo prod (aplicar migraciones existentes)**:
+  ```bash
+  # CI/CD o docker entrypoint
+  npx prisma migrate deploy
+  # Solo aplica migraciones pendientes. No genera ni resetea.
+  ```
+* **Reset completo** (solo dev):
+  ```bash
+  npx prisma migrate reset
+  # Drop DB + reaplica todas + corre seeds
+  ```
+* **Sincronización rápida sin migraciones**:
+  ```bash
+  npx prisma db push
+  # Útil en prototipado. NO genera archivo de migración.
+  ```
+* **Migraciones SQL manuales**:
+  ```bash
+  npx prisma migrate dev --create-only
+  # Solo crea el archivo SQL vacío para editar manualmente
+  # Luego: npx prisma migrate dev para aplicar
+  ```
+* **Marcar migración como aplicada (base histórica)**:
+  ```bash
+  npx prisma migrate resolve --applied 20240101000000_init
+  ```
+
+---
+
+## 14. 📜 Raw SQL y Consultas Avanzadas
+
+```typescript
+// Query raw (retorna resultados tipados si se usa $queryRawTyped)
+import { Prisma, PrismaPromise } from '@prisma/client'
+
+const users = await prisma.$queryRaw<User[]>`
+  SELECT id, email, name
+  FROM users
+  WHERE age > ${minAge}
+  AND status = ${'active'}
+`
+
+// Ejecutar sin retorno
+const result = await prisma.$executeRaw`
+  UPDATE users SET "loginCount" = "loginCount" + 1 WHERE id = ${userId}
+`
+
+// queryRawUnsafe (cuando NO hay template literals disponibles)
+const rows = await prisma.$queryRawUnsafe(
+  'SELECT * FROM users WHERE email = $1',
+  email,  // parámetros parametrizados, seguros contra SQL injection
+)
+
+// Tipado estricto con $queryRawTyped (generado desde schema)
+import { topUsers } from '@prisma/client/sql'
+const top = await prisma.$queryRawTyped(topUsers(10))
+```
+
+* **Regla**: Siempre usar template literals con `$queryRaw` (nunca concatenar strings). Prisma parametriza automáticamente.
+* **`Prisma.sql`** para construir queries dinámicas:
+  ```typescript
+  import { Prisma } from '@prisma/client'
+
+  const conditions: Prisma.Sql[] = []
+  if (filters.email) conditions.push(Prisma.sql`email = ${filters.email}`)
+  if (filters.age) conditions.push(Prisma.sql`age > ${filters.age}`)
+
+  const where = conditions.length
+    ? Prisma.sql`WHERE ${Prisma.join(conditions, ' AND ')}`
+    : Prisma.empty
+
+  const users = await prisma.$queryRaw`SELECT * FROM users ${where}`
+  ```
+
+---
+
+## 15. 🌱 Seeds
+
+* **Configurar en `package.json`**:
+  ```json
+  {
+    "prisma": {
+      "seed": "ts-node --compiler-options {\"module\":\"CommonJS\"} prisma/seed.ts"
+    }
+  }
+  ```
+* **`prisma/seed.ts`**:
+  ```typescript
+  import { PrismaClient } from '@prisma/client'
+
+  const prisma = new PrismaClient()
+
+  async function main() {
+    const admin = await prisma.user.upsert({
+      where: { email: 'admin@dev.com' },
+      update: {},
+      create: {
+        email: 'admin@dev.com',
+        name: 'Admin',
+        role: 'ADMIN',
+        posts: {
+          create: [
+            { title: 'Bienvenida', content: 'Primer post' },
+            { title: 'Tutorial', content: 'Segundo post' },
+          ],
+        },
+      },
+    })
+    console.log('Seed complete:', admin)
+  }
+
+  main()
+    .catch((e) =&gt; { console.error(e); process.exit(1) })
+    .finally(async () =&gt; { await prisma.$disconnect() })
+  ```
+* **Ejecutar**: `npx prisma db seed` (también corre tras `migrate reset`).
+
+---
+
+## 16. 🧩 Extensiones del Cliente, Middlewares y Logging
+
+### 16.1. Client Extensions (`$extends`)
+```typescript
+// Añadir métodos custom
+const xprisma = prisma.$extends({
+  model: {
+    user: {
+      async findActive() {
+        const ctx = Prisma.getExtensionContext(this)
+        return ctx.findMany({ where: { isActive: true } })
+      },
+    },
+  },
+  result: {
+    user: {
+      fullName: {
+        needs: { firstName: true, lastName: true },
+        compute(user) { return `${user.firstName} ${user.lastName}` },
+      },
+    },
+  },
+  query: {
+    user: {
+      async findMany({ args, query }) {
+        // Soft delete: filtrar automáticamente
+        args.where = { ...args.where, deletedAt: null }
+        return query(args)
+      },
+    },
+  },
+})
+
+// Uso:
+const active = await xprisma.user.findActive()
+const u = await xprisma.user.findUnique({ where: { id: 1 } })
+u?.fullName  // computado automáticamente
+```
+
+### 16.2. Logging
+```typescript
+const prisma = new PrismaClient({
+  log: [
+    { level: 'query', emit: 'event' },
+    { level: 'warn', emit: 'stdout' },
+    { level: 'error', emit: 'stdout' },
+  ],
+})
+
+prisma.$on('query', (e) =&gt; {
+  console.log(`Query: ${e.query}`)
+  console.log(`Params: ${e.params}`)
+  console.log(`Duration: ${e.duration}ms`)
+})
+```
+
+---
+
+## 17. ⚡ Rendimiento y Optimización
+
+* **`select` sobre `include`**: Solo trae los campos necesarios. Reduce payload y parsing.
+* **Evita `include` profundo en listas**: `findMany({ include: { posts: { include: { comments: true } } } })` dispara múltiples queries. Usa `select` con proyecciones específicas.
+* **Índices en el schema**: `@@index([email])`, `@@index([userId, createdAt])`. Prisma genera el índice al migrar.
+* **`cursor`-based pagination** (mejor que `skip`/`take` en datasets grandes):
+  ```typescript
+  const page = await prisma.post.findMany({
+    take: 20,
+    cursor: { id: lastSeenId },
+    orderBy: { id: 'asc' },
+  })
+  ```
+* **`skip`/`take` para offset pagination**:
+  ```typescript
+  const { data, total } = await prisma.$transaction([
+    prisma.post.findMany({ skip: 20, take: 10, orderBy: { createdAt: 'desc' } }),
+    prisma.post.count(),
+  ])
+  ```
+* **Connection pooling**: Prisma usa el pool del driver. En serverless, usa singleton + Prisma Accelerate.
+* **`prisma.$queryRaw` para queries complejas**: Un JOIN complejo o una subquery anidada puede ser más eficiente en SQL directo.
+* **Batch reads**: En lugar de N queries individuales, usa `findMany({ where: { id: { in: ids } } })`.
+* **`prisma.$transaction([...])`** para múltiples writes: reduce round-trips.
+
+---
+
+## 18. ☁️ Prisma Accelerate, Studio y Data Proxy
+
+* **Prisma Accelerate** (cache global + pooling serverless):
+  ```typescript
+  import { withAccelerate } from '@prisma/extension-accelerate'
+  const prisma = new PrismaClient().$extends(withAccelerate())
+
+  // Query cacheada por 60s
+  await prisma.product.findMany({ cacheStrategy: { ttl: 60 } })
+  // Invalidación explícita
+  await prisma.product.findMany({ cacheStrategy: { swr: 30, ttl: 60 } })
+  ```
+* **Prisma Studio**: `npx prisma studio` → UI web para CRUD visual. Útil para debugging y exploración.
+* **Prisma Data [Proxy](/arquitectura/design_patterns/estructurales/proxy "El patrón Proxy es un patrón estructural que proporciona un sustituto o intermediario para controlar el acceso a un objeto real, añadiendo comportamiento transversal sin modificar su implementación original.")**: URL especial tipo `prisma://aws-us-east-1.prisma-data.net/?api_key=...` que enruta queries a través de Prisma Cloud (pooling, caching, observabilidad).
+
+---
+
+## 19. ⚠️ Errores Comunes y Trampas
+
+* **Crear múltiples instancias de `PrismaClient`**: En dev con hot-reload o en serverless, cada instancia agota conexiones.
+  * Fix: Singleton con `globalThis` (ver sección 2).
+* **Olvidar `npx prisma generate` tras cambiar schema**: El cliente se queda con tipos viejos y TypeScript no detecta errores.
+  * Fix: Integrar `prisma generate` en `postinstall` y en CI.
+* **`include` vs `select` juntos al mismo nivel**: Prisma lanza error.
+  * Fix: Usa uno u otro. Para select + relaciones anidadas, usa `select` con `include` solo dentro.
+* **`findUnique` con campo no único**: Error de compilación/TypeScript.
+  * Fix: Solo usa `findUnique` sobre campos `@id` o `@unique`. Para el resto, `findFirst`.
+* **`updateMany` / `deleteMany` sin `where`**: Afecta toda la tabla sin confirmación.
+  * Fix: Siempre pasar `where` explícito. En scripts de limpieza, valida primero con `count()`.
+* **N+1 en bucles**: `for (const userId of ids) { await prisma.user.findUnique(...) }`.
+  * Fix: `prisma.user.findMany({ where: { id: { in: ids } } })` + mapeo manual.
+* **Transacciones en bucle**: `await prisma.$transaction(...)` dentro de `forEach` anula el beneficio.
+  * Fix: Construye array de operaciones y pásalas a `$transaction([...])`.
+* **Migraciones rotas por cambios manuales en DB**: Prisma pierde sincronía con `_prisma_migrations`.
+  * Fix: Nunca modifiques DB fuera de migraciones. Usa `prisma migrate resolve` para reparar.
+* **Enum en JS no coincide con DB**: Prisma genera enums TS que pueden no matchear valores legacy.
+  * Fix: Usa `@@map` en enum values o normaliza en seed.
+* **Falta de índices en campos de `where` frecuentes**: `findMany` con filtros sin índice → sequential scan.
+  * Fix: `@@index([campo])` en schema + `prisma migrate dev`.
+* **Soft delete sin middleware global**: Cada query debe añadir `deletedAt: null` manualmente.
+  * Fix: Usa Client Extension con `query` hook (ver sección 16).
+* **`Json` type sin validación**: `metadata: Json` acepta cualquier cosa. Errores en runtime.
+  * Fix: Valida con [Zod](/web/frontend/general/zod "¡Absolutamente! Zod es una librería increíble para la validación de esquemas y tipos en TypeScript/JavaScript, famosa por su simplicidad y excelente inferencia de tipos.") en capa de aplicación antes de persistir.
+* **Serverless cold starts con Prisma**: Primera query tarda 200-500ms.
+  * Fix: Usa Prisma Accelerate o Data Proxy para connection pooling global.
+* **Cambiar `provider` sin migrar**: Cambiar de Postgres a MySQL requiere reescribir schema y migraciones.
+  * Fix: Decidir provider al inicio. Si migras, planifica como proyecto nuevo.
+
+---
+
+## 20. 💡 Mejores Prácticas y Consejos de Experto
+
+* **Schema como fuente de verdad única**: Nunca modifiques la BD directamente. Todo pasa por `schema.prisma` + `migrate`.
+* **Separa DTOs de modelos Prisma**: Expón `UserDTO` (público) no `User` (interno). Evita fugas de campos sensibles (`password`, `deletedAt`).
+* **Usa `select` en APIs públicas**: Proyecta solo campos necesarios. Reduce payload, evita sobre-exposición.
+* **Soft delete con extensiones**: Un `deletedAt: DateTime?` + Client Extension que filtre automáticamente = patrón limpio.
+* **Valida input con Zod antes de Prisma**: `const data = schema.parse(body); await prisma.user.create({ data })`. Doble validación: schema en DB, Zod en entrada.
+* **Nombra índices con claridad**: `@@index([userId, createdAt], map: "idx_posts_user_created")` facilita debugging y análisis de `EXPLAIN`.
+* **`updatedAt: DateTime @updatedAt`** en todos los modelos auditables: tracking automático sin código extra.
+* **Usa `createMany` para bulk inserts**: 10-100x más rápido que `create` en bucle. Ideal para seeds, ETL, importaciones.
+* **Perfila queries en dev**: `log: ['query']` + `prisma.$on('query', ...)` o integra con OpenTelemetry (`@prisma/instrumentation`).
+* **Pagina por cursor en feeds infinitos**: Más eficiente que offset y estable ante inserciones.
+* **Centraliza lógica de negocio en services**: `prisma` en `repositories/`, lógica en `services/`, controllers delgados. Facilita testing y reutilización.
+* **Testea con `@prisma/client` mock o DB en memoria**:
+  * Opción 1: `jest-mock-extended` para mockear `PrismaClient`.
+  * Opción 2: SQLite en memoria (`url = "file:./test.db"`) para tests de integración reales.
+* **Migraciones en CI**: `prisma migrate deploy` en pipeline. Si falla, no despliegues.
+* **Versiona `migrations/` en git**: Es el histórico oficial de cambios de schema. Nunca ignores.
+* **Usa `prisma format` en pre-commit**: Mantiene el schema consistente entre colaboradores.
+* **Evita enums para flags binarios**: `isActive: Boolean` es más claro y eficiente que `status: Status { ACTIVE, INACTIVE }`.
+* **Relaciones m-n explícitas cuando necesites metadatos**: `PostCategory` con `addedAt`, `addedBy`, etc.
+* **`_count` en lugar de `include` + `length`**: `select: { _count: { select: { posts: true } } }` es O(1) vs O(N).
+* **Preview features con cuidado**: `previewFeatures = ["postgresqlExtensions"]` pueden cambiar entre versiones. Fija versión de Prisma.
+* **Documenta el schema con `///` comments**:
+  ```prisma
+  /// User account with email-based authentication
+  model User {
+    /// Unique email used for login
+    email String @unique
+  }
+  ```
+  Los comentarios aparecen en el PrismaClient tipado.
+* **Monitorea con Prisma Pulse + Accelerate**: Change streams + caché global = patrón moderno para apps real-time.
+
+---
+
+Este cheatsheet proporciona una referencia completa para Prisma ORM, cubriendo modelado schema-first con TypeScript, relaciones (1-1, 1-n, m-n), operaciones CRUD tipadas, filtros avanzados, includes y selects, agregaciones, transacciones ACID, migraciones, raw SQL, seeds, extensiones del cliente, optimización de rendimiento, Prisma Accelerate y patrones de producción, junto con las mejores prácticas para construir aplicaciones Node.js/TypeScript escalables, seguras y de alto rendimiento sobre múltiples bases de datos en entornos reales.
