@@ -1,3 +1,11 @@
+---
+title: "prototype"
+description: "El patrón Prototype es un patrón creacional que permite crear nuevos objetos clonando una instancia existente en lugar de instanciarlos desde cero."
+createdAt: 2026-05-21
+updatedAt: 2026-05-22
+tags: [creacionales]
+icon: "📄"
+---
 # 🧬 Patrón Prototype — Cheatsheet Completo 🧬
 
 El patrón **Prototype** es un patrón creacional que permite crear nuevos objetos clonando una instancia existente en lugar de instanciarlos desde cero. Resuelve problemas de creación costosa, configuración compleja, aislamiento de estado y desconocimiento del tipo concreto en tiempo de ejecución. Nace para evitar la explosión de subclases, optimizar la generación de objetos con estructuras internas complejas, y garantizar que las copias sean independientes del original sin repetir lógica de inicialización. Este cheatsheet desglosa la intención arquitectónica real del patrón, contratos de clonación segura, variantes multi-paradigma, implicaciones en memoria y concurrencia, trampas de referencias compartidas, y criterios estrictos para decidir cuándo la clonación es una necesidad del dominio y no un atajo que introduce acoplamiento oculto o fugas de recursos.
@@ -116,7 +124,7 @@ public class Report implements Document {
     }
 }
 ```
-Nota: `super.clone()` en Java es superficial por defecto. La responsabilidad de deep copy recae en el implementador.
+Nota: `super.clone()` en [Java](/java/java "Java es un lenguaje de programación de propósito general, concurrente, basado en clases y orientado a objetos.") es superficial por defecto. La responsabilidad de deep copy recae en el implementador.
 
 ### 3.2. Enfoque Funcional / Inmutable (Rust / Elixir / Haskell)
 Se reemplaza clonación mutante por copia estructural con garantías de inmutabilidad.
@@ -159,7 +167,7 @@ class QueryTemplate:
         q.params.update(kwargs)
         return q
 ```
-Nota: `structuredClone` (JS) y `copy.deepcopy` (Python) manejan referencias circulares, pero fallan con objetos nativos no serializables (sockets, archivos, closures).
+Nota: `structuredClone` (JS) y `copy.deepcopy` ([Python](/python/python "Python es un lenguaje de programación de alto nivel, interpretado, interactivo y orientado a objetos.")) manejan referencias circulares, pero fallan con objetos nativos no serializables (sockets, archivos, closures).
 
 ### 3.4. Serialización como Clonación Alternativa
 Se usa cuando la clonación directa es imposible o insegura.
@@ -204,18 +212,18 @@ Comparación rápida con patrones creacionales:
 * **Prototype**: Clona instancias existentes. Enfocado en replicación de estado y aislamiento.
 * **Factory Method**: Delega creación a subclases. Enfocado en selección polimórfica de tipo.
 * **Abstract Factory**: Crea familias relacionadas. Enfocado en compatibilidad cruzada de componentes.
-* **Builder**: Construye paso a paso. Enfocado en configuración progresiva y validación intermedia.
-* **Singleton**: Garantiza unicidad. Enfocado en acceso global controlado.
+* **[Builder](/arquitectura/design_patterns/creacionales/builder "El patrón Builder es un patrón creacional que separa la construcción de un objeto complejo de su representación final, permitiendo que el mismo proceso de ensamblaje genere diferentes variantes.")**: Construye paso a paso. Enfocado en configuración progresiva y validación intermedia.
+* **[Singleton](/arquitectura/design_patterns/creacionales/singleton "El patrón Singleton es un patrón creacional estructural que garantiza que una clase tenga exactamente una instancia en todo el ciclo de vida de un ámbito definido, y proporciona un punto de acceso global a dicha instancia.")**: Garantiza unicidad. Enfocado en acceso global controlado.
 
 ---
 
 ## 6. 🧪 Testing, Mantenibilidad y Arquitectura
 
 * **Aislamiento en Tests**: Clonar prototipos de prueba evita efectos secundarios entre casos. Cada test recibe una copia limpia del mismo estado base.
-  * Técnica: `beforeEach(() => suite = prototype.clone())`. Reset automático sin reinstanciación costosa.
+  * Técnica: `beforeEach(() =&gt; suite = prototype.clone())`. Reset automático sin reinstanciación costosa.
 * **Detección de Fugas por Referencias Compartidas**: Si un test modifica una copia y afecta a otros, la clonación es superficial donde no debería serlo.
   * Fix: Escribe tests de inmutabilidad que verifiquen `assert(copy.field !== original.field)` para objetos mutables.
-* **Ciclo de Vida y Ownership**: ¿Quién libera la memoria de las copias? En GC, el problema es automático. En C++/Rust, la factory debe documentar si transfiere ownership o usa shared pointers.
+* **Ciclo de Vida y Ownership**: ¿Quién libera la memoria de las copias? En GC, el problema es automático. En C++/[Rust](/rust/rust "Rust es un lenguaje de programación de sistemas enfocado en seguridad, concurrencia y rendimiento sin recolector de basura (GC)."), la factory debe documentar si transfiere ownership o usa shared pointers.
 * **Refactorización hacia Value Objects**: Si el objeto clonado solo transporta datos y nunca muta, considera reemplazarlo por Value Objects inmutables. Elimina la necesidad de `clone()` explícito.
 * **Impacto en Rendimiento**: La clonación profunda añade costo lineal o exponencial según el grafo. Usa profiling para medir asignaciones por segundo. Si >10k clones/seg, evalúa Copy-on-Write o pools.
 * **Gestión de Versiones**: Si el prototipo evoluciona (v1 a v2), mantenga contratos de clonación estables. Use adapters o migradores de estado. Nunca rompa la firma de `clone()`.
@@ -246,7 +254,7 @@ Comparación rápida con patrones creacionales:
 
 * **Prefiere Inmutabilidad para Prototipos**: Si el prototipo base nunca muta después del registro, elimina clases de bugs por modificación accidental y permite caching agresivo.
 * **Documenta Semántica de Copia**: Indica explícitamente en comentarios o docs si la clonación es superficial, profunda, o híbrida. Especifica qué campos se comparten intencionalmente.
-* **Usa Primitivas Nativas de Clonación Profunda**: `structuredClone` (JS), `copy.deepcopy` (Python), `Clone` trait (Rust), `MemberwiseClone` (Swift). Evita reinventar serializadores inseguros.
+* **Usa Primitivas Nativas de Clonación Profunda**: `structuredClone` (JS), `copy.deepcopy` ([Python](/python/python "Python es un lenguaje de programación de alto nivel, interpretado, interactivo y orientado a objetos.")), `Clone` trait ([Rust](/rust/rust "Rust es un lenguaje de programación de sistemas enfocado en seguridad, concurrencia y rendimiento sin recolector de basura (GC).")), `MemberwiseClone` (Swift). Evita reinventar serializadores inseguros.
 * **Separa Estado Compartido del Estado Clonable**: Mantén conexiones, caches globales o pools en campos marcados como no clonables. Reasígnalos en `afterClone()` si es necesario.
 * **Implementa `afterClone()` para Inicialización Segura**: Hook post-clonación para regenerar IDs, reiniciar timestamps, o validar invariantes sin tocar el constructor original.
 * **Valida Clones en Tests de Integración**: Escribe tests que verifiquen `original !== copy`, `deepEqual(original, copy)`, y `mutate(copy) !== original`. Garantiza aislamiento real.
