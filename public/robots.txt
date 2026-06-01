@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://ai-cheatsheets.vercel.app/sitemap.xml

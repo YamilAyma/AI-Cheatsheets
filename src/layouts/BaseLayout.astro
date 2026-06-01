@@ -32,6 +32,7 @@ const canonicalURL = new URL(
 <html lang="es">
     <head>
         <meta charset="UTF-8" />
+        <meta name="google-site-verification" content="2UF3L_fQMu61h2rfdzqpw1tDhVwaZpAArh1o_1N4e3c" />
         <meta name="description" content={description} />
         <meta name="viewport" content="width=device-width" />
         <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
@@ -43,14 +44,14 @@ const canonicalURL = new URL(
         <meta property="og:url" content={canonicalURL} />
         <meta property="og:title" content={`${title} | AI Cheatsheets`} />
         <meta property="og:description" content={description} />
-        <meta property="og:image" content={new URL(ogImage, Astro.site)} />
+        <meta property="og:image" content={new URL(ogImage, Astro.site || canonicalURL.origin)} />
 
         <!-- Twitter -->
         <meta property="twitter:card" content="summary_large_image" />
         <meta property="twitter:url" content={canonicalURL} />
         <meta property="twitter:title" content={`${title} | AI Cheatsheets`} />
         <meta property="twitter:description" content={description} />
-        <meta property="twitter:image" content={new URL(ogImage, Astro.site)} />
+        <meta property="twitter:image" content={new URL(ogImage, Astro.site || canonicalURL.origin)} />
 
         <!-- Structured Data -->
         <script
@@ -61,7 +62,7 @@ const canonicalURL = new URL(
                 headline: title,
                 description: description,
                 url: canonicalURL,
-                image: new URL(ogImage, Astro.site),
+                image: new URL(ogImage, Astro.site || canonicalURL.origin),
                 author: {
                     "@type": "Organization",
                     name: "AI Cheatsheets",
