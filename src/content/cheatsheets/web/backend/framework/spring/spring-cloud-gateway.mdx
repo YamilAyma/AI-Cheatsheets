@@ -1,6 +1,6 @@
 ---
 title: "spring-cloud-gateway"
-description: "Spring Cloud Gateway es un framework API Gateway construido sobre Spring Framework 5, Spring Boot 2 y Project Reactor."
+description: "Spring Cloud Gateway es un framework API es un conjunto de reglas, protocolos y herramientas que permite que diferentes aplicaciones de software se comuniquen entre sí.\") Gateway construido sobre Spring Framework 5, Spring Boot 2 y Project Reactor."
 createdAt: 2026-04-28
 updatedAt: 2026-04-28
 tags: [spring]
@@ -19,7 +19,7 @@ icon: "☁️"
 
 ## 1. 🌟 Conceptos Clave
 
-*   **API Gateway**: Un punto de entrada único para todos los clientes que acceden a un conjunto de microservicios. Enruta solicitudes a los servicios apropiados.
+*   **[API](/conocimiento/api "Una API (Application Programming Interface) es un conjunto de reglas, protocolos y herramientas que permite que diferentes aplicaciones de software se comuniquen entre sí.") Gateway**: Un punto de entrada único para todos los clientes que acceden a un conjunto de microservicios. Enruta solicitudes a los servicios apropiados.
 *   **Enrutamiento (Routing)**: Define cómo las solicitudes entrantes se dirigen a los servicios backend. Se basa en `Predicates` que coinciden con las solicitudes y `Filters` que modifican las solicitudes o respuestas.
 *   **Predicates (Predicados)**: Condicionales que coinciden con atributos de la solicitud HTTP (ej. path, host, headers, query parameters, method). Si un predicado coincide, la ruta se aplica.
 *   **Filters (Filtros)**: Funciones que pueden modificar la solicitud entrante antes de que se envíe al servicio backend, o modificar la respuesta del servicio backend antes de que se envíe al cliente. Son "cross-cutting concerns".
@@ -308,7 +308,7 @@ public class CustomAuthFilterFactory extends AbstractGatewayFilterFactory<Custom
 *   **Manejo de Errores**: Implementa un manejo de errores robusto en el Gateway para proporcionar respuestas de error consistentes a los clientes, incluso si los servicios backend fallan.
 *   **Circuit Breakers y Rate Limiting**: Implementa estos patrones de resiliencia (con filtros como `CircuitBreaker` y `RequestRateLimiter`) para proteger tus servicios backend de la sobrecarga y los fallos en cascada.
 *   **Métricas y Monitoreo**: Integra Actuator con Gateway para monitorear el tráfico, el rendimiento y los errores del Gateway.
-*   **Seguridad**: Asegura tu Gateway con Spring Security. Es el primer punto de defensa.
+*   **Seguridad**: Asegura tu Gateway con [Spring Security](/web/backend/framework/spring/spring-security "Spring Security es un pilar fundamental para la seguridad en aplicaciones Spring y Spring Boot."). Es el primer punto de defensa.
 *   **Inmutable y Sin Estado**: Los filtros deben ser puros (si es posible) y sin estado.
 *   **`StripPrefix` y `RewritePath`**: Entiende bien la diferencia y cuándo usar cada uno para que los servicios backend reciban la URL que esperan.
 *   **Descubrimiento de Servicios**: Si usas un registro de servicios (Eureka, Consul), usa `lb://nombre-servicio` para aprovechar el balanceo de carga del cliente.
@@ -316,4 +316,4 @@ public class CustomAuthFilterFactory extends AbstractGatewayFilterFactory<Custom
 
 ---
 
-Este cheatsheet te proporciona una referencia completa de Spring Cloud Gateway, cubriendo sus conceptos esenciales, cómo configurarlo, la definición de rutas con predicados y filtros, las integraciones clave, la seguridad y las mejores prácticas para construir un API Gateway robusto y escalable en arquitecturas de microservicios.
+Este cheatsheet te proporciona una referencia completa de Spring Cloud Gateway, cubriendo sus conceptos esenciales, cómo configurarlo, la definición de rutas con predicados y filtros, las integraciones clave, la seguridad y las mejores prácticas para construir un [API](/conocimiento/api "Una API (Application Programming Interface) es un conjunto de reglas, protocolos y herramientas que permite que diferentes aplicaciones de software se comuniquen entre sí.") Gateway robusto y escalable en arquitecturas de microservicios.
