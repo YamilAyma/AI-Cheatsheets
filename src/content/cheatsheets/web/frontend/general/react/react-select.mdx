@@ -282,17 +282,17 @@ Permite sobrescribir los estilos de los componentes internos.
 
 ```jsx
 const customStyles = {
-  control: (baseStyles, state) =&gt; ({ // Estilos para el contenedor principal
+  control: (baseStyles, [state](/arquitectura/design_patterns/comportamiento/state "El patrón State es un patrón de comportamiento que permite a un objeto alterar su comportamiento cuando su estado interno cambia, haciendo que parezca que el objeto cambia de clase.")) =&gt; ({ // Estilos para el contenedor principal
     ...baseStyles,
-    borderColor: state.isFocused ? 'blue' : '#ccc',
-    boxShadow: state.isFocused ? '0 0 0 1px blue' : 'none',
+    borderColor: [state](/arquitectura/design_patterns/comportamiento/state "El patrón State es un patrón de comportamiento que permite a un objeto alterar su comportamiento cuando su estado interno cambia, haciendo que parezca que el objeto cambia de clase.").isFocused ? 'blue' : '#ccc',
+    boxShadow: [state](/arquitectura/design_patterns/comportamiento/state "El patrón State es un patrón de comportamiento que permite a un objeto alterar su comportamiento cuando su estado interno cambia, haciendo que parezca que el objeto cambia de clase.").isFocused ? '0 0 0 1px blue' : 'none',
     '&:hover': {
       borderColor: 'blue',
     },
     borderRadius: '8px',
     minHeight: '40px',
   }),
-  option: (baseStyles, state) =&gt; ({ // Estilos para cada opción del menú
+  option: (baseStyles, [state](/arquitectura/design_patterns/comportamiento/state "El patrón State es un patrón de comportamiento que permite a un objeto alterar su comportamiento cuando su estado interno cambia, haciendo que parezca que el objeto cambia de clase.")) =&gt; ({ // Estilos para cada opción del menú
     ...baseStyles,
     backgroundColor: state.isFocused ? '#e0f2f7' : (state.isSelected ? '#b2e2f2' : 'white'),
     color: state.isSelected ? 'black' : 'inherit',
@@ -355,11 +355,11 @@ Aplica tus propias clases CSS a la envoltura principal.
 
 ```jsx
 // MySelect.module.css
-.my-select-container .react-select__control {
+.my-select-container .[react](/web/frontend/general/react/react "¡Excelente! React es la biblioteca de JavaScript más popular para construir interfaces de usuario.")-select__control {
   border: 2px solid purple;
   /* ... otros estilos */
 }
-.my-select-container .react-select__option--is-focused {
+.my-select-container .[react](/web/frontend/general/react/react "¡Excelente! React es la biblioteca de JavaScript más popular para construir interfaces de usuario.")-select__option--is-focused {
   background-color: lightgray;
 }
 
