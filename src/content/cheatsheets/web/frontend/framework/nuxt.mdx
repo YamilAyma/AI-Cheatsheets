@@ -1,3 +1,11 @@
+---
+title: "nuxt"
+description: "Nuxt es un meta-framework full-stack de código abierto construido sobre Vue.js que elimina la complejidad de configurar herramientas modernas de frontend."
+createdAt: 2026-05-21
+updatedAt: 2026-05-21
+tags: [framework]
+icon: "📄"
+---
 # 🎯 Nuxt — Cheatsheet Completo 🎯
 
 Nuxt es un meta-framework full-stack de código abierto construido sobre Vue.js que elimina la complejidad de configurar herramientas modernas de frontend. Automatiza el enrutamiento basado en archivos, el renderizado híbrido (SSR/SSG/CSR/ISR), la optimización de assets y la integración con servidores mediante Nitro. Es la elección estándar para aplicaciones web escalables, plataformas de contenido, dashboards y SaaS que requieren SEO robusto, tiempos de carga mínimos y una arquitectura isomórfica. Este cheatsheet condensa desde la configuración inicial hasta patrones avanzados de fetch, estado global, seguridad de datos, despliegue y optimización de rendimiento.
@@ -12,8 +20,8 @@ Nuxt es un meta-framework full-stack de código abierto construido sobre Vue.js 
   * Por qué importa: Elimina archivos de configuración de routers manuales; el sistema de archivos define la URL.
 * **Auto-imports**: Nuxt escanea automáticamente `components/`, `composables/`, `utils/` y APIs de Vue/Nuxt, inyectándolos sin `import` explícito.
   * Por qué importa: Acelera el desarrollo y reduce imports redundantes, aunque puede ocultar dependencias si no se audita.
-* **Nitro Engine**: Motor de servidor ligero que maneja SSR, API routes, prerenderizado y despliegue multiplataforma.
-  * Por qué importa: Permite escribir lógica de servidor con H3, cachear respuestas y desplegar en Vercel, Cloudflare, Node o Docker sin cambios de código.
+* **Nitro Engine**: Motor de servidor ligero que maneja SSR, [API](/conocimiento/api "Una API (Application Programming Interface) es un conjunto de reglas, protocolos y herramientas que permite que diferentes aplicaciones de software se comuniquen entre sí.") routes, prerenderizado y despliegue multiplataforma.
+  * Por qué importa: Permite escribir lógica de servidor con H3, cachear respuestas y desplegar en Vercel, Cloudflare, Node o [Docker](/devops/docker "Docker es una plataforma de código abierto que utiliza la contenerización para empaquetar una aplicación y todas sus dependencias en una unidad estándar para el desarrollo de software.") sin cambios de código.
 * **Renderizado Híbrido**: Capacidad de combinar SSR, SSG, CSR y ISR por ruta mediante `routeRules`.
   * Por qué importa: Optimiza costes y rendimiento; las páginas estáticas se prerenderizan, las dinámicas usan SSR, y las pesadas delegan al cliente.
 * **Isomorfismo**: Código que puede ejecutarse en cliente y servidor con APIs unificadas (`useFetch`, `useAsyncData`, `useState`).
@@ -188,12 +196,12 @@ definePageMeta({
 
 Forzar renderizado por componente:
 ```vue
-<!-- Solo cliente -->
+&lt;!-- Solo cliente -->
 <ClientOnly>
   <InteractiveMap />
 </ClientOnly>
 
-<!-- Solo servidor -->
+&lt;!-- Solo servidor -->
 <template>
   <div v-if="process.server">
     {{ serverTimestamp }}
@@ -266,7 +274,7 @@ export const useCart = () = &gt; useState('cart', () = &gt; ({
   }
 }))
 ```
-⚠️ `useState` solo funciona dentro de setup o composables. Nunca fuera del ciclo de vida. Para state complejo, usa `@pinia/nuxt`.
+⚠️ `useState` solo funciona dentro de setup o composables. Nunca fuera del ciclo de vida. Para [state](/arquitectura/design_patterns/comportamiento/state "El patrón State es un patrón de comportamiento que permite a un objeto alterar su comportamiento cuando su estado interno cambia, haciendo que parezca que el objeto cambia de clase.") complejo, usa `@pinia/nuxt`.
 
 ---
 
@@ -476,4 +484,4 @@ Reduce carga del servidor y mejora Lighthouse SEO score.
 
 ---
 
-Este cheatsheet proporciona una referencia completa para Nuxt, cubriendo arquitectura de archivos, enrutamiento automático, renderizado híbrido, fetch seguro de datos, gestión de estado, SEO, API routes con Nitro, optimización de assets y despliegue multiplataforma, junto con las mejores prácticas para evitar hydration errors, maximizar el rendimiento y mantener código escalable en producción.
+Este cheatsheet proporciona una referencia completa para Nuxt, cubriendo arquitectura de archivos, enrutamiento automático, renderizado híbrido, fetch seguro de datos, gestión de estado, SEO, [API](/conocimiento/api "Una API (Application Programming Interface) es un conjunto de reglas, protocolos y herramientas que permite que diferentes aplicaciones de software se comuniquen entre sí.") routes con Nitro, optimización de assets y despliegue multiplataforma, junto con las mejores prácticas para evitar hydration errors, maximizar el rendimiento y mantener código escalable en producción.
