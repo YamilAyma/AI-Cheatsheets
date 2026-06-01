@@ -1,6 +1,6 @@
 ---
 title: "spring-data-jpa"
-description: "Spring Data JPA es una parte del paraguas de Spring Data, que tiene como objetivo reducir la cantidad de código repetitivo necesario para implementar la capa de acceso a datos (Repository) en aplicaciones basadas en la tecnología JPA (Java Persistence API)."
+description: "Spring Data JPA es una parte del paraguas de Spring Data, que tiene como objetivo reducir la cantidad de código repetitivo necesario para implementar la capa de acceso a datos (Repository) en aplicaciones basadas en la tecnología JPA (Java Persistence API es un conjunto de reglas, protocolos y herramientas que permite que diferentes aplicaciones de software se comuniquen entre sí.\"))."
 createdAt: 2026-04-28
 updatedAt: 2026-04-28
 tags: [spring]
@@ -18,13 +18,13 @@ icon: "📄"
 
 ## 1. 🌟 Conceptos Clave
 
-*   **JPA (Java Persistence API)**: La especificación estándar de Java para la persistencia de objetos relacionales (ORM).
+*   **JPA ([Java](/java/java "Java es un lenguaje de programación de propósito general, concurrente, basado en clases y orientado a objetos.") Persistence [API](/conocimiento/api "Una API (Application Programming Interface) es un conjunto de reglas, protocolos y herramientas que permite que diferentes aplicaciones de software se comuniquen entre sí."))**: La especificación estándar de Java para la persistencia de objetos relacionales (ORM).
 *   **Hibernate**: La implementación de ORM más popular que cumple con la especificación JPA.
 *   **Repositorio (Repository)**: Un patrón de diseño que aísla la lógica de acceso a datos de la lógica de negocio. Spring Data JPA proporciona interfaces de repositorio que se implementan automáticamente en tiempo de ejecución.
 *   **`JpaRepository<T, ID>`**: La interfaz principal de Spring Data JPA que proporciona métodos CRUD (Crear, Leer, Actualizar, Borrar) y de paginación/ordenación comunes.
 *   **Métodos Derivados de Consultas**: La característica distintiva de Spring Data JPA. Permite definir métodos de consulta simplemente declarando sus firmas en la interfaz del repositorio (ej. `findByNombreAndEdad()`).
 *   **Convención sobre Configuración**: Spring Data JPA adivina el propósito de tus métodos de repositorio basándose en su nombre, eliminando la necesidad de escribir la implementación.
-*   **`EntityManager`**: El API central de JPA para interactuar con el contexto de persistencia. Spring Data JPA lo gestiona por ti.
+*   **`EntityManager`**: El [API](/conocimiento/api "Una API (Application Programming Interface) es un conjunto de reglas, protocolos y herramientas que permite que diferentes aplicaciones de software se comuniquen entre sí.") central de JPA para interactuar con el contexto de persistencia. Spring Data JPA lo gestiona por ti.
 
 ---
 
@@ -78,7 +78,7 @@ icon: "📄"
 
 ## 3. 📝 Definición de Entidades JPA
 
-Las entidades son clases Java que se mapean a tablas de base de datos.
+Las entidades son clases [Java](/java/java "Java es un lenguaje de programación de propósito general, concurrente, basado en clases y orientado a objetos.") que se mapean a tablas de base de datos.
 
 ```java
 import jakarta.persistence.*; // Para Spring Boot 3+ (Jakarta EE 9+)
@@ -352,4 +352,4 @@ public class ProductService {
 
 ---
 
-Este cheatsheet te proporciona una referencia completa de Spring Data JPA, cubriendo sus conceptos esenciales, la definición de entidades y repositorios, los métodos derivados de consultas, `@Query`, paginación, transacciones y las mejores prácticas para construir una capa de acceso a datos eficiente y mantenible en tus aplicaciones Spring Boot.
+Este cheatsheet te proporciona una referencia completa de Spring Data JPA, cubriendo sus conceptos esenciales, la definición de entidades y repositorios, los métodos derivados de consultas, `@Query`, paginación, transacciones y las mejores prácticas para construir una capa de acceso a datos eficiente y mantenible en tus aplicaciones [Spring Boot](/web/backend/framework/spring/spring-boot "¡Absolutamente! Spring Boot es un framework increíble para construir aplicaciones Java robustas y de alto rendimiento de manera rápida y eficiente.").
