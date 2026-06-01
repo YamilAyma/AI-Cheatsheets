@@ -1,6 +1,6 @@
 ---
 title: "Ruby para Automatización"
-description: "Ruby como lenguaje de scripting y automatización de sistemas: bloques, iteradores, manipulación de archivos, regex, CLI con Thor/OptionParser y scripting para infraestructura."
+description: "Ruby es un lenguaje orientado a objetos con una filosofía centrada en la felicidad del programador, diseñado por Yukihiro Matsumoto (\"Matz\") en 1995."
 createdAt: 2026-05-20
 updatedAt: 2026-05-20
 tags: [ruby, scripting, automatizacion, rake, cli, devops, infraestructura]
@@ -22,7 +22,7 @@ icon: "💎"
 * **Símbolos (`:nombre`)**: Identificadores inmutables e internados. Más eficientes que strings como claves de hash. `:nombre == :nombre` (misma referencia en memoria).
 * **Open Classes**: Puedes añadir métodos a cualquier clase, incluyendo las nativas (`String`, `Integer`, `Array`). Esto se llama "monkey patching".
 * **Mixins con `include`**: Ruby no tiene herencia múltiple, pero los módulos permiten compartir comportamiento entre clases sin herencia.
-* **`nil` vs `false`**: Solo `nil` y `false` son falsy en Ruby. `0`, `""`, `[]` son **truthy** (diferente de Python/JS).
+* **`nil` vs `false`**: Solo `nil` y `false` son falsy en Ruby. `0`, `""`, `[]` son **truthy** (diferente de [Python](/python/python "Python es un lenguaje de programación de alto nivel, interpretado, interactivo y orientado a objetos.")/JS).
 * **Sintaxis opcional**: Los paréntesis en llamadas a métodos son opcionales. Los últimos paréntesis en `puts("hola")` pueden omitirse: `puts "hola"`.
 * **Rake**: El sistema de tareas de Ruby (Make de Ruby), fundamental para scripts de automatización complejos.
 
@@ -109,10 +109,10 @@ rango_excl  = (1...10)        # Rango exclusivo: 1, 2, ..., 9
 # String
 simple  = "interpolación: #{entero * 2}"   # "interpolación: 84"
 literal = 'sin interpolación: #{entero}'   # Sin evaluar
-heredoc = <<~TEXTO
+heredoc = &lt;&lt;~TEXTO
   String multilínea
   con indentación limpia
-  gracias al operador <<~
+  gracias al operador &lt;&lt;~
 TEXTO
 
 # Métodos de String
@@ -154,7 +154,7 @@ frutas.sample  # Elemento aleatorio
 
 # Modificación
 frutas.push("kiwi")         # Agrega al final
-frutas << "mango"           # Alias de push
+frutas &lt;&lt; "mango"           # Alias de push
 frutas.unshift("cereza")    # Agrega al inicio
 frutas.pop                  # Elimina y retorna el último
 frutas.shift                # Elimina y retorna el primero
@@ -178,7 +178,7 @@ frutas.count { |f| f.length > 4 }        # Contar con condición
 config = {
     host:   "localhost",    # Símbolo como clave (forma moderna)
     port:   5432,
-    "user" => "admin",      # String como clave (forma antigua)
+    "user" =&gt; "admin",      # String como clave (forma antigua)
 }
 
 config[:host]         # "localhost"
@@ -229,7 +229,7 @@ end
 
 # each_with_object — acumular en un objeto dado
 resultado = numeros.each_with_object([]) do |n, acc|
-    acc << n * 2 if n.odd?
+    acc &lt;&lt; n * 2 if n.odd?
 end
 # [2, 6, 10, 14, 18]
 
@@ -423,7 +423,7 @@ end
 # Uso: rake crear_usuario[Juan,juan@ejemplo.com]
 
 # FileTask — tarea orientada a archivos (solo ejecuta si el archivo cambió)
-file "output.min.js" => "output.js" do
+file "output.min.js" =&gt; "output.js" do
     sh "uglifyjs output.js -o output.min.js"
 end
 ```
@@ -502,8 +502,8 @@ require "httparty"
 class GithubAPI
     include HTTParty
     base_uri "https://api.github.com"
-    headers "Authorization" => "Bearer #{ENV['GITHUB_TOKEN']}",
-            "Accept"        => "application/json"
+    headers "Authorization" =&gt; "Bearer #{ENV['GITHUB_TOKEN']}",
+            "Accept"        =&gt; "application/json"
 
     def self.usuario(nombre)
         get("/users/#{nombre}")
@@ -524,7 +524,7 @@ puts usuario.success? # true
 
 ## 11. ⚠️ Errores Comunes y Pitfalls
 
-* **`0`, `""`, `[]` son truthy en Ruby**: A diferencia de Python y JavaScript, en Ruby solo `nil` y `false` son falsy. `if 0` ejecuta el bloque. Esto sorprende constantemente a programadores de otros lenguajes.
+* **`0`, `""`, `[]` son truthy en Ruby**: A diferencia de [Python](/python/python "Python es un lenguaje de programación de alto nivel, interpretado, interactivo y orientado a objetos.") y JavaScript, en Ruby solo `nil` y `false` son falsy. `if 0` ejecuta el bloque. Esto sorprende constantemente a programadores de otros lenguajes.
 
 * **Modificar arrays mientras se itera con `each`**: No lances `delete` dentro de un `each`. Usa `reject!` o crea un nuevo array con `select`/`reject`.
 
@@ -546,11 +546,11 @@ puts usuario.success? # true
 
 * **Prefiere métodos de Enumerable sobre bucles manuales**: `map`, `select`, `reduce`, `find`, `group_by` producen código más declarativo y mantenible que `each` con acumuladores manuales.
 
-* **Usa `Pathname` en lugar de `File` y `Dir`**: La API orientada a objetos de Pathname es más legible y componible.
+* **Usa `Pathname` en lugar de `File` y `Dir`**: La [API](/conocimiento/api "Una API (Application Programming Interface) es un conjunto de reglas, protocolos y herramientas que permite que diferentes aplicaciones de software se comuniquen entre sí.") orientada a objetos de Pathname es más legible y componible.
 
 * **`pp` para debugging de estructuras**: `pp objeto` es como `p` pero con pretty-printing de hashes y arrays anidados.
 
-* **Rake para orquestar tareas complejas**: Si tu script bash crece más allá de 50 líneas de lógica de control, migra a un Rakefile con tareas bien definidas y documentadas.
+* **Rake para orquestar tareas complejas**: Si tu script [bash](/devops/bash "Bash (Bourne Again Shell) es un shell de Unix y lenguaje de comandos compatible con POSIX.") crece más allá de 50 líneas de lógica de control, migra a un Rakefile con tareas bien definidas y documentadas.
 
 * **Guard para desarrollo interactivo**: `gem install guard` — ejecuta tests automáticamente cuando cambias archivos. Vital para el ciclo TDD.
 
