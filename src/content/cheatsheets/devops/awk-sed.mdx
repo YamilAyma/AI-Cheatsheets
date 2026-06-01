@@ -1,6 +1,6 @@
 ---
 title: "AWK & SED"
-description: "AWK y SED son las herramientas clásicas de procesamiento de texto y edición de flujos en Unix/Linux, fundamentales en cualquier pipeline de automatización con Bash."
+description: "AWK y SED son las herramientas de procesamiento de texto más poderosas del ecosistema Unix, disponibles en prácticamente todos los sistemas GNU/Linux, macOS y BSD."
 createdAt: 2026-05-20
 updatedAt: 2026-05-20
 tags: [awk, sed, scripting, linux, bash, text-processing, devops]
@@ -120,7 +120,7 @@ sed 's|/usr/local|/opt|g' paths.txt
 sed 's,/home/usuario,/home/nuevo,g' paths.txt
 
 # Grupos de captura y referencias a grupos (\1, \2, etc.)
-# Intercambiar nombre y apellido (Juan García -> García, Juan)
+# Intercambiar nombre y apellido (Juan García -&gt; García, Juan)
 sed 's/\([A-Za-z]*\) \([A-Za-z]*\)/\2, \1/' nombres.txt
 
 # Con ERE (-E) la sintaxis es más limpia
@@ -132,7 +132,7 @@ sed -E 's/ +/ /g' archivo.txt   # ERE más clara
 
 # Eliminar texto (reemplazar por nada)
 sed 's/comentario//' archivo.txt    # Eliminar primera ocurrencia
-sed 's/<[^>]*>//g' pagina.html      # Eliminar tags HTML
+sed 's/&lt;[^>]*>//g' pagina.html      # Eliminar tags HTML
 sed 's/[[:space:]]*$//' archivo.txt # Eliminar espacios al final de línea
 ```
 
@@ -221,7 +221,7 @@ awk '/inicio/,/fin/' archivo.txt     # Rango de patrones
 awk '$3 > 100' datos.txt             # Tercera columna mayor a 100
 awk '$2 == "activo"' usuarios.csv    # Segunda columna igual a "activo"
 awk 'NF > 3' archivo.txt             # Líneas con más de 3 campos
-awk 'NR >= 10 && NR <= 20' log.txt   # Líneas 10 a 20
+awk 'NR &gt;= 10 && NR &lt;= 20' log.txt   # Líneas 10 a 20
 
 # Combinar múltiples condiciones
 awk '$1 == "ERROR" && $3 > 500' log.txt
@@ -252,7 +252,7 @@ awk '{ suma += $2; n++ } END { print "Promedio:", suma/n }' datos.txt
 
 # Valor máximo y mínimo
 awk 'NR==1 { max=$1; min=$1 }
-     { if ($1 > max) max=$1; if ($1 < min) min=$1 }
+     { if ($1 > max) max=$1; if ($1 &lt; min) min=$1 }
      END { print "Max:", max, "Min:", min }' numeros.txt
 
 # Contar ocurrencias de cada valor (frecuencia)
@@ -317,23 +317,23 @@ awk '{ if (length > max) { max = length; linea = $0 } } END { print linea }' arc
 awk '{ $2=""; print }' datos.txt
 
 # Imprimir columnas en orden inverso
-awk '{ for(i=NF; i>=1; i--) printf "%s%s", $i, (i>1?OFS:"\n") }' datos.txt
+awk '{ for(i=NF; i&gt;=1; i--) printf "%s%s", $i, (i>1?OFS:"\n") }' datos.txt
 
 # Sumar todos los números de un archivo
-awk '{ for(i=1;i<=NF;i++) total+=$i } END { print total }' datos.txt
+awk '{ for(i=1;i&lt;=NF;i++) total+=$i } END { print total }' datos.txt
 
 # Eliminar líneas duplicadas (manteniendo orden, a diferencia de sort -u)
 awk '!visto[$0]++' archivo.txt
 
 # Extraer columna N de un CSV con cabecera
-awk -F ',' 'NR==1 { for(i=1;i<=NF;i++) if($i=="email") col=i } NR>1 { print $col }' datos.csv
+awk -F ',' 'NR==1 { for(i=1;i&lt;=NF;i++) if($i=="email") col=i } NR>1 { print $col }' datos.csv
 
 # Imprimir líneas entre la N y la M
-awk 'NR>=10 && NR<=20' archivo.txt
+awk 'NR&gt;=10 && NR&lt;=20' archivo.txt
 
 # Convertir CSV a JSON básico
 awk -F ',' 'NR==1 { split($0,header,",") }
-            NR>1  { printf "{"; for(i=1;i<=NF;i++) printf "\"%s\":\"%s\"%s",header[i],$i,(i<NF?",":""); print "}" }' datos.csv
+            NR>1  { printf "{"; for(i=1;i&lt;=NF;i++) printf "\"%s\":\"%s\"%s",header[i],$i,(i<NF?",":""); print "}" }' datos.csv
 ```
 
 ---
@@ -386,7 +386,7 @@ sed "s/\${APP_VERSION}/$APP_VERSION/g;s/\${APP_PORT}/$APP_PORT/g" template.yaml
 # Anclas
 # ^  Inicio de línea
 # $  Fin de línea
-# \b Frontera de palabra (AWK: \< inicio, \> fin)
+# \b Frontera de palabra (AWK: \&lt; inicio, \> fin)
 
 # Cuantificadores (ERE con -E en sed, AWK los soporta de forma nativa)
 # *   Cero o más
@@ -457,7 +457,7 @@ awk '/^[0-9]{4}-[0-9]{2}-[0-9]{2}$/ { print "Fecha válida:", $0 }' fechas.txt
 
 * **Documenta tus one-liners complejos**: AWK permite escribir código en múltiples líneas con `-f script.awk`. Un script de AWK bien comentado de 20 líneas es infinitamente más mantenible que un one-liner de 200 caracteres.
 
-* **Para transformaciones muy complejas, considera Python**: Si el one-liner de AWK se extiende a más de 5 líneas, a veces es más legible y mantenible usar `python3 -c "..."` o un script Python completo.
+* **Para transformaciones muy complejas, considera [Python](/python/python "Python es un lenguaje de programación de alto nivel, interpretado, interactivo y orientado a objetos.")**: Si el one-liner de AWK se extiende a más de 5 líneas, a veces es más legible y mantenible usar `python3 -c "..."` o un script Python completo.
 
 ---
 
