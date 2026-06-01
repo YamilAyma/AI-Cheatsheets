@@ -1,3 +1,11 @@
+---
+title: "decorator"
+description: "El patrón Decorator es un patrón estructural que permite añadir responsabilidades a objetos de forma dinámica, sin modificar su clase original ni crear jerarquías de subclases infinitas."
+createdAt: 2026-05-22
+updatedAt: 2026-05-22
+tags: [estructurales]
+icon: "📄"
+---
 # 🎭 Patrón Decorator — Cheatsheet Completo 🎭
 
 El patrón **Decorator** es un patrón estructural que permite añadir responsabilidades a objetos de forma **dinámica**, sin modificar su clase original ni crear jerarquías de subclases infinitas. Envuelve el componente base manteniendo su interfaz intacta, interceptando llamadas y añadiendo comportamiento antes, después o alrededor de la ejecución delegada. Nace para resolver la explosión combinatoria de subclases por combinaciones de características, aislar responsabilidades transversales (logging, caché, validación, seguridad, compresión, métricas) y habilitar composiciones en tiempo de ejecución predecibles, reversibles y testeables. Este cheatsheet desglosa la intención arquitectónica real del patrón, contratos de envoltura transparente, implementaciones multi-paradigma, variantes funcionales y de pipeline, impacto en rendimiento y debugging, trampas de identidad de objeto y estado compartido, y criterios estrictos para decidir cuándo la extensión dinámica es una necesidad del dominio y no una capa de indirección que oculta acoplamientos o degrada la trazabilidad.
@@ -136,7 +144,7 @@ public class RetryDecorator extends NotificationDecorator {
 
     @Override
     public void send(String msg) {
-        for (int i = 1; i <= maxRetries; i++) {
+        for (int i = 1; i &lt;= maxRetries; i++) {
             try { wrapped.send(msg); return; }
             catch (Exception e) { if (i == maxRetries) throw e; }
         }
@@ -166,7 +174,7 @@ def with_cache(ttl=300):
         cache = {}
         @wraps(fn)
         def wrapper(*args):
-            if args in cache and (time.time() - cache[args][1]) < ttl:
+            if args in cache and (time.time() - cache[args][1]) &lt; ttl:
                 return cache[args][0]
             result = fn(*args)
             cache[args] = (result, time.time())
@@ -218,7 +226,7 @@ function createDecoratedObject(target, handler) {
   return new Proxy(target, handler);
 }
 
-const original = { save: (data) => console.log("Saved", data) };
+const original = { save: (data) =&gt; console.log("Saved", data) };
 const decorated = createDecoratedObject(original, {
   get(target, prop) {
     if (prop === "save") {
@@ -247,7 +255,7 @@ decorated.save({ id: 1 });
 | **Stateful vs Stateless** | Decoradores con memoria (caché, contador) vs puros (logging, validación). | Caché, rate-limiting, métricas vs validación, transformación. | Stateful requiere gestión de ciclo de vida y invalidación. |
 | **Async/Stream Aware** | Intercepta promesas, observables o streams. Maneja resolución/rechazo o chunks. | Fetch wrappers, retry con backoff, compresión de streams. | Complejidad de gestión de backpressure y cancellation tokens. |
 | **Conditional/Lazy** | Aplica comportamiento solo si se cumple condición (feature flags, env). | Dev/Prod logging, A/B testing, throttling dinámico. | Overhead de evaluación constante. Puede ocultar comportamientos. |
-| **Hybrid con Strategy** | Decorador selecciona algoritmo interno en runtime según contexto. | Renderizadores con múltiples motores, parsers con dialectos. | Doble indirección. Puede oscurecer el flujo si no se documenta. |
+| **Hybrid con [Strategy](/arquitectura/design_patterns/comportamiento/strategy "El patrón Strategy es un patrón de comportamiento que define una familia de algoritmos intercambiables, los encapsula y los hace sustituibles en tiempo de ejecución sin alterar el código del cliente que los utiliza.")** | Decorador selecciona algoritmo interno en runtime según contexto. | Renderizadores con múltiples motores, parsers con dialectos. | Doble indirección. Puede oscurecer el flujo si no se documenta. |
 
 ---
 
@@ -263,9 +271,9 @@ decorated.save({ id: 1 });
 
 Comparación rápida con patrones estructurales y de comportamiento:
 * **Decorator**: Extiende comportamiento dinámicamente manteniendo interfaz. Envoltura acumulativa.
-* **Proxy**: Controla acceso, lazy loading o seguridad. Gestiona ciclo de vida, no necesariamente añade comportamiento.
-* **Adapter**: Traduce interfaces incompatibles existentes. Corrección post-factum.
-* **Strategy**: Intercambia algoritmos/comportamiento. Enfocado en lógica, no en envoltura.
+* **[Proxy](/arquitectura/design_patterns/estructurales/proxy "El patrón Proxy es un patrón estructural que proporciona un sustituto o intermediario para controlar el acceso a un objeto real, añadiendo comportamiento transversal sin modificar su implementación original.")**: Controla acceso, lazy loading o seguridad. Gestiona ciclo de vida, no necesariamente añade comportamiento.
+* **[Adapter](/arquitectura/design_patterns/estructurales/adapter "El patrón Adapter es un patrón estructural que permite la cooperación entre objetos con interfaces incompatibles, actuando como un traductor o puente que convierte las llamadas de un contrato a otro.")**: Traduce interfaces incompatibles existentes. Corrección post-factum.
+* **[Strategy](/arquitectura/design_patterns/comportamiento/strategy "El patrón Strategy es un patrón de comportamiento que define una familia de algoritmos intercambiables, los encapsula y los hace sustituibles en tiempo de ejecución sin alterar el código del cliente que los utiliza.")**: Intercambia algoritmos/comportamiento. Enfocado en lógica, no en envoltura.
 * **Chain of Responsibility**: Pasa request a través de cadena de handlers. Enfocado en routing, no en extensión de interfaz.
 
 ---
@@ -294,15 +302,15 @@ Comparación rápida con patrones estructurales y de comportamiento:
 * **Orden de Composión Incorrecto**: Asumir conmutatividad cuando no la hay. `Retry(Cache())` vs `Cache(Retry())`.
   * Fix: Documente orden explícito. Use builders o pipelines con validación de secuencia. Pruebe combinaciones críticas.
 * **Fuga de Estado Mutable**: Decoradores comparten caché o contadores entre instancias no relacionadas.
-  * Fix: Instanciar estado por decorador. Use `WeakMap`, inmutabilidad, o scope por request/tenant. Nunca state global sin control.
+  * Fix: Instanciar estado por decorador. Use `WeakMap`, inmutabilidad, o scope por request/tenant. Nunca [state](/arquitectura/design_patterns/comportamiento/state "El patrón State es un patrón de comportamiento que permite a un objeto alterar su comportamiento cuando su estado interno cambia, haciendo que parezca que el objeto cambia de clase.") global sin control.
 * **Recursión Infinita / Autowrapping**: Decorador se envuelve a sí mismo o crea referencia circular.
   * Fix: Valide en constructor que `wrapped !== this`. Use factories centralizadas que garanticen DAG de composición.
 * **Supresión Silenciosa de Errores**: `try/catch` en decorador que no rethrow o transforma error incorrectamente.
   * Fix: Propague excepciones o use `Result`/`Either` patterns. Documente política de errores en contrato de decorador.
 * **Degradación de Rendimiento por Anidamiento Excesivo**: 10+ wrappers en cadena sin profiling.
   * Fix: Profile primero. Use decoradores vacíos como no-op si están deshabilitados. Combine lógica compatible en un solo decorador.
-* **Confundir con Proxy o Strategy**: Usar Decorator para control de acceso o para intercambiar algoritmos completos.
-  * Fix: Si controla lifecycle/acceso → Proxy. Si varía algoritmo → Strategy. Si extiende comportamiento manteniendo interfaz → Decorator.
+* **Confundir con [Proxy](/arquitectura/design_patterns/estructurales/proxy "El patrón Proxy es un patrón estructural que proporciona un sustituto o intermediario para controlar el acceso a un objeto real, añadiendo comportamiento transversal sin modificar su implementación original.") o [Strategy](/arquitectura/design_patterns/comportamiento/strategy "El patrón Strategy es un patrón de comportamiento que define una familia de algoritmos intercambiables, los encapsula y los hace sustituibles en tiempo de ejecución sin alterar el código del cliente que los utiliza.")**: Usar Decorator para control de acceso o para intercambiar algoritmos completos.
+  * Fix: Si controla lifecycle/acceso → [Proxy](/arquitectura/design_patterns/estructurales/proxy "El patrón Proxy es un patrón estructural que proporciona un sustituto o intermediario para controlar el acceso a un objeto real, añadiendo comportamiento transversal sin modificar su implementación original."). Si varía algoritmo → [Strategy](/arquitectura/design_patterns/comportamiento/strategy "El patrón Strategy es un patrón de comportamiento que define una familia de algoritmos intercambiables, los encapsula y los hace sustituibles en tiempo de ejecución sin alterar el código del cliente que los utiliza."). Si extiende comportamiento manteniendo interfaz → Decorator.
 * **Serialización Rota**: `JSON.stringify()` o `pickle` falla con referencias a decoradores o métodos no serializables.
   * Fix: Serialize solo DTOs o estado base. Reconstruya cadena de decoradores al deserializar. Use `toJSON()`/`__reduce__` seguro.
 * **Falta de Validación de Input/Output**: Decorador asume formato correcto y falla en producción.
@@ -322,8 +330,8 @@ Comparación rápida con patrones estructurales y de comportamiento:
 * **Use Type Guards o Structural Typing**: Evite `instanceof` o checks de identidad. Trate siempre como `Component`.
 * **Profile antes de Optimizar**: No asuma overhead crítico. Mide allocations y latency. Optimice solo si el profiler lo indica.
 * **Mantenga Responsabilidad Única**: Cada decorador debe hacer una cosa bien. Combine solo si la cohesión lo justifica arquitectónicamente.
-* **Pruebe Combinaciones, no solo Unidades**: Valide decoradores aislados Y en cadena. Detecte order-dependencies y state-leaks temprano.
-* **No lo use "por moda"**: Si la extensión es estática, simple, o rompe interfaz, use herencia, strategy, o proxy. La envoltura innecesaria es deuda técnica de legibilidad y mantenimiento.
+* **Pruebe Combinaciones, no solo Unidades**: Valide decoradores aislados Y en cadena. Detecte order-dependencies y [state](/arquitectura/design_patterns/comportamiento/state "El patrón State es un patrón de comportamiento que permite a un objeto alterar su comportamiento cuando su estado interno cambia, haciendo que parezca que el objeto cambia de clase.")-leaks temprano.
+* **No lo use "por moda"**: Si la extensión es estática, simple, o rompe interfaz, use herencia, strategy, o [proxy](/arquitectura/design_patterns/estructurales/proxy "El patrón Proxy es un patrón estructural que proporciona un sustituto o intermediario para controlar el acceso a un objeto real, añadiendo comportamiento transversal sin modificar su implementación original."). La envoltura innecesaria es deuda técnica de legibilidad y mantenimiento.
 
 ---
 
