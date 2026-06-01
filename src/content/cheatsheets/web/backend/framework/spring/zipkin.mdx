@@ -61,7 +61,7 @@ Por defecto, Zipkin usa almacenamiento en memoria (no persistente). Para persist
       -e MYSQL_DB=zipkin \
       openzipkin/zipkin
     ```
-*   **Elasticsearch**:
+*   **[Elasticsearch](/devops/elasticsearch "Elasticsearch es un motor de búsqueda y análisis distribuido en tiempo real, construido sobre Apache Lucene.")**:
     ```bash
     docker run -d -p 9411:9411 \
       -e STORAGE_TYPE=elasticsearch \
@@ -80,7 +80,7 @@ Por defecto, Zipkin usa almacenamiento en memoria (no persistente). Para persist
 
 ## 3. 📝 Instrumentación de Aplicaciones (Spring Boot con Micrometer Tracing)
 
-Micrometer Tracing (el sucesor de Spring Cloud Sleuth) es la forma recomendada de instrumentar aplicaciones [Spring Boot](/web/backend/framework/spring/spring-boot "¡Absolutamente! Spring Boot es un framework increíble para construir aplicaciones Java robustas y de alto rendimiento de manera rápida y eficiente.") para Zipkin (basado en OpenTelemetry).
+[Micrometer Tracing](/web/backend/framework/spring/micrometer-tracing "Micrometer Tracing (parte de Spring Boot 3+ y Micrometer 1.10+) es un puente entre las aplicaciones Spring y las APIs de instrumentación de trazabilidad distribuida (principalmente OpenTelemetry).") (el sucesor de Spring Cloud Sleuth) es la forma recomendada de instrumentar aplicaciones [Spring Boot](/web/backend/framework/spring/spring-boot "¡Absolutamente! Spring Boot es un framework increíble para construir aplicaciones Java robustas y de alto rendimiento de manera rápida y eficiente.") para Zipkin (basado en OpenTelemetry).
 
 1.  **Añadir dependencias en `pom.xml` (en tu microservicio):**
     ```xml
@@ -170,10 +170,10 @@ Zipkin soporta varios protocolos para enviar Spans desde los servicios instrumen
 ## 6. 🌐 Integración con Otros Componentes
 
 *   **[Spring Cloud Gateway](/web/backend/framework/spring/spring-cloud-gateway "Spring Cloud Gateway es un framework API Gateway construido sobre Spring Framework 5, Spring Boot 2 y Project Reactor.")**: Si tu [API](/conocimiento/api "Una API (Application Programming Interface) es un conjunto de reglas, protocolos y herramientas que permite que diferentes aplicaciones de software se comuniquen entre sí.") Gateway (con Spring Cloud Gateway) también está instrumentado, las trazas se iniciarán y propagarán desde allí.
-*   **Spring Cloud Sleuth (Legacy)**: Las versiones de Spring Boot anteriores a 3.x usan Spring Cloud Sleuth, que se integra directamente con Brave (una librería de trazabilidad) para Zipkin. Micrometer Tracing es la evolución compatible con OpenTelemetry.
+*   **Spring Cloud Sleuth (Legacy)**: Las versiones de [Spring Boot](/web/backend/framework/spring/spring-boot "¡Absolutamente! Spring Boot es un framework increíble para construir aplicaciones Java robustas y de alto rendimiento de manera rápida y eficiente.") anteriores a 3.x usan Spring Cloud Sleuth, que se integra directamente con Brave (una librería de trazabilidad) para Zipkin. [Micrometer Tracing](/web/backend/framework/spring/micrometer-tracing "Micrometer Tracing (parte de Spring Boot 3+ y Micrometer 1.10+) es un puente entre las aplicaciones Spring y las APIs de instrumentación de trazabilidad distribuida (principalmente OpenTelemetry).") es la evolución compatible con OpenTelemetry.
 *   **JMS/Kafka/RabbitMQ**: Los clientes de mensajería están instrumentados para propagar el contexto de la traza a través de los headers del mensaje.
 *   **Logs**: Configura tus logs para incluir el `Trace ID` y `Span ID` para que puedas correlacionar fácilmente los logs con las trazas en Zipkin.
-    *   **Spring Boot**: Por defecto, los logs ya incluyen `[<app-name>,<trace-id>,<span-id>,<true/false>]`.
+    *   **[Spring Boot](/web/backend/framework/spring/spring-boot "¡Absolutamente! Spring Boot es un framework increíble para construir aplicaciones Java robustas y de alto rendimiento de manera rápida y eficiente.")**: Por defecto, los logs ya incluyen `[<app-name>,<trace-id>,<span-id>,<true/false>]`.
 
 ---
 
@@ -186,7 +186,7 @@ Zipkin soporta varios protocolos para enviar Spans desde los servicios instrumen
 *   **Context Propagation Consistente**: Asegúrate de que todos los servicios y componentes que se comunican entre sí usen el mismo formato de propagación de contexto (ej. `W3C` o `B3`).
 *   **Monitoreo del Servidor Zipkin**: Monitorea la salud y el rendimiento de tu instancia de Zipkin Server.
 *   **Limpieza de Datos**: Si usas almacenamiento en memoria para Zipkin, las trazas se perderán al reiniciar. Para otros backends, considera una política de retención de datos para evitar que crezca indefinidamente.
-*   **Usa un API Gateway Instrumentado**: Si tienes un API Gateway (ej. Spring Cloud Gateway), asegúrate de que esté instrumentado. Será el punto de entrada de todas las trazas.
+*   **Usa un [API](/conocimiento/api "Una API (Application Programming Interface) es un conjunto de reglas, protocolos y herramientas que permite que diferentes aplicaciones de software se comuniquen entre sí.") Gateway Instrumentado**: Si tienes un API Gateway (ej. [Spring Cloud Gateway](/web/backend/framework/spring/spring-cloud-gateway "Spring Cloud Gateway es un framework API es un conjunto de reglas, protocolos y herramientas que permite que diferentes aplicaciones de software se comuniquen entre sí.') Gateway construido sobre Spring Framework 5, Spring Boot 2 y Project Reactor.")), asegúrate de que esté instrumentado. Será el punto de entrada de todas las trazas.
 *   **Correlaciona Logs y Métricas**: Un `Trace ID` y `Span ID` en tus logs te permite saltar de una traza a la línea de log específica que la causó. Las métricas te dan la "qué", las trazas te dan el "por qué".
 
 ---
