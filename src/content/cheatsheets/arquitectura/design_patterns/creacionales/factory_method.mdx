@@ -1,3 +1,11 @@
+---
+title: "factory_method"
+description: "El patrón Factory Method es un patrón creacional que define una interfaz para crear objetos, pero delega en las subclases la decisión de qué clase concreta instanciar."
+createdAt: 2026-05-21
+updatedAt: 2026-05-22
+tags: [creacionales]
+icon: "📄"
+---
 # 🏭 Patrón Factory Method — Cheatsheet Completo 🏭
 
 El patrón **Factory Method** es un patrón creacional que define una interfaz para crear objetos, pero delega en las subclases la decisión de qué clase concreta instanciar. Permite que una clase base controle el flujo de creación mientras encapsula la lógica de instanciación en implementaciones especializadas. Nace para resolver el acoplamiento rígido del operador `new`, facilitar la extensión sin modificar código existente (Open/Closed Principle), y permitir la creación polimórfica de objetos en sistemas modulares.
@@ -136,7 +144,7 @@ def notify_via(channel_type: str, msg: str):
 Ventaja: Extensión sin herencia. Desventaja: Pérdida de tipado estricto en tiempo de compilación si no se usa `typing.Protocol` o generics.
 
 ### 3.3. Traits / Generics (Rust / C++ / Go)
-Rust usa traits y `Box<dyn Product>`. Go usa interfaces y funciones constructoras. C++ usa templates o punteros inteligentes.
+[Rust](/rust/rust "Rust es un lenguaje de programación de sistemas enfocado en seguridad, concurrencia y rendimiento sin recolector de basura (GC).") usa traits y `Box<dyn Product>`. Go usa interfaces y funciones constructoras. C++ usa templates o punteros inteligentes.
 
 ```rust
 // Rust: Trait + Factory genérico
@@ -205,8 +213,8 @@ register("logging", () =&gt; new StructuredLogger());
 Comparación rápida de patrones creacionales:
 * **Factory Method**: Delega creación a subclases. Jerarquía vertical. Un producto por vez.
 * **Abstract Factory**: Agrupa familias de productos. Jerarquía horizontal. Múltiples productos relacionados.
-* **Builder**: Construye objetos complejos paso a paso. Enfocado en configuración, no en selección de tipo.
-* **Prototype**: Clona instancias existentes. Útil cuando `new` es costoso o el estado inicial es complejo.
+* **[Builder](/arquitectura/design_patterns/creacionales/builder "El patrón Builder es un patrón creacional que separa la construcción de un objeto complejo de su representación final, permitiendo que el mismo proceso de ensamblaje genere diferentes variantes.")**: Construye objetos complejos paso a paso. Enfocado en configuración, no en selección de tipo.
+* **[Prototype](/arquitectura/design_patterns/creacionales/prototype "El patrón Prototype es un patrón creacional que permite crear nuevos objetos clonando una instancia existente en lugar de instanciarlos desde cero.")**: Clona instancias existentes. Útil cuando `new` es costoso o el estado inicial es complejo.
 * **Simple Factory**: Función estática con `switch`/mapa. No cumple OCP, pero es práctico para casos simples.
 
 ---
@@ -218,7 +226,7 @@ Comparación rápida de patrones creacionales:
 * **Acoplamiento y Complejidad**: Cada `ConcreteCreator` añade una clase. Si el número crece &gt; 10, evalúa registro dinámico o DI. La herencia profunda dificulta la navegación y el debugging.
 * **Refactorización hacia DI**: Si tu `Creator` depende de servicios externos, reemplaza la herencia por inyección. El contenedor DI gestiona el ciclo de vida; tu clase solo consume la interfaz `Product`.
 * **Impacto en Rendimiento**: La indirección polimórfica añade 1-2 saltos de puntero. En CPUs modernas, el branch prediction lo absorbe. Solo impacta en loops de millones de iteraciones. En ese caso, usa factories inline o templates.
-* **Gestión de Ciclo de Vida**: ¿Quién libera la memoria? En lenguajes con GC, el problema es mínimo. En C++/Rust, la factory debe documentar ownership. Usa `shared_ptr`, `Box` o `Arc` para compartir referencias de forma segura.
+* **Gestión de Ciclo de Vida**: ¿Quién libera la memoria? En lenguajes con GC, el problema es mínimo. En C++/[Rust](/rust/rust "Rust es un lenguaje de programación de sistemas enfocado en seguridad, concurrencia y rendimiento sin recolector de basura (GC)."), la factory debe documentar ownership. Usa `shared_ptr`, `Box` o `Arc` para compartir referencias de forma segura.
 * **Visibilidad y APIs Públicas**: Expón solo la interfaz `Product` y el `Creator`. Oculta `ConcreteProduct` y `ConcreteCreator` en módulos internos o namespaces privados. Reduce la superficie de ataque y evita uso indebido.
 
 ---
@@ -236,7 +244,7 @@ Comparación rápida de patrones creacionales:
 * **Dificultad de Depuración**: El stack trace muestra `Creator.doWork()` pero el error ocurre en un `ConcreteProduct` remoto.
   * Fix: Loguea el tipo concreto al inicio de `factoryMethod()`. Usa trazas estructuradas o correlation IDs. En producción, registra métricas de uso por tipo.
 * **Olvidar Registrar Nuevos Tipos**: Agregas `ConcreteProductC` pero no actualizas el registro o el `switch`.
-  * Fix: Usa tests de integración que escanean módulos o validan registros en startup. En TS/Java, usa `@AutoService` o decorators con registro automático.
+  * Fix: Usa tests de integración que escanean módulos o validan registros en startup. En TS/[Java](/java/java "Java es un lenguaje de programación de propósito general, concurrente, basado en clases y orientado a objetos."), usa `@AutoService` o decorators con registro automático.
 * **Confundir Factory Method con Constructor**: Llamar al factory desde el constructor del `Creator` o viceversa, creando recursión o inicialización parcial.
   * Fix: Mantén separación estricta. El constructor solo establece estado base. `factoryMethod()` se llama en métodos de negocio, nunca en `__init__`/`ctor`.
 
