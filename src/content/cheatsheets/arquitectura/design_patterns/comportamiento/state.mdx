@@ -1,3 +1,11 @@
+---
+title: "state"
+description: "El patrón State es un patrón de comportamiento que permite a un objeto alterar su comportamiento cuando su estado interno cambia, haciendo que parezca que el objeto cambia de clase."
+createdAt: 2026-05-22
+updatedAt: 2026-05-22
+tags: [comportamiento]
+icon: "📄"
+---
 # 🔄 Patrón State — Cheatsheet Completo 🔄
 
 El patrón **State** es un patrón de comportamiento que permite a un objeto alterar su comportamiento cuando su estado interno cambia, haciendo que parezca que el objeto cambia de clase. Extrae la lógica condicional dispersa (`if/else`, `switch`) y la encapsula en entidades independientes, cada una representando un estado específico del ciclo de vida. Nace para resolver la complejidad exponencial de máquinas de estado manuales, garantizar transiciones válidas y predecibles, y facilitar la extensión de comportamientos sin tocar el contexto principal. Este cheatsheet desglosa la intención arquitectónica real del patrón, contratos de delegación y transición, implementaciones multi-paradigma, variantes centralizadas vs distribuidas, impacto en concurrencia y testing, trampas de explosión de estados y mutación silenciosa, y criterios estrictos para decidir cuándo la gestión explícita de ciclo de vida es una necesidad del dominio y no un sobre-ingeniería que añade fricción innecesaria.
@@ -181,7 +189,7 @@ const checkoutMachine = createMachine({
     success: { type: 'final' }
   }
 }, {
-  guards: { hasValidItems: (ctx) => ctx.items.length &gt; 0 }
+  guards: { hasValidItems: (ctx) =&gt; ctx.items.length &gt; 0 }
 });
 // Máquina ejecutable, inspeccionable, compatible con debugging visual.
 ```
@@ -211,7 +219,7 @@ pub enum EditorState {
 | **Hierárquica** | Estados anidados. Hijos heredan contexto del padre. | UIs complejas, motores de juego, editores con modos/submodos. | Complejidad de resolución de eventos. Requiere bubbling explícito. |
 | **Parallel/Orthogonal** | Múltiples regiones activas simultáneamente. | Dashboards con filtros + vista + selección, sistemas multi-tenant. | Estado exponencial. Requiere composición cuidadosa y validación cruzada. |
 | **Guarded/Conditional** | Transición sujeta a validación antes de ejecución. | Pagos, aprobaciones, flujos con límites de crédito o permisos. | Overhead de validación. Puede rechazar eventos legítimos si guards son estrictos. |
-| **Immutable/Functional** | Cada transición retorna nuevo estado. Sin mutación. | Redux, Event Sourcing, sistemas deterministas, time-travel debugging. | Presión en GC/memoria. Requiere structural sharing para eficiencia. |
+| **Immutable/Functional** | Cada transición retorna nuevo estado. Sin mutación. | [Redux](/web/frontend/general/react/redux "Redux es una librería de JavaScript para gestionar el estado de la aplicación."), Event Sourcing, sistemas deterministas, time-travel debugging. | Presión en GC/memoria. Requiere structural sharing para eficiencia. |
 
 ---
 
@@ -227,9 +235,9 @@ pub enum EditorState {
 
 Comparación rápida con patrones de comportamiento:
 * **State**: Cambia comportamiento según ciclo de vida interno. Enfocado en transición y delegates.
-* **Strategy**: Intercambia algoritmos completos en runtime. Enfocado en variación de lógica, no en ciclo de vida.
-* **Memento**: Captura estado para reversión. Enfocado en snapshot, no en ejecución de transiciones.
-* **Observer**: Notifica múltiples consumidores de un cambio. Enfocado en propagación uno-a-muchos.
+* **[Strategy](/arquitectura/design_patterns/comportamiento/strategy "El patrón Strategy es un patrón de comportamiento que define una familia de algoritmos intercambiables, los encapsula y los hace sustituibles en tiempo de ejecución sin alterar el código del cliente que los utiliza.")**: Intercambia algoritmos completos en runtime. Enfocado en variación de lógica, no en ciclo de vida.
+* **[Memento](/arquitectura/design_patterns/comportamiento/memento "El patrón Memento es un patrón de comportamiento que permite capturar y externalizar el estado interno de un objeto sin violar su encapsulamiento, de modo que el objeto pueda ser restaurado a ese estado en un momento posterior.")**: Captura estado para reversión. Enfocado en snapshot, no en ejecución de transiciones.
+* **[Observer](/arquitectura/design_patterns/comportamiento/observer "El patrón Observer es un patrón de comportamiento que define una dependencia uno-a-muchos entre objetos, de modo que cuando un objeto cambia su estado, todos sus dependientes son notificados y actualizados automáticamente.")**: Notifica múltiples consumidores de un cambio. Enfocado en propagación uno-a-muchos.
 * **Mediator**: Centraliza comunicación entre pares. Enfocado en desacoplar objetos que se conocen.
 
 ---
@@ -261,8 +269,8 @@ Comparación rápida con patrones de comportamiento:
   * Fix: Use referencias débiles, pase contexto como parámetro en `handle()`, o use IDs/keys en lugar de referencias directas.
 * **Explosión de Estados por Combinación**: Crear `StateA_B`, `StateA_C`, `StateB_C` para cada combinación de flags.
   * Fix: Use estados paralelos/ortogonales o tablas de transición. No modele combinatoria como clases. Separe dimensiones independientes.
-* **Confundir con Strategy o Memento**: Usar State para variar algoritmos sin ciclo de vida, o para guardar/restaurar snapshots.
-  * Fix: Si varía lógica completa &rarr; Strategy. Si solo captura estado &rarr; Memento. Si gestiona ciclo de vida y transiciones &rarr; State. No mezcle propósitos.
+* **Confundir con [Strategy](/arquitectura/design_patterns/comportamiento/strategy "El patrón Strategy es un patrón de comportamiento que define una familia de algoritmos intercambiables, los encapsula y los hace sustituibles en tiempo de ejecución sin alterar el código del cliente que los utiliza.") o [Memento](/arquitectura/design_patterns/comportamiento/memento "El patrón Memento es un patrón de comportamiento que permite capturar y externalizar el estado interno de un objeto sin violar su encapsulamiento, de modo que el objeto pueda ser restaurado a ese estado en un momento posterior.")**: Usar State para variar algoritmos sin ciclo de vida, o para guardar/restaurar snapshots.
+  * Fix: Si varía lógica completa &rarr; [Strategy](/arquitectura/design_patterns/comportamiento/strategy "El patrón Strategy es un patrón de comportamiento que define una familia de algoritmos intercambiables, los encapsula y los hace sustituibles en tiempo de ejecución sin alterar el código del cliente que los utiliza."). Si solo captura estado &rarr; [Memento](/arquitectura/design_patterns/comportamiento/memento "El patrón Memento es un patrón de comportamiento que permite capturar y externalizar el estado interno de un objeto sin violar su encapsulamiento, de modo que el objeto pueda ser restaurado a ese estado en un momento posterior."). Si gestiona ciclo de vida y transiciones &rarr; State. No mezcle propósitos.
 * **Mutación Silenciosa de Contexto**: Estado modifica campos internos del contexto sin notificar o validar invariantes.
   * Fix: Exponga setters controlados o use `setState()` inmutable. Valide invariantes antes y después de mutar. Fail fast con trazabilidad.
 * **Thread-Safety Violada**: Múltiples hilos invocan `handle()` simultáneamente, causando transiciones cruzadas o estado corrupto.
@@ -278,7 +286,7 @@ Comparación rápida con patrones de comportamiento:
 
 ## 8. 💡 Mejores Prácticas y Consejos
 
-* **Prefiera Declaración sobre Implementación Manual**: Cuando &gt; 5 estados, use statecharts, tablas JSON o librerías maduras (XState, Stateless, Python `transitions`). Centralice validación y debugging.
+* **Prefiera Declaración sobre Implementación Manual**: Cuando &gt; 5 estados, use statecharts, tablas JSON o librerías maduras (XState, Stateless, [Python](/python/python "Python es un lenguaje de programación de alto nivel, interpretado, interactivo y orientado a objetos.") `transitions`). Centralice validación y debugging.
 * **Documente Diagrama de Estados Explícitamente**: Especifique nodos, aristas, eventos y guards. Use notación estándar. Elimine suposiciones implícitas y facilite onboarding.
 * **Valide Guards en Borde, no en Ejecución**: Rechace transiciones inválidas antes de cambiar estado. Fail fast ahorra recursos y simplifica debugging en producción.
 * **Use Contexto Delgado y Estados Autónomos**: Contexto solo delega y mantiene referencia. Estados contienen lógica, validación y solicitud de transición. Cumpla Single Responsibility.
