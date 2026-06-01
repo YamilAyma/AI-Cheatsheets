@@ -1,3 +1,11 @@
+---
+title: "observer"
+description: "El patrón Observer es un patrón de comportamiento que define una dependencia uno-a-muchos entre objetos, de modo que cuando un objeto cambia su estado, todos sus dependientes son notificados y actualizados automáticamente."
+createdAt: 2026-05-22
+updatedAt: 2026-05-22
+tags: [comportamiento]
+icon: "📄"
+---
 # 📡 Patrón Observer — Cheatsheet Completo 📡
 
 El patrón **Observer** es un patrón de comportamiento que define una dependencia uno-a-muchos entre objetos, de modo que cuando un objeto cambia su estado, todos sus dependientes son notificados y actualizados automáticamente. Resuelve problemas de acoplamiento rígido entre productores y consumidores de eventos, habilita arquitecturas reactivas, desacopla flujos de validación, auditoría o sincronización de la lógica de mutación central, y permite la extensión de comportamientos sin modificar el sujeto notificador. Nace para transformar polling ineficiente en push determinista, soportar sistemas basados en eventos y facilitar la composición de flujos de datos asíncronos. Este cheatsheet desglosa la intención arquitectónica real del patrón, contratos de suscripción segura, implementaciones multi-paradigma, variantes reactivas y distribuidas, impacto en rendimiento y gestión de ciclo de vida, trampas de notificación en cascada y fugas de memoria, y criterios estrictos para decidir cuándo la propagación de eventos es una necesidad del dominio y no un mecanismo opaco que degrada la trazabilidad o introduce condiciones de carrera silenciosas.
@@ -102,7 +110,7 @@ Regla inquebrantable: El sujeto **nunca** debe depender de la lógica interna de
 El patrón se adapta al modelo de ejecución y al estilo de gestión de eventos del entorno. No requiere necesariamente herencia clásica ni listas manuales.
 
 ### 3.1. POO Clásica con Registro Explícito (TypeScript / Java / C#)
-Uso de interfaces, colecciones thread-safe y gestión manual de ciclo de vida. Ideal para sistemas de reglas, validadores o state machines.
+Uso de interfaces, colecciones thread-safe y gestión manual de ciclo de vida. Ideal para sistemas de reglas, validadores o [state](/arquitectura/design_patterns/comportamiento/state "El patrón State es un patrón de comportamiento que permite a un objeto alterar su comportamiento cuando su estado interno cambia, haciendo que parezca que el objeto cambia de clase.") machines.
 
 ```java
 public interface EventObserver {
@@ -133,9 +141,9 @@ val stateFlow = MutableStateFlow&lt;Config&gt;(initial)
 // Observador reactivo con lifecycle acotado
 val job = lifecycleScope.launch {
     stateFlow
-        .filter { it.version >= 2 }
+        .filter { it.version &gt;= 2 }
         .debounce(300.milliseconds)
-        .collect { config -> syncToRemote(config) }
+        .collect { config -&gt; syncToRemote(config) }
 }
 // Cancelación automática al destruir lifecycle. Cero fugas de memoria.
 ```
@@ -203,10 +211,10 @@ class WeakObserverList:
 
 | ✅ Usar cuando... | ❌ Evitar cuando... |
 |------------------|-------------------|
-| Múltiples componentes deben reaccionar a cambios de estado sin acoplarse al productor | Solo hay 1-2 consumidores y la lógica es lineal. Usa llamada directa o Strategy. |
+| Múltiples componentes deben reaccionar a cambios de estado sin acoplarse al productor | Solo hay 1-2 consumidores y la lógica es lineal. Usa llamada directa o [Strategy](/arquitectura/design_patterns/comportamiento/strategy "El patrón Strategy es un patrón de comportamiento que define una familia de algoritmos intercambiables, los encapsula y los hace sustituibles en tiempo de ejecución sin alterar el código del cliente que los utiliza."). |
 | Quieres desacoplar validación, logging, métricas o sincronización de la mutación central | El orden de ejecución es crítico y no documentado. Usa Chain of Responsibility o pipelines. |
 | Necesitas soporte para suscripción dinámica, feature flags o hot-swapping de handlers | El rendimiento es crítico en loops tight. La iteración y serialización añaden latencia inaceptable. |
-| Trabajas con sistemas reactivos, state machines, UIs reactivas o arquitecturas event-driven | Ya usas un framework de mensajería nativo o contenedor DI que gestiona eventos automáticamente. |
+| Trabajas con sistemas reactivos, [state](/arquitectura/design_patterns/comportamiento/state "El patrón State es un patrón de comportamiento que permite a un objeto alterar su comportamiento cuando su estado interno cambia, haciendo que parezca que el objeto cambia de clase.") machines, UIs reactivas o arquitecturas event-driven | Ya usas un framework de mensajería nativo o contenedor DI que gestiona eventos automáticamente. |
 | Requieres extensión sin modificar código existente (Open/Closed en emisión) | La notificación en cascada o mutación durante `update()` es común y no controlable. |
 
 Comparación rápida con patrones de comportamiento y arquitectura:
@@ -214,7 +222,7 @@ Comparación rápida con patrones de comportamiento y arquitectura:
 * **PubSub/Event Bus**: Enrutea eventos por tópicos/canales, no por sujeto directo. Más distribuido y escalable.
 * **Mediator**: Centraliza comunicación entre pares. Enfocado en desacoplar objetos que se conocen entre sí.
 * **Chain of Responsibility**: Enruta petición hasta que un handler la procesa. Enfocado en secuencialidad y fallback.
-* **Strategy**: Intercambia algoritmos completos. Enfocado en variación de lógica, no en propagación de eventos.
+* **[Strategy](/arquitectura/design_patterns/comportamiento/strategy "El patrón Strategy es un patrón de comportamiento que define una familia de algoritmos intercambiables, los encapsula y los hace sustituibles en tiempo de ejecución sin alterar el código del cliente que los utiliza.")**: Intercambia algoritmos completos. Enfocado en variación de lógica, no en propagación de eventos.
 
 ---
 
@@ -249,7 +257,7 @@ Comparación rápida con patrones de comportamiento y arquitectura:
   * Fix: Envuelva llamadas en `try/catch`, loguee error, continúe iteración. Use `Promise.allSettled()` o equivalentes para async.
 * **Confundir con PubSub o Mediator**: Usar Observer para enrutamiento por tópicos o para desacoplar comunicación bidireccional entre pares.
   * Fix: Si enruta por canales tópicos → PubSub. Si centraliza diálogo entre objetos → Mediator. Si notifica cambio de estado a dependientes → Observer.
-* **State Inconsistency During Broadcast**: Sujeto muta estado después de iniciar `notify()` pero antes de terminar. Observadores ven estado híbrido.
+* **[State](/arquitectura/design_patterns/comportamiento/state "El patrón State es un patrón de comportamiento que permite a un objeto alterar su comportamiento cuando su estado interno cambia, haciendo que parezca que el objeto cambia de clase.") Inconsistency During Broadcast**: Sujeto muta estado después de iniciar `notify()` pero antes de terminar. Observadores ven estado híbrido.
   * Fix: Congele estado antes de notificar, pase payload inmutable, o use copy-on-write. Nunca mutar durante iteración de notificación.
 * **Serialización Rota en Eventos Distribuidos**: Payload contiene referencias cíclicas, métodos no serializables o tipos dependientes de runtime.
   * Fix: Serialize solo DTOs planos. Use schemas (`zod`, `Protobuf`, `Pydantic`). Reconstruya en consumidor mediante factory.
@@ -271,7 +279,7 @@ Comparación rápida con patrones de comportamiento y arquitectura:
 * **Mantenga Handlers Stateless y Rápidos**: Observer debe solo reaccionar, no orquestar flujos complejos. Delegue lógica a servicios inyectados o pipelines.
 * **Profile antes de Desplegar**: No asuma overhead de iteración trivial. Mide latency por evento, allocation y GC pressure. Optimice solo si el profiler lo indica.
 * **Pruebe Casos Límite y Fallos**: Valide suscripción concurrente, desuscripción durante notificación, observadores lentos, excepciones y payloads vacíos/corruptos. Detecte regresiones temprano.
-* **No lo use "por moda"**: Si la comunicación es punto-a-punto, síncrona y no requiere extensión dinámica, use llamada directa o Strategy. La notificación innecesaria es deuda técnica de rendimiento y mantenibilidad.
+* **No lo use "por moda"**: Si la comunicación es punto-a-punto, síncrona y no requiere extensión dinámica, use llamada directa o [Strategy](/arquitectura/design_patterns/comportamiento/strategy "El patrón Strategy es un patrón de comportamiento que define una familia de algoritmos intercambiables, los encapsula y los hace sustituibles en tiempo de ejecución sin alterar el código del cliente que los utiliza."). La notificación innecesaria es deuda técnica de rendimiento y mantenibilidad.
 
 ---
 
