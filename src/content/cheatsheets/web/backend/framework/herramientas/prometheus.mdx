@@ -235,12 +235,12 @@ receivers:
 
 [Grafana](/herramientas/visualizacion_datos/grafana "Grafana es una herramienta de código abierto para la visualización y analítica de series de tiempo, diseñada para consultar, visualizar, alertar y comprender tus métricas dondequiera que se almacenen.") es la herramienta de visualización de dashboards más popular para Prometheus.
 
-1.  **Instalar Grafana**: Sigue las instrucciones de Grafana.
+1.  **Instalar [Grafana](/herramientas/visualizacion_datos/grafana "Grafana es una herramienta de código abierto para la visualización y analítica de series de tiempo, diseñada para consultar, visualizar, alertar y comprender tus métricas dondequiera que se almacenen.")**: Sigue las instrucciones de Grafana.
     ```bash
     docker run -d -p 3000:3000 grafana/grafana:latest
     # Accede a http://localhost:3000 (admin/admin)
     ```2.  **Añadir Fuente de Datos**: En Grafana UI, ve a "Configuration" -&gt; "Data Sources" -&gt; "Add data source" -&gt; "Prometheus". Configura la URL de tu Prometheus (ej. `http://localhost:9090`).
-3.  **Crear Dashboards**: Crea paneles en Grafana y usa PromQL para consultar tus métricas de Prometheus.
+3.  **Crear Dashboards**: Crea paneles en [Grafana](/herramientas/visualizacion_datos/grafana "Grafana es una herramienta de código abierto para la visualización y analítica de series de tiempo, diseñada para consultar, visualizar, alertar y comprender tus métricas dondequiera que se almacenen.") y usa PromQL para consultar tus métricas de Prometheus.
 
 ---
 
