@@ -1,0 +1,362 @@
+---
+title: "sveltekit"
+description: "SvelteKit es el meta-framework oficial de Svelte diseñado para construir aplicaciones web completas, modernas y altamente performantes."
+createdAt: 2026-06-01
+updatedAt: 2026-06-01
+tags: [fullstack]
+icon: "📄"
+---
+# 🎯 SvelteKit — Complete Cheatsheet 🎯
+
+SvelteKit es el meta-framework oficial de [Svelte](/web/frontend/framework/svelte "Svelte es un framework de compilación que traslada el trabajo reactivo a build time, generando código quirúrgico, altamente optimizado y sin Virtual DOM.") diseñado para construir aplicaciones web completas, modernas y altamente performantes. Combina enrutamiento basado en archivos, renderizado híbrido (SSR/SSG/CSR), carga de datos tipada y acciones de formulario con mejora progresiva, eliminando la complejidad de configurar herramientas separadas para frontend y backend. Este cheatsheet cubre desde la arquitectura fundamental hasta carga de datos avanzada, gestión de estado, hooks, adaptadores de despliegue y patrones de producción. Ideal para desarrolladores que migran desde Next.js, [Nuxt](/web/frontend/framework/nuxt "Nuxt es un meta-framework full-stack de código abierto construido sobre Vue.js que elimina la complejidad de configurar herramientas modernas de frontend.") o [Vite](/web/frontend/general/vite "Vite es una herramienta de construcción frontend de última generación que combina un servidor de desarrollo ultrarrápido basado en módulos nativos del navegador con un empaquetador de producción optimizado mediante Rollup.") puro y buscan un flujo full-stack coherente, rápido y con experiencia de desarrollador excepcional.
+
+---
+
+## 1. 🌟 Conceptos Fundamentales
+
+* **Enrutamiento basado en archivos**: La estructura de `src/routes/` define automáticamente las URL. Cada carpeta es una ruta, cada archivo especial (`+page`, `+layout`, `+server`) define comportamiento específico.
+  * Por qué importa: Elimina configuración manual de routers. El código refleja la arquitectura de la app.
+* **Universal vs Server Load**: `+page.ts` (universal) se ejecuta en cliente y servidor. `+page.server.ts` solo en servidor. Elige según la necesidad de privacidad o acceso a `document/window`.
+* **Mejora Progresiva (Progressive Enhancement)**: Formularios funcionan sin JavaScript. `use:enhance` intercepta envíos para UX moderna, pero fallback nativo garantiza accesibilidad y resiliencia ante fallos de red o JS desactivado.
+* **Renderizado Híbrido**: Control granular por ruta. SSR por defecto, `prerender = true` para SSG, `csr = true` para SPA, `ssr = false` para client-only. El adaptador define el target final de despliegue.
+* **Hooks y Middleware**: `hooks.server.ts` intercepta requests/redirects antes del render. `hooks.client.ts` maneja navegación y errores en cliente. Punto central para autenticación, logs y headers globales.
+* **Type Safety Nativo**: `$types` se genera automáticamente. `PageData`, `Actions`, `RequestEvent` están tipados sin configuración manual. [TypeScript](/web/general/typescript "TypeScript es una herramienta fundamental en el desarrollo web moderno, especialmente para proyectos a gran escala, ya que añade seguridad de tipo y mejoras en la productividad.") es ciudadano de primera clase en todo el ciclo.
+* **Stores y Contexto**: Svelte stores (`$state`, `writable`, `derived`) para estado global. `$app/stores` (`page`, `navigating`, `updated`) para estado de navegación reactiva sin boilerplate.
+* **Code Splitting Automático**: SvelteKit divide el bundle por ruta y componente. Solo se descarga JS/CSS necesario para la vista actual. Reduce TTI (Time to Interactive) drásticamente.
+
+---
+
+## 2. 🛠️ Instalación y Estructura de Proyecto
+
+### 2.1. Inicialización Rápida
+```bash
+npm create svelte@latest my-app
+cd my-app && npm install
+npm run dev
+```
+
+### 2.2. Estructura Estándar
+```text
+my-app/
+├── src/
+│   ├── app.html              # Plantilla HTML base (%sveltekit.head%, %sveltekit.body%)
+│   ├── routes/               # Enrutamiento basado en archivos
+│   ├── lib/                  # Componentes, utils, stores compartidos
+│   └── app.css               # Estilos globales (importar en app.html)
+├── static/                   # Assets estáticos (copiados sin transformación)
+├── svelte.config.js          # Configuración de preprocessors y adaptadores
+├── vite.config.ts            # Integración con Vite y plugins
+└── package.json
+```
+
+### 2.3. Scripts Esenciales
+| Comando | Descripción |
+| ---|---|
+| `npm run dev` | Servidor de desarrollo con HMR y recarga en caliente |
+| `npm run build` | Compilación optimizada para el adaptador configurado |
+| `npm run preview` | Servidor local del bundle de producción |
+| `npm run check` | Type-checking + validación de componentes (`svelte-check`) |
+
+---
+
+## 3. 📝 Enrutamiento y Archivos Especiales
+
+### 3.1. Archivos de Ruta
+| Archivo | Ejecución | Propósito |
+| ---|---|---|
+| `+page.svelte` | Cliente/Servidor | UI visible de la ruta |
+| `+layout.svelte` | Cliente/Servidor | Envoltorio compartido (navbar, footer, slots) |
+| `+error.svelte` | Cliente/Servidor | Manejo de errores 4xx/5xx (props: `error`, `status`) |
+| `+page.ts` | Universal | Carga de datos (acceso a `fetch` y `window`/`document` limitado) |
+| `+page.server.ts` | Solo Servidor | Carga de datos segura, mutaciones, acceso a DB/cookies |
+| `+server.ts` | Solo Servidor | Rutas [API](/conocimiento/api "Una API (Application Programming Interface) es un conjunto de reglas, protocolos y herramientas que permite que diferentes aplicaciones de software se comuniquen entre sí.") (GET, POST, PUT, DELETE) |
+
+### 3.2. Patrones de Rutas
+```text
+src/routes/
+├── about/+page.svelte            # /about
+├── blog/[slug]/+page.svelte    # /blog/post-1 (parámetro dinámico)
+├── files/[...path]/+page.svelte # /files/docs/manual.pdf (parámetro rest)
+├── (auth)/dashboard/+page.svelte # /dashboard (grupo lógico, no afecta URL)
+└── +layout.svelte              # Layout raíz
+```
+
+### 3.3. Reset de Layout y Anidamiento
+```svelte
+&lt;!-- (admin)/+layout.svelte -->
+<div class="admin-shell">
+  <nav>Admin Panel</nav>
+  <slot /> &lt;!-- Anida hijos -->
+</div>
+
+&lt;!-- (admin)/users/+layout.svelte (resetea herencia) -->
+<script>
+  // No hereda de (admin)/+layout.svelte
+</script>
+<slot />
+```
+
+---
+
+## 4. 🔌 Carga de Datos (`load`) y Estados de Renderizado
+
+### 4.1. Función `load` (Server)
+```ts
+// +page.server.ts
+import type { PageServerLoad } from './$types'
+import { db } from '$lib/server/db'
+import { redirect } from '@sveltejs/kit'
+
+export const load: PageServerLoad = async ({ params, cookies, fetch, url, depends }) =&gt; {
+  const post = await db.posts.findUnique({ where: { slug: params.slug } })
+  if (!post) throw redirect(307, '/404')
+  
+  // Marca dependencia para invalidación automática
+  depends(`app:post:${post.id}`)
+  return { post, user: cookies.get('session') ? await db.users.me() : null }
+}
+```
+
+### 4.2. Función `load` (Universal)
+```ts
+// +page.ts
+import type { PageLoad } from './$types'
+
+export const load: PageLoad = async ({ fetch, data }) =&gt; {
+  // Se ejecuta en cliente y servidor. Ideal para APIs públicas o cálculos ligeros.
+  const res = await fetch(`/api/posts/${data.postId}`)
+  const comments = await res.json()
+  return { comments } // Se fusiona con data del server load
+}
+```
+
+### 4.3. Control de Renderizado
+```ts
+// +page.js/ts (configuración por ruta)
+export const prerender = true   // Genera HTML estático en build (SSG)
+export const ssr = false        // Desactiva SSR (SPA puro)
+export const csr = true         // Fuerza hidratación cliente (default: true)
+export const trailingSlash = 'always' // o 'never', 'ignore'
+```
+
+### 4.4. Invalidez de Datos
+```ts
+import { invalidate, invalidateAll } from '$app/navigation'
+import { page } from '$app/stores'
+
+// Recarga solo rutas con depends() que coincidan
+invalidate('app:post:123')
+// Recarga TODOS los load functions
+invalidateAll()
+// Automático tras form actions (si retorna redirect/success)
+```
+
+---
+
+## 5. 📬 Acciones de Formulario y Mejora Progresiva
+
+### 5.1. Definición de Actions
+```ts
+// +page.server.ts
+import type { Actions } from './$types'
+import { fail } from '@sveltejs/kit'
+import { z } from 'zod'
+
+const schema = z.object({
+  email: z.string().email(),
+  password: z.string().min(8)
+})
+
+export const actions: Actions = {
+  default: async ({ request }) =&gt; {
+    const data = await request.formData()
+    const parsed = schema.safeParse(Object.fromEntries(data))
+    if (!parsed.success) return fail(400, { errors: parsed.error.flatten() })
+    
+    // Lógica de negocio (DB, auth, etc.)
+    await createUser(parsed.data)
+    return { success: true }
+  }
+}
+```
+
+### 5.2. Uso en Componente con `use:enhance`
+```svelte
+<script lang="ts">
+  import { enhance } from '$app/forms'
+  import type { ActionData } from './$types'
+  let { form }: { form: ActionData } = $props()
+  let pending = $state(false)
+
+  function handleSubmit({ update }: Parameters&lt;typeof enhance&gt;[0]) {
+    pending = true
+    update()
+    pending = false
+  }
+</script>
+
+<form method="POST" use:enhance={handleSubmit}>
+  <input name="email" type="email" required />
+  <input name="password" type="password" required />
+  <button type="submit" disabled={pending}>Registrarse</button>
+  {#if form?.errors}
+    <p class="error">Datos inválidos: {JSON.stringify(form.errors)}</p>
+  {/if}
+  {#if form?.success}
+    <p class="success">Cuenta creada exitosamente</p>
+  {/if}
+</form>
+```
+
+### 5.3. Múltiples Actions
+```html
+<form method="POST" action="?/create">
+<form method="POST" action="?/delete">
+&lt;!-- SvelteKit enruta automáticamente al action correspondiente -->
+```
+
+---
+
+## 6. 🌐 Rutas API, Hooks y Seguridad
+
+### 6.1. Rutas API (`+server.ts`)
+```ts
+// api/users/+server.ts
+import type { RequestHandler } from './$types'
+import { json } from '@sveltejs/kit'
+
+export const GET: RequestHandler = async ({ url, locals }) =&gt; {
+  const page = Number(url.searchParams.get('page')) || 1
+  const users = await db.users.findMany({ skip: (page - 1) * 20, take: 20 })
+  return json(users)
+}
+
+export const POST: RequestHandler = async ({ request }) =&gt; {
+  const body = await request.json()
+  const user = await db.users.create({ data: body })
+  return json(user, { status: 201 })
+}
+```
+
+### 6.2. Hooks Server (`src/hooks.server.ts`)
+```ts
+import type { Handle, HandleFetch, HandleError } from '@sveltejs/kit'
+import { sequence } from '@sveltejs/kit/hooks'
+
+export const handle: Handle = async ({ event, resolve }) =&gt; {
+  // Inyectar datos en event.locals (disponible en load/actions)
+  event.locals.userId = event.cookies.get('session')
+  event.locals.theme = event.cookies.get('theme') || 'system'
+  
+  const response = await resolve(event, {
+    transformPageChunk: ({ html }) =&gt; html.replace('%theme%', event.locals.theme)
+  })
+  return response
+}
+
+export const handleFetch: HandleFetch = async ({ request, fetch }) =&gt; {
+  // Añadir headers de autenticación a fetch internos
+  if (request.url.startsWith('/api/')) {
+    request.headers.set('Authorization', 'Bearer secret')
+  }
+  return fetch(request)
+}
+```
+
+### 6.3. Variables de Entorno
+| Variable | Alcance | Uso típico |
+| ---|---|---|
+| `$env/static/private` | Build time | `DATABASE_URL`, `API_SECRET` |
+| `$env/dynamic/private` | Runtime | Recarga sin rebuild, flags dinámicos |
+| `$env/static/public` | Build/Cliente | `PUBLIC_API_URL`, `PUBLIC_GA_ID` |
+| `$env/dynamic/public` | Runtime/Cliente | Configuración A/B, toggles |
+
+---
+
+## 7. 📦 Adaptadores, Despliegue y Optimización
+
+### 7.1. Configuración de Adaptadores
+```js
+// svelte.config.js
+import adapter from '@sveltejs/adapter-node' // o auto, vercel, netlify, static, cloudflare
+import { vitePreprocess } from '@sveltejs/vite-plugin-svelte'
+
+export default {
+  preprocess: vitePreprocess(),
+  kit: {
+    adapter: adapter({
+      out: 'build',
+      precompress: true, // Genera .gz y .br automáticamente
+      envPrefix: 'APP_'  // Prefijo seguro para variables de entorno
+    }),
+    files: { assets: 'static' }
+  }
+}
+```
+
+### 7.2. Selección por Caso de Uso
+| Adaptador | Uso | Output |
+| ---|---|---|
+| `adapter-auto` | Desarrollo local / CI | Automático según detección de plataforma |
+| `adapter-node` | VPS, [Docker](/devops/docker "Docker es una plataforma de código abierto que utiliza la contenerización para empaquetar una aplicación y todas sus dependencias en una unidad estándar para el desarrollo de software."), Bare metal | Servidor Node.js autocontenido |
+| `adapter-vercel`/`netlify` | Plataformas serverless | Funciones edge/lambda optimizadas |
+| `adapter-static` | [GitHub](/herramientas/github "GitHub es una plataforma web para el alojamiento de repositorios de control de versiones Git diseñado para manejar proyectos pequeños o muy grandes con velocidad y eficiencia.').") Pages, CDN | HTML/CSS/JS puro (SSG estricto) |
+| `adapter-cloudflare` | Cloudflare Pages/Workers | Workers + R2/KV integrados |
+
+### 7.3. Optimización de Rendimiento
+```ts
+// vite.config.ts
+import { sveltekit } from '@sveltejs/kit/vite'
+import { defineConfig } from 'vite'
+
+export default defineConfig({
+  plugins: [sveltekit()],
+  build: {
+    rollupOptions: {
+      output: { manualChunks(id) { /* code splitting manual si es necesario */ } }
+    }
+  },
+  optimizeDeps: { include: ['lodash-es', 'chart.js'] } // Pre-bundle ESM para dev rápido
+})
+```
+
+---
+
+## 8. ⚠️ Errores Comunes y Trampas
+
+* **Importar código de servidor en cliente**: Usar `import { db } from '$lib/server/db'` en `+page.svelte` o `+page.ts` rompe el build.
+  * Fix: Mantener lógica de DB en `+page.server.ts` o `+server.ts`. Usar `$lib` para código universal.
+* **Mutación directa de `$page.data`**: Intentar modificar `data.users.push()` en el componente causa errores silenciosos o pérdida de hidratación.
+  * Fix: Usar `invalidate('app:data-key')` o `use:enhance` con `update()` para refrescar datos del servidor.
+* **Olvidar `await` en `fetch` dentro de `load`**: Devuelve una Promise no resuelta. El render recibe `[object Promise]`.
+  * Fix: `const data = await fetch(...)` siempre. SvelteKit espera automáticamente, pero la asignación debe ser síncrona tras await.
+* **CORS en `+server.ts`**: Fetch externo bloquea por políticas de seguridad del navegador.
+  * Fix: Añadir headers `Access-Control-Allow-Origin` en la respuesta o usar [proxy](/arquitectura/design_patterns/estructurales/proxy "El patrón Proxy es un patrón estructural que proporciona un sustituto o intermediario para controlar el acceso a un objeto real, añadiendo comportamiento transversal sin modificar su implementación original.") en `handle`/`handleFetch`.
+* **Confundir `prerender = true` con `ssr = true`**: `prerender` genera estático en build. `ssr` renderiza dinámicamente por request. Mezclarlos sin `export const prerender = true` causa advertencias.
+  * Fix: Definir explícitamente por ruta. Para híbrido: `prerender = true` en marketing, `ssr = true` en app.
+* **No manejar `use:enhance` fallbacks**: Si JS falla o tarda, el formulario se envía sin feedback visual.
+  * Fix: Usar `pending` [state](/arquitectura/design_patterns/comportamiento/state "El patrón State es un patrón de comportamiento que permite a un objeto alterar su comportamiento cuando su estado interno cambia, haciendo que parezca que el objeto cambia de clase."), `result` validation, y mantener `method="POST"` nativo para resiliencia.
+* **CSRF en acciones POST**: SvelteKit protege automáticamente formularios con `?` action, pero APIs custom requieren `checkOrigin` o tokens.
+  * Fix: Usar `form` nativo o validar `Origin`/`Referer` en `hooks.server.ts`.
+* **Fugas de memoria en hooks**: No cerrar conexiones o listeners en `handle` o `handleError`.
+  * Fix: Usar `event.setHeaders()` para cache, y limpiar recursos con `try/finally` o pools de conexión.
+
+---
+
+## 9. 💡 Mejores Prácticas y Consejos de Experto
+
+* **Separa lógica de presentación y datos**: `+page.server.ts` solo obtiene/valida. Push business logic a `src/lib/server/`. Mantén componentes puros y testeables.
+* **Valida en el borde, nunca confíes en el cliente**: Usa `zod`/`valibot` en `load` y `actions`. Retorna `fail(400, { error })` con mensajes estructurados para UI.
+* **Aprovecha `$types` para seguridad total**: No uses `any`. Importa `PageData`, `ActionData`, `RequestEvent`. El compilador genera tipos automáticamente desde rutas y schemas.
+* **Prefiere `form` actions sobre API calls para mutaciones**: `use:enhance` + `actions` maneja loading, errores, redirect y revalidación sin boilerplate. Reduce estado manual y complejidad.
+* **Cachea estratégicamente**: Usa `Cache-Control: public, max-age=3600` en `+server.ts` para datos estáticos. `s-maxage` para CDN. Evita recargas innecesarias y reduce costos de servidor.
+* **Perfila con `vite-plugin-inspect` y `rollup-plugin-visualizer`**: Identifica chunks pesados, imports duplicados o tree-shaking fallido antes de deploy. Optimiza solo cuellos reales.
+* **Estructura rutas por feature, no por URL**: Agrupa `(auth)/login`, `(auth)/register`, `(dashboard)/analytics`. Facilita mantenimiento, reutilización de layouts y testing.
+* **Usa `adapter-static` solo para contenido inmutable**: Si tu app tiene login, dashboard o datos dinámicos, usa `adapter-node` o serverless. Evita hidratación innecesaria en SSG.
+* **Maneja errores globalmente con `+error.svelte`**: Centraliza UX de fallos. Usa `status` y `error.message`. No expongas stack traces en producción (`export const prerender = false` en error routes).
+* **Documenta `hooks` y `load` con JSDoc**: SvelteKit no genera docs automáticas para server functions. Añade `/** @type {PageServerLoad} */` para IDE autocomplete y onboarding rápido.
+* **Prueba con `playwright` + `@sveltejs/kit`**: Usa `test` para validar navegación, form submissions y SSR. Mockea `fetch` con `intercept` para determinismo y evitar flakiness en CI.
+
+---
+
+Este cheatsheet proporciona una referencia completa para SvelteKit, cubriendo enrutamiento basado en archivos, carga de datos tipada, acciones de formulario con mejora progresiva, rutas API, hooks de servidor, adaptadores de despliegue y optimización de producción, junto con las mejores prácticas para construir aplicaciones full-stack rápidas, seguras y altamente mantenibles en entornos reales.
