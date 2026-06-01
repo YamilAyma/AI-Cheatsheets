@@ -13,7 +13,7 @@ icon: "📄"
 
 # ☕ Spring Boot Cheatsheet Completo ☕
 
-Spring Boot es un framework basado en Spring Framework, diseñado para simplificar el proceso de desarrollo y despliegue de aplicaciones Java, especialmente microservicios y APIs RESTful. Se enfoca en la "convención sobre configuración" para que puedas empezar a codificar más rápido.
+Spring Boot es un framework basado en Spring Framework, diseñado para simplificar el proceso de desarrollo y despliegue de aplicaciones [Java](/java/java "Java es un lenguaje de programación de propósito general, concurrente, basado en clases y orientado a objetos."), especialmente microservicios y APIs RESTful. Se enfoca en la "convención sobre configuración" para que puedas empezar a codificar más rápido.
 
 ---
 
@@ -128,7 +128,7 @@ Las anotaciones son el corazón de Spring Boot para configurar y definir compone
 * **`@PatchMapping("/users/{id}")`**: Mapea un método a una petición PATCH.
 * **`@PathVariable("id")`**: Extrae un valor de la URL (ej. `/users/123` -&gt; `id=123`).
 * **`@RequestParam("name")`**: Extrae un parámetro de la cadena de consulta (query parameter) (ej. `/users?name=John`).
-* **`@RequestBody`**: Mapea el cuerpo de la petición HTTP a un objeto Java (Spring Boot lo deserializa automáticamente desde JSON/XML).
+* **`@RequestBody`**: Mapea el cuerpo de la petición HTTP a un objeto [Java](/java/java "Java es un lenguaje de programación de propósito general, concurrente, basado en clases y orientado a objetos.") (Spring Boot lo deserializa automáticamente desde JSON/XML).
 * **`@ResponseBody`**: Indica que el valor de retorno de un método debe serializarse directamente al cuerpo de la respuesta HTTP (implícito con `@RestController`).
 * **`@ResponseStatus(HttpStatus.CREATED)`**: Define el código de estado HTTP de la respuesta.
 * **`ResponseEntity<T>`**: Permite un control total sobre la respuesta HTTP (cuerpo, cabeceras, código de estado).
@@ -169,7 +169,7 @@ Las anotaciones son el corazón de Spring Boot para configurar y definir compone
 * **`@Column(name = "prod_name", nullable = false, unique = true)`**: Configura propiedades de la columna.
 * **`@Transient`**: Excluye un campo del mapeo de la base de datos.
 * **`@NoRepositoryBean`**: Evita que Spring Data cree una implementación para esta interfaz (para interfaces base personalizadas).
-* **`JpaRepository<T, ID>`**: Interfaz clave de [Spring Data JPA](/web/backend/framework/spring/spring-data-jpa "Spring Data JPA es una parte del paraguas de Spring Data, que tiene como objetivo reducir la cantidad de código repetitivo necesario para implementar la capa de acceso a datos (Repository) en aplicaciones basadas en la tecnología JPA (Java Persistence API).") que proporciona métodos CRUD y de paginación/ordenación por defecto.
+* **`JpaRepository<T, ID>`**: Interfaz clave de [Spring Data JPA](/web/backend/framework/spring/spring-data-jpa "Spring Data JPA es una parte del paraguas de Spring Data, que tiene como objetivo reducir la cantidad de código repetitivo necesario para implementar la capa de acceso a datos (Repository) en aplicaciones basadas en la tecnología JPA (Java Persistence [API](/conocimiento/api "Una API (Application Programming Interface) es un conjunto de reglas, protocolos y herramientas que permite que diferentes aplicaciones de software se comuniquen entre sí.")).") que proporciona métodos CRUD y de paginación/ordenación por defecto.
 
   ```java
   import jakarta.persistence.*; // O javax.persistence si usas JavaEE/JakartaEE 8 o anterior
