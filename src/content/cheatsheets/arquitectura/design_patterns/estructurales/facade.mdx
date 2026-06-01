@@ -1,3 +1,11 @@
+---
+title: "facade"
+description: "El patrón Facade es un patrón estructural que proporciona una interfaz unificada y simplificada a un subsistema complejo, conjunto de librerías o componentes altamente interdependientes."
+createdAt: 2026-05-22
+updatedAt: 2026-05-22
+tags: [estructurales]
+icon: "📄"
+---
 # 🏛️ Patrón Facade — Cheatsheet Completo 🏛️
 
 El patrón **Facade** es un patrón estructural que proporciona una interfaz unificada y simplificada a un subsistema complejo, conjunto de librerías o componentes altamente interdependientes. Encapsula la complejidad interna, centraliza la coordinación de flujos y reduce drásticamente el acoplamiento entre el cliente y las APIs subyacentes. Nace para dominar la sobrecarga cognitiva de integración, estandarizar casos de uso recurrentes y aislar la evolución de subsistemas volátiles sin romper contratos de consumo. Este cheatsheet desglosa la intención arquitectónica real del patrón, contratos de delegación segura, implementaciones multi-paradigma, variantes de encapsulamiento y versionado, impacto en testing y rendimiento, trampas de acoplamiento encubierto o "God Object", y criterios estrictos para decidir cuándo la simplificación es una necesidad del dominio y no una capa que oculta capacidades críticas o introduce un cuello de botella arquitectónico.
@@ -27,7 +35,7 @@ El patrón **Facade** es un patrón estructural que proporciona una interfaz uni
 
 ## 2. 📐 Estructura Lógica y Contrato de Simplificación
 
-La arquitectura sigue un flujo estricto de delegación, validación cruzada y normalización. El patrón garantiza que el cliente interactúe siempre con una API cohesiva, independientemente de la fragmentación interna del subsistema.
+La arquitectura sigue un flujo estricto de delegación, validación cruzada y normalización. El patrón garantiza que el cliente interactúe siempre con una [API](/conocimiento/api "Una API (Application Programming Interface) es un conjunto de reglas, protocolos y herramientas que permite que diferentes aplicaciones de software se comuniquen entre sí.") cohesiva, independientemente de la fragmentación interna del subsistema.
 
 ```text
                Cliente
@@ -121,7 +129,7 @@ Se reemplaza clase por función pura o closure que orquesta importaciones. Compo
 
 ```python
 def create_processing_facade(parser, validator, storage):
-    async def process_stream(stream: BinaryIO, schema: str) -> dict:
+    async def process_stream(stream: BinaryIO, schema: str) -&gt; dict:
         doc = await parser.parse(stream, schema)
         errors = validator.validate(doc)
         if errors:
@@ -162,7 +170,7 @@ func (f *UserManagementFacade) RegisterUser(ctx context.Context, req RegisterReq
 ```
 
 ### 3.4. Dynamic/Schema-Driven (Metaprogramming / Reflection)
-Generación automática de fachadas desde contratos OpenAPI, GraphQL schemas o archivos de configuración.
+Generación automática de fachadas desde contratos [OpenAPI](/herramientas/openapi "OpenAPI Specification (OAS) es un formato de descripción de [API](/conocimiento/api "Una API (Application Programming Interface) es un conjunto de reglas, protocolos y herramientas que permite que diferentes aplicaciones de software se comuniquen entre sí.") es un conjunto de reglas, protocolos y herramientas que permite que diferentes aplicaciones de software se comuniquen entre sí.') estándar, independiente del lenguaje, legible tanto por humanos como por máquinas."), GraphQL schemas o archivos de configuración.
 
 ```typescript
 // Auto-genera métodos facade desde un registro de subsistemas
@@ -170,7 +178,7 @@ function createSchemaFacade(subsystems: Record<string, any>) {
   const facade: any = {};
   for (const [name, methods] of Object.entries(subsystems)) {
     for (const [method, fn] of Object.entries(methods as Record<string, Function>)) {
-      facade[`${name}_${method}`] = (...args: any[]) => {
+      facade[`${name}_${method}`] = (...args: any[]) =&gt; {
         try {
           const result = fn(...args);
           return { status: 'ok', data: result };
@@ -196,7 +204,7 @@ function createSchemaFacade(subsystems: Record<string, any>) {
 | **Stateful/Contextual** | Mantiene configuración o sesión entre llamadas (`init()`, `configure()`, `execute()`). | Conexiones persistentes, pipelines con estado, workflows multi-step. | Complejidad de ciclo de vida. Requiere `dispose()` explícito y gestión de concurrencia. |
 | **Facade de Módulo/Paquete** | `index.ts` o `__init__.py` que expone API pública y oculta módulos internos. | Librerías, SDKs, paquetes internos en monorepos. | Riesgo de circular dependencies si no se gestiona la topología de imports. |
 | **Facade Evolutiva/Versionada** | Soporta múltiples versiones del subsistema simultáneamente mediante routing interno. | Migraciones sin downtime, A/B testing de proveedores, compatibilidad legacy. | Overhead de mantenimiento. Requiere tests de regresión por versión. |
-| **Facade + Adapter Híbrido** | Simplifica + traduce incompatibilidades de API o protocolos. | Integración de vendors con contratos divergentes bajo una API cohesiva. | Doble responsabilidad. Puede violar Single Responsibility si no se delimita. |
+| **Facade + [Adapter](/arquitectura/design_patterns/estructurales/adapter "El patrón Adapter es un patrón estructural que permite la cooperación entre objetos con interfaces incompatibles, actuando como un traductor o puente que convierte las llamadas de un contrato a otro.") Híbrido** | Simplifica + traduce incompatibilidades de API o protocolos. | Integración de vendors con contratos divergentes bajo una API cohesiva. | Doble responsabilidad. Puede violar Single Responsibility si no se delimita. |
 
 ---
 
@@ -212,10 +220,10 @@ function createSchemaFacade(subsystems: Record<string, any>) {
 
 Comparación rápida con patrones estructurales y de comportamiento:
 * **Facade**: Simplifica y unifica subsistemas complejos. Enfocado en reducción de acoplamiento y superficie de integración.
-* **Adapter**: Traduce interfaces incompatibles existentes. Corrección post-factum.
+* **[Adapter](/arquitectura/design_patterns/estructurales/adapter "El patrón Adapter es un patrón estructural que permite la cooperación entre objetos con interfaces incompatibles, actuando como un traductor o puente que convierte las llamadas de un contrato a otro.")**: Traduce interfaces incompatibles existentes. Corrección post-factum.
 * **Mediator**: Centraliza comunicación entre pares/colaboradores. Enfocado en desacoplar objetos que se conocen entre sí.
-* **Proxy**: Controla acceso, añade lógica pre/post o gestiona ciclo de vida. Enfocado en interceptación transparente.
-* **Strategy**: Intercambia algoritmos/comportamiento dinámicamente. Enfocado en variación de lógica, no en simplificación estructural.
+* **[Proxy](/arquitectura/design_patterns/estructurales/proxy "El patrón Proxy es un patrón estructural que proporciona un sustituto o intermediario para controlar el acceso a un objeto real, añadiendo comportamiento transversal sin modificar su implementación original.")**: Controla acceso, añade lógica pre/post o gestiona ciclo de vida. Enfocado en interceptación transparente.
+* **[Strategy](/arquitectura/design_patterns/comportamiento/strategy "El patrón Strategy es un patrón de comportamiento que define una familia de algoritmos intercambiables, los encapsula y los hace sustituibles en tiempo de ejecución sin alterar el código del cliente que los utiliza.")**: Intercambia algoritmos/comportamiento dinámicamente. Enfocado en variación de lógica, no en simplificación estructural.
 
 ---
 
@@ -224,7 +232,7 @@ Comparación rápida con patrones estructurales y de comportamiento:
 * **Aislamiento en Tests**: Mockea cada subsistema individualmente. Verifica que la Facade coordine correctamente, maneje errores parciales y retorne DTOs válidos.
   * Técnica: Usa fixtures controlados, aserta orden de llamadas, validación de compensatorios y normalización de respuestas.
 * **Validación de Contratos Cruzados**: Escribe tests que invoquen cada método facade con payloads límite, nulos, estructuras vacías y errores simulados de subsistemas.
-  * Fix: `assert.throws(() => facade.process(invalidData), /ValidationError/)`. Valida mensajes y estructura, no solo que falle.
+  * Fix: `assert.throws(() =&gt; facade.process(invalidData), /ValidationError/)`. Valida mensajes y estructura, no solo que falle.
 * **Ciclo de Vida y Ownership**: Si la Facade mantiene conexiones, pools o sesiones, debe implementar `dispose()`, `close()` o `cancel()` y propagarlo a subsistemas.
 * **Refactorización hacia Inyección**: Reemplace instanciación manual por contenedores DI. Permita configuración por ambiente sin tocar código de orquestación.
 * **Impacto en Rendimiento**: La indirección añade 1-2 saltos de función. En CPUs modernas, la JIT los absorbe. Solo impacta si valida/transforma excesivamente o serializa payloads grandes. Profile antes de optimizar.
@@ -239,19 +247,19 @@ Comparación rápida con patrones estructurales y de comportamiento:
 ## 7. ⚠️ Errores Comunes y Soluciones
 
 * **God Object / Fat Facade**: Acumula lógica de negocio, validación compleja, persistencia o reglas de dominio.
-  * Fix: Delegue cálculos y decisiones a servicios inyectados. La Facade solo orquesta, valida flujo y normaliza respuestas. Mantenga < 50-100 líneas por método.
+  * Fix: Delegue cálculos y decisiones a servicios inyectados. La Facade solo orquesta, valida flujo y normaliza respuestas. Mantenga &lt; 50-100 líneas por método.
 * **Facade Permeable (Leaky Abstraction)**: Expone tipos, errores o estructuras internas del subsistema al cliente.
   * Fix: Capture excepciones técnicas, mapee a errores de dominio, y nunca rethrow raw exceptions. Mantenga el contrato puro y predecible.
 * **Error Swallowing Silencioso**: Captura fallos del subsistema y retorna `null`, `undefined` o estado vacío sin contexto.
   * Fix: Propague errores con causa (`{ cause: err }`), use `Result`/`Either` patterns, o lance excepciones de dominio descriptivas. Fail fast con trazabilidad.
 * **Acoplamiento Rígido a Clases Concretas**: La Facade referencia implementaciones específicas en lugar de interfaces.
   * Fix: Inyecte contratos (`IPayment`, `IStorage`). Permita mockear, reemplazar y testear aisladamente. Cumpla Dependency Inversion Principle.
-* **State Leakage entre Requests**: Configuración o caché compartido que filtra datos entre usuarios o tenants.
+* **[State](/arquitectura/design_patterns/comportamiento/state "El patrón State es un patrón de comportamiento que permite a un objeto alterar su comportamiento cuando su estado interno cambia, haciendo que parezca que el objeto cambia de clase.") Leakage entre Requests**: Configuración o caché compartido que filtra datos entre usuarios o tenants.
   * Fix: Pase contexto explícitamente por parámetro o scope. Nunca estado global sin control. Use `AsyncLocal`, `HttpContext.Items` o factories por request.
 * **Over-Abstraction que Oculta Capacidades**: La Facade no expone métodos necesarios, forzando al cliente a hacer workarounds o acceder directamente al subsistema.
   * Fix: Audit casos de uso reales. Exponga métodos cohesivos faltantes. Documente límites y escape valves. Evite simplificación excesiva.
-* **Confundir con Proxy o Mediator**: Usar Facade para control de acceso, lazy loading o centralizar comunicación entre pares.
-  * Fix: Si controla acceso/ciclo → Proxy. Si desacopla colaboradores → Mediator. Si simplifica subsistema complejo → Facade. No mezcle propósitos.
+* **Confundir con [Proxy](/arquitectura/design_patterns/estructurales/proxy "El patrón Proxy es un patrón estructural que proporciona un sustituto o intermediario para controlar el acceso a un objeto real, añadiendo comportamiento transversal sin modificar su implementación original.") o Mediator**: Usar Facade para control de acceso, lazy loading o centralizar comunicación entre pares.
+  * Fix: Si controla acceso/ciclo → [Proxy](/arquitectura/design_patterns/estructurales/proxy "El patrón Proxy es un patrón estructural que proporciona un sustituto o intermediario para controlar el acceso a un objeto real, añadiendo comportamiento transversal sin modificar su implementación original."). Si desacopla colaboradores → Mediator. Si simplifica subsistema complejo → Facade. No mezcle propósitos.
 * **Serialización Rota**: Intentar serializar la Facade o sus respuestas sin considerar referencias a subsistemas o métodos no serializables.
   * Fix: Retorne solo DTOs planos o identificadores. Reconstruya contexto al deserializar. Marque referencias internas como `transient`/`non-serializable`.
 * **Falta de Validación de Entrada/Flujo**: Asume que el subsistema maneja validación, pero falla en producción por orden incorrecto o parámetros inválidos.
@@ -269,7 +277,7 @@ Comparación rápida con patrones estructurales y de comportamiento:
 * **Documente Límites y Escape Valves**: Especifique qué hace, qué no hace, y cuándo acceder directamente al subsistema es arquitectónicamente válido.
 * **Use Inyección de Dependencias Estricta**: Inyecte interfaces, no implementaciones. Permita mockear, reemplazar y configurar por ambiente sin tocar código.
 * **Implemente Manejo Compensatorio Explícito**: Si un paso falla después de mutar estado, reverta o notifique. No asuma atomicidad sin confirmación.
-* **Pruebe Flujos, no solo Unidades**: Valide coordinaciones completas, errores parciales, timeouts y fallbacks. Detecte order-dependencies y state-leaks temprano.
+* **Pruebe Flujos, no solo Unidades**: Valide coordinaciones completas, errores parciales, timeouts y fallbacks. Detecte order-dependencies y [state](/arquitectura/design_patterns/comportamiento/state "El patrón State es un patrón de comportamiento que permite a un objeto alterar su comportamiento cuando su estado interno cambia, haciendo que parezca que el objeto cambia de clase.")-leaks temprano.
 * **Mantenga Contratos Estables**: Cambiar la firma pública rompe todos los clientes. Use deprecación controlada, versionado semántico y fachadas paralelas.
 * **Monitoree Latencia y Tasa de Error**: Registre métricas de coordinación. Detecte degradación de subsistemas, cuellos de botella en validación o serialización pesada.
 * **No lo use "por moda"**: Si el subsistema es simple, estable o ya expone una API cohesiva, úselo directo. La capa de simplificación innecesaria es deuda técnica de rendimiento y mantenimiento.
