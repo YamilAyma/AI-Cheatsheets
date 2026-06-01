@@ -1,6 +1,14 @@
+---
+title: "template_method"
+description: "El patrón Template Method es un patrón de comportamiento que define el esqueleto de un algoritmo en una clase base, delegando la implementación de ciertos pasos a subclases concretas."
+createdAt: 2026-05-22
+updatedAt: 2026-05-22
+tags: [comportamiento]
+icon: "📄"
+---
 # 🎭 Patrón Template Method — Cheatsheet Completo 🎭
 
-El patrón **Template Method** es un patrón de comportamiento que define el esqueleto de un algoritmo en una clase base, delegando la implementación de ciertos pasos a subclases concretas. Permite que las subclases redefinan pasos específicos sin alterar la estructura general del flujo, garantizando invarianzas, evitando duplicación de código y aplicando inversión de control a nivel algorítmico. Nace para resolver la fragmentación de lógica repetitiva en procesadores, frameworks, pipelines de ETL, workflows de negocio y sistemas de importación/exportación, donde el orden de ejecución es crítico pero los detalles de implementación varían por contexto, formato o proveedor. Este cheatsheet desglosa la intención arquitectónica real del patrón, contratos de flujo invariante y pasos extensibles, implementaciones multi-paradigma, variantes con ganchos y validación cruzada, impacto en testing y mantenibilidad, trampas del problema de la clase base frágil y violación de LSP, y criterios estrictos para decidir cuándo la orquestación algorítmica es una necesidad del dominio y no una jerarquía rígida que degrada la flexibilidad o introduce acoplamiento peligroso.
+El patrón **Template Method** es un patrón de comportamiento que define el esqueleto de un algoritmo en una clase base, delegando la implementación de ciertos pasos a subclases concretas. Permite que las subclases redefinan pasos específicos sin alterar la estructura [general](/arquitectura/general "La Arquitectura del Software es la estructura fundamental de un sistema de software y la disciplina para crear tales estructuras.") del flujo, garantizando invarianzas, evitando duplicación de código y aplicando inversión de control a nivel algorítmico. Nace para resolver la fragmentación de lógica repetitiva en procesadores, frameworks, pipelines de ETL, workflows de negocio y sistemas de importación/exportación, donde el orden de ejecución es crítico pero los detalles de implementación varían por contexto, formato o proveedor. Este cheatsheet desglosa la intención arquitectónica real del patrón, contratos de flujo invariante y pasos extensibles, implementaciones multi-paradigma, variantes con ganchos y validación cruzada, impacto en testing y mantenibilidad, trampas del problema de la clase base frágil y violación de LSP, y criterios estrictos para decidir cuándo la orquestación algorítmica es una necesidad del dominio y no una jerarquía rígida que degrada la flexibilidad o introduce acoplamiento peligroso.
 
 ---
 
@@ -194,7 +202,7 @@ function createOrchestrator(...handlers) {
 | **Con Validación Centralizada** | `preCheck()` y `postCheck()` validan invariantes antes/después de pasos variables. | Workflows financieros, importación de datos sensibles, auditoría. | Overhead de validación. Puede rechazar entradas válidas si es demasiado estricto. |
 | **Async/Reactive** | Método plantilla maneja promesas, observables o streams. | ETL asíncrono, procesamiento de archivos grandes, integración con APIs. | Complejidad de manejo de errores y cancellation tokens. |
 | **Parameterized Template** | Recibe configuración en constructor o método para ajustar comportamiento interno. | Parsers con dialectos, renderizadores con temas, exporters con formatos. | Flexibilidad alta. Riesgo de complejidad si hay &gt; 5 parámetros. |
-| **Hybrid con Strategy** | La base delega un paso completo a una estrategia inyectada en lugar de herencia. | Cuando la variación es ortogonal a la jerarquía o se requiere runtime swapping. | Doble indirección. Puede oscurecer el flujo si no se documenta. |
+| **Hybrid con [Strategy](/arquitectura/design_patterns/comportamiento/strategy "El patrón Strategy es un patrón de comportamiento que define una familia de algoritmos intercambiables, los encapsula y los hace sustituibles en tiempo de ejecución sin alterar el código del cliente que los utiliza.")** | La base delega un paso completo a una estrategia inyectada en lugar de herencia. | Cuando la variación es ortogonal a la jerarquía o se requiere runtime swapping. | Doble indirección. Puede oscurecer el flujo si no se documenta. |
 
 ---
 
@@ -203,17 +211,17 @@ function createOrchestrator(...handlers) {
 | ✅ Usar cuando... | ❌ Evitar cuando... |
 |------------------|-------------------|
 | El orden de ejecución es crítico y no debe alterarse por subclases | El flujo es simple o lineal. Usa funciones secuenciales directas. |
-| Quieres eliminar duplicación de código de coordinación en múltiples procesadores | Necesitas cambiar el orden de pasos en runtime. Usa Strategy o Chain of Responsibility. |
+| Quieres eliminar duplicación de código de coordinación en múltiples procesadores | Necesitas cambiar el orden de pasos en runtime. Usa [Strategy](/arquitectura/design_patterns/comportamiento/strategy "El patrón Strategy es un patrón de comportamiento que define una familia de algoritmos intercambiables, los encapsula y los hace sustituibles en tiempo de ejecución sin alterar el código del cliente que los utiliza.") o Chain of Responsibility. |
 | Trabajas con frameworks, pipelines de ETL, importadores/exportadores o parsers | La jerarquía de herencia crece exponencialmente y genera el "Fragile Base Class Problem". |
 | Requieres validaciones invariantes, logging centralizado o manejo de errores predecibles | Ya usas un contenedor DI o orquestador declarativo (XState, temporal.io, Airflow). |
 | Quieres cumplir Open/Closed sin tocar código de orquestación existente | La flexibilidad de pasos es tan alta que la herencia se vuelve una camisa de fuerza. |
 
 Comparación rápida con patrones de comportamiento:
 * **Template Method**: Define flujo fijo, delega implementación a subclases. Enfocado en orquestación algorítmica por herencia.
-* **Strategy**: Intercambia algoritmos completos en runtime. Enfocado en variación de lógica, no en flujo fijo.
+* **[Strategy](/arquitectura/design_patterns/comportamiento/strategy "El patrón Strategy es un patrón de comportamiento que define una familia de algoritmos intercambiables, los encapsula y los hace sustituibles en tiempo de ejecución sin alterar el código del cliente que los utiliza.")**: Intercambia algoritmos completos en runtime. Enfocado en variación de lógica, no en flujo fijo.
 * **Chain of Responsibility**: Enruta petición hasta handler. Enfocado en secuencialidad y fallback, no en esqueleto invariante.
-* **Visitor**: Externaliza operaciones sobre estructura estable. Enfocado en múltiples traversals sin modificar nodos.
-* **Facade**: Simplifica subsistemas complejos. Enfocado en reducción de acoplamiento, no en extensión algorítmica.
+* **[Visitor](/arquitectura/design_patterns/comportamiento/visitor "El patrón Visitor es un patrón de comportamiento que separa algoritmos de las estructuras de objetos sobre las que operan, permitiendo añadir nuevas operaciones sin modificar las clases de los elementos visitados.")**: Externaliza operaciones sobre estructura estable. Enfocado en múltiples traversals sin modificar nodos.
+* **[Facade](/arquitectura/design_patterns/estructurales/facade "El patrón Facade es un patrón estructural que proporciona una interfaz unificada y simplificada a un subsistema complejo, conjunto de librerías o componentes altamente interdependientes.")**: Simplifica subsistemas complejos. Enfocado en reducción de acoplamiento, no en extensión algorítmica.
 
 ---
 
@@ -244,8 +252,8 @@ Comparación rápida con patrones de comportamiento:
   * Fix: Los hooks solo deben contener comportamiento transversal (logging, métricas, flags). Delegue reglas de dominio a servicios inyectados o pasos abstractos dedicados.
 * **Acoplamiento Rígido a Implementación Interna**: Subclase depende de campos privados de la base para funcionar.
   * Fix: Exponga solo lo necesario mediante getters controlados o pase contexto explícitamente. Nunca dependa de estado interno no documentado.
-* **Confundir con Strategy o Command**: Usar Template Method para variar algoritmos completos o para encolar peticiones.
-  * Fix: Si varía lógica completa &rarr; Strategy. Si encapsula petición ejecutable &rarr; Command. Si define flujo fijo con pasos extensibles &rarr; Template Method.
+* **Confundir con [Strategy](/arquitectura/design_patterns/comportamiento/strategy "El patrón Strategy es un patrón de comportamiento que define una familia de algoritmos intercambiables, los encapsula y los hace sustituibles en tiempo de ejecución sin alterar el código del cliente que los utiliza.") o [Command](/arquitectura/design_patterns/comportamiento/command "El patrón Command es un patrón de comportamiento que encapsula una petición o acción como un objeto independiente, desacoplando el emisor de la petición del receptor que la ejecuta.")**: Usar Template Method para variar algoritmos completos o para encolar peticiones.
+  * Fix: Si varía lógica completa &rarr; Strategy. Si encapsula petición ejecutable &rarr; [Command](/arquitectura/design_patterns/comportamiento/command "El patrón Command es un patrón de comportamiento que encapsula una petición o acción como un objeto independiente, desacoplando el emisor de la petición del receptor que la ejecuta."). Si define flujo fijo con pasos extensibles &rarr; Template Method.
 * **Violación de Liskov Substitution Principle**: Subclase lanza excepción en paso obligatorio o cambia tipo de retorno.
   * Fix: Mantenga firmas idénticas. Use contratos, pre/post condiciones o asserts en tests de integración. Si un paso no aplica, use Null Object o hook vacío, no excepción.
 * **Falta de Validación de Invariantes**: El flujo asume que los pasos cumplen contratos, pero fallan en producción por datos corruptos.
