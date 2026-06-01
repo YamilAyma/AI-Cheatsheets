@@ -20,8 +20,8 @@ Flask es un microframework web para [Python](/python/python "Python es un lengua
 
 * **Microframework**: Significa que es ligero, tiene un núcleo minimalista y no impone muchas decisiones sobre cómo estructurar tu proyecto o qué librerías usar.
 * **Werkzeug**: Una biblioteca de utilidades WSGI (Web Server Gateway Interface) que maneja las solicitudes HTTP.
-* **Jinja2**: El motor de plantillas por defecto de Flask para renderizar HTML dinámicamente.
-* **Rutas (Routes)**: Mapean las URLs a funciones de Python que manejan las solicitudes.
+* **[Jinja2](/template_engine/jinja2 "Jinja2 es un motor de plantillas (template engine) para [Python](/python/python "Python es un lenguaje de programación de alto nivel, interpretado, interactivo y orientado a objetos.").")**: El motor de plantillas por defecto de Flask para renderizar HTML dinámicamente.
+* **Rutas (Routes)**: Mapean las URLs a funciones de [Python](/python/python "Python es un lenguaje de programación de alto nivel, interpretado, interactivo y orientado a objetos.") que manejan las solicitudes.
 * **Vistas (Views)**: Las funciones de Python que manejan una solicitud entrante y devuelven una respuesta.
 * **Contextos**: Flask maneja dos contextos principales:
   * **Contexto de Aplicación (`app context`)**: Activo cuando se ejecuta código relacionado con la aplicación (ej. acceso a `current_app`).
@@ -131,7 +131,7 @@ Flask es un microframework web para [Python](/python/python "Python es un lengua
 
 ## 4. 🚀 Solicitudes y Respuestas (Request & Response)
 
-* **`request` Objeto**: Global (proxy de contexto) que contiene la información de la solicitud HTTP entrante.
+* **`request` Objeto**: Global ([proxy](/arquitectura/design_patterns/estructurales/proxy "El patrón Proxy es un patrón estructural que proporciona un sustituto o intermediario para controlar el acceso a un objeto real, añadiendo comportamiento transversal sin modificar su implementación original.") de contexto) que contiene la información de la solicitud HTTP entrante.
 
   ```python
   from flask import request, jsonify, make_response, flash, redirect, url_for
@@ -219,7 +219,7 @@ Flask es un microframework web para [Python](/python/python "Python es un lengua
 
 ## 5. 🎨 Plantillas (Templating con Jinja2)
 
-Flask usa Jinja2 para renderizar plantillas HTML dinámicas.
+Flask usa [Jinja2](/template_engine/jinja2 "Jinja2 es un motor de plantillas (template engine) para Python.") para renderizar plantillas HTML dinámicas.
 
 * **Ubicación**: Las plantillas deben estar en una carpeta llamada `templates/` en la raíz de tu proyecto.
 * **`render_template()`**: Función para cargar y renderizar una plantilla.
@@ -479,7 +479,7 @@ if __name__ == '__main__':
 * **Manejo de Errores**: Implementa manejadores de errores para los códigos HTTP comunes.
 * **Logging**: Configura el logging para monitorear tu aplicación en producción.
 * **ORM**: Para aplicaciones con bases de datos relacionales, usa un ORM como SQLAlchemy con Flask-SQLAlchemy.
-* **Despliegue**: No uses `app.run(debug=True)` en producción. Usa un servidor WSGI como Gunicorn o uWSGI, y un servidor web como Nginx o Apache como proxy inverso.
+* **Despliegue**: No uses `app.run(debug=True)` en producción. Usa un servidor WSGI como Gunicorn o uWSGI, y un servidor web como Nginx o Apache como [proxy](/arquitectura/design_patterns/estructurales/proxy "El patrón Proxy es un patrón estructural que proporciona un sustituto o intermediario para controlar el acceso a un objeto real, añadiendo comportamiento transversal sin modificar su implementación original.") inverso.
 
 ---
 
