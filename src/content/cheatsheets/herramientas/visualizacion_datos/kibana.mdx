@@ -18,8 +18,8 @@ icon: "📄"
 
 ## 1. 🌟 Conceptos Clave
 
-*   **Elasticsearch Backend**: Kibana funciona exclusivamente con Elasticsearch como su fuente de datos.
-*   **Índice (Index)**: Colección lógica de documentos en Elasticsearch.
+*   **[Elasticsearch](/devops/elasticsearch "Elasticsearch es un motor de búsqueda y análisis distribuido en tiempo real, construido sobre Apache Lucene.") Backend**: Kibana funciona exclusivamente con Elasticsearch como su fuente de datos.
+*   **Índice (Index)**: Colección lógica de documentos en [Elasticsearch](/devops/elasticsearch "Elasticsearch es un motor de búsqueda y análisis distribuido en tiempo real, construido sobre Apache Lucene.").
 *   **Patrón de Índice (Index Pattern)**: Una forma de agrupar uno o más índices relacionados en Elasticsearch para su exploración en Kibana (ej. `logs-*`, `metricbeat-*`).
 *   **Descubrir (Discover)**: La interfaz principal para buscar y explorar tus datos de forma interactiva.
 *   **Visualizar (Visualize)**: Herramienta para crear gráficos, tablas y otros tipos de visualizaciones a partir de tus datos.
@@ -99,7 +99,7 @@ Kibana se organiza en una barra lateral izquierda con diferentes módulos:
         *   **Maps**: Visualización de datos geoespaciales.
         *   **Lens**: Una interfaz de arrastrar y soltar para construir visualizaciones rápidamente.
         *   **Vega / Vega-Lite**: Para visualizaciones altamente personalizadas usando una sintaxis declarativa.
-        *   **TSVB (Time Series Visual Builder)**: Para visualizaciones de series de tiempo complejas.
+        *   **TSVB (Time Series Visual [Builder](/arquitectura/design_patterns/creacionales/builder "El patrón Builder es un patrón creacional que separa la construcción de un objeto complejo de su representación final, permitiendo que el mismo proceso de ensamblaje genere diferentes variantes."))**: Para visualizaciones de series de tiempo complejas.
 *   **Dashboard (Panel)**:
     *   **Propósito**: Crear paneles interactivos combinando múltiples visualizaciones.
     *   **Interactividad**: Los filtros aplicados en una visualización se pueden propagar a todo el dashboard.
