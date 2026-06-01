@@ -18,8 +18,8 @@ icon: "📄"
 ## 1. 🌟 Conceptos Clave
 
 *   **Servidor Web**: Capaz de servir contenido estático (HTML, CSS, JS, imágenes).
-*   **Contenedor de Servlets**: El componente principal que gestiona el ciclo de vida de los Servlets y JSPs. Proporciona el entorno de ejecución para las aplicaciones web Java.
-*   **Servlet**: Una clase Java que extiende las capacidades de un servidor, respondiendo a solicitudes HTTP. Es el componente fundamental de las aplicaciones web Java del lado del servidor.
+*   **Contenedor de Servlets**: El componente principal que gestiona el ciclo de vida de los Servlets y JSPs. Proporciona el entorno de ejecución para las aplicaciones web [Java](/java/java "Java es un lenguaje de programación de propósito general, concurrente, basado en clases y orientado a objetos.").
+*   **Servlet**: Una clase [Java](/java/java "Java es un lenguaje de programación de propósito general, concurrente, basado en clases y orientado a objetos.") que extiende las capacidades de un servidor, respondiendo a solicitudes HTTP. Es el componente fundamental de las aplicaciones web Java del lado del servidor.
 *   **JSP (JavaServer Pages)**: Una tecnología que permite incrustar código Java directamente en páginas HTML. Similar a [PHP](/php/php "PHP es un lenguaje de scripting del lado del servidor, diseñado principalmente para el desarrollo web."), pero para Java. Se compilan a Servlets.
 *   **WAR (Web Application ARchive)**: El formato de archivo estándar para empaquetar una aplicación web Java completa para su despliegue en un servidor de aplicaciones o contenedor de servlets como Tomcat. Contiene código Java compilado, JSPs, HTML, CSS, JS, recursos e información de configuración (`web.xml`).
 *   **Catalina**: El contenedor de servlets principal de Tomcat.
@@ -159,19 +159,19 @@ Define la configuración por defecto para **todos** los Contexts (aplicaciones w
 *   **Optimizar la JVM**: Ajustar los parámetros de la JVM (memoria, recolector de basura) en `bin/setenv.sh` (o `.bat`).
     *   `CATALINA_OPTS="-Xms512m -Xmx1024m"`: Tamaño inicial y máximo del heap de la JVM.
 *   **Usar el Conector AJP**: Si Tomcat está detrás de un servidor web frontal (ej. Apache HTTP Server con `mod_jk` o `mod_proxy_ajp`), usa el conector AJP para una comunicación más eficiente.
-*   **Servir Estáticos con un Servidor Web Frontal**: Para alto rendimiento con archivos estáticos (imágenes, CSS, JS), es mejor usar un servidor web dedicado (Apache HTTP Server, Nginx) como proxy frontal que redirija solo las solicitudes dinámicas a Tomcat.
+*   **Servir Estáticos con un Servidor Web Frontal**: Para alto rendimiento con archivos estáticos (imágenes, CSS, JS), es mejor usar un servidor web dedicado (Apache HTTP Server, Nginx) como [proxy](/arquitectura/design_patterns/estructurales/proxy "El patrón Proxy es un patrón estructural que proporciona un sustituto o intermediario para controlar el acceso a un objeto real, añadiendo comportamiento transversal sin modificar su implementación original.") frontal que redirija solo las solicitudes dinámicas a Tomcat.
 
 ---
 
 ## 8. 💡 Buenas Prácticas y Consejos
 
 *   **No Ejecutar como Root**: Nunca ejecutes Tomcat como usuario `root`. Crea un usuario dedicado con permisos mínimos.
-*   **Cambiar el Puerto por Defecto**: Si despliegas en un servidor público, cambia el puerto 8080 a 80 (o usa un proxy inverso como Nginx/Apache que redirija del puerto 80 al 8080).
+*   **Cambiar el Puerto por Defecto**: Si despliegas en un servidor público, cambia el puerto 8080 a 80 (o usa un [proxy](/arquitectura/design_patterns/estructurales/proxy "El patrón Proxy es un patrón estructural que proporciona un sustituto o intermediario para controlar el acceso a un objeto real, añadiendo comportamiento transversal sin modificar su implementación original.") inverso como Nginx/Apache que redirija del puerto 80 al 8080).
 *   **Asegurar las Aplicaciones de Gestión**: Cambia las contraseñas por defecto y considera restringir el acceso a la `Manager App` por IP.
 *   **Monitoreo**: Utiliza herramientas de monitoreo (ej. JMX, [Prometheus](/web/backend/framework/herramientas/prometheus "Prometheus es una solución de monitoreo de código abierto y sistema de alertado.")/[Grafana](/herramientas/visualizacion_datos/grafana "Grafana es una herramienta de código abierto para la visualización y analítica de series de tiempo, diseñada para consultar, visualizar, alertar y comprender tus métricas dondequiera que se almacenen.")) para observar el rendimiento y la salud de tu instancia de Tomcat.
 *   **Logging**: Configura los logs de Tomcat y de tu aplicación para obtener información útil sobre errores y comportamiento.
 *   **Actualizaciones de Seguridad**: Mantén tu versión de Tomcat actualizada con los últimos parches de seguridad.
-*   **Spring Boot y Tomcat Embebido**: Para la mayoría de las aplicaciones Spring Boot modernas, Tomcat viene embebido y preconfigurado, simplificando el despliegue. No necesitas un WAR o una instalación de Tomcat separada. Este cheatsheet es más relevante si despliegas WARs en un Tomcat "standalone".
+*   **[Spring Boot](/web/backend/framework/spring/spring-boot "¡Absolutamente! Spring Boot es un framework increíble para construir aplicaciones Java robustas y de alto rendimiento de manera rápida y eficiente.") y Tomcat Embebido**: Para la mayoría de las aplicaciones Spring Boot modernas, Tomcat viene embebido y preconfigurado, simplificando el despliegue. No necesitas un WAR o una instalación de Tomcat separada. Este cheatsheet es más relevante si despliegas WARs en un Tomcat "standalone".
 *   **Context Path**: Si tu aplicación es la única en el Tomcat o es la aplicación principal, puedes configurarla como la aplicación raíz (ROOT.war) para que se acceda directamente en `http://localhost:8080/`.
 
 ---
