@@ -38,7 +38,7 @@ Kubernetes (K8s) es una plataforma portable y extensible de código abierto para
 
 1. **Instalar `kubectl`**: Sigue la guía oficial para tu sistema operativo.
 2. **Configurar Acceso al Clúster**: `kubectl` usa un archivo de configuración (`~/.kube/config`) para conectarse a los clústeres.
-   * Para clústeres locales (ej. Minikube, Docker Desktop Kubernetes): Generalmente se configura automáticamente.
+   * Para clústeres locales (ej. Minikube, [Docker](/devops/docker "Docker es una plataforma de código abierto que utiliza la contenerización para empaquetar una aplicación y todas sus dependencias en una unidad estándar para el desarrollo de software.") Desktop Kubernetes): Generalmente se configura automáticamente.
    * Para clústeres en la nube (GKE, EKS, AKS): Usa las herramientas de la nube para generar el archivo de configuración.
 3. **Verificar Conexión al Clúster**:
    ```bash
@@ -387,7 +387,7 @@ Para usar en un Pod/Deployment:
       containers:
         - name: my-container
           image: busybox
-          command: ["sh", "-c", "echo 'Hello from volume' > /data/hello.txt && cat /data/hello.txt"]
+          [command](/arquitectura/design_patterns/comportamiento/command "El patrón Command es un patrón de comportamiento que encapsula una petición o acción como un objeto independiente, desacoplando el emisor de la petición del receptor que la ejecuta."): ["sh", "-c", "echo 'Hello from volume' > /data/hello.txt && cat /data/hello.txt"]
           volumeMounts: # Monta el volumen dentro del contenedor
             - name: my-storage
               mountPath: "/data" # Ruta dentro del contenedor donde se montará el volumen```
@@ -419,7 +419,7 @@ metadata:
   namespace: default
   name: pod-reader
 rules:
-  - apiGroups: [""] # "" indica el core API group
+  - apiGroups: [""] # "" indica el core [API](/conocimiento/api "Una API (Application Programming Interface) es un conjunto de reglas, protocolos y herramientas que permite que diferentes aplicaciones de software se comuniquen entre sí.") group
     resources: ["pods", "pods/log"]
     verbs: ["get", "watch", "list"]
 
