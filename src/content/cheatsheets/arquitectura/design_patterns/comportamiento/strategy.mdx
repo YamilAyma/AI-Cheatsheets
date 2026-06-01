@@ -1,3 +1,11 @@
+---
+title: "strategy"
+description: "El patrón Strategy es un patrón de comportamiento que define una familia de algoritmos intercambiables, los encapsula y los hace sustituibles en tiempo de ejecución sin alterar el código del cliente que los utiliza."
+createdAt: 2026-05-22
+updatedAt: 2026-05-22
+tags: [comportamiento]
+icon: "📄"
+---
 # 🎯 Patrón Strategy — Cheatsheet Completo 🎯
 
 El patrón **Strategy** es un patrón de comportamiento que define una familia de algoritmos intercambiables, los encapsula y los hace sustituibles en tiempo de ejecución sin alterar el código del cliente que los utiliza. Extrae la lógica condicional dispersa (`if/else`, `switch` gigante) y la delega a componentes autónomos, cumpliendo el principio Open/Closed y permitiendo que el contexto varíe su comportamiento mediante composición en lugar de herencia rígida. Nace para resolver la complejidad exponencial de flujos de negocio dinámicos, habilitar la selección de algoritmos por configuración, entorno o prioridad, y facilitar el testing aislado de reglas críticas. Este cheatsheet desglosa la intención arquitectónica real del patrón, contratos de delegación segura, implementaciones multi-paradigma, variantes parametrizadas y dinámicas, impacto en rendimiento y mantenibilidad, trampas de acoplamiento encubierto y explosión de estrategias, y criterios estrictos para decidir cuándo la variación algorítmica es una necesidad del dominio y no una capa de indirección que degrada la trazabilidad o introduce overhead innecesario.
@@ -156,7 +164,7 @@ def apply_discount(strategy_name: str, total: float) -&gt; float:
         raise ValueError(f"Estrategia desconocida: {strategy_name}")
     return STRATEGIES[strategy_name](total)
 ```
-Ventaja: Zero boilerplate, fácil serialización, testing determinista. Desventaja: Pérdida de validación estática si no se usa `typing.Protocol` o TypeScript.
+Ventaja: Zero boilerplate, fácil serialización, testing determinista. Desventaja: Pérdida de validación estática si no se usa `typing.Protocol` o [TypeScript](/web/general/typescript "TypeScript es una herramienta fundamental en el desarrollo web moderno, especialmente para proyectos a gran escala, ya que añade seguridad de tipo y mejoras en la productividad.").
 
 ### 3.3. Contenedores DI / Policy Resolution (NestJS / Spring / .NET Core)
 La estrategia se resuelve por clave, entorno o configuración. El contenedor gestiona ciclo de vida y scope.
@@ -215,7 +223,7 @@ register("fraud-detection-legacy", new RuleBasedFraudDetector());
 | **Stateless/Pura** | Sin estado interno. Solo transforma entrada en salida. | Cálculos matemáticos, validaciones, transformaciones de datos. | Reutilizable globalmente, thread-safe, fácil de cachear. |
 | **Stateful/Contextual** | Mantiene caché, contadores o sesión por request/usuario. | Rate-limiting, scoring adaptativo, recomendaciones personalizadas. | Requiere gestión de ciclo de vida, invalidación y scope acotado. |
 | **Parametrizada** | Recibe configuración en constructor o método `execute()`. | Algoritmos con umbrales ajustables, políticas de retry con backoff. | Flexibilidad alta. Riesgo de complejidad si hay &gt; 5 parámetros. |
-| **Chain/Composite** | Combina múltiples estrategias secuencial o condicionalmente. | Pipelines de validación, reglas de negocio anidadas, scoring ponderado. | Overhead de iteración. Puede oscurecer trazabilidad si no se loguea. |
+| **Chain/[Composite](/arquitectura/design_patterns/estructurales/composite "El patrón Composite es un patrón estructural que permite componer objetos en estructuras de árbol para representar jerarquías parte-todo.")** | Combina múltiples estrategias secuencial o condicionalmente. | Pipelines de validación, reglas de negocio anidadas, scoring ponderado. | Overhead de iteración. Puede oscurecer trazabilidad si no se loguea. |
 | **Template Method Hybrid** | Estrategia define solo pasos variables. Contexto orquesta flujo fijo. | Procesadores de pagos, workflows de onboarding, generadores de reportes. | Acoplamiento parcial entre flujo y algoritmo. Requiere contratos claros. |
 | **Config-Driven/Rule Engine** | Selección por JSON/YAML/DB. Resolución dinámica sin código. | Sistemas multi-tenant, feature flags, A/B testing, compliance variable. | Pérdida de tipado fuerte. Depuración compleja en producción. |
 
@@ -233,8 +241,8 @@ register("fraud-detection-legacy", new RuleBasedFraudDetector());
 
 Comparación rápida con patrones de comportamiento:
 * **Strategy**: Intercambia algoritmos completos en runtime. Enfocado en variación de lógica, no en ciclo de vida.
-* **State**: Cambia comportamiento según estado interno del objeto. Enfocado en transición y guards.
-* **Command**: Encapsula petición ejecutable. Enfocado en ejecución diferida, undo/redo o encolado.
+* **[State](/arquitectura/design_patterns/comportamiento/state "El patrón State es un patrón de comportamiento que permite a un objeto alterar su comportamiento cuando su estado interno cambia, haciendo que parezca que el objeto cambia de clase.")**: Cambia comportamiento según estado interno del objeto. Enfocado en transición y guards.
+* **[Command](/arquitectura/design_patterns/comportamiento/command "El patrón Command es un patrón de comportamiento que encapsula una petición o acción como un objeto independiente, desacoplando el emisor de la petición del receptor que la ejecuta.")**: Encapsula petición ejecutable. Enfocado en ejecución diferida, undo/redo o encolado.
 * **Template Method**: Define esqueleto de algoritmo, delega pasos a subclases. Enfocado en extensión vertical por herencia.
 * **Chain of Responsibility**: Enruta petición hasta handler. Enfocado en secuencialidad y fallback, no en reemplazo algorítmico.
 
@@ -267,9 +275,9 @@ Comparación rápida con patrones de comportamiento:
   * Fix: Use inmutabilidad o setter explícito. Valide que `strategy !== oldStrategy`. Documente ciclo de cambio.
 * **Excepciones Silenciadas**: `try/catch` en estrategia que no rethrow, ocultando fallos al contexto.
   * Fix: Propague errores de dominio o use `Result`/`Either`. Documente política de errores. Fail fast con trazabilidad.
-* **Confundir con State o Template Method**: Usar Strategy para gestionar ciclo de vida o para definir esqueleto de algoritmo con herencia.
-  * Fix: Si varía por estado interno &rarr; State. Si hereda flujo fijo &rarr; Template Method. Si reemplaza algoritmo completo &rarr; Strategy.
-* **State Leakage entre Requests**: Estrategia comparte caché o contadores sin control entre tenants o hilos.
+* **Confundir con [State](/arquitectura/design_patterns/comportamiento/state "El patrón State es un patrón de comportamiento que permite a un objeto alterar su comportamiento cuando su estado interno cambia, haciendo que parezca que el objeto cambia de clase.") o Template Method**: Usar Strategy para gestionar ciclo de vida o para definir esqueleto de algoritmo con herencia.
+  * Fix: Si varía por estado interno &rarr; [State](/arquitectura/design_patterns/comportamiento/state "El patrón State es un patrón de comportamiento que permite a un objeto alterar su comportamiento cuando su estado interno cambia, haciendo que parezca que el objeto cambia de clase."). Si hereda flujo fijo &rarr; Template Method. Si reemplaza algoritmo completo &rarr; Strategy.
+* **[State](/arquitectura/design_patterns/comportamiento/state "El patrón State es un patrón de comportamiento que permite a un objeto alterar su comportamiento cuando su estado interno cambia, haciendo que parezca que el objeto cambia de clase.") Leakage entre Requests**: Estrategia comparte caché o contadores sin control entre tenants o hilos.
   * Fix: Instancie por request/scope, use inmutabilidad, o pase contexto explícitamente. Nunca estado global sin validación.
 * **Serialización Rota**: Intentar persistir estrategia con métodos, closures o referencias a servicios.
   * Fix: Serialize solo identificadores (`"VIP_PERCENTAGE"`). Reconstruya mediante factory o registry. Nunca serialice funciones.
