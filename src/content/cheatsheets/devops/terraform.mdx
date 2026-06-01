@@ -1,6 +1,6 @@
 ---
 title: "terraform"
-description: "Terraform es una herramienta de Infrastructure as Code (IaC) desarrollada por HashiCorp que permite definir, aprovisionar y gestionar infraestructura de forma declarativa, segura y reproducible en múltiples proveedores cloud (AWS, Azure, GCP, Kubernetes, etc.)."
+description: "Terraform es una herramienta de Infrastructure as Code (IaC) desarrollada por HashiCorp que permite definir, aprovisionar y gestionar infraestructura de forma declarativa, segura y reproducible en múltiples proveedores cloud (AWS, Azure, GCP, Kubernetes es una plataforma portable y extensible de código abierto para gestionar cargas de trabajo y servicios en contenedores.\"), etc.)."
 createdAt: 2026-06-01
 updatedAt: 2026-06-01
 tags: [devops]
@@ -19,7 +19,7 @@ Terraform es una herramienta de Infrastructure as Code (IaC) desarrollada por Ha
 * **Declarativo, no imperativo**: Defines el *estado deseado final*, no los pasos para alcanzarlo. Terraform calcula el diff y aplica los cambios mínimos necesarios.
 * **Providers**: Plugins que traducen bloques HCL a llamadas [API](/conocimiento/api "Una API (Application Programming Interface) es un conjunto de reglas, protocolos y herramientas que permite que diferentes aplicaciones de software se comuniquen entre sí.") de plataformas específicas (AWS, Azure, GCP, [GitHub](/herramientas/github "GitHub es una plataforma web para el alojamiento de repositorios de control de versiones Git diseñado para manejar proyectos pequeños o muy grandes con velocidad y eficiencia.')."), Cloudflare, etc.). Cada provider tiene su propio ciclo de versiones.
 * **Resources**: Bloques fundamentales que representan objetos de infraestructura (una VM, una red, una BD, un bucket). Se identifican por `type.name`.
-* **State (`terraform.tfstate`)**: Archivo JSON que mapea los recursos del mundo real con la configuración. Terraform lo usa para detectar cambios y planificar updates.
+* **[State](/arquitectura/design_patterns/comportamiento/state "El patrón State es un patrón de comportamiento que permite a un objeto alterar su comportamiento cuando su estado interno cambia, haciendo que parezca que el objeto cambia de clase.") (`terraform.tfstate`)**: Archivo JSON que mapea los recursos del mundo real con la configuración. Terraform lo usa para detectar cambios y planificar updates.
   * Crítico: Nunca se edita manualmente. Se guarda en backend remoto con locking para evitar corrupción.
 * **Plan Determinista**: `terraform plan` calcula exactamente qué cambiará antes de ejecutar. Permite review en PRs como si fuera código.
 * **Graph Based Execution**: Terraform construye un DAG (grafo acíclico dirigido) de dependencias entre recursos y los crea/modifica en paralelo cuando es seguro.
@@ -818,7 +818,7 @@ terraform apply
 
 ## 13. ⚠️ Errores Comunes y Trampas
 
-* **State file commiteado en git**: Expone credenciales, ARNs y estado de infraestructura.
+* **State file commiteado en [git](/herramientas/git/git "Git es un sistema de control de versiones distribuido (DVCS) diseñado para manejar proyectos pequeños o muy grandes con velocidad y eficiencia.")**: Expone credenciales, ARNs y estado de infraestructura.
   * Fix: Backend remoto (S3+DynamoDB, GCS, Terraform Cloud). `.gitignore` incluye `*.tfstate`.
 * **Providers sin versión fijada**: `terraform init` puede romper al actualizar providers.
   * Fix: `required_providers` con versión `~> X.Y` en cada módulo. Usar `.terraform.lock.hcl`.

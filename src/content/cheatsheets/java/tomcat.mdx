@@ -112,7 +112,7 @@ Define la configuración por defecto para **todos** los Contexts (aplicaciones w
 
 ## 5. 📦 Despliegue de Aplicaciones Web (WARs)
 
-1.  **Construir el archivo WAR**: Empaqueta tu aplicación web Java ([Spring Boot](/web/backend/framework/spring/spring-boot "¡Absolutamente! Spring Boot es un framework increíble para construir aplicaciones Java robustas y de alto rendimiento de manera rápida y eficiente."), Spring MVC, JSP, Servlets) en un archivo `.war`. (Ej. `mvn package` para Maven).
+1.  **Construir el archivo WAR**: Empaqueta tu aplicación web [Java](/java/java "Java es un lenguaje de programación de propósito general, concurrente, basado en clases y orientado a objetos.") ([Spring Boot](/web/backend/framework/spring/spring-boot "¡Absolutamente! Spring Boot es un framework increíble para construir aplicaciones Java robustas y de alto rendimiento de manera rápida y eficiente."), Spring MVC, JSP, Servlets) en un archivo `.war`. (Ej. `mvn package` para Maven).
 2.  **Copiar el WAR**: Coloca el archivo `.war` en el directorio `<CATALINA_HOME>/webapps/`.
 3.  **Despliegue Automático**: Si `autoDeploy="true"` en `server.xml`, Tomcat desplegará el WAR automáticamente al iniciarse o al detectarlo. Descomprimirá el WAR en un directorio del mismo nombre (ej. `webapps/myApp/`).
 4.  **Acceder a la Aplicación**: Si el WAR se llama `myApp.war`, la aplicación estará accesible en `http://localhost:8080/myApp/`.

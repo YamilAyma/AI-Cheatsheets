@@ -217,7 +217,7 @@ Cuándo migrar: Si el singleton crece &gt; 300 líneas, tiene &gt; 5 responsabil
 ## 8. ⚠️ Errores Comunes y Soluciones
 
 * **Condición de carrera en inicialización lazy**: Dos hilos entran al `if`, crean dos instancias. La segunda sobrescribe la primera o genera recursos duplicados.
-  * Fix: Usa `volatile` + doble verificación, inicialización estática del runtime, o `lazy` del lenguaje (`Lazy&lt;T&gt;` en C#, `sync.Once` en Go, `std::call_once` en C++).
+  * Fix: Usa `volatile` + doble verificación, inicialización estática del runtime, o `lazy` del lenguaje (`Lazy&lt;T&gt;` en C#, `sync.Once` en [Go](/go/go "Go es un lenguaje compilado, concurrente y de tipado estático creado por Google."), `std::call_once` en C++).
 * **Filtrado de datos en SSR/Edge**: Un singleton mantiene estado de usuario A y lo retorna a usuario B en la siguiente petición.
   * Fix: Define scope por request. Usa `AsyncLocal` (C#), `HttpContext.Items` (ASP.NET), o contenedores DI con `RequestScoped`. Nunca estado mutable global en runtimes multi-tenant.
 * **Serialización clona la instancia**: Deserializar un singleton crea una segunda instancia, rompiendo la invariante.

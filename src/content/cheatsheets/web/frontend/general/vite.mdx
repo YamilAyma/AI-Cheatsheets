@@ -377,7 +377,7 @@ Vite es una herramienta de construcción frontend de última generación que com
 
 ## 10. 💡 Mejores Prácticas y Consejos de Experto
 
-* **Usa `defineConfig` con TypeScript**: Habilita autocompletado, validación de tipos y detección temprana de configuraciones inválidas.
+* **Usa `defineConfig` con [TypeScript](/web/general/typescript "TypeScript es una herramienta fundamental en el desarrollo web moderno, especialmente para proyectos a gran escala, ya que añade seguridad de tipo y mejoras en la productividad.")**: Habilita autocompletado, validación de tipos y detección temprana de configuraciones inválidas.
 * **Prefiere ESM nativo en dependencias**: Evita `cjs` siempre que sea posible. Si es inevitable, usa `optimizeDeps` y reporta a los mantenedores.
 * **Configura `server.watch` para monorepos**: Si usas workspaces, añade `ignored: ['!**/node_modules/my-internal-lib/**']` para que Vite observe cambios en paquetes locales.
 * **Valida el build de producción temprano**: Ejecuta `vite build` en CI antes de mergear. Dev y prod son pipelines distintos; errores de tree-shaking o externalización solo aparecen en build.

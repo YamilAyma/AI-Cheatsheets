@@ -116,7 +116,7 @@ spring.flyway.validate-on-migrate=true # Valida el checksum de las migraciones e
 Aunque [Spring Boot](/web/backend/framework/spring/spring-boot "¡Absolutamente! Spring Boot es un framework increíble para construir aplicaciones Java robustas y de alto rendimiento de manera rápida y eficiente.") lo hace automáticamente, estos son los comandos que Flyway ejecuta o que puedes usar para control manual.
 
 * **`flyway:migrate`**: (Comando principal) Aplica todas las migraciones pendientes que no se han ejecutado en la base de datos.
-  * **Automático en Spring Boot al inicio.**
+  * **Automático en [Spring Boot](/web/backend/framework/spring/spring-boot "¡Absolutamente! Spring Boot es un framework increíble para construir aplicaciones Java robustas y de alto rendimiento de manera rápida y eficiente.") al inicio.**
 * **`flyway:info`**: Muestra el estado de las migraciones (pendientes, aplicadas, fallidas, etc.).
 * **`flyway:clean`**: **¡CUIDADO!** Elimina **todos** los objetos de la base de datos asociados con el esquema configurado. **No usar en producción sin un propósito muy específico.**
 * **`flyway:validate`**: Comprueba si las migraciones aplicadas en la base de datos coinciden con los scripts locales (checksum).
@@ -227,7 +227,7 @@ public class V3__UpdateUserEmails extends BaseJavaMigration {
 * **Migraciones pequeñas y atómicas**: Cada migración debe hacer una cosa y hacerla bien.
 * **Prueba tus migraciones**: Ejecuta tus migraciones en un entorno de desarrollo o staging antes de ir a producción.
 * **Scripts [SQL](/base_datos/sql "SQL es el lenguaje estándar utilizado para comunicarse con y gestionar bases de datos relacionales (RDBMS) como MySQL, PostgreSQL, Oracle, SQL Server, SQLite, entre otros.") vs. Migraciones [Java](/java/java "Java es un lenguaje de programación de propósito general, concurrente, basado en clases y orientado a objetos.")**:
-  * Usa SQL para la mayoría de los cambios de esquema y datos. Son más legibles y fáciles de versionar.
+  * Usa [SQL](/base_datos/sql "SQL es el lenguaje estándar utilizado para comunicarse con y gestionar bases de datos relacionales (RDBMS) como MySQL, PostgreSQL, Oracle, SQL Server, SQLite, entre otros.") para la mayoría de los cambios de esquema y datos. Son más legibles y fáciles de versionar.
   * Usa migraciones [Java](/java/java "Java es un lenguaje de programación de propósito general, concurrente, basado en clases y orientado a objetos.") solo para transformaciones de datos complejas o lógica que no se puede expresar fácilmente en SQL.
 * **Datos de Referencia**: Usa migraciones repetibles (`R__`) para datos que cambian con frecuencia (ej. listas de categorías) o para funciones y vistas.
 * **Mantén un backup**: Antes de ejecutar migraciones en producción, ¡siempre ten un backup de tu base de datos!

@@ -240,7 +240,7 @@ JPQL tiene un conjunto limitado de funciones incorporadas, a menudo mapeadas a f
 
 ## 9. 💡 Buenas Prácticas y Consejos
 
-*   **Nombres de Entidades y Campos, NO Tablas y Columnas**: Siempre usa los nombres de las clases y propiedades de Java en tu JPQL, no los nombres de las tablas y columnas de la base de datos.
+*   **Nombres de Entidades y Campos, NO Tablas y Columnas**: Siempre usa los nombres de las clases y propiedades de [Java](/java/java "Java es un lenguaje de programación de propósito general, concurrente, basado en clases y orientado a objetos.") en tu JPQL, no los nombres de las tablas y columnas de la base de datos.
 *   **`FROM EntityName alias`**: Siempre declara un alias para cada entidad en la cláusula `FROM`.
 *   **Preferencia a Parámetros con Nombre**: Son más legibles y menos propensos a errores que los posicionales.
 *   **Usa `FETCH JOIN` con Cuidado**: `FETCH JOIN` es potente para resolver el problema N+1, pero puede crear un producto cartesiano si hay múltiples colecciones `EAGER` o si no se maneja correctamente. No usar `DISTINCT` en `SELECT` si usas `JOIN FETCH` en el mismo JPQL para colecciones `ToMany` cargadas `EAGERLY` si la idea es obtener la entidad principal sin duplicados. Para eso, es mejor cargar la entidad principal y luego inicializar la colección en un método aparte (`Hibernate.initialize()`).
@@ -251,7 +251,7 @@ JPQL tiene un conjunto limitado de funciones incorporadas, a menudo mapeadas a f
     *   Usar Criteria [API](/conocimiento/api "Una API (Application Programming Interface) es un conjunto de reglas, protocolos y herramientas que permite que diferentes aplicaciones de software se comuniquen entre sí.") (más programático, para consultas dinámicas).
     *   Usar [SQL](/base_datos/sql "SQL es el lenguaje estándar utilizado para comunicarse con y gestionar bases de datos relacionales (RDBMS) como MySQL, PostgreSQL, Oracle, SQL Server, SQLite, entre otros.") nativo (`@NamedNativeQuery` o `createNativeQuery`) si es una consulta muy específica de la base de datos o si no se puede expresar en JPQL.
 *   **`@NamedQuery`**: Define consultas JPQL una vez en la entidad y refiérelas por nombre. Útil para la reutilización y para que las consultas se validen en tiempo de compilación.
-*   **Optimiza con `EXPLAIN`**: Si tu proveedor JPA lo soporta, puedes usar `query.unwrap(org.hibernate.query.Query.class).getQueryString()` para ver el SQL generado y luego usar `EXPLAIN` en tu base de datos para optimizar.
+*   **Optimiza con `EXPLAIN`**: Si tu proveedor JPA lo soporta, puedes usar `query.unwrap(org.hibernate.query.Query.class).getQueryString()` para ver el [SQL](/base_datos/sql "SQL es el lenguaje estándar utilizado para comunicarse con y gestionar bases de datos relacionales (RDBMS) como MySQL, PostgreSQL, Oracle, SQL Server, SQLite, entre otros.") generado y luego usar `EXPLAIN` en tu base de datos para optimizar.
 *   **Pruebas**: Escribe pruebas unitarias/de integración para tus consultas JPQL para asegurarte de que devuelven los datos esperados y que no hay errores de sintaxis.
 
 ---

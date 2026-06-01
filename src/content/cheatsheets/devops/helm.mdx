@@ -86,7 +86,7 @@ helm search hub wordpress # Busca 'wordpress' en Helm Hub (repositorios público
         *   `Chart.yaml`: Información del Chart (nombre, versión, etc.).
         *   `values.yaml`: Valores de configuración por defecto.
         *   `charts/`: Para subcharts.
-        *   `templates/`: Contiene los manifiestos de Kubernetes (YAMLs) con templating.
+        *   `templates/`: Contiene los manifiestos de [Kubernetes](/devops/kubernetes "Kubernetes (K8s) es una plataforma portable y extensible de código abierto para gestionar cargas de trabajo y servicios en contenedores.") (YAMLs) con templating.
         *   `templates/NOTES.txt`: Mensaje que se muestra después de un despliegue exitoso.
 
 ### 4.2. Instalar un Chart
@@ -186,7 +186,7 @@ my-new-app/
 
 ## 6. 📝 Templating (Dentro de `templates/*.yaml`)
 
-Helm utiliza Go templating para procesar los manifiestos de Kubernetes.
+Helm utiliza [Go](/go/go "Go es un lenguaje compilado, concurrente y de tipado estático creado por Google.") templating para procesar los manifiestos de Kubernetes.
 
 *   **Variables de Valores (`.Values`)**: Acceso a los valores definidos en `values.yaml` o pasados con `--set` / `-f`.
     ```yaml

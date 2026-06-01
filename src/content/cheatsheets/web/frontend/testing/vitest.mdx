@@ -14,9 +14,9 @@ Vitest es un framework de testing nativo de [Vite](/web/frontend/general/vite "V
 
 ## 1. 🌟 Conceptos Fundamentales
 
-* **Vite-Native**: Reutiliza el pipeline de transformación de Vite (`esbuild`, `rollup`, plugins oficiales). No requiere compilación separada para tests.
+* **[Vite](/web/frontend/general/vite "Vite es una herramienta de construcción frontend de última generación que combina un servidor de desarrollo ultrarrápido basado en módulos nativos del navegador con un empaquetador de producción optimizado mediante Rollup.")-Native**: Reutiliza el pipeline de transformación de Vite (`esbuild`, `rollup`, plugins oficiales). No requiere compilación separada para tests.
   * Por qué importa: Arranque instantáneo, HMR real durante `vitest --watch`, cero configuración duplicada.
-* **Compatibilidad con Jest**: API idéntica (`describe`, `it`, `expect`, `beforeEach`, `jest.mock` alias). Migración drop-in en la mayoría de proyectos.
+* **Compatibilidad con [Jest](/web/frontend/testing/jest "Jest es un framework de testing para JavaScript y TypeScript mantenido por Meta, diseñado para ofrecer un ciclo de desarrollo rápido, configuración mínima y herramientas integradas para aserciones, mocking, cobertura y snapshots.")**: [API](/conocimiento/api "Una API (Application Programming Interface) es un conjunto de reglas, protocolos y herramientas que permite que diferentes aplicaciones de software se comuniquen entre sí.") idéntica (`describe`, `it`, `expect`, `beforeEach`, `jest.mock` alias). Migración drop-in en la mayoría de proyectos.
   * Diferencia clave: Vitest usa `vi` en lugar de `jest` para mocks/timers, evitando conflictos con módulos globales.
 * **ESM-First**: Resuelve módulos nativos de Node y navegadores. Soporta `import`/`export` sin transpilación previa a CommonJS.
   * Implicación: `__dirname`, `require`, y `module.exports` no están disponibles por defecto. Usa `import.meta.url` y `path` o `node:url`.

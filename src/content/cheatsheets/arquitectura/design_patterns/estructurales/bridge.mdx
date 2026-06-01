@@ -297,7 +297,7 @@ Comparación rápida con patrones estructurales y creacionales:
 
 * **Prefiera Composición Explícita sobre Herencia**: La delegación clara es más testeable, flexible y segura. Evite acoplamiento rígido y permita reemplazo dinámico.
 * **Valide Capacidades en Compile-Time o Runtime**: Use tipos estrictos, traits con bounds, o métodos `supports()` para evitar delegaciones inválidas en producción.
-* **Separe Ejes de Variación Claramente**: Documente qué cambia en la abstracción (dominio/API) y qué cambia en el implementor (plataforma/tecnología). Mantenga las capas puras.
+* **Separe Ejes de Variación Claramente**: Documente qué cambia en la abstracción (dominio/[API](/conocimiento/api "Una API (Application Programming Interface) es un conjunto de reglas, protocolos y herramientas que permite que diferentes aplicaciones de software se comuniquen entre sí.")) y qué cambia en el implementor (plataforma/tecnología). Mantenga las capas puras.
 * **Documente el Contrato de Delegación**: Especifique qué métodos delegan, cómo se transforman parámetros, y qué garantías ofrece cada lado. Elimine suposiciones implícitas.
 * **Use Tipos Estrictos para Evitar Castings**: En lenguajes tipados, declare interfaces explícitas. Evite `any`, `Object`, o `void*` que oculten incompatibilidades.
 * **Implemente Fallbacks Seguros**: Si un implementor falla o no está disponible, retorne una implementación por defecto, lance excepción descriptiva, o use Null Object. Nunca retorne `null` silenciosamente.

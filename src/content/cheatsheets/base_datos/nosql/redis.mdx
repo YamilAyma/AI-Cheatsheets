@@ -280,7 +280,7 @@ SCRIPT LOAD "$(cat eval.lua)"
 # Ejecutar por SHA (evita reenvío de código)
 EVALSHA a27e2e8b... 1 rate:ip:192.168.1.5 100
 ```
-* **Reglas Lua**: Solo comandos Redis permitidos. No bloquear event loop. Determinista (sin `math.random` o `os.time`).
+* **Reglas [Lua](/devops/lua "Lua (del portugués, 'Luna') es un lenguaje de programación ligero, de alto rendimiento y fácilmente embebible, diseñado en la PUC-Río (Brasil) en 1993.")**: Solo comandos Redis permitidos. No bloquear event loop. Determinista (sin `math.random` o `os.time`).
 
 ### 9.2. Pipelining (Batch de Comandos)
 ```python

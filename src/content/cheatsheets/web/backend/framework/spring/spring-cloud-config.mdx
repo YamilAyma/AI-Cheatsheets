@@ -242,7 +242,7 @@ Spring Cloud Bus propaga los cambios de configuración a múltiples instancias d
     spring.cloud.stream.kafka.binder.brokers=localhost:9092
     spring.cloud.bus.trace.enabled=true # Para ver el rastro de la propagación
     ```
-3.  **Disparar el Refresh (después de cambiar la config en Git y hacer push):**
+3.  **Disparar el Refresh (después de cambiar la config en [Git](/herramientas/git/git "Git es un sistema de control de versiones distribuido (DVCS) diseñado para manejar proyectos pequeños o muy grandes con velocidad y eficiencia.") y hacer push):**
     *   Llama al endpoint `/actuator/bus-refresh` en el Config Server.
     ```bash
     curl -X POST http://localhost:8888/actuator/bus-refresh # Dispara el refresh global

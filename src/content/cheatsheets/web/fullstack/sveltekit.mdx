@@ -21,7 +21,7 @@ SvelteKit es el meta-framework oficial de [Svelte](/web/frontend/framework/svelt
 * **Renderizado Híbrido**: Control granular por ruta. SSR por defecto, `prerender = true` para SSG, `csr = true` para SPA, `ssr = false` para client-only. El adaptador define el target final de despliegue.
 * **Hooks y Middleware**: `hooks.server.ts` intercepta requests/redirects antes del render. `hooks.client.ts` maneja navegación y errores en cliente. Punto central para autenticación, logs y headers globales.
 * **Type Safety Nativo**: `$types` se genera automáticamente. `PageData`, `Actions`, `RequestEvent` están tipados sin configuración manual. [TypeScript](/web/general/typescript "TypeScript es una herramienta fundamental en el desarrollo web moderno, especialmente para proyectos a gran escala, ya que añade seguridad de tipo y mejoras en la productividad.") es ciudadano de primera clase en todo el ciclo.
-* **Stores y Contexto**: Svelte stores (`$state`, `writable`, `derived`) para estado global. `$app/stores` (`page`, `navigating`, `updated`) para estado de navegación reactiva sin boilerplate.
+* **Stores y Contexto**: [Svelte](/web/frontend/framework/svelte "Svelte es un framework de compilación que traslada el trabajo reactivo a build time, generando código quirúrgico, altamente optimizado y sin Virtual DOM.") stores (`$state`, `writable`, `derived`) para estado global. `$app/stores` (`page`, `navigating`, `updated`) para estado de navegación reactiva sin boilerplate.
 * **Code Splitting Automático**: SvelteKit divide el bundle por ruta y componente. Solo se descarga JS/CSS necesario para la vista actual. Reduce TTI (Time to Interactive) drásticamente.
 
 ---
@@ -348,7 +348,7 @@ export default defineConfig({
 * **Separa lógica de presentación y datos**: `+page.server.ts` solo obtiene/valida. Push business logic a `src/lib/server/`. Mantén componentes puros y testeables.
 * **Valida en el borde, nunca confíes en el cliente**: Usa `zod`/`valibot` en `load` y `actions`. Retorna `fail(400, { error })` con mensajes estructurados para UI.
 * **Aprovecha `$types` para seguridad total**: No uses `any`. Importa `PageData`, `ActionData`, `RequestEvent`. El compilador genera tipos automáticamente desde rutas y schemas.
-* **Prefiere `form` actions sobre API calls para mutaciones**: `use:enhance` + `actions` maneja loading, errores, redirect y revalidación sin boilerplate. Reduce estado manual y complejidad.
+* **Prefiere `form` actions sobre [API](/conocimiento/api "Una API (Application Programming Interface) es un conjunto de reglas, protocolos y herramientas que permite que diferentes aplicaciones de software se comuniquen entre sí.") calls para mutaciones**: `use:enhance` + `actions` maneja loading, errores, redirect y revalidación sin boilerplate. Reduce estado manual y complejidad.
 * **Cachea estratégicamente**: Usa `Cache-Control: public, max-age=3600` en `+server.ts` para datos estáticos. `s-maxage` para CDN. Evita recargas innecesarias y reduce costos de servidor.
 * **Perfila con `vite-plugin-inspect` y `rollup-plugin-visualizer`**: Identifica chunks pesados, imports duplicados o tree-shaking fallido antes de deploy. Optimiza solo cuellos reales.
 * **Estructura rutas por feature, no por URL**: Agrupa `(auth)/login`, `(auth)/register`, `(dashboard)/analytics`. Facilita mantenimiento, reutilización de layouts y testing.

@@ -1,6 +1,6 @@
 ---
 title: "mongoose"
-description: "Mongoose es una biblioteca ODM (Object-Document Mapping) para MongoDB y Node.js que proporciona un esquema basado en validación, modelado de relaciones, middleware pre/post, transformación de consultas y herramientas de tipado estricto con TypeScript."
+description: "Mongoose es una biblioteca ODM (Object-Document Mapping) para MongoDB, permitiendo esquemas flexibles y escalabilidad horizontal nativa.\") y Node.js que proporciona un esquema basado en validación, modelado de relaciones, middleware pre/post, transformación de consultas y herramientas de tipado estricto con TypeScript."
 createdAt: 2026-06-01
 updatedAt: 2026-06-01
 tags: [nosql]
@@ -14,14 +14,14 @@ Mongoose es una biblioteca ODM (Object-Document Mapping) para [MongoDB](/base_da
 
 ## 1. 🌟 Conceptos Fundamentales
 
-* **Schema-first design**: Todo comienza con un `Schema`, que define estructura, tipos, validación, índices y comportamiento de un documento. MongoDB es schemaless, pero Mongoose impone estructura en el lado del cliente.
+* **Schema-first design**: Todo comienza con un `Schema`, que define estructura, tipos, validación, índices y comportamiento de un documento. [MongoDB](/base_datos/nosql/mongodb "MongoDB es una base de datos NoSQL orientada a documentos que almacena datos en formato BSON (Binary JSON), permitiendo esquemas flexibles y escalabilidad horizontal nativa.") es schemaless, pero Mongoose impone estructura en el lado del cliente.
 * **Modelos como constructores**: Un `Model` se compila desde un Schema y actúa como clase para instanciar documentos y ejecutar operaciones contra la colección.
 * **Documentos con comportamiento**: Los documentos no son objetos planos; tienen métodos, hooks, validación y estado interno (`isNew`, `isModified`, `$locals`).
 * **Validación antes de persistir**: Mongoose valida tipos, requeridos, enums, regex y validadores custom antes de enviar a MongoDB. Falla rápido y local.
 * **Middleware (pre/post hooks)**: Intercepta operaciones como `save`, `find`, `update`, `remove` para añadir lógica transversal (auditoría, encriptación, soft delete).
 * **Population nativa**: Referencias entre documentos se resuelven con `populate()`, similar a un JOIN en [SQL](/base_datos/sql "SQL es el lenguaje estándar utilizado para comunicarse con y gestionar bases de datos relacionales (RDBMS) como MySQL, PostgreSQL, Oracle, SQL Server, SQLite, entre otros.") pero lazy y explícito.
 * **Query [API](/conocimiento/api "Una API (Application Programming Interface) es un conjunto de reglas, protocolos y herramientas que permite que diferentes aplicaciones de software se comuniquen entre sí.") chainable**: Las consultas son *thenables* y construyen un pipeline ejecutable. Permiten composición dinámica de filtros, proyecciones y opciones.
-* **TypeScript first-class**: Desde v6+, los tipos se infieren automáticamente desde el schema. Zero-cost type safety sin duplicar interfaces.
+* **[TypeScript](/web/general/typescript "TypeScript es una herramienta fundamental en el desarrollo web moderno, especialmente para proyectos a gran escala, ya que añade seguridad de tipo y mejoras en la productividad.") first-class**: Desde v6+, los tipos se infieren automáticamente desde el schema. Zero-cost type safety sin duplicar interfaces.
 * **Plugins y composición**: Lógica transversal (timestamps, soft delete, slugify) se encapsula en plugins reutilizables entre schemas.
 
 ---
@@ -803,7 +803,7 @@ mongoose.plugin(softDeletePlugin)
 ## 16. 💡 Mejores Prácticas y Consejos de Experto
 
 * **Schemas granulares, no monolíticos**: Divide por dominio (user, order, product). Evita schemas de 50+ campos.
-* **Valida en schema, no solo en controller**: Mongoose validación + [Zod](/web/frontend/general/zod "¡Absolutamente! Zod es una librería increíble para la validación de esquemas y tipos en TypeScript/JavaScript, famosa por su simplicidad y excelente inferencia de tipos.")/Joi en API = doble defensa, pero schema es la fuente de verdad de DB.
+* **Valida en schema, no solo en controller**: Mongoose validación + [Zod](/web/frontend/general/zod "¡Absolutamente! Zod es una librería increíble para la validación de esquemas y tipos en TypeScript/JavaScript, famosa por su simplicidad y excelente inferencia de tipos.")/Joi en [API](/conocimiento/api "Una API (Application Programming Interface) es un conjunto de reglas, protocolos y herramientas que permite que diferentes aplicaciones de software se comuniquen entre sí.") = doble defensa, pero schema es la fuente de verdad de DB.
 * **`lean()` para lecturas masivas**: `User.find().lean()` retorna POJOs, 2-10x más rápido para reportes o APIs read-only.
 * **Índices cubiertos (covered queries)**: Si todos los campos consultados están en el índice, MongoDB no toca documentos. Prioriza índices compuestos que incluyan proyección.
 * **`createCollection` explícito en CI/CD**: Crea colecciones e índices antes del primer deploy. No dependas de auto-creación en producción.

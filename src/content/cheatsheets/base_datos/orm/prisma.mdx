@@ -8,17 +8,17 @@ icon: "📄"
 ---
 # 🎯 Prisma ORM — Complete Cheatsheet 🎯
 
-Prisma ORM es un toolkit de base de datos de próxima generación para Node.js y [TypeScript](/web/general/typescript "TypeScript es una herramienta fundamental en el desarrollo web moderno, especialmente para proyectos a gran escala, ya que añade seguridad de tipo y mejoras en la productividad.") que adopta un enfoque *schema-first*: un único archivo `schema.prisma` define el modelo de datos, las relaciones, las validaciones y la fuente de datos, y a partir de él se genera automáticamente un cliente tipado (`PrismaClient`). Esto elimina el mapeo manual objeto-relacional, garantiza type safety end-to-end y acelera drásticamente el desarrollo. Este cheatsheet cubre desde el modelado de esquemas y relaciones hasta consultas anidadas, transacciones, migraciones, raw [SQL](/base_datos/sql "SQL es el lenguaje estándar utilizado para comunicarse con y gestionar bases de datos relacionales (RDBMS) como MySQL, PostgreSQL, Oracle, SQL Server, SQLite, entre otros."), extensión del cliente, middlewares, performance, Prisma Accelerate y patrones de producción. Ideal para desarrolladores backend que migran desde TypeORM, Sequelize, [Mongoose](/base_datos/nosql/mongoose "Mongoose es una biblioteca ODM (Object-Document Mapping) para MongoDB y Node.js que proporciona un esquema basado en validación, modelado de relaciones, middleware pre/post, transformación de consultas y herramientas de tipado estricto con TypeScript.") o SQL directo y buscan un ORM moderno, tipado y con excelente DX.
+Prisma ORM es un toolkit de base de datos de próxima generación para Node.js y [TypeScript](/web/general/typescript "TypeScript es una herramienta fundamental en el desarrollo web moderno, especialmente para proyectos a gran escala, ya que añade seguridad de tipo y mejoras en la productividad.") que adopta un enfoque *schema-first*: un único archivo `schema.prisma` define el modelo de datos, las relaciones, las validaciones y la fuente de datos, y a partir de él se genera automáticamente un cliente tipado (`PrismaClient`). Esto elimina el mapeo manual objeto-relacional, garantiza type safety end-to-end y acelera drásticamente el desarrollo. Este cheatsheet cubre desde el modelado de esquemas y relaciones hasta consultas anidadas, transacciones, migraciones, raw [SQL](/base_datos/sql "SQL es el lenguaje estándar utilizado para comunicarse con y gestionar bases de datos relacionales (RDBMS) como MySQL, PostgreSQL, Oracle, SQL Server, SQLite, entre otros."), extensión del cliente, middlewares, performance, Prisma Accelerate y patrones de producción. Ideal para desarrolladores backend que migran desde TypeORM, Sequelize, [Mongoose](/base_datos/nosql/mongoose "Mongoose es una biblioteca ODM (Object-Document Mapping) para [MongoDB](/base_datos/nosql/mongodb "MongoDB es una base de datos NoSQL orientada a documentos que almacena datos en formato BSON (Binary JSON), permitiendo esquemas flexibles y escalabilidad horizontal nativa.") y Node.js que proporciona un esquema basado en validación, modelado de relaciones, middleware pre/post, transformación de consultas y herramientas de tipado estricto con TypeScript.") o SQL directo y buscan un ORM moderno, tipado y con excelente DX.
 
 ---
 
 ## 1. 🌟 Conceptos Fundamentales
 
 * **Schema-first**: Toda la estructura de la BD se declara en `prisma/schema.prisma`. Es la única fuente de verdad; no hay decoradores en clases ni migraciones manuales.
-* **Cliente autogenerado**: `prisma generate` produce `@prisma/client` con tipos TypeScript derivados del schema. Autocompletado, validación de tipos y detección temprana de errores.
+* **Cliente autogenerado**: `prisma generate` produce `@prisma/client` con tipos [TypeScript](/web/general/typescript "TypeScript es una herramienta fundamental en el desarrollo web moderno, especialmente para proyectos a gran escala, ya que añade seguridad de tipo y mejoras en la productividad.") derivados del schema. Autocompletado, validación de tipos y detección temprana de errores.
   * Por qué importa: cambias el schema → regeneras → toda tu app queda tipada automáticamente.
 * **Type Safety End-to-End**: Desde la query hasta el resultado, todo está tipado. `findUnique` sobre un campo `@unique` retorna `T | null`, `findFirst` retorna `T | null`, `findMany` retorna `T[]`.
-* **Migraciones declarativas**: `prisma migrate dev` genera SQL de migración a partir del diff del schema. Versionadas en [git](/herramientas/git/git "Git es un sistema de control de versiones distribuido (DVCS) diseñado para manejar proyectos pequeños o muy grandes con velocidad y eficiencia."), reproducibles, aplicables en CI.
+* **Migraciones declarativas**: `prisma migrate dev` genera [SQL](/base_datos/sql "SQL es el lenguaje estándar utilizado para comunicarse con y gestionar bases de datos relacionales (RDBMS) como MySQL, PostgreSQL, Oracle, SQL Server, SQLite, entre otros.") de migración a partir del diff del schema. Versionadas en [git](/herramientas/git/git "Git es un sistema de control de versiones distribuido (DVCS) diseñado para manejar proyectos pequeños o muy grandes con velocidad y eficiencia."), reproducibles, aplicables en CI.
 * **Query [Builder](/arquitectura/design_patterns/creacionales/builder "El patrón Builder es un patrón creacional que separa la construcción de un objeto complejo de su representación final, permitiendo que el mismo proceso de ensamblaje genere diferentes variantes.") fluido**: [API](/conocimiento/api "Una API (Application Programming Interface) es un conjunto de reglas, protocolos y herramientas que permite que diferentes aplicaciones de software se comuniquen entre sí.") encadenable y composable (`prisma.user.findMany({ where: {...}, include: {...} })`). No es SQL stringificado, es código tipado.
 * **Nested Writes / Reads**: Crear, actualizar o leer relaciones en una sola operación atómica. Elimina queries manuales para joins o inserts relacionados.
 * **Transacciones ACID nativas**: `prisma.$transaction([...])` o `prisma.$transaction(async (tx) =&gt; {...})` para operaciones multi-escritura.
@@ -832,7 +832,7 @@ prisma.$on('query', (e) =&gt; {
     prisma.post.count(),
   ])
   ```
-* **Connection pooling**: Prisma usa el pool del driver. En serverless, usa singleton + Prisma Accelerate.
+* **Connection pooling**: Prisma usa el pool del driver. En serverless, usa [singleton](/arquitectura/design_patterns/creacionales/singleton "El patrón Singleton es un patrón creacional estructural que garantiza que una clase tenga exactamente una instancia en todo el ciclo de vida de un ámbito definido, y proporciona un punto de acceso global a dicha instancia.") + Prisma Accelerate.
 * **`prisma.$queryRaw` para queries complejas**: Un JOIN complejo o una subquery anidada puede ser más eficiente en SQL directo.
 * **Batch reads**: En lugar de N queries individuales, usa `findMany({ where: { id: { in: ids } } })`.
 * **`prisma.$transaction([...])`** para múltiples writes: reduce round-trips.
@@ -883,7 +883,7 @@ prisma.$on('query', (e) =&gt; {
 * **`Json` type sin validación**: `metadata: Json` acepta cualquier cosa. Errores en runtime.
   * Fix: Valida con [Zod](/web/frontend/general/zod "¡Absolutamente! Zod es una librería increíble para la validación de esquemas y tipos en TypeScript/JavaScript, famosa por su simplicidad y excelente inferencia de tipos.") en capa de aplicación antes de persistir.
 * **Serverless cold starts con Prisma**: Primera query tarda 200-500ms.
-  * Fix: Usa Prisma Accelerate o Data Proxy para connection pooling global.
+  * Fix: Usa Prisma Accelerate o Data [Proxy](/arquitectura/design_patterns/estructurales/proxy "El patrón Proxy es un patrón estructural que proporciona un sustituto o intermediario para controlar el acceso a un objeto real, añadiendo comportamiento transversal sin modificar su implementación original.") para connection pooling global.
 * **Cambiar `provider` sin migrar**: Cambiar de Postgres a MySQL requiere reescribir schema y migraciones.
   * Fix: Decidir provider al inicio. Si migras, planifica como proyecto nuevo.
 
@@ -895,7 +895,7 @@ prisma.$on('query', (e) =&gt; {
 * **Separa DTOs de modelos Prisma**: Expón `UserDTO` (público) no `User` (interno). Evita fugas de campos sensibles (`password`, `deletedAt`).
 * **Usa `select` en APIs públicas**: Proyecta solo campos necesarios. Reduce payload, evita sobre-exposición.
 * **Soft delete con extensiones**: Un `deletedAt: DateTime?` + Client Extension que filtre automáticamente = patrón limpio.
-* **Valida input con Zod antes de Prisma**: `const data = schema.parse(body); await prisma.user.create({ data })`. Doble validación: schema en DB, Zod en entrada.
+* **Valida input con [Zod](/web/frontend/general/zod "¡Absolutamente! Zod es una librería increíble para la validación de esquemas y tipos en TypeScript/JavaScript, famosa por su simplicidad y excelente inferencia de tipos.") antes de Prisma**: `const data = schema.parse(body); await prisma.user.create({ data })`. Doble validación: schema en DB, Zod en entrada.
 * **Nombra índices con claridad**: `@@index([userId, createdAt], map: "idx_posts_user_created")` facilita debugging y análisis de `EXPLAIN`.
 * **`updatedAt: DateTime @updatedAt`** en todos los modelos auditables: tracking automático sin código extra.
 * **Usa `createMany` para bulk inserts**: 10-100x más rápido que `create` en bucle. Ideal para seeds, ETL, importaciones.
@@ -906,7 +906,7 @@ prisma.$on('query', (e) =&gt; {
   * Opción 1: `jest-mock-extended` para mockear `PrismaClient`.
   * Opción 2: SQLite en memoria (`url = "file:./test.db"`) para tests de integración reales.
 * **Migraciones en CI**: `prisma migrate deploy` en pipeline. Si falla, no despliegues.
-* **Versiona `migrations/` en git**: Es el histórico oficial de cambios de schema. Nunca ignores.
+* **Versiona `migrations/` en [git](/herramientas/git/git "Git es un sistema de control de versiones distribuido (DVCS) diseñado para manejar proyectos pequeños o muy grandes con velocidad y eficiencia.")**: Es el histórico oficial de cambios de schema. Nunca ignores.
 * **Usa `prisma format` en pre-commit**: Mantiene el schema consistente entre colaboradores.
 * **Evita enums para flags binarios**: `isActive: Boolean` es más claro y eficiente que `status: Status { ACTIVE, INACTIVE }`.
 * **Relaciones m-n explícitas cuando necesites metadatos**: `PostCategory` con `addedAt`, `addedBy`, etc.

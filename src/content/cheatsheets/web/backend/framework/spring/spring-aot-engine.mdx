@@ -110,7 +110,7 @@ El `spring-boot-maven-plugin` gestiona el proceso.
 3.  **Compilación del Código Generado**: El compilador [Java](/java/java "Java es un lenguaje de programación de propósito general, concurrente, basado en clases y orientado a objetos.") compila este código generado a `.class`.
 4.  **Generación del "Thin Jar"**: El `spring-boot-maven-plugin` crea un JAR que contiene tu código original, las clases generadas por AOT y las dependencias de la aplicación (pero no las librerías de JVM).
 5.  **Compilación a Native Image (`compile-native`)**:
-    *   El `native-maven-plugin` invoca a la herramienta `native-image` de GraalVM.
+    *   El `native-maven-plugin` invoca a la herramienta `native-image` de [GraalVM](/herramientas/machines/graalvm "GraalVM es una máquina virtual universal de alto rendimiento que extiende la JVM de Java.").
     *   `native-image` toma el "thin jar" y todos los hints generados por Spring AOT.
     *   Analiza exhaustivamente el código para detectar todas las clases, métodos y campos accesibles en tiempo de ejecución.
     *   Compila todo el código y los hints a un ejecutable nativo independiente.
@@ -206,7 +206,7 @@ public class AppRuntimeHintsConfig {
 
 ## 6. 💡 Buenas Prácticas y Consejos
 
-*   **Empieza con Spring Boot 3+**: Asegúrate de que tu proyecto esté en la versión adecuada.
+*   **Empieza con [Spring Boot](/web/backend/framework/spring/spring-boot "¡Absolutamente! Spring Boot es un framework increíble para construir aplicaciones Java robustas y de alto rendimiento de manera rápida y eficiente.") 3+**: Asegúrate de que tu proyecto esté en la versión adecuada.
 *   **Minimiza el Dinamismo Innecesario**: Siempre que sea posible, evita la reflexión o la carga dinámica de clases si hay alternativas estáticas.
 *   **Usa el Agente de Trazas (`native-image-agent`)**: Para generar automáticamente los `RuntimeHints` al ejecutar tu aplicación en la JVM. Esto es invaluable para detectar los hints que necesitas registrar.
     ```bash
