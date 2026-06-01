@@ -237,7 +237,7 @@ const usersSlice = createSlice({
         [state](/arquitectura/design_patterns/comportamiento/state "El patrón State es un patrón de comportamiento que permite a un objeto alterar su comportamiento cuando su estado interno cambia, haciendo que parezca que el objeto cambia de clase.").status = 'loading';
       })
       .addCase(fetchUsers.fulfilled, ([state](/arquitectura/design_patterns/comportamiento/state "El patrón State es un patrón de comportamiento que permite a un objeto alterar su comportamiento cuando su estado interno cambia, haciendo que parezca que el objeto cambia de clase."), action) =&gt; {
-        state.status = 'succeeded';
+        [state](/arquitectura/design_patterns/comportamiento/state "El patrón State es un patrón de comportamiento que permite a un objeto alterar su comportamiento cuando su estado interno cambia, haciendo que parezca que el objeto cambia de clase.").status = 'succeeded';
         state.list = Array.isArray(action.payload) ? action.payload : [action.payload]; // Asegura que sea un array
       })
       .addCase(fetchUsers.rejected, (state, action) =&gt; {

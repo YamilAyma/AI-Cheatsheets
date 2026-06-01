@@ -257,7 +257,7 @@ Comparación rápida con patrones de comportamiento y herramientas:
 * **Gestión de Versiones**: Si la gramática evoluciona, mantenga compatibilidad hacia atrás o use versionado explícito (`v1`, `v2`). Nunca rompa contrato de `interpret()` sin migrador.
 * **Visibilidad y APIs Públicas**: Exponga solo `evaluate(expression, context)`. Oculte nodos concretos en módulos internos o parsers. Reduzca superficie de uso indebido.
 * **Documentación de Gramática EBNF**: Especifique explícitamente reglas, precedencia, tipos soportados y extensiones permitidas. Elimine suposiciones implícitas.
-* **Migración hacia Visitor**: Si añades &gt; 3 operaciones sobre el AST (print, optimize, lint, serialize), separa estructura de lógica. Cumple Open/Closed estrictamente.
+* **Migración hacia [Visitor](/arquitectura/design_patterns/comportamiento/visitor "El patrón Visitor es un patrón de comportamiento que separa algoritmos de las estructuras de objetos sobre las que operan, permitiendo añadir nuevas operaciones sin modificar las clases de los elementos visitados.")**: Si añades &gt; 3 operaciones sobre el AST (print, optimize, lint, serialize), separa estructura de lógica. Cumple Open/Closed estrictamente.
 * **Integración con Observabilidad**: Inyecte correlation IDs, trace spans y métricas por nodo o expresión. Centralice telemetría de evaluación, fallos y latencia por tipo de regla.
 
 ---

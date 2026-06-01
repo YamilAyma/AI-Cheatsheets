@@ -29,7 +29,7 @@ icon: "📄"
 
 ## 2. 🛠️ Instalación y Acceso
 
-Kiali se instala como parte del ecosistema de Istio.
+Kiali se instala como parte del ecosistema de [Istio](/web/backend/framework/herramientas/istio "Istio es una malla de servicios (Service Mesh) de código abierto que proporciona una capa de infraestructura transparente para gestionar las comunicaciones de servicio a servicio.").
 
 1.  **Asegúrate de que Istio esté instalado y funcionando.**
 2.  **Instalar Kiali (con `istioctl`)**:
@@ -136,7 +136,7 @@ Kiali utiliza [Prometheus](/web/backend/framework/herramientas/prometheus "Prome
 *   **Filtra por Namespace**: Si tienes múltiples namespaces, empieza filtrando por el namespace que te interesa para una visión más clara.
 *   **Utiliza el Grafo (Graph View)**: Es la herramienta más poderosa de Kiali. Aprende a usar sus filtros y opciones de visualización para aislar rápidamente los problemas.
 *   **Monitorea la Salud**: Presta atención a los colores de los nodos y aristas en el grafo para identificar rápidamente servicios con problemas (naranja/rojo).
-*   **Integra Tracing (Jaeger)**: Asegúrate de que tu sistema de trazabilidad (Jaeger por defecto con Istio) esté configurado y enviando datos para que Kiali pueda mostrar las trazas.
+*   **Integra Tracing ([Jaeger](/web/backend/framework/herramientas/jaeger "Jaeger es un sistema de trazabilidad distribuida de código abierto, inspirado en Dapper de Google y OpenZipkin."))**: Asegúrate de que tu sistema de trazabilidad (Jaeger por defecto con Istio) esté configurado y enviando datos para que Kiali pueda mostrar las trazas.
 *   **Monitorea las Métricas**: Sumérgete en los gráficos de métricas para entender el rendimiento, la latencia y la tasa de errores de tus servicios.
 *   **Valida tu Configuración de Istio**: Utiliza la sección `Istio Config` para verificar la sintaxis y la semántica de tus objetos de Istio.
 *   **Aprende a Navegar entre Secciones**: Salta del grafo a las métricas de un servicio, luego a sus trazas o a su configuración de Istio para depurar un problema de forma holística.

@@ -211,7 +211,7 @@ Para pasar valores dinámicos a las consultas. Protege contra la inyección [SQL
     ```jpql
     SELECT p FROM Product p WHERE p.name = ?1 AND p.price &lt; ?2
     ```
-    *   En Java: `query.setParameter(1, "Laptop"); query.setParameter(2, 1000.00);`
+    *   En [Java](/java/java "Java es un lenguaje de programación de propósito general, concurrente, basado en clases y orientado a objetos."): `query.setParameter(1, "Laptop"); query.setParameter(2, 1000.00);`
 *   **Parámetros con Nombre (`:name`)**: **¡Preferido por su legibilidad!**
     ```jpql
     SELECT p FROM Product p WHERE p.name = :productName AND p.price &lt; :maxPrice
@@ -222,7 +222,7 @@ Para pasar valores dinámicos a las consultas. Protege contra la inyección [SQL
 
 ## 8. 🌐 Funciones JPQL Comunes
 
-JPQL tiene un conjunto limitado de funciones incorporadas, a menudo mapeadas a funciones de SQL.
+JPQL tiene un conjunto limitado de funciones incorporadas, a menudo mapeadas a funciones de [SQL](/base_datos/sql "SQL es el lenguaje estándar utilizado para comunicarse con y gestionar bases de datos relacionales (RDBMS) como MySQL, PostgreSQL, Oracle, SQL Server, SQLite, entre otros.").
 
 *   **String Functions**: `CONCAT(s1, s2)`, `SUBSTRING(s, start, len)`, `LENGTH(s)`, `LOCATE(s1, s2)`, `LOWER(s)`, `UPPER(s)`, `TRIM(s)`.
 *   **Numeric Functions**: `ABS(n)`, `SQRT(n)`, `MOD(n, m)`.

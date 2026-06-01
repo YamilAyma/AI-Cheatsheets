@@ -294,7 +294,7 @@ const customStyles = {
   }),
   option: (baseStyles, [state](/arquitectura/design_patterns/comportamiento/state "El patrón State es un patrón de comportamiento que permite a un objeto alterar su comportamiento cuando su estado interno cambia, haciendo que parezca que el objeto cambia de clase.")) =&gt; ({ // Estilos para cada opción del menú
     ...baseStyles,
-    backgroundColor: state.isFocused ? '#e0f2f7' : (state.isSelected ? '#b2e2f2' : 'white'),
+    backgroundColor: [state](/arquitectura/design_patterns/comportamiento/state "El patrón State es un patrón de comportamiento que permite a un objeto alterar su comportamiento cuando su estado interno cambia, haciendo que parezca que el objeto cambia de clase.").isFocused ? '#e0f2f7' : (state.isSelected ? '#b2e2f2' : 'white'),
     color: state.isSelected ? 'black' : 'inherit',
     cursor: 'pointer',
     '&:active': {
@@ -367,7 +367,7 @@ Aplica tus propias clases CSS a la envoltura principal.
 import styles from './MySelect.module.css';
 <Select
   className={styles['my-select-container']}
-  classNamePrefix="react-select" // Para que las clases internas sean react-select__control, etc.
+  classNamePrefix="[react](/web/frontend/general/react/react "¡Excelente! React es la biblioteca de JavaScript más popular para construir interfaces de usuario.")-select" // Para que las clases internas sean react-select__control, etc.
   options={...}
   // ...
 />

@@ -22,7 +22,7 @@ Flask es un microframework web para [Python](/python/python "Python es un lengua
 * **Werkzeug**: Una biblioteca de utilidades WSGI (Web Server Gateway Interface) que maneja las solicitudes HTTP.
 * **[Jinja2](/template_engine/jinja2 "Jinja2 es un motor de plantillas (template engine) para [Python](/python/python "Python es un lenguaje de programación de alto nivel, interpretado, interactivo y orientado a objetos.").")**: El motor de plantillas por defecto de Flask para renderizar HTML dinámicamente.
 * **Rutas (Routes)**: Mapean las URLs a funciones de [Python](/python/python "Python es un lenguaje de programación de alto nivel, interpretado, interactivo y orientado a objetos.") que manejan las solicitudes.
-* **Vistas (Views)**: Las funciones de Python que manejan una solicitud entrante y devuelven una respuesta.
+* **Vistas (Views)**: Las funciones de [Python](/python/python "Python es un lenguaje de programación de alto nivel, interpretado, interactivo y orientado a objetos.") que manejan una solicitud entrante y devuelven una respuesta.
 * **Contextos**: Flask maneja dos contextos principales:
   * **Contexto de Aplicación (`app context`)**: Activo cuando se ejecuta código relacionado con la aplicación (ej. acceso a `current_app`).
   * **Contexto de Solicitud (`request context`)**: Activo durante una solicitud HTTP, proporcionando acceso a objetos como `request`, `session`, `g`.
@@ -238,7 +238,7 @@ Flask usa [Jinja2](/template_engine/jinja2 "Jinja2 es un motor de plantillas (te
   def show_messages():
       return render_template('messages.html') # Para mostrar mensajes flash
   ```
-* **Sintaxis Jinja2 (`templates/index.html`)**:
+* **Sintaxis [Jinja2](/template_engine/jinja2 "Jinja2 es un motor de plantillas (template engine) para Python.") (`templates/index.html`)**:
 
   ```html
   &lt;!DOCTYPE html>

@@ -26,7 +26,7 @@ Aquí tienes un "cheatsheet" completo y bien estructurado de Zustand, optimizado
 *   **No Boilerplate**: Mínimo código para configurar y usar.
 *   **No `Provider` Component**: No necesitas envolver tu aplicación con un componente `Provider` (como en [Redux](/web/frontend/general/react/redux "Redux es una librería de JavaScript para gestionar el estado de la aplicación.") o Context [API](/conocimiento/api "Una API (Application Programming Interface) es un conjunto de reglas, protocolos y herramientas que permite que diferentes aplicaciones de software se comuniquen entre sí.")). Los stores se pueden usar directamente en cualquier componente.
 *   **Estado Inmutable**: Aunque los métodos `set` de Zustand permiten una sintaxis de "mutación" (similar a Immer), internamente garantizan la inmutabilidad creando nuevas copias del estado.
-*   **Direct Access**: Puedes acceder y manipular el estado fuera de los componentes de React, lo que es útil para lógica de negocio en servicios o utilidades.
+*   **Direct Access**: Puedes acceder y manipular el estado fuera de los componentes de [React](/web/frontend/general/react/react "¡Excelente! React es la biblioteca de JavaScript más popular para construir interfaces de usuario."), lo que es útil para lógica de negocio en servicios o utilidades.
 
 ---
 
@@ -292,7 +292,7 @@ Zustand soporta middlewares para extender la funcionalidad del store. Se aplican
       )
     );
     ```
-*   **`immer`**: Simplifica las actualizaciones de estado inmutables usando una sintaxis mutable (como en Redux Toolkit).
+*   **`immer`**: Simplifica las actualizaciones de estado inmutables usando una sintaxis mutable (como en [Redux](/web/frontend/general/react/redux "Redux es una librería de JavaScript para gestionar el estado de la aplicación.") Toolkit).
     ```javascript
     import { create } from 'zustand';
     import { immer } from 'zustand/middleware/immer';

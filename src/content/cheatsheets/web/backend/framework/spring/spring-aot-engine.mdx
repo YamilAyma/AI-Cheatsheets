@@ -22,7 +22,7 @@ El **Spring AOT Engine** (Ahead-of-Time Engine) es un conjunto de herramientas y
 *   **AOT (Ahead-of-Time Compilation)**: Proceso de compilación que ocurre *antes* de la ejecución (en tiempo de construcción), a diferencia de JIT (Just-In-Time Compilation) que sucede en tiempo de ejecución.
 *   **[GraalVM](/herramientas/machines/graalvm "GraalVM es una máquina virtual universal de alto rendimiento que extiende la JVM de Java.") Native Image**: La tecnología de GraalVM que compila aplicaciones [Java](/java/java "Java es un lenguaje de programación de propósito general, concurrente, basado en clases y orientado a objetos.") a ejecutables binarios independientes y ligeros.
 *   **Dinamismo en [Java](/java/java "Java es un lenguaje de programación de propósito general, concurrente, basado en clases y orientado a objetos.")**: Características como la reflexión, la carga dinámica de clases y los proxies son muy usadas en frameworks como Spring. [GraalVM](/herramientas/machines/graalvm "GraalVM es una máquina virtual universal de alto rendimiento que extiende la JVM de Java.") Native Image, al compilar AOT, no puede ver estas llamadas dinámicas.
-*   **Metadata (Runtime Hints)**: Spring AOT Engine analiza el código de tu aplicación Spring y genera los metadatos necesarios (hints) para GraalVM Native Image, instruyéndole sobre qué elementos dinámicos necesita incluir en el ejecutable nativo.
+*   **Metadata (Runtime Hints)**: Spring AOT Engine analiza el código de tu aplicación Spring y genera los metadatos necesarios (hints) para [GraalVM](/herramientas/machines/graalvm "GraalVM es una máquina virtual universal de alto rendimiento que extiende la JVM de Java.") Native Image, instruyéndole sobre qué elementos dinámicos necesita incluir en el ejecutable nativo.
 *   **Procesamiento AOT**: La fase del proceso de construcción donde [Spring Boot](/web/backend/framework/spring/spring-boot "¡Absolutamente! Spring Boot es un framework increíble para construir aplicaciones Java robustas y de alto rendimiento de manera rápida y eficiente.") analiza la aplicación, sus dependencias y las librerías de Spring para generar el código y los metadatos AOT.
 *   **"Thin Jar" (Jar Delgado)**: Un JAR ligero que solo contiene las clases de la aplicación y sus dependencias, utilizado como entrada para el proceso de `native-image`.
 
@@ -107,7 +107,7 @@ El `spring-boot-maven-plugin` gestiona el proceso.
     *   Spring AOT Engine analiza el bytecode de tu aplicación y sus dependencias.
     *   Genera código fuente [Java](/java/java "Java es un lenguaje de programación de propósito general, concurrente, basado en clases y orientado a objetos.") adicional que contiene los `RuntimeHints` (metadatos sobre reflexión, proxies, etc.) y un contexto de Spring optimizado para AOT.
     *   Este código generado se guarda en `target/spring-aot/main/sources` (o similar).
-3.  **Compilación del Código Generado**: El compilador Java compila este código generado a `.class`.
+3.  **Compilación del Código Generado**: El compilador [Java](/java/java "Java es un lenguaje de programación de propósito general, concurrente, basado en clases y orientado a objetos.") compila este código generado a `.class`.
 4.  **Generación del "Thin Jar"**: El `spring-boot-maven-plugin` crea un JAR que contiene tu código original, las clases generadas por AOT y las dependencias de la aplicación (pero no las librerías de JVM).
 5.  **Compilación a Native Image (`compile-native`)**:
     *   El `native-maven-plugin` invoca a la herramienta `native-image` de GraalVM.
@@ -135,7 +135,7 @@ Los hints son la clave para que Native Image entienda el dinamismo de Spring.
     *   **Serialization**: Qué clases se serializan/deserializan.
     *   **Resources**: Qué recursos (archivos) se acceden.
     *   **JNI**: Qué métodos nativos se invocan.
-*   **Generación Automática**: Spring AOT Engine, junto con las librerías de Spring Boot y Spring Framework, ya tienen muchos hints predefinidos para la mayoría de los casos de uso comunes.
+*   **Generación Automática**: Spring AOT Engine, junto con las librerías de [Spring Boot](/web/backend/framework/spring/spring-boot "¡Absolutamente! Spring Boot es un framework increíble para construir aplicaciones Java robustas y de alto rendimiento de manera rápida y eficiente.") y Spring Framework, ya tienen muchos hints predefinidos para la mayoría de los casos de uso comunes.
 *   **Registro Manual (`RuntimeHintsRegistrar`)**: Cuando tienes lógica personalizada que usa reflexión o si una librería de terceros no tiene hints para Native Image, necesitas registrarlos manualmente.
 
 ```java

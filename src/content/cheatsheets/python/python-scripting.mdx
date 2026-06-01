@@ -20,7 +20,7 @@ icon: "🐍"
 * **Paths como objetos, no strings**: La librería `pathlib` representa rutas del sistema de archivos como objetos `Path` con operadores intuitivos (`/` para unir rutas).
 * **Subprocess, no os.system**: Para ejecutar comandos externos, usa `subprocess.run()` (no `os.system()` que es inseguro y no captura salida).
 * **Context managers (`with`)**: Garantizan el cierre de recursos (archivos, conexiones de red) incluso cuando ocurren excepciones.
-* **Typing hints (Python 3.5+)**: Las anotaciones de tipo no son obligatorias pero mejoran enormemente la legibilidad y permiten el uso de herramientas como `mypy`.
+* **Typing hints ([Python](/python/python "Python es un lenguaje de programación de alto nivel, interpretado, interactivo y orientado a objetos.") 3.5+)**: Las anotaciones de tipo no son obligatorias pero mejoran enormemente la legibilidad y permiten el uso de herramientas como `mypy`.
 * **Virtual environments**: Cada proyecto debería tener su propio entorno virtual (`python3 -m venv .venv`) para aislar dependencias.
 * **`sys.exit(code)`**: La forma correcta de salir de un script con un código de retorno. `sys.exit(0)` = éxito, `sys.exit(1)` = error.
 * **Logging vs print**: Para scripts de producción, usa el módulo `logging` en lugar de `print`. Permite niveles, formatos y destinos configurables.

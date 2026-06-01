@@ -107,7 +107,7 @@ spring.flyway.validate-on-migrate=true # Valida el checksum de las migraciones e
 2. Configura tu base de datos en `application.properties`.
 3. Crea un directorio `src/main/resources/db/migration`.
 4. Crea tus scripts [SQL](/base_datos/sql "SQL es el lenguaje estándar utilizado para comunicarse con y gestionar bases de datos relacionales (RDBMS) como MySQL, PostgreSQL, Oracle, SQL Server, SQLite, entre otros.") dentro de ese directorio siguiendo el formato `V<VERSION>__<DESCRIPTION>.sql`.
-5. Inicia tu aplicación Spring Boot. Flyway detectará automáticamente la base de datos y aplicará las migraciones pendientes.
+5. Inicia tu aplicación [Spring Boot](/web/backend/framework/spring/spring-boot "¡Absolutamente! Spring Boot es un framework increíble para construir aplicaciones Java robustas y de alto rendimiento de manera rápida y eficiente."). Flyway detectará automáticamente la base de datos y aplicará las migraciones pendientes.
 
 ---
 
@@ -177,7 +177,7 @@ WHERE status = 'active';
 
 ### 4.4. Migraciones Java
 
-* Permiten realizar tareas de migración complejas que no son posibles con SQL puro (ej. lógica de transformación de datos compleja, llamadas a APIs externas).
+* Permiten realizar tareas de migración complejas que no son posibles con [SQL](/base_datos/sql "SQL es el lenguaje estándar utilizado para comunicarse con y gestionar bases de datos relacionales (RDBMS) como MySQL, PostgreSQL, Oracle, SQL Server, SQLite, entre otros.") puro (ej. lógica de transformación de datos compleja, llamadas a APIs externas).
 * Deben implementar la interfaz `org.flywaydb.core.api.migration.JavaMigration`.
 
 ```java
@@ -228,7 +228,7 @@ public class V3__UpdateUserEmails extends BaseJavaMigration {
 * **Prueba tus migraciones**: Ejecuta tus migraciones en un entorno de desarrollo o staging antes de ir a producción.
 * **Scripts SQL vs. Migraciones [Java](/java/java "Java es un lenguaje de programación de propósito general, concurrente, basado en clases y orientado a objetos.")**:
   * Usa SQL para la mayoría de los cambios de esquema y datos. Son más legibles y fáciles de versionar.
-  * Usa migraciones Java solo para transformaciones de datos complejas o lógica que no se puede expresar fácilmente en SQL.
+  * Usa migraciones [Java](/java/java "Java es un lenguaje de programación de propósito general, concurrente, basado en clases y orientado a objetos.") solo para transformaciones de datos complejas o lógica que no se puede expresar fácilmente en SQL.
 * **Datos de Referencia**: Usa migraciones repetibles (`R__`) para datos que cambian con frecuencia (ej. listas de categorías) o para funciones y vistas.
 * **Mantén un backup**: Antes de ejecutar migraciones en producción, ¡siempre ten un backup de tu base de datos!
 * **Colaboración**: Si varios desarrolladores trabajan en la base de datos, deben coordinar los números de versión para evitar conflictos.

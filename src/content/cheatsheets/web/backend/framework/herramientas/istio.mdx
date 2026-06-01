@@ -51,7 +51,7 @@ icon: "📄"
 1.  **Descargar `istioctl`**: La herramienta de línea de comandos de Istio.
     *   `curl -L https://istio.io/downloadIstio | sh -` (Instala en un directorio local).
     *   Añade el directorio `bin` al `PATH`.
-2.  **Instalar Istio en Kubernetes (usando `istioctl`)**:
+2.  **Instalar Istio en [Kubernetes](/devops/kubernetes "Kubernetes (K8s) es una plataforma portable y extensible de código abierto para gestionar cargas de trabajo y servicios en contenedores.") (usando `istioctl`)**:
     *   `istioctl install --set profile=demo` (o `default`, `minimal`, `production`).
 3.  **Habilitar la Inyección Automática de Sidecars**:
     *   Etiqueta un namespace para que la inyección automática funcione:

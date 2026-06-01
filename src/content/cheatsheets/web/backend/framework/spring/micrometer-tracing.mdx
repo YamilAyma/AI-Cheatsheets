@@ -354,9 +354,9 @@ class CustomBusinessServiceTest {
 *   **Añade Tags Relevantes**: Utiliza tags para añadir metadatos importantes a tus Spans (ej. IDs de usuario, códigos de error, nombres de microservicios). Esto es invaluable para buscar y filtrar trazas.
 *   **Muestreo (Sampling)**: En producción, no traces el 100% de las solicitudes. Configura una tasa de muestreo adecuada (`spring.sleuth.sampler.probability` o `management.tracing.sampling.probability`) para evitar sobrecargar tu sistema de trazabilidad.
 *   **Baggage con Moderación**: El Baggage se propaga a través de la red en los encabezados HTTP. Úsalo con moderación para datos críticos y pequeños, ya que puede aumentar el tamaño de los encabezados de solicitud.
-*   **Monitorea tu Sistema de Trazabilidad**: Asegúrate de que tu backend de trazabilidad (Zipkin, [Jaeger](/web/backend/framework/herramientas/jaeger "Jaeger es un sistema de trazabilidad distribuida de código abierto, inspirado en Dapper de Google y OpenZipkin."), Tempo) esté sano y pueda manejar el volumen de Spans.
+*   **Monitorea tu Sistema de Trazabilidad**: Asegúrate de que tu backend de trazabilidad ([Zipkin](/web/backend/framework/spring/zipkin "Zipkin es un sistema de trazabilidad distribuida de código abierto."), [Jaeger](/web/backend/framework/herramientas/jaeger "Jaeger es un sistema de trazabilidad distribuida de código abierto, inspirado en Dapper de Google y OpenZipkin."), Tempo) esté sano y pueda manejar el volumen de Spans.
 *   **Consistencia de Formato de Propagación**: Asegúrate de que todos tus servicios (y tus Gateways/Proxies) usen el mismo formato de propagación (ej. `W3C` o `B3`).
-*   ** correlacionar con Métricas y Logs**: Idealmente, tus Logs deben incluir el `Trace ID` y `Span ID` para que puedas correlacionarlos con los Spans. Micrometer Tracing lo hace automáticamente con el patrón de logging por defecto de Spring Boot.
+*   ** correlacionar con Métricas y Logs**: Idealmente, tus Logs deben incluir el `Trace ID` y `Span ID` para que puedas correlacionarlos con los Spans. Micrometer Tracing lo hace automáticamente con el patrón de logging por defecto de [Spring Boot](/web/backend/framework/spring/spring-boot "¡Absolutamente! Spring Boot es un framework increíble para construir aplicaciones Java robustas y de alto rendimiento de manera rápida y eficiente.").
 
 ---
 

@@ -163,7 +163,7 @@ Aquí están los tipos de esquemas más comunes que puedes definir con Zod:
   ```typescript
   const colors = z.enum(["red", "green", "blue"]); // "red"
   ```
-* **`z.nativeEnum(SomeTypeScriptEnum)`**: Para enums de TypeScript.
+* **`z.nativeEnum(SomeTypeScriptEnum)`**: Para enums de [TypeScript](/web/general/typescript "TypeScript es una herramienta fundamental en el desarrollo web moderno, especialmente para proyectos a gran escala, ya que añade seguridad de tipo y mejoras en la productividad.").
   ```typescript
   enum Role { Admin = "ADMIN", User = "USER" }
   const roleSchema = z.nativeEnum(Role); // "ADMIN" o "USER"
