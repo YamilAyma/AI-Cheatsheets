@@ -1,0 +1,225 @@
+---
+title: "tailwindcss"
+description: "TailwindCSS es un framework CSS utility-first que permite construir interfaces modernas, responsivas y altamente personalizables directamente en el markup."
+createdAt: 2026-06-01
+updatedAt: 2026-06-01
+tags: [css]
+icon: "🎨"
+---
+# 🎯 TailwindCSS — Complete Cheatsheet 🎯
+
+TailwindCSS es un framework CSS *utility-first* que permite construir interfaces modernas, responsivas y altamente personalizables directamente en el markup. Elimina la necesidad de escribir hojas de estilo CSS tradicionales, acelera el desarrollo y mantiene el bundle optimizado mediante generación bajo demanda (JIT). Este cheatsheet cubre desde instalación y sintaxis esencial hasta diseño responsivo, estados, personalización avanzada, rendimiento y patrones de producción. Ideal para frontend developers que buscan velocidad, consistencia visual y mantenibilidad sin sacrificar flexibilidad.
+
+---
+
+## 1. 🌟 Conceptos Fundamentales
+
+* **Utility-First**: Clases predefinidas que mapean 1:1 con propiedades CSS. Se componen en HTML en lugar de nombrar componentes semánticos (`.btn-primary`).
+* **Mobile-First**: Los estilos base aplican a todos los tamaños. Prefijos como `md:`, `lg:` agregan reglas solo para viewport ≥ breakpoint.
+* **JIT (Just-In-Time)**: Motor que genera CSS solo para las clases detectadas en tus archivos. Bundle mínimo, desarrollo rápido.
+* **Design Tokens Centralizados**: Espaciado, colores, tipografía y breakpoints se definen en `tailwind.config.js`, garantizando consistencia.
+* **Zero Custom CSS (Ideal)**: La composición de utilidades reemplaza CSS manual. Cuando se necesita reutilización, se extrae a componentes del framework o `@layer`.
+* **Estado y Variantes**: Modificadores como `hover:`, `focus:`, `dark:`, `group-hover:` aplican estilos condicionalmente sin JS.
+* **Arbitrary Values**: Sintaxis `[]` para valores fuera del diseño predefinido sin salir de Tailwind.
+
+---
+
+## 2. 🛠️ Instalación y Configuración
+
+* **CLI/PostCSS (Producción)**:
+  ```bash
+  npm install -D tailwindcss postcss autoprefixer
+  npx tailwindcss init -p
+  ```
+* **`tailwind.config.js` básico**:
+  ```js
+  /** @type {import('tailwindcss').Config} */
+  export default {
+    content: ["./src/**/*.{html,js,jsx,ts,tsx,vue}"],
+    theme: { extend: {} },
+    plugins: [],
+  }
+  ```
+* **CSS Entry (`input.css`)**:
+  ```css
+  @tailwind base;
+  @tailwind components;
+  @tailwind utilities;
+  ```
+* **CDN (Solo prototipado)**:
+  ```html
+  <script src="https://cdn.tailwindcss.com"></script>
+  ```
+  ⚠️ No usar en producción (no purga, tamaño fijo ~3MB, sin JIT).
+
+---
+
+## 3. 📝 Sintaxis y Utilidades Básicas
+
+| Categoría        | Ejemplos Comunes                                  |
+|------------------|---------------------------------------------------|
+| **Espaciado**    | `p-4`, `px-2`, `mt-8`, `-mb-4`, `gap-3`, `space-y-4` |
+| **Tipografía**   | `text-sm`, `font-bold`, `leading-relaxed`, `tracking-wide`, `text-center` |
+| **Colores**      | `text-gray-700`, `bg-blue-500`, `border-red-200`, `accent-green-600` |
+| **Layout**       | `block`, `flex`, `grid`, `hidden`, `contents`, `isolate` |
+| **Flexbox**      | `flex-row`, `flex-col`, `justify-center`, `items-start`, `flex-1`, `shrink-0` |
+| **Grid**         | `grid`, `grid-cols-3`, `col-span-2`, `gap-4`, `grid-flow-dense` |
+| **Bordes/Sombra**| `rounded-lg`, `rounded-full`, `border-2`, `border-dashed`, `shadow-md`, `shadow-xl` |
+| **Tamaño**       | `w-full`, `h-screen`, `max-w-2xl`, `min-h-0`, `aspect-video`, `object-cover` |
+
+```html
+&lt;!-- Ejemplo compuesto -->
+<div class="flex flex-col md:flex-row gap-4 p-6 bg-white rounded-xl shadow-sm hover:shadow-md transition">
+  <img src="avatar.jpg" class="w-16 h-16 rounded-full object-cover" alt="User" />
+  <div>
+    <h3 class="text-lg font-semibold text-gray-900">Nombre Usuario</h3>
+    <p class="text-sm text-gray-500">rol@ejemplo.com</p>
+  </div>
+</div>
+```
+
+---
+
+## 4. 📱 Diseño Responsivo (Mobile-First)
+
+* **Breakpoints por defecto**:
+  | Prefijo | Min-width |
+  |---------|-----------|
+  | `sm:`   | 640px     |
+  | `md:`   | 768px     |
+  | `lg:`   | 1024px    |
+  | `xl:`   | 1280px    |
+  | `2xl:`  | 1536px    |
+
+* **Patrón típico**: `hidden md:block` (oculta en móvil, muestra en ≥768px)
+* **Rangos personalizados**:
+  ```html
+  <div class="text-sm min-[700px]:text-base max-md:hidden">
+    Texto adaptativo
+  </div>
+  ```
+* **Container centrado**: `container mx-auto px-4 sm:px-6 lg:px-8`
+
+---
+
+## 5. 🎛️ Estados, Variantes y Modificadores
+
+* **Pseudo-clases**: `hover:bg-blue-600`, `focus:ring-2 focus:ring-offset-2`, `active:scale-95`, `visited:text-purple-600`
+* **Dark Mode**:
+  ```html
+  <div class="bg-white dark:bg-gray-900 text-gray-900 dark:text-white">
+    Tema automático o manual
+  </div>
+  ```
+  Config: `darkMode: 'class'` (toggle vía JS) o `'media'` (preferencia SO).
+* **Group / Peer**:
+  ```html
+  <div class="group cursor-pointer">
+    <p class="group-hover:text-blue-500 transition">Hover en padre → hijo</p>
+    <input class="peer border p-2" />
+    <label class="peer-placeholder-shown:opacity-0 peer-focus:text-blue-600">
+      Label dinámico
+    </label>
+  </div>
+  ```
+* **Valores arbitrarios**: `w-[320px]`, `bg-[#1da1f2]`, `grid-cols-[repeat(4,minmax(0,1fr))]`, `text-[clamp(1rem,2vw,2rem)]`
+* **Importancia / Negativos**: `-mt-4`, `!bg-red-500`, `hover:!scale-105`
+
+---
+
+## 6. ⚙️ Personalización Avanzada (`tailwind.config.js`)
+
+```js
+theme: {
+  extend: {
+    colors: {
+      brand: { 50: '#eff6ff', 500: '#3b82f6', 900: '#1e3a8a' },
+      secondary: '#64748b'
+    },
+    spacing: { '128': '32rem', '4/3': '75%' },
+    fontFamily: { sans: ['Inter', 'system-ui', 'sans-serif'] },
+    animation: { 'fade-in': 'fadeIn 0.4s ease-out' },
+    keyframes: {
+      fadeIn: { '0%': { opacity: '0', transform: 'translateY(4px)' }, '100%': { opacity: '1', transform: 'translateY(0)' } }
+    }
+  }
+}
+```
+
+* **Plugins oficiales**: `@tailwindcss/forms`, `@tailwindcss/typography`, `@tailwindcss/aspect-ratio`
+* **Plugin custom**:
+  ```js
+  plugin(function({ addUtilities }) {
+    addUtilities({ '.scrollbar-hide': { 'scrollbar-width': 'none', '-ms-overflow-style': 'none' } });
+  })
+  ```
+
+---
+
+## 7. 📦 Capas CSS y `@apply`
+
+```css
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer components {
+  .btn-primary {
+    @apply px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition shadow-sm;
+  }
+  .card {
+    @apply bg-white p-6 rounded-xl shadow-md border border-gray-100;
+  }
+}
+```
+
+* `@layer base`: Estilos globales/reset.
+* `@layer components`: Patrones reutilizables.
+* `@layer utilities`: Utilidades custom de baja especificidad.
+* ⚠️ **Evitar `@apply` excesivo**: Rompe la filosofía utility-first, dificulta el rastreo de estilos y aumenta el acoplamiento. Usar solo para patrones muy repetitivos o integración con librerías de terceros.
+
+---
+
+## 8. ⚡ Rendimiento y Optimización
+
+* **`content` array**: Define rutas exactas. JIT escanea solo estos archivos.
+* **Safelist** (clases dinámicas/generadas):
+  ```js
+  safelist: [
+    'text-red-500',
+    'bg-blue-{400,500,600}',
+    { pattern: /bg-(primary|secondary)-\d{3}/ }
+  ]
+  ```
+* **Preflight**: Reset CSS incluido. Desactivar si se usa otro reset: `corePlugins: { preflight: false }`
+* **Minificación**: Usar `Lightning CSS` o `cssnano` en pipeline. Tailwind ya elimina duplicados y unused selectors.
+* **Variables CSS**: Tailwind usa `var(--tw-...)` internamente. Compatible con `:root { --custom: value; }` y `class="[--custom:value]"`.
+
+---
+
+## 9. ⚠️ Errores Comunes y Trampas
+
+* **Clases dinámicas sin `safelist`**: `<div class="bg-${color}-500">` → **No funciona**. JIT escanea strings estáticos.
+  *Fix*: Mapa explícito o `safelist`.
+* **Confundir `space-*` con `gap`**: `gap` es para flex/grid nativos. `space-x/y` aplica `margin` entre hijos directos.
+* **Breakpoints invertidos**: `md:hidden` oculta en ≥768px. Para "desktop only": `hidden md:block`.
+* **Sobreescribir estilos de terceros**: Usar `!important` (`!bg-red-500`) o capas específicas. Evita specificity wars.
+* **Ignorar `preflight`**: Si se desactiva, elementos pierden `box-sizing: border-box`, márgenes reseteados, etc.
+* **`@apply` con pseudo-clases desordenadas**: El orden en CSS importa. Usa `@layer` para que Tailwind resuelva automáticamente la cascada.
+
+---
+
+## 10. 💡 Mejores Prácticas y Consejos de Experto
+
+* **Componer, no nombrar**: `flex items-center justify-center gap-2 p-4` > `.centered-box`. Mantenibilidad > semántica artificial.
+* **Design tokens first**: Configura `theme.extend` antes de escribir markup. Define paleta, spacing y tipografía base.
+* **Dark mode con `class`**: Más control que `media`. Toggle: `document.documentElement.classList.toggle('dark')`.
+* **Evita `@apply` para lógica compleja**: Extrae a componentes [React](/web/frontend/general/react/react "¡Excelente! React es la biblioteca de JavaScript más popular para construir interfaces de usuario.")/Vue/[Svelte](/web/frontend/framework/svelte "Svelte es un framework de compilación que traslada el trabajo reactivo a build time, generando código quirúrgico, altamente optimizado y sin Virtual DOM."). Pasa props como `className={twMerge(...)}`.
+* **`group`/`peer` con moderación**: Pueden crear acoplamiento difícil de rastrear. Prefiere pasar clases explícitas o usar CSS custom properties.
+* **Linting automático**: `prettier-plugin-tailwindcss` ordena clases al guardar. Integra en pre-commit o CI.
+* **Migración desde CSS tradicional**: Usa `@apply` temporalmente, luego refactoriza a utilidades puras en iteraciones.
+* **Testing visual**: Chromatic, Percy o Storybook con Tailwind aseguran consistencia en cambios de tema/breakpoints.
+
+---
+
+Este cheatsheet proporciona una referencia completa para TailwindCSS, cubriendo instalación, sintaxis utility-first, diseño responsivo, estados, personalización avanzada, optimización JIT y patrones de producción, junto con mejores prácticas para construir interfaces rápidas, mantenibles y escalables en entornos reales.
