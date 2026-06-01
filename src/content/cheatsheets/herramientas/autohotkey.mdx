@@ -1,6 +1,6 @@
 ---
 title: "AutoHotkey (AHK)"
-description: "AutoHotkey es el lenguaje de automatización de UI más potente para Windows: hotkeys, remapeo de teclado, macros de escritura, control de ventanas y creación de GUIs sencillas."
+description: "AutoHotkey (AHK) es un lenguaje de scripting gratuito y de código abierto para Windows diseñado específicamente para la automatización de la interfaz de usuario, el remapeo de teclas y la creación de macros."
 createdAt: 2026-05-20
 updatedAt: 2026-05-20
 tags: [autohotkey, ahk, windows, automatizacion, hotkeys, macros, ui, scripting]
@@ -22,7 +22,7 @@ icon: "⌨️"
 * **WinActivate / WinWait**: Funciones para controlar ventanas del sistema operativo.
 * **Persistent**: Directiva que mantiene el script ejecutándose aunque no haya hotkeys activos.
 * **#Include**: Directiva para incluir código de otros archivos AHK.
-* **Modificadores de tecla**: `^` (Ctrl), `!` (Alt), `+` (Shift), `#` (Win), `<`/`>` (izquierda/derecha).
+* **Modificadores de tecla**: `^` (Ctrl), `!` (Alt), `+` (Shift), `#` (Win), `&lt;`/`>` (izquierda/derecha).
 * **Script como ejecutable**: Los scripts AHK se pueden compilar a `.exe` con Ahk2Exe para distribuirlos sin que el destinatario tenga AHK instalado.
 * **AHK v2 vs v1**: AHK v2 (actual) tiene una sintaxis más consistente y moderna. Usa siempre v2 para proyectos nuevos.
 
@@ -63,7 +63,7 @@ VERSION    := "1.0"
 ; ─ Código de inicio (auto-execute section) ────────────────────
 ; Este bloque se ejecuta al iniciar el script, antes que cualquier hotkey
 TrayTip TITULO_APP, "Script iniciado (v" VERSION ")", 3000
-A_TrayMenu.Add("Acerca de...", (*) => MsgBox(TITULO_APP " v" VERSION))
+A_TrayMenu.Add("Acerca de...", (*) =&gt; MsgBox(TITULO_APP " v" VERSION))
 
 ; ─ Hotkeys y funciones ────────────────────────────────────────
 ; ... (definir hotkeys aquí)
@@ -84,7 +84,7 @@ Persistent
 ; !   = Alt
 ; +   = Shift
 ; #   = Win (tecla Windows)
-; <^  = Ctrl izquierdo
+; &lt;^  = Ctrl izquierdo
 ; >^  = Ctrl derecho
 ; *   = Ignorar modificadores adicionales (wildcard)
 ; ~   = Permite el comportamiento nativo además del script
@@ -118,12 +118,12 @@ F12:: {
 ~F1:: {
     static nClicks := 0
     nClicks++
-    if (A_ThisHotkey = A_PriorHotkey && A_TimeSincePriorHotkey < 400) {
+    if (A_ThisHotkey = A_PriorHotkey && A_TimeSincePriorHotkey &lt; 400) {
         nClicks := 0
         MsgBox "Doble F1 detectado!"
         return
     }
-    SetTimer () => nClicks := 0, -500
+    SetTimer () =&gt; nClicks := 0, -500
 }
 
 ; ─ Deshabilitar tecla ────────────────────────────
@@ -373,7 +373,7 @@ A_Sec            ; Segundo actual
 ```ahk
 ; ─ GUI Básica ────────────────────────────────────
 mi_gui := Gui(, "Mi Herramienta")
-mi_gui.OnEvent("Close", (*) => ExitApp())
+mi_gui.OnEvent("Close", (*) =&gt; ExitApp())
 
 ; Añadir controles
 mi_gui.Add("Text",, "Nombre:")
@@ -389,7 +389,7 @@ btn_ok := mi_gui.Add("Button", "Default w100", "Aceptar")
 btn_ok.OnEvent("Click", alAceptar)
 
 btn_cancel := mi_gui.Add("Button", "w100", "Cancelar")
-btn_cancel.OnEvent("Click", (*) => mi_gui.Hide())
+btn_cancel.OnEvent("Click", (*) =&gt; mi_gui.Hide())
 
 mi_gui.Show()
 
@@ -501,7 +501,7 @@ MostrarHora() {
 }
 
 ; Timer de una sola vez (negativo = una sola ejecución)
-SetTimer (*) => MsgBox("¡Recuerda tomar agua!"), -1800000   ; En 30 minutos
+SetTimer (*) =&gt; MsgBox("¡Recuerda tomar agua!"), -1800000   ; En 30 minutos
 
 ; ─ Funciones ─────────────────────────────────────
 ; Definición de función
@@ -512,7 +512,7 @@ MsgBox SaludarUsuario("AHK")   ; Hola, AHK!
 MsgBox SaludarUsuario()         ; Hola, Mundo!
 
 ; Función flecha (arrow function)
-Duplicar := (x) => x * 2
+Duplicar := (x) =&gt; x * 2
 MsgBox Duplicar(5)   ; 10
 
 ; Función con parámetros por referencia (&)
