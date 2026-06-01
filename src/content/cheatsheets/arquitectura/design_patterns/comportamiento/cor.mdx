@@ -1,3 +1,11 @@
+---
+title: "cor"
+description: "El patrón Chain of Responsibility (CoR) es un patrón de comportamiento que desacopla el emisor de una petición de sus receptores potenciales, permitiendo que múltiples objetos tengan la oportunidad de manejarla en una cadena secuencial."
+createdAt: 2026-05-22
+updatedAt: 2026-05-22
+tags: [comportamiento]
+icon: "📄"
+---
 # 🎯 Patrón Chain of Responsibility — Cheatsheet Completo 🎯
 
 El patrón **Chain of Responsibility (CoR)** es un patrón de comportamiento que desacopla el emisor de una petición de sus receptores potenciales, permitiendo que múltiples objetos tengan la oportunidad de manejarla en una cadena secuencial. La petición recorre la cadena hasta que un handler la procesa explícitamente, la transforma, la rechaza o la deja pasar al siguiente eslabón. Nace para eliminar acoplamiento rígido `if/else` o `switch` gigante, habilitar procesamiento dinámico de reglas, validar flujos complejos y soportar fallbacks controlados sin modificar la lógica de envío. Este cheatsheet desglosa la intención arquitectónica real del patrón, contratos de propagación segura, implementaciones multi-paradigma, variantes sincrónicas/asincrónicas y de prioridad, impacto en observabilidad y debugging, trampas de mutación cruzada y bucles infinitos, y criterios estrictos para decidir cuándo el enrutamiento desacoplado es una necesidad del dominio y no una cadena de indirecciones que degrada la trazabilidad o el rendimiento.
@@ -121,17 +129,17 @@ Se reemplaza herencia por arrays de funciones y `reduce`. Composición declarati
 from typing import Callable, Any
 from functools import reduce
 
-def compose_chain(*handlers: Callable[[Any], Any]) -> Callable[[Any], Any]:
-    def pipeline(ctx: Any) -> Any:
+def compose_chain(*handlers: Callable[[Any], Any]) -&gt; Callable[[Any], Any]:
+    def pipeline(ctx: Any) -&gt; Any:
         return reduce(lambda c, h: h(c), handlers, ctx)
     return pipeline
 
-def auth(ctx: dict) -> dict:
+def auth(ctx: dict) -&gt; dict:
     if not ctx.get("token"): raise ValueError("Missing token")
     ctx["user"] = decode(ctx["token"])
     return ctx
 
-def validate(ctx: dict) -> dict:
+def validate(ctx: dict) -&gt; dict:
     if not ctx.get("email"): raise ValueError("Email required")
     return ctx
 
@@ -145,10 +153,10 @@ Control explícito de flujo con `await next()`. Permite lógica pre/post y manej
 
 ```javascript
 function createAsyncChain(...middlewares) {
-  return async (context) => {
+  return async (context) =&gt; {
     let index = 0;
-    const dispatch = async () => {
-      if (index >= middlewares.length) return;
+    const dispatch = async () =&gt; {
+      if (index &gt;= middlewares.length) return;
       const middleware = middlewares[index++];
       await middleware(context, dispatch);
     };
@@ -158,9 +166,9 @@ function createAsyncChain(...middlewares) {
 
 // Uso:
 const chain = createAsyncChain(
-  async (ctx, next) => { ctx.start = Date.now(); await next(); ctx.latency = Date.now() - ctx.start; },
-  async (ctx, next) => { if (!ctx.auth) throw new Error('Unauthorized'); await next(); },
-  async (ctx) => { ctx.response = await fetchData(ctx.query); }
+  async (ctx, next) =&gt; { ctx.start = Date.now(); await next(); ctx.latency = Date.now() - ctx.start; },
+  async (ctx, next) =&gt; { if (!ctx.auth) throw new Error('Unauthorized'); await next(); },
+  async (ctx) =&gt; { ctx.response = await fetchData(ctx.query); }
 );
 ```
 
@@ -171,8 +179,8 @@ Handlers se registran con condiciones o pesos. El motor resuelve orden y ejecuta
 #[derive(Clone)]
 pub struct Rule {
     pub priority: u8,
-    pub predicate: Box<dyn Fn(&Request) -> bool + Send + Sync>,
-    pub handler: Box<dyn Fn(&mut Request) -> Result<Action, Error> + Send + Sync>,
+    pub predicate: Box<dyn Fn(&Request) -&gt; bool + Send + Sync>,
+    pub handler: Box<dyn Fn(&mut Request) -&gt; Result<Action, Error> + Send + Sync>,
 }
 
 pub struct ChainEngine {
@@ -181,7 +189,7 @@ pub struct ChainEngine {
 
 impl ChainEngine {
     pub fn add(&mut self, rule: Rule) { self.rules.push(rule); }
-    pub fn execute(&self, req: &mut Request) -> Result<Action, Error> {
+    pub fn execute(&self, req: &mut Request) -&gt; Result<Action, Error> {
         let mut sorted = self.rules.clone();
         sorted.sort_by_key(|r| r.priority);
         for rule in sorted {
@@ -204,7 +212,7 @@ impl ChainEngine {
 | **Pass-Through/Logging** | Todos los handlers se ejecutan secuencialmente. | Auditing, métricas, sanitización de datos, caching. | Overhead acumulado. Requiere gestión de errores por eslabón. |
 | **Priority/Weighted** | Orden dinámico por prioridad, no por inserción. | Rule engines, filtros de spam, políticas de compliance. | Complejidad de resolución. Riesgo de starvation si prioridades colisionan. |
 | **Async/Concurrent** | Handlers se ejecutan en paralelo o con `await next()`. | Procesamiento de requests HTTP, ETL, validación distribuida. | Complejidad de race conditions, backpressure y cancellation tokens. |
-| **Conditional Branching** | Handler decide si bifurca, salta o termina cadena. | Workflows de negocio, aprobaciones, state machines. | Difícil de depurar. Requiere diagramas de flujo explícitos. |
+| **Conditional Branching** | Handler decide si bifurca, salta o termina cadena. | Workflows de negocio, aprobaciones, [state](/arquitectura/design_patterns/comportamiento/state "El patrón State es un patrón de comportamiento que permite a un objeto alterar su comportamiento cuando su estado interno cambia, haciendo que parezca que el objeto cambia de clase.") machines. | Difícil de depurar. Requiere diagramas de flujo explícitos. |
 | **Fallback/Default** | Último eslabón maneja lo no cubierto. | APIs públicas, migraciones legacy, routing por defecto. | Puede enmascarar configuraciones erróneas si no se loguea. |
 
 ---
@@ -213,7 +221,7 @@ impl ChainEngine {
 
 | ✅ Usar cuando... | ❌ Evitar cuando... |
 |------------------|-------------------|
-| Múltiples objetos pueden manejar una petición y el orden es flexible o configurable | Solo hay 1-2 rutas de procesamiento. Usa `if/else` o Strategy directo. |
+| Múltiples objetos pueden manejar una petición y el orden es flexible o configurable | Solo hay 1-2 rutas de procesamiento. Usa `if/else` o [Strategy](/arquitectura/design_patterns/comportamiento/strategy "El patrón Strategy es un patrón de comportamiento que define una familia de algoritmos intercambiables, los encapsula y los hace sustituibles en tiempo de ejecución sin alterar el código del cliente que los utiliza.") directo. |
 | Necesitas desacoplar el emisor de receptores concretos | La cadena crece > 10 handlers y la trazabilidad se vuelve imposible sin tooling. |
 | Quieres añadir validación, logging, auth o transformación sin modificar lógica central | El rendimiento es crítico en loops tight. La iteración secuencial añade latencia. |
 | Trabajas con middlewares, pipelines de ETL, rule engines o flujos de aprobación | La lógica de cada handler depende fuertemente del estado interno de otros. |
@@ -221,10 +229,10 @@ impl ChainEngine {
 
 Comparación rápida con patrones de comportamiento:
 * **Chain of Responsibility**: Propaga petición hasta que un handler la procesa. Enfocado en enrutamiento y desacoplamiento.
-* **Decorator**: Envuelve y extiende comportamiento acumulativamente. Enfocado en extensión transparente.
-* **Observer**: Notifica a múltiples suscriptores simultáneamente. Enfocado en broadcasting, no en routing secuencial.
-* **Command**: Encapsula petición como objeto ejecutable. Enfocado en historial, undo/redo o cola de tareas.
-* **Strategy**: Intercambia algoritmo completo en runtime. Enfocado en variación de lógica, no en propagación.
+* **[Decorator](/arquitectura/design_patterns/estructurales/decorator "El patrón Decorator es un patrón estructural que permite añadir responsabilidades a objetos de forma dinámica, sin modificar su clase original ni crear jerarquías de subclases infinitas.")**: Envuelve y extiende comportamiento acumulativamente. Enfocado en extensión transparente.
+* **[Observer](/arquitectura/design_patterns/comportamiento/observer "El patrón Observer es un patrón de comportamiento que define una dependencia uno-a-muchos entre objetos, de modo que cuando un objeto cambia su estado, todos sus dependientes son notificados y actualizados automáticamente.")**: Notifica a múltiples suscriptores simultáneamente. Enfocado en broadcasting, no en routing secuencial.
+* **[Command](/arquitectura/design_patterns/comportamiento/command "El patrón Command es un patrón de comportamiento que encapsula una petición o acción como un objeto independiente, desacoplando el emisor de la petición del receptor que la ejecuta.")**: Encapsula petición como objeto ejecutable. Enfocado en historial, undo/redo o cola de tareas.
+* **[Strategy](/arquitectura/design_patterns/comportamiento/strategy "El patrón Strategy es un patrón de comportamiento que define una familia de algoritmos intercambiables, los encapsula y los hace sustituibles en tiempo de ejecución sin alterar el código del cliente que los utiliza.")**: Intercambia algoritmo completo en runtime. Enfocado en variación de lógica, no en propagación.
 
 ---
 
@@ -233,10 +241,10 @@ Comparación rápida con patrones de comportamiento:
 * **Aislamiento en Tests**: Prueba cada handler individualmente con contextos controlados. Verifica que `canHandle` retorne correctamente y que `handle` no mute estado inesperadamente.
   * Técnica: Usa fixtures, mocks para `next`, y asertos de inmutabilidad o mutación intencional.
 * **Validación de Flujos Completos**: Escribe tests que invoquen la cadena con payloads válidos, inválidos, límite y sin handler matching.
-  * Fix: `assert.throws(() => chain.handle(badCtx), /ValidationError/)`. Valida mensajes, no solo que falle.
+  * Fix: `assert.throws(() =&gt; chain.handle(badCtx), /ValidationError/)`. Valida mensajes, no solo que falle.
 * **Ciclo de Vida y Referencias Circulares**: La cadena debe ser un DAG. Nunca permitir `A.next = B; B.next = A;`.
 * **Refactorización desde `switch` Gigante**: Identifique ramas condicionales dispersas. Extraiga cada rama a `ConcreteHandler`. Envuelva en cadena. Deprecar branching progresivamente.
-* **Impacto en Rendimiento**: Cada handler añade evaluación + delegación. En CPUs modernas, negligible para < 20 handlers. Solo impacta en miles de requests/seg o cadenas > 50 eslabones. Profile antes de optimizar.
+* **Impacto en Rendimiento**: Cada handler añade evaluación + delegación. En CPUs modernas, negligible para &lt; 20 handlers. Solo impacta en miles de requests/seg o cadenas > 50 eslabones. Profile antes de optimizar.
 * **Gestión de Versiones**: Si se añaden handlers, mantenga compatibilidad hacia atrás. Use versionado de context o flags de feature. Nunca rompa contrato de `handle()`.
 * **Visibilidad y APIs Públicas**: Exponga solo `chain.execute()` o `pipeline.run()`. Oculte handlers internos. Reduzca superficie de uso indebido.
 * **Documentación de Orden y Terminación**: Especifique explícitamente secuencia, condiciones de stop, y fallback. Elimine suposiciones implícitas.
@@ -257,11 +265,11 @@ Comparación rápida con patrones de comportamiento:
   * Fix: Agrupe lógica relacionada en handlers cohesivos. Use prioridad o routing condicional. Profile y split si es crítico.
 * **Supresión Silenciosa de Errores**: `try/catch` en handler que no rethrow, ocultando fallos al siguiente eslabón o cliente.
   * Fix: Propague excepciones o use `Result`/`Either`. Documente política de errores. Fail fast con trazabilidad.
-* **Confundir con Decorator o Observer**: Usar CoR para añadir comportamiento acumulativo o broadcast a múltiples listeners.
-  * Fix: Si extiende interfaz transparente → Decorator. Si notifica a muchos → Observer. Si enruta hasta handler → CoR. No mezcle propósitos.
+* **Confundir con [Decorator](/arquitectura/design_patterns/estructurales/decorator "El patrón Decorator es un patrón estructural que permite añadir responsabilidades a objetos de forma dinámica, sin modificar su clase original ni crear jerarquías de subclases infinitas.") o [Observer](/arquitectura/design_patterns/comportamiento/observer "El patrón Observer es un patrón de comportamiento que define una dependencia uno-a-muchos entre objetos, de modo que cuando un objeto cambia su estado, todos sus dependientes son notificados y actualizados automáticamente.")**: Usar CoR para añadir comportamiento acumulativo o broadcast a múltiples listeners.
+  * Fix: Si extiende interfaz transparente → [Decorator](/arquitectura/design_patterns/estructurales/decorator "El patrón Decorator es un patrón estructural que permite añadir responsabilidades a objetos de forma dinámica, sin modificar su clase original ni crear jerarquías de subclases infinitas."). Si notifica a muchos → [Observer](/arquitectura/design_patterns/comportamiento/observer "El patrón Observer es un patrón de comportamiento que define una dependencia uno-a-muchos entre objetos, de modo que cuando un objeto cambia su estado, todos sus dependientes son notificados y actualizados automáticamente."). Si enruta hasta handler → CoR. No mezcle propósitos.
 * **Hardcoding de Orden**: Inserción manual `a.setNext(b).setNext(c)` sin validación o configuración.
   * Fix: Use builders, archivos de config, o registro con prioridad. Valide secuencia en startup.
-* **State Leakage entre Requests**: Handlers compiten por estado estático o caché global entre peticiones concurrentes.
+* **[State](/arquitectura/design_patterns/comportamiento/state "El patrón State es un patrón de comportamiento que permite a un objeto alterar su comportamiento cuando su estado interno cambia, haciendo que parezca que el objeto cambia de clase.") Leakage entre Requests**: Handlers compiten por estado estático o caché global entre peticiones concurrentes.
   * Fix: Pase contexto explícitamente por parámetro. Nunca estado global sin control. Use factories por request o scope DI.
 * **Falta de Validación de Entrada**: Handler asume formato correcto, falla en producción por campos nulos o tipos inválidos.
   * Fix: Valide contratos en bordes. Use schemas (`zod`, `Pydantic`, `valibot`). Rechace payloads malformados inmediatamente.
@@ -281,7 +289,7 @@ Comparación rápida con patrones de comportamiento:
 * **Profile antes de Desplegar**: No asuma overhead trivial. Mide latency por handler, allocation y GC pressure. Optimice solo si el profiler lo indica.
 * **Pruebe Flujos de Falla, no solo Éxito**: Valide cadenas rotas, handlers faltantes, timeouts, circuit open y recuperación. Detecte order-dependencies temprano.
 * **Mantenga Contratos Estables**: Cambiar la firma de `handle()` o `setNext()` rompe clientes. Use deprecación controlada, versionado semántico y handlers paralelos.
-* **No lo use "por moda"**: Si la lógica es lineal, predecible y no requiere desacoplamiento, use funciones directas o Strategy. La cadena innecesaria es deuda técnica de legibilidad y mantenimiento.
+* **No lo use "por moda"**: Si la lógica es lineal, predecible y no requiere desacoplamiento, use funciones directas o [Strategy](/arquitectura/design_patterns/comportamiento/strategy "El patrón Strategy es un patrón de comportamiento que define una familia de algoritmos intercambiables, los encapsula y los hace sustituibles en tiempo de ejecución sin alterar el código del cliente que los utiliza."). La cadena innecesaria es deuda técnica de legibilidad y mantenimiento.
 
 ---
 
