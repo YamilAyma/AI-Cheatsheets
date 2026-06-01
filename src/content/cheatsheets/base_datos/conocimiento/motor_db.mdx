@@ -21,13 +21,13 @@ Un **Motor de Base de Datos** (o Sistema de Gestión de Bases de Datos - SGBD) e
 * **Modelo de Datos**: La forma en que los datos se organizan, almacenan y manipulan. (ej. Relacional, Documento, Clave-Valor).
 * **Consistencia (Consistency)**:
   * **ACID (Atomicidad, Consistencia, Aislamiento, Durabilidad)**: Conjunto de propiedades que garantizan que las transacciones de bases de datos son procesadas de forma fiable. Crucial para bases de datos transaccionales tradicionales ([SQL](/base_datos/sql "SQL es el lenguaje estándar utilizado para comunicarse con y gestionar bases de datos relacionales (RDBMS) como MySQL, PostgreSQL, Oracle, SQL Server, SQLite, entre otros.")).
-  * **BASE (Basically Available, Soft state, Eventually consistent)**: Un conjunto de propiedades para sistemas NoSQL distribuidos que priorizan la disponibilidad y la tolerancia a particiones sobre la consistencia fuerte.
+  * **BASE (Basically Available, Soft [state](/arquitectura/design_patterns/comportamiento/state "El patrón State es un patrón de comportamiento que permite a un objeto alterar su comportamiento cuando su estado interno cambia, haciendo que parezca que el objeto cambia de clase."), Eventually consistent)**: Un conjunto de propiedades para sistemas NoSQL distribuidos que priorizan la disponibilidad y la tolerancia a particiones sobre la consistencia fuerte.
 * **Teorema CAP**: En un sistema distribuido, solo se pueden satisfacer dos de estas tres propiedades: **Consistencia (C)**, **Disponibilidad (A)** y **Tolerancia a Particiones (P)**.
 * **Escalabilidad**:
   * **Vertical (Scale Up)**: Aumentar la capacidad de un solo servidor (más CPU, RAM, disco).
   * **Horizontal (Scale Out)**: Añadir más servidores para distribuir la carga.
-* **SQL vs. NoSQL**:
-  * **SQL (Relacionales)**: Utilizan SQL para consultas, esquema predefinido, relaciones estrictas entre tablas.
+* **[SQL](/base_datos/sql "SQL es el lenguaje estándar utilizado para comunicarse con y gestionar bases de datos relacionales (RDBMS) como MySQL, PostgreSQL, Oracle, SQL Server, SQLite, entre otros.") vs. NoSQL**:
+  * **[SQL](/base_datos/sql "SQL es el lenguaje estándar utilizado para comunicarse con y gestionar bases de datos relacionales (RDBMS) como MySQL, PostgreSQL, Oracle, SQL Server, SQLite, entre otros.") (Relacionales)**: Utilizan SQL para consultas, esquema predefinido, relaciones estrictas entre tablas.
   * **NoSQL (No Relacionales)**: Esquema flexible/dinámico, no usan SQL como lenguaje de consulta principal, modelos de datos variados.
 
 ---
@@ -225,7 +225,7 @@ La decisión depende de tus **Requisitos No Funcionales (NFRs)** y el **Modelo d
     * PostgreSQL para datos transaccionales (pedidos, usuarios - integridad).
     * MongoDB para el catálogo de productos (flexibilidad de esquema).
     * Redis para caching de sesiones (velocidad).
-    * Elasticsearch para la búsqueda de productos (full-text search).
+    * [Elasticsearch](/devops/elasticsearch "Elasticsearch es un motor de búsqueda y análisis distribuido en tiempo real, construido sobre Apache Lucene.") para la búsqueda de productos (full-text search).
 
 ---
 
