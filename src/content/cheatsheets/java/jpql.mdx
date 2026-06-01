@@ -1,6 +1,6 @@
 ---
 title: "jpql"
-description: "JPQL es el lenguaje de consulta orientado a objetos definido como parte de la especificación Java Persistence API (JPA)."
+description: "JPQL es el lenguaje de consulta orientado a objetos definido como parte de la especificación Java Persistence API es un conjunto de reglas, protocolos y herramientas que permite que diferentes aplicaciones de software se comuniquen entre sí.\") (JPA)."
 createdAt: 2026-04-28
 updatedAt: 2026-04-28
 tags: [java]
@@ -18,10 +18,10 @@ icon: "📄"
 
 ## 1. 🌟 Conceptos Clave
 
-*   **Orientado a Objetos**: Las consultas se escriben utilizando los nombres de las entidades, sus campos y relaciones, tal como están definidos en el modelo de objetos Java.
+*   **Orientado a Objetos**: Las consultas se escriben utilizando los nombres de las entidades, sus campos y relaciones, tal como están definidos en el modelo de objetos [Java](/java/java "Java es un lenguaje de programación de propósito general, concurrente, basado en clases y orientado a objetos.").
 *   **Independencia de la Base de Datos**: Como opera sobre entidades, las consultas JPQL son portables a través de diferentes bases de datos subyacentes (MySQL, PostgreSQL, Oracle, etc.), siempre que tu proveedor JPA (ej. Hibernate) soporte esa base de datos.
-*   **Resultados Tipados**: Las consultas JPQL devuelven objetos Java (entidades o DTOs), no `ResultSet`s.
-*   **No es SQL Nativo**: Aunque similar en sintaxis, JPQL no es SQL. No se puede usar para DDL (CREATE TABLE) o DCL (GRANT). Se enfoca en DQL (SELECT) y DML básico (UPDATE, DELETE).
+*   **Resultados Tipados**: Las consultas JPQL devuelven objetos [Java](/java/java "Java es un lenguaje de programación de propósito general, concurrente, basado en clases y orientado a objetos.") (entidades o DTOs), no `ResultSet`s.
+*   **No es [SQL](/base_datos/sql "SQL es el lenguaje estándar utilizado para comunicarse con y gestionar bases de datos relacionales (RDBMS) como MySQL, PostgreSQL, Oracle, SQL Server, SQLite, entre otros.") Nativo**: Aunque similar en sintaxis, JPQL no es SQL. No se puede usar para DDL (CREATE TABLE) o DCL (GRANT). Se enfoca en DQL (SELECT) y DML básico (UPDATE, DELETE).
 *   **`EntityManager`**: La interfaz central de JPA para realizar operaciones de persistencia, incluyendo la creación y ejecución de consultas JPQL.
 
 ---
@@ -205,7 +205,7 @@ JPQL también permite operaciones básicas de `UPDATE` y `DELETE`. No soporta `I
 
 ## 7. 🔑 Parámetros de Consulta
 
-Para pasar valores dinámicos a las consultas. Protege contra la inyección SQL.
+Para pasar valores dinámicos a las consultas. Protege contra la inyección [SQL](/base_datos/sql "SQL es el lenguaje estándar utilizado para comunicarse con y gestionar bases de datos relacionales (RDBMS) como MySQL, PostgreSQL, Oracle, SQL Server, SQLite, entre otros.").
 
 *   **Parámetros Posicionales (`?n`)**:
     ```jpql
@@ -248,7 +248,7 @@ JPQL tiene un conjunto limitado de funciones incorporadas, a menudo mapeadas a f
     *   Dividirla en varias consultas más pequeñas.
     *   Realizar parte de la lógica en Java (después de obtener datos).
     *   Crear una Vista en la base de datos.
-    *   Usar Criteria API (más programático, para consultas dinámicas).
+    *   Usar Criteria [API](/conocimiento/api "Una API (Application Programming Interface) es un conjunto de reglas, protocolos y herramientas que permite que diferentes aplicaciones de software se comuniquen entre sí.") (más programático, para consultas dinámicas).
     *   Usar SQL nativo (`@NamedNativeQuery` o `createNativeQuery`) si es una consulta muy específica de la base de datos o si no se puede expresar en JPQL.
 *   **`@NamedQuery`**: Define consultas JPQL una vez en la entidad y refiérelas por nombre. Útil para la reutilización y para que las consultas se validen en tiempo de compilación.
 *   **Optimiza con `EXPLAIN`**: Si tu proveedor JPA lo soporta, puedes usar `query.unwrap(org.hibernate.query.Query.class).getQueryString()` para ver el SQL generado y luego usar `EXPLAIN` en tu base de datos para optimizar.
