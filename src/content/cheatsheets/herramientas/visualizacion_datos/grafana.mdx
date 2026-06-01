@@ -21,7 +21,7 @@ icon: "📄"
 *   **Fuente de Datos (Data Source)**: Una conexión a un sistema de base de datos o [API](/conocimiento/api "Una API (Application Programming Interface) es un conjunto de reglas, protocolos y herramientas que permite que diferentes aplicaciones de software se comuniquen entre sí.") donde se almacenan tus métricas o logs (ej. [Prometheus](/web/backend/framework/herramientas/prometheus "Prometheus es una solución de monitoreo de código abierto y sistema de alertado."), [Elasticsearch](/devops/elasticsearch "Elasticsearch es un motor de búsqueda y análisis distribuido en tiempo real, construido sobre Apache Lucene."), InfluxDB, MySQL, PostgreSQL, Loki, [Jaeger](/web/backend/framework/herramientas/jaeger "Jaeger es un sistema de trazabilidad distribuida de código abierto, inspirado en Dapper de Google y OpenZipkin."), CloudWatch).
 *   **Panel (Panel)**: Una única visualización en un dashboard (ej. un gráfico de líneas, un gráfico de barras, una tabla, un indicador).
 *   **Dashboard (Tablero de Control)**: Una colección de paneles organizados en una o más filas, que proporcionan una vista completa y unificada de tus datos.
-*   **Query (Consulta)**: El lenguaje específico del data source que se utiliza para recuperar datos para un panel (ej. PromQL para Prometheus, KQL para Elasticsearch).
+*   **Query (Consulta)**: El lenguaje específico del data source que se utiliza para recuperar datos para un panel (ej. PromQL para [Prometheus](/web/backend/framework/herramientas/prometheus "Prometheus es una solución de monitoreo de código abierto y sistema de alertado."), KQL para [Elasticsearch](/devops/elasticsearch "Elasticsearch es un motor de búsqueda y análisis distribuido en tiempo real, construido sobre Apache Lucene.")).
 *   **Transform (Transformación)**: Operaciones que se aplican a los resultados de la consulta para modificar o procesar los datos antes de la visualización (ej. unir datos, calcular diferencias, ordenar).
 *   **Alerting (Alertas)**: Permite definir reglas sobre tus métricas que disparan notificaciones cuando se cumplen ciertas condiciones.
 *   **Variables (Variables)**: Permiten hacer los dashboards dinámicos, sustituyendo valores en las consultas o en el título de los paneles.
@@ -81,7 +81,7 @@ Grafana se organiza en una barra lateral izquierda con los siguientes iconos:
 
 1.  Ve a `Connections` -&gt; `Data sources` -&gt; `Add data source`.
 2.  Selecciona el tipo (ej. `Prometheus`).
-3.  Configura los detalles de conexión (ej. URL de Prometheus: `http://localhost:9090`).
+3.  Configura los detalles de conexión (ej. URL de [Prometheus](/web/backend/framework/herramientas/prometheus "Prometheus es una solución de monitoreo de código abierto y sistema de alertado."): `http://localhost:9090`).
 4.  Haz clic en `Save & test`.
 
 ### 4.2. Crear un Nuevo Dashboard
@@ -95,7 +95,7 @@ Grafana se organiza en una barra lateral izquierda con los siguientes iconos:
     1.  **Selecciona la Fuente de Datos**.
     2.  **Escribe tu consulta**:
         *   **Prometheus (PromQL)**: `rate(http_requests_total[5m])`
-        *   **Elasticsearch (KQL o Lucene)**: `http.method:POST AND http.status_code:[400 TO 599]`
+        *   **[Elasticsearch](/devops/elasticsearch "Elasticsearch es un motor de búsqueda y análisis distribuido en tiempo real, construido sobre Apache Lucene.") (KQL o Lucene)**: `http.method:POST AND http.status_code:[400 TO 599]`
         *   **[SQL](/base_datos/sql "SQL es el lenguaje estándar utilizado para comunicarse con y gestionar bases de datos relacionales (RDBMS) como MySQL, PostgreSQL, Oracle, SQL Server, SQLite, entre otros.") (ej. PostgreSQL)**: `SELECT time_column, value_column FROM my_table WHERE $__timeFilter(time_column)` ( `$__timeFilter` es una macro de Grafana)
     3.  **Añadir series**: Puedes añadir múltiples consultas (A, B, C...) para mostrar diferentes líneas en un gráfico.
 *   **Transform (Pestaña `Transform`)**:
