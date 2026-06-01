@@ -1,6 +1,6 @@
 ---
 title: "react-hook-form"
-description: "  React Hook Form es una librería fantástica para la gestión de formularios en React, conocida por su rendimiento y facilidad de uso."
+description: "React Hook Form es una librería fantástica para la gestión de formularios en React, conocida por su rendimiento y facilidad de uso."
 createdAt: 2026-04-28
 updatedAt: 2026-04-28
 tags: [react]
@@ -13,14 +13,14 @@ icon: "⚛️"
 
 # 📝 React Hook Form Cheatsheet Completo 📝
 
-React Hook Form es una librería de alto rendimiento para la validación de formularios con React, que minimiza los re-renders y simplifica la gestión del estado del formulario, utilizando hooks no controlados (uncontrolled components) por defecto.
+[React](/web/frontend/general/react/react "¡Excelente! React es la biblioteca de JavaScript más popular para construir interfaces de usuario.") Hook Form es una librería de alto rendimiento para la validación de formularios con React, que minimiza los re-renders y simplifica la gestión del estado del formulario, utilizando hooks no controlados (uncontrolled components) por defecto.
 
 ---
 
 ## 1. 🌟 Conceptos Clave
 
 * **Rendimiento**: Se enfoca en componentes no controlados (uncontrolled components), minimizando re-renders y optimizando el rendimiento.
-* **Hooks**: Utiliza hooks de React para gestionar el estado del formulario y la validación.
+* **Hooks**: Utiliza hooks de [React](/web/frontend/general/react/react "¡Excelente! React es la biblioteca de JavaScript más popular para construir interfaces de usuario.") para gestionar el estado del formulario y la validación.
 * **Validación Declarativa**: Permite definir reglas de validación directamente en los inputs o a través de esquemas externos ([Zod](/web/frontend/general/zod "¡Absolutamente! Zod es una librería increíble para la validación de esquemas y tipos en TypeScript/JavaScript, famosa por su simplicidad y excelente inferencia de tipos."), [Yup](/web/frontend/general/Yup "Yup es una librería de JavaScript para la validación de esquemas.")).
 * **Aislamiento de Errores**: Solo los inputs con errores se re-renderizan, no todo el formulario.
 * **Simplicidad**: [API](/conocimiento/api "Una API (Application Programming Interface) es un conjunto de reglas, protocolos y herramientas que permite que diferentes aplicaciones de software se comuniquen entre sí.") sencilla y fácil de aprender.
@@ -225,7 +225,7 @@ const { handleSubmit } = useForm();
 // 1. Función que se ejecuta si la validación es exitosa
 const onSubmit = (data) =&gt; {
   console.log("Datos enviados:", data);
-  // Aquí llamarías a tu API
+  // Aquí llamarías a tu [API](/conocimiento/api "Una API (Application Programming Interface) es un conjunto de reglas, protocolos y herramientas que permite que diferentes aplicaciones de software se comuniquen entre sí.")
 };
 
 // 2. (Opcional) Función que se ejecuta si la validación falla
@@ -480,7 +480,7 @@ function ParentForm() {
 
 * **Componentes no controlados por defecto**: Siempre que sea posible, usa la ref (`{...register("name")}`) directamente en tus inputs nativos (`<input>`, `<select>`, `<textarea>`) para obtener el mejor rendimiento.
 * **Utiliza `Controller` para librerías de UI**: Cuando uses componentes de librerías como Material UI, Ant Design, o Chakra UI, utiliza el componente `Controller` para integrarlos correctamente.
-* **Centraliza tu validación**: Para formularios complejos, usa un `resolver` con librerías de esquemas como Zod o Yup. Mantiene tu lógica de validación limpia y separada.
+* **Centraliza tu validación**: Para formularios complejos, usa un `resolver` con librerías de esquemas como [Zod](/web/frontend/general/zod "¡Absolutamente! Zod es una librería increíble para la validación de esquemas y tipos en TypeScript/JavaScript, famosa por su simplicidad y excelente inferencia de tipos.") o [Yup](/web/frontend/general/Yup "Yup es una librería de JavaScript para la validación de esquemas."). Mantiene tu lógica de validación limpia y separada.
 * **Usa `defaultValues`**: Siempre define `defaultValues` en tu `useForm` para evitar componentes no controlados que cambian a controlados y viceversa, lo que puede causar advertencias en React.
 * **`mode` Importa**: Elige el `mode` de validación adecuado para tu UX. `onBlur` o `onSubmit` suelen ser buenas opciones para evitar validaciones intrusivas al escribir.
 * **`useWatch` vs `watch`**: Si solo necesitas observar un valor en un componente hijo y no quieres que el componente padre se re-renderice, usa `useWatch` dentro del hijo.
