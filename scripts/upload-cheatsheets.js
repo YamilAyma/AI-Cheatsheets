@@ -103,9 +103,8 @@ async function main() {
     return;
   }
 
-  console.log(`\n🚀 Se encontraron ${filesToCommit.length} cheatsheet(s) para procesar.`);
-
-  let commitCount = 0;
+  const newFiles = [];
+  const modifiedFiles = [];
 
   for (const file of filesToCommit) {
     const fileNameWithoutExt = path.basename(file.relativeToDir).replace(/\.mdx?$/, '');
@@ -115,14 +114,24 @@ async function main() {
       continue;
     }
 
+    const isNew = file.status === '??' || file.status === 'A';
+    if (isNew) {
+      newFiles.push(file);
+    } else {
+      modifiedFiles.push(file);
+    }
+  }
+
+  console.log(`\n🚀 Se encontraron ${newFiles.length} nueva(s) cheatsheet(s) y ${modifiedFiles.length} modificada(s).`);
+
+  let commitCount = 0;
+
+  // 1. Commit each NEW cheatsheet individually
+  for (const file of newFiles) {
+    const fileNameWithoutExt = path.basename(file.relativeToDir).replace(/\.mdx?$/, '');
     const folderScope = formatFolderLocation(file.relativeToDir);
     const cheatsheetTitle = await getCheatsheetTitle(file.relativeToRepo, fileNameWithoutExt);
-
-    // Differentiate between additions and updates
-    const isNew = file.status === '??' || file.status === 'A';
-    const commitMessage = isNew
-      ? `feat (Cheatsheet/${folderScope}): Agregar cheatsheet de ${cheatsheetTitle}`
-      : `docs (Cheatsheet/${folderScope}): Actualizar enlaces y metadatos de ${cheatsheetTitle}`;
+    const commitMessage = `feat (Cheatsheet/${folderScope}): Agregar cheatsheet de ${cheatsheetTitle}`;
 
     console.log(`\nStaging: ${file.relativeToRepo}`);
     try {
@@ -131,7 +140,23 @@ async function main() {
       execSync(`git commit -m "${commitMessage}"`);
       commitCount++;
     } catch (err) {
-      console.error(`❌ Error al procesar ${file.relativeToRepo}:`, err.message);
+      console.error(`❌ Error al procesar nueva cheatsheet ${file.relativeToRepo}:`, err.message);
+    }
+  }
+
+  // 2. Commit all MODIFIED cheatsheets in a single combined commit
+  if (modifiedFiles.length > 0) {
+    console.log(`\n📦 Agrupando ${modifiedFiles.length} cheatsheet(s) modificadas en un solo commit...`);
+    try {
+      for (const file of modifiedFiles) {
+        execSync(`git add "${file.relativeToRepo}"`);
+      }
+      const commitMessage = `docs (Cheatsheet): Actualizar enlaces y metadatos de cheatsheets existentes`;
+      console.log(`Committing: "${commitMessage}"`);
+      execSync(`git commit -m "${commitMessage}"`);
+      commitCount++;
+    } catch (err) {
+      console.error(`❌ Error al procesar actualizaciones agrupadas:`, err.message);
     }
   }
 
