@@ -244,7 +244,7 @@ Define cómo Fluentd almacena temporalmente los datos antes de enviarlos a la sa
     *   **Fluent Bit**: Más ligero, menor huella de memoria/CPU, escrito en C. Ideal para agentes en el borde (ej. en cada Pod de [Kubernetes](/devops/kubernetes "Kubernetes (K8s) es una plataforma portable y extensible de código abierto para gestionar cargas de trabajo y servicios en contenedores.")).
     *   A menudo se usan juntos: Fluent Bit recolecta y envía a Fluentd, y Fluentd agrega y envía al destino final.
 *   **Monitoriza Fluentd**: Monitoriza el rendimiento de Fluentd (uso de CPU/memoria, tamaño de los buffers, errores de salida) para asegurar que está funcionando eficientemente.
-*   **Volúmenes Persistentes para Logs y Buffers**: Cuando ejecutes Fluentd en contenedores (ej. Docker, Kubernetes), asegúrate de que los directorios de logs (`/var/log/app/`) y los buffers (`/var/log/fluentd/buffer/`) se monten en volúmenes persistentes.
+*   **Volúmenes Persistentes para Logs y Buffers**: Cuando ejecutes Fluentd en contenedores (ej. [Docker](/devops/docker "Docker es una plataforma de código abierto que utiliza la contenerización para empaquetar una aplicación y todas sus dependencias en una unidad estándar para el desarrollo de software."), [Kubernetes](/devops/kubernetes "Kubernetes (K8s) es una plataforma portable y extensible de código abierto para gestionar cargas de trabajo y servicios en contenedores.")), asegúrate de que los directorios de logs (`/var/log/app/`) y los buffers (`/var/log/fluentd/buffer/`) se monten en volúmenes persistentes.
 
 ---
 
