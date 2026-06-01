@@ -1,6 +1,6 @@
 ---
 title: "kiali"
-description: "Kiali es una consola de operaciones para Istio, que proporciona un mapa de la malla de servicios, gráficos de flujo de tráfico, vistas detalladas de la salud de los servicios, y la capacidad de depurar y validar la configuración de Istio."
+description: "Kiali es una consola de operaciones para Istio de código abierto que proporciona una capa de infraestructura transparente para gestionar las comunicaciones de servicio a servicio.\"), que proporciona un mapa de la malla de servicios, gráficos de flujo de tráfico, vistas detalladas de la salud de los servicios, y la capacidad de depurar y validar la configuración de Istio."
 createdAt: 2026-04-28
 updatedAt: 2026-04-28
 tags: [herramientas]
@@ -21,9 +21,9 @@ icon: "📄"
 *   **Service Mesh Visualization (Visualización de la Malla de Servicios)**: Kiali genera un mapa topológico de tu malla, mostrando los servicios, las relaciones de tráfico entre ellos y sus métricas de salud.
 *   **Traffic Flow (Flujo de Tráfico)**: Muestra cómo las solicitudes viajan entre los servicios en tiempo real.
 *   **Health Status (Estado de Salud)**: Indicadores visuales de la salud de los servicios (ej. tasa de errores).
-*   **Istio Configuration Validation**: Kiali puede validar tu configuración de Istio (VirtualServices, DestinationRules, Gateways, etc.) y señalar posibles errores o inconsistencias.
+*   **[Istio](/web/backend/framework/herramientas/istio "Istio es una malla de servicios (Service Mesh) de código abierto que proporciona una capa de infraestructura transparente para gestionar las comunicaciones de servicio a servicio.") Configuration Validation**: Kiali puede validar tu configuración de Istio (VirtualServices, DestinationRules, Gateways, etc.) y señalar posibles errores o inconsistencias.
 *   **Trace Integration (Integración de Trazas)**: Se integra con herramientas de trazabilidad como [Jaeger](/web/backend/framework/herramientas/jaeger "Jaeger es un sistema de trazabilidad distribuida de código abierto, inspirado en Dapper de Google y OpenZipkin.") para mostrar los detalles de las trazas de las solicitudes.
-*   **Metrics Integration (Integración de Métricas)**: Utiliza [Prometheus](/web/backend/framework/herramientas/prometheus "Prometheus es una solución de monitoreo de código abierto y sistema de alertado.") (el backend de métricas de Istio) para mostrar métricas detalladas de servicios y cargas de trabajo.
+*   **Metrics Integration (Integración de Métricas)**: Utiliza [Prometheus](/web/backend/framework/herramientas/prometheus "Prometheus es una solución de monitoreo de código abierto y sistema de alertado.") (el backend de métricas de [Istio](/web/backend/framework/herramientas/istio "Istio es una malla de servicios (Service Mesh) de código abierto que proporciona una capa de infraestructura transparente para gestionar las comunicaciones de servicio a servicio.")) para mostrar métricas detalladas de servicios y cargas de trabajo.
 
 ---
 
@@ -87,7 +87,7 @@ Kiali se organiza en varias secciones principales en su barra lateral izquierda:
 
 ### 3.5. Services (Servicios)
 
-*   Lista todos los servicios de Kubernetes.
+*   Lista todos los servicios de [Kubernetes](/devops/kubernetes "Kubernetes (K8s) es una plataforma portable y extensible de código abierto para gestionar cargas de trabajo y servicios en contenedores.").
 *   **Vista Detallada de Servicio**: Endpoints, métricas, estado de salud, configuraciones de Istio (VirtualService, DestinationRule) que afectan a este servicio.
 
 ### 3.6. Istio Config (Configuración de Istio)
@@ -98,9 +98,9 @@ Kiali se organiza en varias secciones principales en su barra lateral izquierda:
 
 ### 3.7. Traces (Trazas)
 
-*   **Integración con Jaeger**: Kiali se conecta a Jaeger (el backend de trazabilidad de Istio por defecto) y muestra las trazas de las solicitudes a través de tus servicios.
+*   **Integración con [Jaeger](/web/backend/framework/herramientas/jaeger "Jaeger es un sistema de trazabilidad distribuida de código abierto, inspirado en Dapper de Google y OpenZipkin.")**: Kiali se conecta a Jaeger (el backend de trazabilidad de Istio por defecto) y muestra las trazas de las solicitudes a través de tus servicios.
 *   Puedes filtrar trazas por servicio, operación, duración, etc.
-*   Haciendo clic en una traza, te redirige a la interfaz de Jaeger para ver los detalles completos del Span.
+*   Haciendo clic en una traza, te redirige a la interfaz de [Jaeger](/web/backend/framework/herramientas/jaeger "Jaeger es un sistema de trazabilidad distribuida de código abierto, inspirado en Dapper de Google y OpenZipkin.") para ver los detalles completos del Span.
 
 ### 3.8. Health (Salud)
 
@@ -110,12 +110,12 @@ Kiali se organiza en varias secciones principales en su barra lateral izquierda:
 
 ## 4. 📈 Métricas y Observabilidad
 
-Kiali utiliza Prometheus (el sistema de métricas de Istio) para mostrar gráficos de métricas detallados.
+Kiali utiliza [Prometheus](/web/backend/framework/herramientas/prometheus "Prometheus es una solución de monitoreo de código abierto y sistema de alertado.") (el sistema de métricas de Istio) para mostrar gráficos de métricas detallados.
 
 *   **Métricas de Servicios**: Tasa de éxito, tasa de errores, latencia (p50, p90, p99), tráfico (solicitudes por segundo).
 *   **Métricas de Carga de Trabajo / Pods**: Uso de CPU, memoria, red.
 *   **Filtrado y Agregación**: Puedes filtrar métricas por `response code`, `method`, `destination service`, `source workload`.
-*   **Dashboards Personalizados**: Aunque Kiali proporciona gráficos predeterminados, también puedes configurar tus propios dashboards en [Grafana](/herramientas/visualizacion_datos/grafana "Grafana es una herramienta de código abierto para la visualización y analítica de series de tiempo, diseñada para consultar, visualizar, alertar y comprender tus métricas dondequiera que se almacenen.") usando las métricas de Prometheus que Istio y Kiali exponen.
+*   **Dashboards Personalizados**: Aunque Kiali proporciona gráficos predeterminados, también puedes configurar tus propios dashboards en [Grafana](/herramientas/visualizacion_datos/grafana "Grafana es una herramienta de código abierto para la visualización y analítica de series de tiempo, diseñada para consultar, visualizar, alertar y comprender tus métricas dondequiera que se almacenen.") usando las métricas de [Prometheus](/web/backend/framework/herramientas/prometheus "Prometheus es una solución de monitoreo de código abierto y sistema de alertado.") que Istio y Kiali exponen.
 
 ---
 
