@@ -19,7 +19,7 @@ Flyway es una herramienta de control de versiones de bases de datos de código a
 
 ## 1. 🌟 Conceptos Clave
 
-* **Migración**: Un script SQL o una clase Java que realiza cambios en la base de datos (ej. crear una tabla, añadir una columna, insertar datos iniciales).
+* **Migración**: Un script [SQL](/base_datos/sql "SQL es el lenguaje estándar utilizado para comunicarse con y gestionar bases de datos relacionales (RDBMS) como MySQL, PostgreSQL, Oracle, SQL Server, SQLite, entre otros.") o una clase [Java](/java/java "Java es un lenguaje de programación de propósito general, concurrente, basado en clases y orientado a objetos.") que realiza cambios en la base de datos (ej. crear una tabla, añadir una columna, insertar datos iniciales).
 * **Versionamiento**: Cada migración tiene un número de versión único y un nombre. Flyway aplica las migraciones en orden numérico ascendente.
 * **Tabla de Historial (Schema History Table)**: Una tabla especial que Flyway crea en tu base de datos para registrar qué migraciones se han aplicado y cuándo. Por defecto, se llama `flyway_schema_history`.
 * **Base de Datos Actual**: El estado actual de tu esquema de base de datos después de aplicar todas las migraciones conocidas.
@@ -55,7 +55,7 @@ Por defecto, Flyway busca las migraciones en el directorio `classpath:db/migrati
 
 ### 2.2. Integración con Spring Boot (Recomendado)
 
-Spring Boot tiene soporte nativo para Flyway. Simplemente añade la dependencia:
+[Spring Boot](/web/backend/framework/spring/spring-boot "¡Absolutamente! Spring Boot es un framework increíble para construir aplicaciones Java robustas y de alto rendimiento de manera rápida y eficiente.") tiene soporte nativo para Flyway. Simplemente añade la dependencia:
 
 **Maven (`pom.xml`):**
 
@@ -101,12 +101,12 @@ spring.flyway.sql-migration-suffix=.sql # Sufijo (por defecto)
 spring.flyway.validate-on-migrate=true # Valida el checksum de las migraciones existentes antes de migrar
 ```
 
-**Flujo de Trabajo Básico con Spring Boot:**
+**Flujo de Trabajo Básico con [Spring Boot](/web/backend/framework/spring/spring-boot "¡Absolutamente! Spring Boot es un framework increíble para construir aplicaciones Java robustas y de alto rendimiento de manera rápida y eficiente."):**
 
 1. Añade la dependencia Flyway.
 2. Configura tu base de datos en `application.properties`.
 3. Crea un directorio `src/main/resources/db/migration`.
-4. Crea tus scripts SQL dentro de ese directorio siguiendo el formato `V<VERSION>__<DESCRIPTION>.sql`.
+4. Crea tus scripts [SQL](/base_datos/sql "SQL es el lenguaje estándar utilizado para comunicarse con y gestionar bases de datos relacionales (RDBMS) como MySQL, PostgreSQL, Oracle, SQL Server, SQLite, entre otros.") dentro de ese directorio siguiendo el formato `V<VERSION>__<DESCRIPTION>.sql`.
 5. Inicia tu aplicación Spring Boot. Flyway detectará automáticamente la base de datos y aplicará las migraciones pendientes.
 
 ---
@@ -226,7 +226,7 @@ public class V3__UpdateUserEmails extends BaseJavaMigration {
 
 * **Migraciones pequeñas y atómicas**: Cada migración debe hacer una cosa y hacerla bien.
 * **Prueba tus migraciones**: Ejecuta tus migraciones en un entorno de desarrollo o staging antes de ir a producción.
-* **Scripts SQL vs. Migraciones Java**:
+* **Scripts SQL vs. Migraciones [Java](/java/java "Java es un lenguaje de programación de propósito general, concurrente, basado en clases y orientado a objetos.")**:
   * Usa SQL para la mayoría de los cambios de esquema y datos. Son más legibles y fáciles de versionar.
   * Usa migraciones Java solo para transformaciones de datos complejas o lógica que no se puede expresar fácilmente en SQL.
 * **Datos de Referencia**: Usa migraciones repetibles (`R__`) para datos que cambian con frecuencia (ej. listas de categorías) o para funciones y vistas.
