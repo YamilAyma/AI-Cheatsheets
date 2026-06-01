@@ -46,3 +46,6 @@ todo.txt
 
 # Internal linker (generated)
 scripts/link-dictionary.json
+
+# Datos de cheatsheet para tracking
+docs/cheatsheets-tree.txt
