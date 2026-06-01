@@ -59,7 +59,7 @@ docker run -d --name jaeger -p 16686:16686 -p 6831:6831/udp -p 6832:6832/udp -p 
 
 Para producción, necesitas configurar un backend de almacenamiento persistente.
 
-*   **Elasticsearch (Recomendado)**:
+*   **[Elasticsearch](/devops/elasticsearch "Elasticsearch es un motor de búsqueda y análisis distribuido en tiempo real, construido sobre Apache Lucene.") (Recomendado)**:
     ```bash
     docker run -d --name jaeger \
       -e COLLECTOR_ZIPKIN_HOST_PORT=9411 \
@@ -71,7 +71,7 @@ Para producción, necesitas configurar un backend de almacenamiento persistente.
       -p 14268:14268 \
       jaegertracing/all-in-one:latest # En un entorno real, usarías componentes separados
     ```
-*   **Cassandra**: Similar a Elasticsearch, con variables de entorno para los puntos de contacto de Cassandra.
+*   **Cassandra**: Similar a [Elasticsearch](/devops/elasticsearch "Elasticsearch es un motor de búsqueda y análisis distribuido en tiempo real, construido sobre Apache Lucene."), con variables de entorno para los puntos de contacto de Cassandra.
 
 ---
 
@@ -155,10 +155,10 @@ Para producción, necesitas configurar un backend de almacenamiento persistente.
 
 ## 6. 🌐 Integración y Ecosistema
 
-*   **Micrometer Tracing**: El puente de instrumentación para Java (Spring Boot).
+*   **[Micrometer Tracing](/web/backend/framework/spring/micrometer-tracing "Micrometer Tracing (parte de Spring Boot 3+ y Micrometer 1.10+) es un puente entre las aplicaciones Spring y las APIs de instrumentación de trazabilidad distribuida (principalmente OpenTelemetry).")**: El puente de instrumentación para [Java](/java/java "Java es un lenguaje de programación de propósito general, concurrente, basado en clases y orientado a objetos.") ([Spring Boot](/web/backend/framework/spring/spring-boot "¡Absolutamente! Spring Boot es un framework increíble para construir aplicaciones Java robustas y de alto rendimiento de manera rápida y eficiente.")).
 *   **OpenTelemetry**: El estándar de facto para instrumentación de observabilidad (trazas, métricas, logs). Jaeger es compatible con Spans de OTel.
 *   **[Istio](/web/backend/framework/herramientas/istio "Istio es una malla de servicios (Service Mesh) de código abierto que proporciona una capa de infraestructura transparente para gestionar las comunicaciones de servicio a servicio.")**: Una malla de servicios que utiliza Jaeger para su trazabilidad distribuida.
-*   **Logs**: Los logs de la aplicación pueden ser enriquecidos con `Trace ID` y `Span ID` para facilitar la correlación. (Spring Boot lo hace por defecto con Micrometer Tracing).
+*   **Logs**: Los logs de la aplicación pueden ser enriquecidos con `Trace ID` y `Span ID` para facilitar la correlación. ([Spring Boot](/web/backend/framework/spring/spring-boot "¡Absolutamente! Spring Boot es un framework increíble para construir aplicaciones Java robustas y de alto rendimiento de manera rápida y eficiente.") lo hace por defecto con [Micrometer Tracing](/web/backend/framework/spring/micrometer-tracing "Micrometer Tracing (parte de Spring Boot 3+ y Micrometer 1.10+) es un puente entre las aplicaciones Spring y las APIs de instrumentación de trazabilidad distribuida (principalmente OpenTelemetry).")).
 *   **Métricas**: Aunque Jaeger se enfoca en trazas, los sistemas de monitoreo de métricas ([Prometheus](/web/backend/framework/herramientas/prometheus "Prometheus es una solución de monitoreo de código abierto y sistema de alertado."), [Grafana](/herramientas/visualizacion_datos/grafana "Grafana es una herramienta de código abierto para la visualización y analítica de series de tiempo, diseñada para consultar, visualizar, alertar y comprender tus métricas dondequiera que se almacenen.")) son complementarios para identificar problemas que luego se investigan con trazas.
 
 ---
@@ -172,7 +172,7 @@ Para producción, necesitas configurar un backend de almacenamiento persistente.
 *   **Monitorea tu Infraestructura Jaeger**: Monitorea la salud y el rendimiento de tus componentes de Jaeger (Agent, Collector, Query Service, Storage) para asegurar que puedan manejar el volumen de datos.
 *   **Configura Almacenamiento Persistente para Producción**: No uses el almacenamiento en memoria para Jaeger en producción. Elasticsearch o Cassandra son las opciones más comunes.
 *   **Logs Correlacionados**: Asegúrate de que tus logs incluyan el `Trace ID` y `Span ID` para poder correlacionar un log específico con una traza completa.
-*   **Usa un Agente Jaeger (Sidecar en K8s)**: En Kubernetes, desplegar el Jaeger Agent como un sidecar en cada Pod es la forma recomendada, ya que reduce el overhead de red y garantiza que los Spans se envíen de forma robusta.
+*   **Usa un Agente Jaeger (Sidecar en K8s)**: En [Kubernetes](/devops/kubernetes "Kubernetes (K8s) es una plataforma portable y extensible de código abierto para gestionar cargas de trabajo y servicios en contenedores."), desplegar el Jaeger Agent como un sidecar en cada Pod es la forma recomendada, ya que reduce el overhead de red y garantiza que los Spans se envíen de forma robusta.
 *   **Comprende la Jerarquía de Spans**: Un buen entendimiento de cómo se anidan los Spans te ayudará a interpretar el gráfico de Gantt y a identificar cuellos de botella en la traza.
 
 ---
