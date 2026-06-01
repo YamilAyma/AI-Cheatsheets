@@ -21,7 +21,7 @@ icon: "☁️"
 
 *   **Configuración Externa**: La configuración de una aplicación no está "empaquetada" dentro del código o JAR/WAR, sino que se carga desde una fuente externa en tiempo de ejecución.
 *   **Centralización**: Todas las configuraciones de los microservicios se almacenan en un único lugar (ej. un repositorio [Git](/herramientas/git/git "Git es un sistema de control de versiones distribuido (DVCS) diseñado para manejar proyectos pequeños o muy grandes con velocidad y eficiencia.")).
-*   **Versionado**: La configuración se gestiona con un sistema de control de versiones (Git por defecto), lo que permite rastrear cambios, revertir versiones y auditar.
+*   **Versionado**: La configuración se gestiona con un sistema de control de versiones ([Git](/herramientas/git/git "Git es un sistema de control de versiones distribuido (DVCS) diseñado para manejar proyectos pequeños o muy grandes con velocidad y eficiencia.") por defecto), lo que permite rastrear cambios, revertir versiones y auditar.
 *   **Perfiles y Etiquetas (Profiles & Labels)**: Permite tener configuraciones específicas para diferentes entornos (ej. `dev`, `prod`, `qa`) y versiones (ej. `master`, `v1.0`).
 *   **Config Server (Servidor de Configuración)**: El microservicio que sirve la configuración a las aplicaciones cliente.
 *   **Config Client (Cliente de Configuración)**: Cualquier microservicio que obtiene su configuración del Config Server.
@@ -96,7 +96,7 @@ icon: "☁️"
             # native: # Alternativa: Usar el sistema de archivos local (para dev/testing)
             #   search-locations: file:///C:/config-files, classpath:/config-files/
     ```
-    *   **Repositorio de Configuración (Ejemplo Git)**: Crea un repositorio Git (ej. en [GitHub](/herramientas/github "GitHub es una plataforma web para el alojamiento de repositorios de control de versiones Git.")) que contendrá tus archivos de configuración.
+    *   **Repositorio de Configuración (Ejemplo [Git](/herramientas/git/git "Git es un sistema de control de versiones distribuido (DVCS) diseñado para manejar proyectos pequeños o muy grandes con velocidad y eficiencia."))**: Crea un repositorio Git (ej. en [GitHub](/herramientas/github "GitHub es una plataforma web para el alojamiento de repositorios de control de versiones Git.")) que contendrá tus archivos de configuración.
         ```
         # mi-repo-config.git/configs/
         #   └─ my-service.yml        # Configuración por defecto para 'my-service'
