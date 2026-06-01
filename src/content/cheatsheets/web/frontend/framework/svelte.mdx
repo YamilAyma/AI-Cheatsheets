@@ -1,0 +1,342 @@
+---
+title: "svelte"
+description: "Svelte es un framework de compilación que traslada el trabajo reactivo a build time, generando código quirúrgico, altamente optimizado y sin Virtual DOM."
+createdAt: 2026-06-01
+updatedAt: 2026-06-01
+tags: [framework]
+icon: "📄"
+---
+# 🎯 Svelte — Complete Cheatsheet 🎯
+
+Svelte es un framework de compilación que traslada el trabajo reactivo a *build time*, generando código quirúrgico, altamente optimizado y sin Virtual DOM. Svelte 5 introduce el sistema de **Runes** (`$state`, `$derived`, `$effect`, `$props`, `$bindable`) para una reactividad explícita, predecible y escalable, eliminando la magia implícita de versiones anteriores. Este cheatsheet cubre desde la instalación y sintaxis moderna hasta gestión de estado avanzada, optimización de renders, [SvelteKit](/web/fullstack/sveltekit "SvelteKit es el meta-framework oficial de Svelte diseñado para construir aplicaciones web completas, modernas y altamente performantes.") integration y patrones de producción. Ideal para desarrolladores que migran desde [React](/web/frontend/general/react/react "¡Excelente! React es la biblioteca de JavaScript más popular para construir interfaces de usuario."), Vue o Svelte 4 y buscan un framework ligero, rápido y con DX excepcional.
+
+---
+
+## 1. 🌟 Conceptos Fundamentales
+
+* **Compile-Time Reactivity**: Svelte compila componentes a JavaScript plano que actualiza el DOM quirúrgicamente. Sin VDOM, sin diffing, sin overhead en runtime.
+* **Runes (Svelte 5+)**: Funciones especiales (`$state`, `$derived`, `$effect`, `$props`) que declaran reactividad explícita. Se ejecutan en tiempo de compilación y garantizan granularidad.
+* **Scoped CSS Nativo**: Estilos se aplican automáticamente al componente con hashes únicos. Sin colisiones, sin necesidad de CSS Modules o Styled Components.
+* **Declarativo y Reactivo**: La UI se deriva directamente del estado. Cambios en variables reactivas actualizan el DOM automáticamente.
+* **Component-Driven**: Arquitectura basada en componentes autocontenidos con comunicación vía props, eventos y context.
+* **SvelteKit**: Meta-framework oficial para routing, SSR/SSG, [API](/conocimiento/api "Una API (Application Programming Interface) es un conjunto de reglas, protocolos y herramientas que permite que diferentes aplicaciones de software se comuniquen entre sí.") routes, formularios y despliegue optimizado. Reemplaza la necesidad de [Vite](/web/frontend/general/vite "Vite es una herramienta de construcción frontend de última generación que combina un servidor de desarrollo ultrarrápido basado en módulos nativos del navegador con un empaquetador de producción optimizado mediante Rollup.")/Next/[Nuxt](/web/frontend/framework/nuxt "Nuxt es un meta-framework full-stack de código abierto construido sobre Vue.js que elimina la complejidad de configurar herramientas modernas de frontend.") por separado.
+
+---
+
+## 2. 🛠️ Instalación y Entorno
+
+* **Scaffolding oficial**:
+  ```bash
+  npm create svelte@latest my-app
+  # Selecciona: Skeleton / SvelteKit demo, TypeScript, ESLint, Prettier
+  cd my-app && npm install
+  ```
+* **Estructura de proyecto (SvelteKit)**:
+  ```
+  my-app/
+  ├── src/
+  │   ├── app.html          # Plantilla HTML base
+  │   ├── routes/           # File-based routing
+  │   ├── lib/              # Componentes y utilidades compartidas
+  │   └── app.css           # Estilos globales
+  ├── svelte.config.js      # Configuración (adapters, preprocessors)
+  ├── vite.config.ts        # Integración con Vite
+  └── package.json
+  ```
+* **Comandos esenciales**:
+  ```bash
+  npm run dev               # Servidor de desarrollo con HMR
+  npm run build             # Compilación optimizada (SSR/SSG/SPA según adapter)
+  npm run preview           # Vista previa local del build
+  npm run check             # Type-check + validación Svelte (`svelte-check`)
+  ```
+
+---
+
+## 3. 📝 Sintaxis y Reactividad (Svelte 5+ Runes)
+
+### 3.1. `$state` y `$derived`
+```svelte
+<script lang="ts">
+  let count = $state(0);          // Estado reactivo mutable
+  let doubled = $derived(count * 2); // Valor computado (cacheado)
+
+  // Objetos y arrays son proxies profundos
+  let user = $state({ name: 'Ana', age: 28 });
+  let tags = $state(['svelte', 'frontend']);
+
+  function increment() {
+    count += 1;        // ✅ Reactivo
+    user.age += 1;     // ✅ Mutación directa (proxy)
+    tags.push('new');  // ✅ Métodos de array detectados
+  }
+</script>
+
+<p>Count: {count} | Double: {doubled}</p>
+<button onclick={increment}>Increment</button>
+```
+
+### 3.2. `$effect` y `$effect.pre`
+```svelte
+<script>
+  let width = $state(window.innerWidth);
+  let height = $state(window.innerHeight);
+
+  // Ejecuta después del DOM update (ideal para side-effects)
+  $effect(() =&gt; {
+    document.title = `Size: ${width}x${height}`;
+  });
+
+  // Ejecuta antes del DOM update (ideal para validación/sincronización)
+  $effect.pre(() =&gt; {
+    if (width &lt; 640) console.log('Mobile view');
+  });
+</script>
+```
+
+### 3.3. `$props` y `$bindable`
+```svelte
+<script lang="ts">
+  // Props reactivas (tipo seguro con TS)
+  let { title, count = 0, onUpdate }: Props = $props();
+
+  // Prop bidireccional (sync con padre)
+  let { value }: { value: number } = $bindable();
+</script>
+
+&lt;!-- Uso: <Counter title="Demo" bind:value={parentCount} /> -->
+```
+
+---
+
+## 4. 🔀 Control de Flujo y Lógica
+
+```svelte
+<script>
+  let items = $state([
+    { id: 1, name: 'A', done: false },
+    { id: 2, name: 'B', done: true }
+  ]);
+  let promise = $state(fetch('/api/data'));
+</script>
+
+&lt;!-- Condicional -->
+{#if items.length > 0}
+  <ul>
+    {#each items as item (item.id)}
+      <li class:done={item.done}>{item.name}</li>
+    {:else}
+      <li>Vacío</li>
+    {/each}
+  </ul>
+{/if}
+
+&lt;!-- Promesas / Async -->
+{#await promise}
+  <p>Cargando...</p>
+{:then data}
+  <pre>{JSON.stringify(data)}</pre>
+{:catch error}
+  <p class="error">{error.message}</p>
+{/await}
+
+&lt;!-- Key block (recrea DOM cuando cambia key) -->
+{#key user.id}
+  <UserProfile {user} />
+{/key}
+```
+
+---
+
+## 5. 📦 Componentes, Props y Slots
+
+### 5.1. Comunicación Padres-Hijos
+```svelte
+&lt;!-- Child.svelte -->
+<script lang="ts">
+  let { label, value = '' }: { label: string; value: string } = $props();
+  let emit = $dispatch&lt;'change'>();
+
+  function handleChange(e: Event) {
+    const target = e.target as HTMLInputElement;
+    emit('change', target.value);
+  }
+</script>
+
+<label>{label}</label>
+<input value={value} oninput={handleChange} />
+```
+
+### 5.2. Slots y Fallbacks
+```svelte
+&lt;!-- Card.svelte -->
+<div class="card">
+  <header>
+    <slot name="title">Default Title</slot>
+  </header>
+  <main>
+    <slot /> &lt;!-- Slot por defecto -->
+  </main>
+  <footer>
+    <slot name="actions">
+      <button>Cerrar</button>
+    </slot>
+  </footer>
+</div>
+
+&lt;!-- Uso -->
+<Card>
+  <svelte:fragment slot="title">Mi Título</svelte:fragment>
+  <p>Contenido principal</p>
+  <svelte:fragment slot="actions">
+    <button>Guardar</button>
+  </svelte:fragment>
+</Card>
+```
+
+---
+
+## 6. ⚡ Efectos, Ciclo de Vida y Contexto
+
+### 6.1. Lifecycle Hooks
+```svelte
+<script>
+  import { onMount, onDestroy, tick } from 'svelte';
+
+  let canvas: HTMLCanvasElement;
+
+  onMount(async () =&gt; {
+    // Ejecuta tras montaje inicial
+    const ctx = canvas.getContext('2d');
+    ctx.fillRect(0, 0, 100, 100);
+  });
+
+  onDestroy(() =&gt; {
+    // Limpieza: clearInterval, removeEventListener, etc.
+  });
+
+  async function update() {
+    count++;
+    await tick(); // Espera a que el DOM se actualice
+    console.log('DOM actualizado:', count);
+  }
+</script>
+```
+
+### 6.2. Context API (`setContext` / `getContext`)
+```svelte
+&lt;!-- Provider.svelte -->
+<script>
+  import { setContext } from 'svelte';
+  let theme = $state('dark');
+  setContext('theme', { theme, toggle: () =&gt; theme = theme === 'dark' ? 'light' : 'dark' });
+</script>
+
+<slot />
+
+&lt;!-- Consumer.svelte -->
+<script>
+  import { getContext } from 'svelte';
+  const { theme, toggle } = getContext('theme');
+</script>
+
+<p>Current: {theme}</p>
+<button onclick={toggle}>Toggle</button>
+```
+
+---
+
+## 7. 🌐 Routing y Full-Stack (SvelteKit)
+
+### 7.1. Estructura de Rutas
+```
+src/routes/
+├── +page.svelte       # Página principal
+├── +layout.svelte     # Layout compartido (navbar, footer)
+├── +error.svelte      # Manejo de errores (4xx, 5xx)
+├── api/
+│   └── +server.ts     # API endpoint (GET, POST, etc.)
+└── [slug]/
+    └── +page.svelte   # Ruta dinámica
+```
+
+### 7.2. Data Loading y Actions
+```ts
+// +page.server.ts (solo servidor)
+import type { PageServerLoad, Actions } from './$types';
+
+export const load: PageServerLoad = async ({ fetch }) =&gt; {
+  const res = await fetch('/api/users');
+  return { users: await res.json() };
+};
+
+export const actions: Actions = {
+  default: async ({ request }) =&gt; {
+    const data = await request.formData();
+    // Validar, guardar en DB, redirigir
+    return { success: true };
+  }
+};
+```
+
+```svelte
+&lt;!-- +page.svelte -->
+<script lang="ts">
+  import type { PageData } from './$types';
+  import { invalidateAll } from '$app/navigation';
+
+  let { data }: { data: PageData } = $props();
+  let form = $state({ email: '', name: '' });
+
+  async function submit() {
+    const res = await fetch('/api/submit', {
+      method: 'POST', body: new FormData(form)
+    });
+    if (res.ok) await invalidateAll(); // Recarga datos del load
+  }
+</script>
+```
+
+### 7.3. Navegación y Estado Global
+```ts
+import { goto, pushState, replaceState } from '$app/navigation';
+import { page } from '$app/stores'; // $page.url, $page.data, $page.status
+
+goto('/dashboard', { replaceState: true });
+```
+
+---
+
+## 8. ⚠️ Errores Comunes y Trampas
+
+* **Mutación sin proxies**: Modificar objetos fuera de `$state` o usar `Object.freeze()` rompe la reactividad.
+  *Fix*: Declarar con `$state()` y mutar directamente (`obj.key = val`).
+* **Confundir `$derived` con `$effect`**: `$derived` es síncrono y cacheado. `$effect` es asíncrono y para side-effects.
+  *Fix*: Usar `$derived` para valores calculados, `$effect` para I/O, DOM o subscriptions.
+* **Llamar APIs en `onMount`**: Rompe SSR y causa waterfalls.
+  *Fix*: Usar `load` en `+page.server.ts` o `+page.ts` para fetching.
+* **Slots sin fallbacks ni tipado**: Causa errores en runtime si el padre no provee contenido.
+  *Fix*: Definir fallbacks explícitos y usar `<svelte:component>` o interfaces para slots complejos.
+* **Ignorar `tick()` tras cambios de estado**: Leer dimensiones/posiciones DOM inmediatamente después de mutar `$state` devuelve valores viejos.
+  *Fix*: `await tick()` antes de leer DOM o usar `ResizeObserver`/`MutationObserver`.
+* **Contexto no disponible en `onMount`**: `getContext()` falla si se llama antes de que el ancestro ejecute `setContext()`.
+  *Fix*: Llamar `getContext()` en el script top-level, no dentro de callbacks o `onMount`.
+
+---
+
+## 9. 💡 Mejores Prácticas y Consejos de Experto
+
+* **Prefiere `$derived` sobre lógica manual**: Elimina `useMemo`/`useEffect` boilerplate. La caché se invalida automáticamente cuando cambian dependencias.
+* **Usa `svelte-check` y `strict` mode**: Habilita [TypeScript](/web/general/typescript "TypeScript es una herramienta fundamental en el desarrollo web moderno, especialmente para proyectos a gran escala, ya que añade seguridad de tipo y mejoras en la productividad.") estricto en `tsconfig.json`. Captura props faltantes, tipos incorrectos y accesibilidad en CI.
+* **Centraliza formularios con `use:enhance`**: `<form method="POST" use:enhance>` maneja progresive enhancement, validación y redirección sin JS adicional.
+* **Optimiza renders con `@const` y destructuring**: `{@const name = user.firstName}` evita recálculos en templates complejos.
+* **Aprovecha `$inspect()` para debugging**: `$inspect(count)` imprime cambios en consola con stack trace. Ideal para tracear reactividad en desarrollo.
+* **Mantén componentes pequeños y composables**: Extraer lógica a `lib/` o custom hooks (`useAuth.ts`, `useDebounce.ts`). Evitar componentes >300 líneas.
+* **Usar `adapter-auto` para despliegue**: Detecta Vercel, Netlify, Cloudflare, Node automáticamente. Configurar `adapter-vercel` o `adapter-node` para producción real.
+* **Validar datos en el servidor**: Nunca confiar en validación cliente. Usar `zod` o `valibot` en `load` y `actions` para esquemas seguros.
+* **Evitar side-effects en templates**: No llamar funciones que mutan estado dentro de `{ }`. Usar `$derived` o handlers `onclick`.
+* **Perfilar con DevTools**: `npx svelte devtools` o `Svelte DevTools` extension. Inspeccionar renders, props, [state](/arquitectura/design_patterns/comportamiento/state "El patrón State es un patrón de comportamiento que permite a un objeto alterar su comportamiento cuando su estado interno cambia, haciendo que parezca que el objeto cambia de clase.") y identificar actualizaciones innecesarias.
+
+---
+
+Este cheatsheet proporciona una referencia completa para Svelte, cubriendo el sistema de Runes moderno, reactividad explícita, control de flujo declarativo, gestión de estado avanzada, integración con SvelteKit y patrones de producción, junto con las mejores prácticas para construir interfaces rápidas, mantenibles y altamente optimizadas en entornos reales.
