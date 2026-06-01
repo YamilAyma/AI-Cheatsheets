@@ -1,3 +1,11 @@
+---
+title: "visitor"
+description: "El patrón Visitor es un patrón de comportamiento que separa algoritmos de las estructuras de objetos sobre las que operan, permitiendo añadir nuevas operaciones sin modificar las clases de los elementos visitados."
+createdAt: 2026-05-22
+updatedAt: 2026-05-22
+tags: [comportamiento]
+icon: "📄"
+---
 # 🎯 Patrón Visitor — Cheatsheet Completo 🎯
 
 El patrón **Visitor** es un patrón de comportamiento que separa algoritmos de las estructuras de objetos sobre las que operan, permitiendo añadir nuevas operaciones sin modificar las clases de los elementos visitados. Utiliza un mecanismo de **doble despacho** para que el algoritmo se ejecute correctamente según el tipo concreto del elemento y el visitante, cumpliendo el principio Open/Closed para operaciones nuevas mientras mantiene la estructura de objetos estable. Nace para resolver la explosión de métodos en clases de dominio, facilitar traversals complejos (ASTs, gráficos de escena, sistemas de archivos, estructuras de documentos) y centralizar lógica transversal (serialización, renderizado, análisis, optimización, validación) sin contaminar los modelos de negocio. Este cheatsheet desglosa la intención arquitectónica real, contratos de doble despacho seguro, implementaciones multi-paradigma, variantes dinámicas y jerárquicas, impacto en rendimiento y mantenibilidad, trampas de violación de encapsulamiento y acoplamiento cruzado, y criterios estrictos para decidir cuándo la separación operación-estructura es una necesidad del dominio y no una complejidad innecesaria que degrada la legibilidad o el rendimiento.
@@ -15,7 +23,7 @@ El patrón **Visitor** es un patrón de comportamiento que separa algoritmos de 
 * **Visitante Concreto (ConcreteVisitor)**: Implementación que contiene la lógica real de la operación (renderizar, serializar, validar, calcular métricas).
   * Por qué importa: Encapsula un algoritmo completo y aislado. Se puede intercambiar, testear y versionar independientemente de la estructura.
 * **Doble Despacho (Double Dispatch)**: Mecanismo que resuelve el tipo de objeto en runtime dos veces: primero por el elemento (`accept`), luego por el visitante (`visit`).
-  * Por qué importa: Simula despacho múltiple en lenguajes de despacho simple (Java, C#, TS). Es el núcleo que diferencia Visitor de Strategy o Command.
+  * Por qué importa: Simula despacho múltiple en lenguajes de despacho simple ([Java](/java/java "Java es un lenguaje de programación de propósito general, concurrente, basado en clases y orientado a objetos."), C#, TS). Es el núcleo que diferencia Visitor de [Strategy](/arquitectura/design_patterns/comportamiento/strategy "El patrón Strategy es un patrón de comportamiento que define una familia de algoritmos intercambiables, los encapsula y los hace sustituibles en tiempo de ejecución sin alterar el código del cliente que los utiliza.") o [Command](/arquitectura/design_patterns/comportamiento/command "El patrón Command es un patrón de comportamiento que encapsula una petición o acción como un objeto independiente, desacoplando el emisor de la petición del receptor que la ejecuta.").
 * **Separación Operación-Estructura**: Los elementos modelan qué son. Los visitantes modelan qué se hace con ellos.
   * Por qué importa: Cumple Single Responsibility y Open/Closed para operaciones nuevas. Evita que las clases de dominio acumulen lógica transversal.
 * **Estado del Visitante**: Puede ser stateless (puro, transformaciones) o stateful (acumula resultados, contadores, árboles intermedios).
@@ -185,7 +193,7 @@ class DynamicVisitor:
 | **Stateless / Puro** | No mantiene estado interno. Retorna resultados o aplica efectos laterales controlados. | Serialización, validación, transformación, pretty-printing. | Reutilizable globalmente, thread-safe. Limitado para operaciones acumulativas complejas. |
 | **Stateful / Acumulador** | Guarda contexto, contadores, buffers o árboles intermedios durante el traversal. | Cálculo de métricas, generación de reportes, optimización de consultas. | Requiere instanciación por traversal. Gestión explícita de reset o scope. |
 | **Reflective / Registro** | Usa reflexión o mapas para resolver `visit()` en runtime sin sobrecarga estática. | Plugins, tipos dinámicos, sistemas de reglas extensibles. | Pérdida de type-safety en compilación. Overhead de lookup y riesgo de errores en runtime. |
-| **Hybrid con Strategy** | Cada `visit()` delega a una estrategia específica para el tipo. | Cuando la lógica varía por contexto además de por tipo. | Doble indirección. Puede oscurecer flujo si no se documenta claramente. |
+| **Hybrid con [Strategy](/arquitectura/design_patterns/comportamiento/strategy "El patrón Strategy es un patrón de comportamiento que define una familia de algoritmos intercambiables, los encapsula y los hace sustituibles en tiempo de ejecución sin alterar el código del cliente que los utiliza.")** | Cada `visit()` delega a una estrategia específica para el tipo. | Cuando la lógica varía por contexto además de por tipo. | Doble indirección. Puede oscurecer flujo si no se documenta claramente. |
 | **Short-Circuit / Early Exit** | Visitor retorna flag o lanza excepción controlada para detener traversal. | Búsqueda, validación temprana, parsing con errores fatales. | Rompe flujo completo. Requiere manejo cuidadoso de estado parcialmente procesado. |
 
 ---
@@ -202,9 +210,9 @@ class DynamicVisitor:
 
 Comparación rápida con patrones de comportamiento:
 * **Visitor**: Separa algoritmos de estructura estable. Enfocado en doble despacho y múltiples operaciones.
-* **Strategy**: Intercambia algoritmos completos en runtime. Enfocado en variación de lógica, no en traversal estructural.
-* **Command**: Encapsula petición ejecutable. Enfocado en ejecución diferida, undo/redo o encolado.
-* **Composite**: Modela jerarquías parte-todo. Enfocado en uniformidad estructural, no en operaciones externas.
+* **[Strategy](/arquitectura/design_patterns/comportamiento/strategy "El patrón Strategy es un patrón de comportamiento que define una familia de algoritmos intercambiables, los encapsula y los hace sustituibles en tiempo de ejecución sin alterar el código del cliente que los utiliza.")**: Intercambia algoritmos completos en runtime. Enfocado en variación de lógica, no en traversal estructural.
+* **[Command](/arquitectura/design_patterns/comportamiento/command "El patrón Command es un patrón de comportamiento que encapsula una petición o acción como un objeto independiente, desacoplando el emisor de la petición del receptor que la ejecuta.")**: Encapsula petición ejecutable. Enfocado en ejecución diferida, undo/redo o encolado.
+* **[Composite](/arquitectura/design_patterns/estructurales/composite "El patrón Composite es un patrón estructural que permite componer objetos en estructuras de árbol para representar jerarquías parte-todo.")**: Modela jerarquías parte-todo. Enfocado en uniformidad estructural, no en operaciones externas.
 * **Chain of Responsibility**: Enruta petición hasta handler. Enfocado en secuencialidad y fallback, no en aplicación a todos los nodos.
 
 ---
@@ -234,12 +242,12 @@ Comparación rápida con patrones de comportamiento:
   * Fix: Exponga solo lo necesario mediante getters de solo lectura o interfaces inmutables. Nunca permita mutación externa no coordinada.
 * **Explosión de Mantenimiento por Nuevos Elementos**: Añadir `NewElement` requiere modificar 10+ visitantes existentes.
   * Fix: Use `AbstractVisitor` con implementaciones por defecto (no-op o excepción controlada). Documente contrato de extensión. Evalúe si Visitor es aún adecuado.
-* **State Leakage entre Traversals**: Visitante stateful no se reinicia. Resultados acumulados de ejecución anterior contaminan la nueva.
+* **[State](/arquitectura/design_patterns/comportamiento/state "El patrón State es un patrón de comportamiento que permite a un objeto alterar su comportamiento cuando su estado interno cambia, haciendo que parezca que el objeto cambia de clase.") Leakage entre Traversals**: Visitante stateful no se reinicia. Resultados acumulados de ejecución anterior contaminan la nueva.
   * Fix: Instancie visitante por operación, use `clear()` explícito, o pase contexto inmutable. Nunca reutilice estado mutante sin reset.
 * **Stack Overflow en Estructuras Profundas**: Recursión descontrolada en árboles/graphos masivos sin límite o visited set.
   * Fix: Implemente traversal iterativo con pila explícita, use visited set para grafos cíclicos, o límite de profundidad con fallback seguro.
-* **Confundir con Strategy o Composite**: Usar Visitor para variar lógica por tipo sin traversal, o para modelar jerarquías sin operaciones externas.
-  * Fix: Si varía algoritmo sin estructura → Strategy. Si modela parte-todo → Composite. Si aplica múltiples operaciones a estructura estable → Visitor.
+* **Confundir con [Strategy](/arquitectura/design_patterns/comportamiento/strategy "El patrón Strategy es un patrón de comportamiento que define una familia de algoritmos intercambiables, los encapsula y los hace sustituibles en tiempo de ejecución sin alterar el código del cliente que los utiliza.") o [Composite](/arquitectura/design_patterns/estructurales/composite "El patrón Composite es un patrón estructural que permite componer objetos en estructuras de árbol para representar jerarquías parte-todo.")**: Usar Visitor para variar lógica por tipo sin traversal, o para modelar jerarquías sin operaciones externas.
+  * Fix: Si varía algoritmo sin estructura → Strategy. Si modela parte-todo → [Composite](/arquitectura/design_patterns/estructurales/composite "El patrón Composite es un patrón estructural que permite componer objetos en estructuras de árbol para representar jerarquías parte-todo."). Si aplica múltiples operaciones a estructura estable → Visitor.
 * **Falta de Fallback Seguro**: Nuevo tipo no manejado lanza excepción en runtime sin contexto.
   * Fix: Implemente `visitUnknown()` o use patrón `NullObject`. Loguee tipo faltante y continúe o falle explícitamente según contrato.
 * **Serialización Rota**: Intentar persistir visitante con closures, referencias a contexto o estado mutable complejo.
@@ -257,7 +265,7 @@ Comparación rápida con patrones de comportamiento:
 * **Documente Orden y Contrato de Visita**: Especifique explícitamente secuencia, getters expuestos, y garantías de inmutabilidad. Elimine suposiciones implícitas.
 * **Use Interfaces Base con Default Implementations**: Para visitantes concretos, herede de `BaseVisitor` con métodos vacíos o que lancen excepción controlada. Reduzca boilerplate al añadir nuevos elementos.
 * **Valide Acceso a Estado Estrictamente**: Exponga solo lo necesario. Prefiera inmutabilidad o snapshots. Nunca permita mutación directa desde el visitante.
-* **Combine con Composite para Estructuras Jerárquicas**: Visitor + Composite es una pareja clásica y poderosa. El composite gestiona árbol, el visitor gestiona operaciones transversales.
+* **Combine con [Composite](/arquitectura/design_patterns/estructurales/composite "El patrón Composite es un patrón estructural que permite componer objetos en estructuras de árbol para representar jerarquías parte-todo.") para Estructuras Jerárquicas**: Visitor + Composite es una pareja clásica y poderosa. El composite gestiona árbol, el visitor gestiona operaciones transversales.
 * **Implemente Short-Circuit Controlado**: Permita que el visitor retorne `false` o lance `StopTraversalException` para detener recorrido temprano si es necesario.
 * **Profile antes de Optimizar**: No asuma overhead de doble despacho trivial. Mide allocation por nodo, latencia de traversal y presión en stack/GC. Optimice solo si el profiler lo indica.
 * **Pruebe Casos Límite y Fallos**: Valide estructuras vacías, profundamente anidadas, con ciclos accidentales, con nuevos tipos no manejados y con estado corrupto. Detecte regresiones temprano.
