@@ -38,7 +38,7 @@ Aunque los nombres pueden variar ligeramente entre librerías (ej. RxJava, RxJS,
     2. **`error` / `onError`**: Emite un error, lo que detiene el flujo.
     3. **`complete` / `onComplete`**: Emite una señal de finalización, lo que detiene el flujo.
   * Los Observables son "lazies"; no hacen nada hasta que alguien se suscribe a ellos.
-* **Observer / Subscriber (Consumidor del Flujo)**:
+* **[Observer](/arquitectura/design_patterns/comportamiento/observer "El patrón Observer es un patrón de comportamiento que define una dependencia uno-a-muchos entre objetos, de modo que cuando un objeto cambia su estado, todos sus dependientes son notificados y actualizados automáticamente.") / Subscriber (Consumidor del Flujo)**:
   * Es la entidad que "escucha" o "reacciona" a las notificaciones emitidas por un Observable.
   * Define funciones de callback para manejar cada tipo de notificación (`next`, `error`, `complete`).
 * **Subscription / Disposable (Suscripción)**:
@@ -197,7 +197,7 @@ Cuando un productor genera datos más rápido de lo que un consumidor puede proc
 * **Isolar Efectos Secundarios**: Realiza operaciones con efectos secundarios (ej. llamadas a la [API](/conocimiento/api "Una API (Application Programming Interface) es un conjunto de reglas, protocolos y herramientas que permite que diferentes aplicaciones de software se comuniquen entre sí."), mutaciones DOM) solo en los puntos finales de la cadena o utilizando operadores como `tap` (RxJS) / `doOnNext` (Reactor) de forma controlada.
 * **Usar Operadores Puros**: Las funciones pasadas a los operadores deben ser lo más puras posible.
 * **Error Handling Temprano**: Maneja los errores lo antes posible en la cadena con `catchError` o `onErrorResumeNext` si quieres que el flujo continúe.
-* **`async` Pipe (Angular)**: Utiliza el `async` pipe en las plantillas de Angular para suscribirse y desuscribirse automáticamente de los Observables.
+* **`async` Pipe ([Angular](/web/frontend/framework/angular "Angular es un framework de desarrollo de aplicaciones web de código abierto, desarrollado por Google, para construir aplicaciones de una sola página (SPA) y aplicaciones móviles de alto rendimiento."))**: Utiliza el `async` pipe en las plantillas de Angular para suscribirse y desuscribirse automáticamente de los Observables.
 * **Evita Callbacks Anidados**: Reemplaza los "callback hells" con cadenas de operadores reactivos.
 * **Hot vs. Cold Observables**: Entiende la diferencia. Los Observables "fríos" (por defecto) empiezan a emitir valores desde el principio para cada suscriptor. Los "calientes" ya están emitiendo independientemente de los suscriptores.
 * **Utiliza Monitoreo**: Herramientas de depuración específicas de la librería (ej. RxJS DevTools) son muy útiles.
