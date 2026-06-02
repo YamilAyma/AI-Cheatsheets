@@ -1,0 +1,1430 @@
+---
+title: "circuit_breaker"
+description: "El patrón Circuit Breaker (Cortocircuito) es un patrón de diseño de resiliencia que previene que una aplicación realice repetidamente llamadas a un servicio o recurso que probablemente fallará."
+createdAt: 2026-06-02
+updatedAt: 2026-06-02
+tags: [patrones_distribuidos]
+icon: "📄"
+---
+# 🎯 Circuit Breaker Pattern — Complete Cheatsheet 🎯
+
+El patrón Circuit Breaker (Cortocircuito) es un patrón de diseño de resiliencia que previene que una aplicación realice repetidamente llamadas a un servicio o recurso que probablemente fallará. Actúa como un "fusible inteligente" que detecta fallos recurrentes y abre el circuito temporalmente, permitiendo que el sistema se recupere y evitando cascadas de errores. Este cheatsheet cubre desde los conceptos fundamentales y estados del circuito hasta implementación avanzada, configuración de parámetros, integración con Retry y Bulkhead, testing de caos y patrones de producción en sistemas distribuidos.
+
+---
+
+## 1. 🌟 Conceptos Fundamentales
+
+* **Propósito Principal**: Prevenir cascadas de fallos (failure cascades) cuando un servicio dependiente falla o se degrada. Aísla el problema y permite recuperación.
+  * *Por qué importa*: Sin Circuit Breaker, una base de datos lenta puede agotar todos los hilos de tu aplicación, causando caída total.
+* **Origen**: Inspirado en los cortocircuitos eléctricos reales. Cuando hay sobrecarga, el circuito se "abre" para proteger el sistema.
+* **Beneficios Clave**:
+  * **Degradación elegante**: Falla rápido (fail-fast) en lugar de esperar timeouts largos.
+  * **Recuperación automática**: Prueba periódicamente si el servicio se ha recuperado.
+  * **Monitoreo y alertas**: Provee métricas claras sobre salud de dependencias.
+  * **Fallbacks controlados**: Permite retornar respuestas alternativas cuando el circuito está abierto.
+* **Escenarios de Aplicación**:
+  * Llamadas HTTP a servicios externos (APIs de terceros, microservicios)
+  * Consultas a bases de datos lentas o saturadas
+  * Integración con sistemas legacy inestables
+  * Conexiones a colas de mensajes (Kafka, RabbitMQ)
+  * Llamadas a servicios de IA/ML con latencia variable
+
+---
+
+## 2. 🔀 Estados del Circuito
+
+El Circuit Breaker tiene tres estados principales que transicionan según el comportamiento del servicio dependiente.
+
+### 2.1. Closed (Cerrado) ✅
+* **Comportamiento**: Las llamadas pasan normalmente al servicio.
+* **Condición**: Estado inicial cuando todo funciona correctamente.
+* **Monitoreo**: Cuenta los fallos recientes en una ventana de tiempo.
+* **Transición a Open**: Si los fallos superan el `failure_threshold` dentro del `monitoring_window`.
+
+```typescript
+// Pseudocódigo del estado Closed
+class ClosedState {
+  private failureCount = 0;
+  private lastFailureTime = 0;
+
+  async execute(request: () =&gt; Promise<any>): Promise<any> {
+    try {
+      const result = await request();
+      return result;
+    } catch (error) {
+      this.recordFailure();
+      throw error;
+    }
+  }
+
+  private recordFailure() {
+    this.failureCount++;
+    this.lastFailureTime = Date.now();
+    
+    if (this.failureCount &gt;= FAILURE_THRESHOLD) {
+      // Transicionar a Open
+      circuitBreaker.transitionTo(OpenState);
+    }
+  }
+}
+```
+
+### 2.2. Open (Abierto) 🚫
+* **Comportamiento**: Todas las llamadas fallan inmediatamente sin contactar el servicio.
+* **Condición**: Se activa cuando se alcanza el umbral de fallos.
+* **Duración**: Permanece abierto por `timeout_duration` (período de recuperación).
+* **Acción**: Retorna fallback inmediatamente (fail-fast).
+
+```typescript
+// Pseudocódigo del estado Open
+class OpenState {
+  private openedAt: number;
+
+  constructor() {
+    this.openedAt = Date.now();
+  }
+
+  async execute(request: () =&gt; Promise<any>): Promise<any> {
+    // Verificar si ha pasado el timeout
+    if (Date.now() - this.openedAt &gt;= TIMEOUT_DURATION) {
+      circuitBreaker.transitionTo(HalfOpenState);
+      return circuitBreaker.execute(request);
+    }
+    
+    // Fail-fast: no contactar el servicio
+    throw new CircuitBreakerOpenError('Circuit is open');
+  }
+}
+```
+
+### 2.3. Half-Open (Semi-abierto) ⚠️
+* **Comportamiento**: Permite un número limitado de llamadas de prueba para verificar recuperación.
+* **Condición**: Se activa automáticamente tras el `timeout_duration` del estado Open.
+* **Transición a Closed**: Si las llamadas de prueba tienen éxito.
+* **Transición a Open**: Si alguna llamada de prueba falla.
+
+```typescript
+// Pseudocódigo del estado Half-Open
+class HalfOpenState {
+  private testCallCount = 0;
+  private successCount = 0;
+
+  async execute(request: () =&gt; Promise<any>): Promise<any> {
+    this.testCallCount++;
+    
+    try {
+      const result = await request();
+      this.successCount++;
+      
+      if (this.successCount &gt;= SUCCESS_THRESHOLD) {
+        circuitBreaker.transitionTo(ClosedState);
+      }
+      
+      return result;
+    } catch (error) {
+      // Cualquier fallo vuelve a abrir el circuito
+      circuitBreaker.transitionTo(OpenState);
+      throw error;
+    }
+  }
+}
+```
+
+### 2.4. Diagrama de Transiciones
+```
+    [CLOSED] ──(fallos > threshold)──▶ [OPEN]
+       ▲                                  │
+       │                                  │
+       │                          (timeout expira)
+       │                                  │
+       │                                  ▼
+       └────────(éxito en pruebas)── [HALF-OPEN]
+                                         │
+                                    (algún fallo)
+                                         │
+                                         ▼
+                                       [OPEN]
+```
+
+---
+
+## 3. ⚙️ Configuración y Parámetros
+
+### 3.1. Parámetros Principales
+
+| Parámetro | Descripción | Valor Típico | Impacto |
+|-----------|-------------|--------------|---------|
+| `failure_threshold` | Número de fallos consecutivos para abrir el circuito | 5-10 | Bajo: tolera más fallos. Alto: reacciona rápido. |
+| `success_threshold` | Éxitos consecutivos en Half-Open para cerrar | 2-3 | Bajo: cierra rápido. Alto: más conservador. |
+| `timeout_duration` | Tiempo en estado Open antes de pasar a Half-Open | 30s-5min | Bajo: recuperación rápida. Alto: protege más. |
+| `monitoring_window` | Ventana de tiempo para contar fallos (sliding window) | 10s-60s | Define cuántos fallos recientes se consideran. |
+| `slow_call_duration` | Tiempo para considerar una llamada "lenta" | 2s-10s | Llamadas lentas cuentan como fallos. |
+| `slow_call_threshold` | Porcentaje de llamadas lentas para abrir circuito | 50-80% | Similar a failure_threshold pero para latencia. |
+
+### 3.2. Configuración por Entorno
+
+```typescript
+// Configuración adaptativa según entorno
+const circuitBreakerConfig = {
+  development: {
+    failureThreshold: 3,        // Más sensible en dev
+    timeoutDuration: 10000,     // 10 segundos
+    monitoringWindow: 30000,    // 30 segundos
+    enableMetrics: true
+  },
+  staging: {
+    failureThreshold: 5,
+    timeoutDuration: 30000,     // 30 segundos
+    monitoringWindow: 60000,    // 1 minuto
+    enableMetrics: true
+  },
+  production: {
+    failureThreshold: 10,       // Más tolerante
+    timeoutDuration: 60000,     // 1 minuto
+    monitoringWindow: 120000,   // 2 minutos
+    enableMetrics: true,
+    enableAlerts: true
+  }
+};
+```
+
+### 3.3. Ejemplos de Configuración por Caso de Uso
+
+```typescript
+// API crítica de pagos (alta tolerancia a fallos)
+const paymentCircuitBreaker = new CircuitBreaker({
+  failureThreshold: 3,           // Muy sensible (dinero en juego)
+  timeoutDuration: 120000,       // 2 minutos (servicio crítico)
+  monitoringWindow: 300000,      // 5 minutos
+  fallback: () =&gt; ({ error: 'Payment service unavailable' })
+});
+
+// Servicio de recomendaciones (baja criticidad)
+const recommendationCircuitBreaker = new CircuitBreaker({
+  failureThreshold: 20,          // Más tolerante
+  timeoutDuration: 30000,        // 30 segundos
+  monitoringWindow: 60000,       // 1 minuto
+  fallback: () =&gt; getGenericRecommendations()
+});
+
+// Base de datos principal (muy conservador)
+const dbCircuitBreaker = new CircuitBreaker({
+  failureThreshold: 5,
+  timeoutDuration: 60000,
+  monitoringWindow: 120000,
+  slowCallDuration: 5000,        // 5 segundos
+  slowCallThreshold: 60          // 60% de llamadas lentas
+});
+```
+
+---
+
+## 4. 💻 Implementación Práctica
+
+### 4.1. Implementación en TypeScript/Node.js
+
+```typescript
+import { EventEmitter } from 'events';
+
+export class CircuitBreaker extends EventEmitter {
+  private state: 'CLOSED' | 'OPEN' | 'HALF_OPEN' = 'CLOSED';
+  private failureCount = 0;
+  private successCount = 0;
+  private lastFailureTime = 0;
+  private openedAt = 0;
+  
+  constructor(private config: CircuitBreakerConfig) {
+    super();
+  }
+
+  async execute<T>(fn: () =&gt; Promise<T>): Promise<T> {
+    // Estado Open: fail-fast
+    if (this.state === 'OPEN') {
+      if (Date.now() - this.openedAt &gt;= this.config.timeoutDuration) {
+        this.transitionTo('HALF_OPEN');
+      } else {
+        this.emit('circuitOpen');
+        if (this.config.fallback) {
+          return this.config.fallback();
+        }
+        throw new Error('Circuit breaker is open');
+      }
+    }
+
+    try {
+      const startTime = Date.now();
+      const result = await fn();
+      const duration = Date.now() - startTime;
+
+      // Verificar si fue una llamada lenta
+      if (duration > this.config.slowCallDuration) {
+        this.recordSlowCall();
+      } else {
+        this.recordSuccess();
+      }
+
+      return result;
+    } catch (error) {
+      this.recordFailure();
+      throw error;
+    }
+  }
+
+  private recordSuccess() {
+    if (this.state === 'HALF_OPEN') {
+      this.successCount++;
+      if (this.successCount &gt;= this.config.successThreshold) {
+        this.transitionTo('CLOSED');
+      }
+    } else if (this.state === 'CLOSED') {
+      this.failureCount = 0; // Reset contador en éxito
+    }
+  }
+
+  private recordFailure() {
+    this.failureCount++;
+    this.lastFailureTime = Date.now();
+
+    if (this.state === 'HALF_OPEN') {
+      this.transitionTo('OPEN');
+    } else if (this.state === 'CLOSED') {
+      if (this.failureCount &gt;= this.config.failureThreshold) {
+        this.transitionTo('OPEN');
+      }
+    }
+  }
+
+  private recordSlowCall() {
+    // Similar a recordFailure pero para llamadas lentas
+    this.recordFailure();
+  }
+
+  private transitionTo(newState: 'CLOSED' | 'OPEN' | 'HALF_OPEN') {
+    const oldState = this.state;
+    this.state = newState;
+
+    if (newState === 'OPEN') {
+      this.openedAt = Date.now();
+      this.failureCount = 0;
+      this.successCount = 0;
+    } else if (newState === 'HALF_OPEN') {
+      this.successCount = 0;
+    } else if (newState === 'CLOSED') {
+      this.failureCount = 0;
+      this.successCount = 0;
+    }
+
+    this.emit('stateChange', { from: oldState, to: newState });
+  }
+
+  getState() {
+    return {
+      state: this.state,
+      failureCount: this.failureCount,
+      successCount: this.successCount,
+      lastFailureTime: this.lastFailureTime
+    };
+  }
+}
+
+interface CircuitBreakerConfig {
+  failureThreshold: number;
+  successThreshold: number;
+  timeoutDuration: number;
+  monitoringWindow?: number;
+  slowCallDuration?: number;
+  slowCallThreshold?: number;
+  fallback?: () =&gt; any;
+}
+```
+
+### 4.2. Uso con Axios (HTTP Client)
+
+```typescript
+import axios from 'axios';
+import { CircuitBreaker } from './circuit-breaker';
+
+// Crear instancia de Axios
+const apiClient = axios.create({
+  baseURL: 'https://api.example.com',
+  timeout: 5000
+});
+
+// Crear Circuit Breaker para el servicio
+const userCircuitBreaker = new CircuitBreaker({
+  failureThreshold: 5,
+  successThreshold: 2,
+  timeoutDuration: 30000,
+  fallback: () =&gt; ({ id: 'guest', name: 'Guest User' })
+});
+
+// Evento de cambio de estado
+userCircuitBreaker.on('stateChange', ({ from, to }) =&gt; {
+  console.log(`🔄 Circuit Breaker: ${from} → ${to}`);
+  
+  if (to === 'OPEN') {
+    // Enviar alerta a monitoring system
+    alertService.send('User service circuit opened');
+  }
+});
+
+// Función protegida por Circuit Breaker
+async function getUser(userId: string) {
+  return userCircuitBreaker.execute(() =&gt; 
+    apiClient.get(`/users/${userId}`).then(res =&gt; res.data)
+  );
+}
+
+// Uso
+try {
+  const user = await getUser('123');
+  console.log(user);
+} catch (error) {
+  // Manejar error de fallback o circuit open
+  console.error('Failed to get user:', error);
+}
+```
+
+### 4.3. Implementación en Java con Resilience4j
+
+```java
+import io.github.resilience4j.circuitbreaker.CircuitBreaker;
+import io.github.resilience4j.circuitbreaker.CircuitBreakerConfig;
+import io.github.resilience4j.circuitbreaker.CircuitBreakerRegistry;
+import java.time.Duration;
+import java.util.function.Supplier;
+
+public class CircuitBreakerExample {
+    
+    public static void main(String[] args) {
+        // Configuración del Circuit Breaker
+        CircuitBreakerConfig config = CircuitBreakerConfig.custom()
+            .failureRateThreshold(50)              // 50% de fallos
+            .slowCallDurationThreshold(Duration.ofSeconds(2))
+            .slowCallRateThreshold(80)             // 80% llamadas lentas
+            .waitDurationInOpenState(Duration.ofSeconds(30))
+            .permittedNumberOfCallsInHalfOpenState(3)
+            .slidingWindowSize(10)
+            .minimumNumberOfCalls(5)
+            .build();
+
+        // Crear instancia
+        CircuitBreakerRegistry registry = CircuitBreakerRegistry.of(config);
+        CircuitBreaker circuitBreaker = registry.circuitBreaker("userService");
+
+        // Decorar función
+        Supplier<String> decoratedSupplier = CircuitBreaker.decorateSupplier(
+            circuitBreaker,
+            () -&gt; callUserService()
+        );
+
+        // Ejecutar con fallback
+        String result = Try.ofSupplier(decoratedSupplier)
+            .recover(throwable -&gt; "Fallback response")
+            .get();
+
+        System.out.println(result);
+    }
+
+    private static String callUserService() {
+        // Simular llamada HTTP
+        return "User data from API";
+    }
+}
+```
+
+### 4.4. Implementación en Python con pybreaker
+
+```python
+import pybreaker
+import requests
+from datetime import timedelta
+
+# Configurar Circuit Breaker
+circuit_breaker = pybreaker.CircuitBreaker(
+    fail_max=5,                    # Umbral de fallos
+    reset_timeout=30,              # Timeout en segundos
+    fallback_function=fallback_response
+)
+
+def fallback_response(*args, **kwargs):
+    """Respuesta alternativa cuando el circuito está abierto"""
+    return {"error": "Service unavailable", "data": []}
+
+@circuit_breaker
+def get_user_data(user_id: str):
+    """Función protegida por Circuit Breaker"""
+    response = requests.get(f"https://api.example.com/users/{user_id}", timeout=5)
+    response.raise_for_status()
+    return response.json()
+
+# Uso
+try:
+    user = get_user_data("123")
+    print(user)
+except pybreaker.CircuitBreakerError:
+    print("Circuit is open, using fallback")
+except Exception as e:
+    print(f"Error: {e}")
+
+# Monitoreo del estado
+print(f"State: {circuit_breaker.state}")
+print(f"Failures: {circuit_breaker.fail_counter}")
+```
+
+---
+
+## 5. 🔗 Integración con Otros Patrones
+
+### 5.1. Circuit Breaker + Retry
+
+Combinación poderosa: Retry maneja fallos transitorios, Circuit Breaker previene saturación.
+
+```typescript
+import { retry } from './retry-pattern';
+import { CircuitBreaker } from './circuit-breaker';
+
+// Configurar Retry
+const retryConfig = {
+  maxAttempts: 3,
+  delay: 1000,
+  backoff: 'exponential' as const
+};
+
+// Configurar Circuit Breaker
+const circuitBreaker = new CircuitBreaker({
+  failureThreshold: 5,
+  timeoutDuration: 30000,
+  fallback: () =&gt; ({ data: 'fallback' })
+});
+
+// Combinar ambos patrones
+async function callServiceWithResilience() {
+  return circuitBreaker.execute(() =&gt;
+    retry(retryConfig, async () =&gt; {
+      const response = await apiClient.get('/data');
+      return response.data;
+    })
+  );
+}
+
+// Flujo:
+// 1. Circuit Breaker verifica si está cerrado
+// 2. Retry intenta la llamada hasta 3 veces
+// 3. Si todos los retries fallan, Circuit Breaker cuenta como 1 fallo
+// 4. Si se alcanza el threshold, Circuit Breaker se abre
+```
+
+### 5.2. Circuit Breaker + Bulkhead Pattern
+
+Aislamiento de recursos para prevenir que un servicio lento agote todos los hilos.
+
+```typescript
+import { Bulkhead } from './bulkhead-pattern';
+import { CircuitBreaker } from './circuit-breaker';
+
+// Bulkhead limita concurrencia
+const paymentBulkhead = new Bulkhead({
+  maxConcurrent: 10,        // Máximo 10 llamadas simultáneas
+  maxQueue: 5               // Cola de hasta 5 llamadas adicionales
+});
+
+// Circuit Breaker protege contra fallos
+const paymentCircuitBreaker = new CircuitBreaker({
+  failureThreshold: 3,
+  timeoutDuration: 60000
+});
+
+// Combinar: primero Bulkhead, luego Circuit Breaker
+async function processPayment(payment: Payment) {
+  return paymentBulkhead.execute(() =&gt;
+    paymentCircuitBreaker.execute(async () =&gt; {
+      const response = await paymentGateway.charge(payment);
+      return response;
+    })
+  );
+}
+
+// Flujo:
+// 1. Bulkhead verifica si hay capacidad disponible
+// 2. Circuit Breaker verifica si el servicio está saludable
+// 3. Se ejecuta la llamada
+// 4. Si falla, Circuit Breaker cuenta, Bulkhead libera el slot
+```
+
+### 5.3. Circuit Breaker + Timeout
+
+Timeout previene que llamadas bloqueen indefinidamente.
+
+```typescript
+import { timeout } from './timeout-pattern';
+import { CircuitBreaker } from './circuit-breaker';
+
+// Timeout individual por llamada
+async function callWithTimeout() {
+  return circuitBreaker.execute(() =&gt;
+    timeout(5000, async () =&gt; {
+      const response = await apiClient.get('/slow-endpoint');
+      return response.data;
+    })
+  );
+}
+
+// Configuración recomendada:
+// - Timeout: 5 segundos (por llamada)
+// - Circuit Breaker timeout: 30 segundos (período de recuperación)
+// - Si una llamada supera 5s, cuenta como fallo para el Circuit Breaker
+```
+
+---
+
+## 6. 📊 Monitoreo y Métricas
+
+### 6.1. Métricas Clave
+
+```typescript
+interface CircuitBreakerMetrics {
+  // Estado actual
+  state: 'CLOSED' | 'OPEN' | 'HALF_OPEN';
+  
+  // Contadores
+  totalCalls: number;
+  successfulCalls: number;
+  failedCalls: number;
+  slowCalls: number;
+  
+  // Tasas (calculadas en ventana de tiempo)
+  failureRate: number;        // Porcentaje de fallos
+  slowCallRate: number;       // Porcentaje de llamadas lentas
+  
+  // Tiempos de respuesta
+  averageLatency: number;     // Latencia promedio (ms)
+  p95Latency: number;         // Percentil 95
+  p99Latency: number;         // Percentil 99
+  
+  // Transiciones
+  lastStateChange: Date;
+  timesOpened: number;        // Cuántas veces se ha abierto
+  timesClosed: number;        // Cuántas veces se ha cerrado
+}
+
+// Ejemplo de métricas en producción
+const metrics = {
+  state: 'CLOSED',
+  totalCalls: 15420,
+  successfulCalls: 14850,
+  failedCalls: 570,
+  slowCalls: 230,
+  failureRate: 3.7,           // 3.7% de fallos
+  slowCallRate: 1.5,          // 1.5% de llamadas lentas
+  averageLatency: 145,
+  p95Latency: 450,
+  p99Latency: 1200,
+  lastStateChange: new Date('2024-01-15T10:30:00Z'),
+  timesOpened: 2,
+  timesClosed: 2
+};
+```
+
+### 6.2. Integración con Prometheus/Grafana
+
+```typescript
+import { Counter, Gauge, Histogram } from 'prom-client';
+
+// Definir métricas
+const circuitBreakerState = new Gauge({
+  name: 'circuit_breaker_state',
+  help: 'Current state of circuit breaker (0=CLOSED, 1=OPEN, 2=HALF_OPEN)',
+  labelNames: ['service']
+});
+
+const circuitBreakerCallsTotal = new Counter({
+  name: 'circuit_breaker_calls_total',
+  help: 'Total number of calls through circuit breaker',
+  labelNames: ['service', 'result'] // result: success, failure, timeout
+});
+
+const circuitBreakerLatency = new Histogram({
+  name: 'circuit_breaker_latency_seconds',
+  help: 'Latency of calls through circuit breaker',
+  labelNames: ['service'],
+  buckets: [0.1, 0.5, 1, 2, 5, 10]
+});
+
+// Registrar eventos
+circuitBreaker.on('stateChange', ({ service, to }) =&gt; {
+  const stateValue = to === 'CLOSED' ? 0 : to === 'OPEN' ? 1 : 2;
+  circuitBreakerState.labels(service).set(stateValue);
+});
+
+// Wrapper para registrar métricas
+async function monitoredCall(service: string, fn: () =&gt; Promise<any>) {
+  const end = circuitBreakerLatency.labels(service).startTimer();
+  
+  try {
+    const result = await fn();
+    circuitBreakerCallsTotal.labels(service, 'success').inc();
+    return result;
+  } catch (error) {
+    const result = error.name === 'TimeoutError' ? 'timeout' : 'failure';
+    circuitBreakerCallsTotal.labels(service, result).inc();
+    throw error;
+  } finally {
+    end();
+  }
+}
+```
+
+### 6.3. Alertas Recomendadas
+
+```yaml
+# Prometheus Alert Rules
+groups:
+  - name: circuit_breaker_alerts
+    rules:
+      # Circuito abierto por más de 5 minutos
+      - alert: CircuitBreakerOpen
+        expr: circuit_breaker_state == 1
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Circuit breaker is open for {{ $labels.service }}"
+          description: "Service {{ $labels.service }} has been unavailable for 5 minutes"
+
+      # Alta tasa de fallos (>20%)
+      - alert: HighFailureRate
+        expr: rate(circuit_breaker_calls_total{result="failure"}[5m]) / rate(circuit_breaker_calls_total[5m]) > 0.2
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High failure rate for {{ $labels.service }}"
+
+      # Latencia alta (p95 > 5s)
+      - alert: HighLatency
+        expr: histogram_quantile(0.95, rate(circuit_breaker_latency_seconds_bucket[5m])) > 5
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High latency for {{ $labels.service }}"
+```
+
+---
+
+## 7. 🧪 Testing y Chaos Engineering
+
+### 7.1. Unit Testing del Circuit Breaker
+
+```typescript
+import { CircuitBreaker } from './circuit-breaker';
+
+describe('CircuitBreaker', () =&gt; {
+  let circuitBreaker: CircuitBreaker;
+  
+  beforeEach(() =&gt; {
+    circuitBreaker = new CircuitBreaker({
+      failureThreshold: 3,
+      successThreshold: 2,
+      timeoutDuration: 1000,
+      fallback: () =&gt; 'fallback'
+    });
+  });
+
+  it('should remain closed on successful calls', async () =&gt; {
+    const successFn = async () =&gt; 'success';
+    
+    for (let i = 0; i &lt; 10; i++) {
+      const result = await circuitBreaker.execute(successFn);
+      expect(result).toBe('success');
+    }
+    
+    expect(circuitBreaker.getState().state).toBe('CLOSED');
+  });
+
+  it('should open after reaching failure threshold', async () =&gt; {
+    const failingFn = async () =&gt; { throw new Error('Service down'); };
+    
+    for (let i = 0; i &lt; 3; i++) {
+      try {
+        await circuitBreaker.execute(failingFn);
+      } catch (error) {
+        // Expected
+      }
+    }
+    
+    expect(circuitBreaker.getState().state).toBe('OPEN');
+  });
+
+  it('should use fallback when circuit is open', async () =&gt; {
+    const failingFn = async () =&gt; { throw new Error('Service down'); };
+    
+    // Abrir el circuito
+    for (let i = 0; i &lt; 3; i++) {
+      try { await circuitBreaker.execute(failingFn); } catch {}
+    }
+    
+    // Siguiente llamada debe usar fallback
+    const result = await circuitBreaker.execute(failingFn);
+    expect(result).toBe('fallback');
+  });
+
+  it('should transition to half-open after timeout', async () =&gt; {
+    jest.useFakeTimers();
+    
+    const failingFn = async () =&gt; { throw new Error('Service down'); };
+    
+    // Abrir circuito
+    for (let i = 0; i &lt; 3; i++) {
+      try { await circuitBreaker.execute(failingFn); } catch {}
+    }
+    
+    expect(circuitBreaker.getState().state).toBe('OPEN');
+    
+    // Avanzar tiempo
+    jest.advanceTimersByTime(1000);
+    
+    // Intentar llamada (debe pasar a HALF_OPEN)
+    const successFn = async () =&gt; 'success';
+    await circuitBreaker.execute(successFn);
+    
+    expect(circuitBreaker.getState().state).toBe('HALF_OPEN');
+  });
+
+  it('should close after successful calls in half-open state', async () =&gt; {
+    jest.useFakeTimers();
+    
+    const failingFn = async () =&gt; { throw new Error('Service down'); };
+    const successFn = async () =&gt; 'success';
+    
+    // Abrir circuito
+    for (let i = 0; i &lt; 3; i++) {
+      try { await circuitBreaker.execute(failingFn); } catch {}
+    }
+    
+    // Avanzar tiempo a HALF_OPEN
+    jest.advanceTimersByTime(1000);
+    
+    // 2 llamadas exitosas (successThreshold = 2)
+    await circuitBreaker.execute(successFn);
+    await circuitBreaker.execute(successFn);
+    
+    expect(circuitBreaker.getState().state).toBe('CLOSED');
+  });
+});
+```
+
+### 7.2. Chaos Engineering con Circuit Breaker
+
+```typescript
+import { ChaosMonkey } from './chaos-engineering';
+
+// Simular fallos aleatorios en el servicio
+const chaos = new ChaosMonkey({
+  failureRate: 0.3,              // 30% de las llamadas fallan
+  latencyInjection: {
+    enabled: true,
+    minDelay: 2000,              // Mínimo 2 segundos
+    maxDelay: 10000,             // Máximo 10 segundos
+    rate: 0.2                    // 20% de las llamadas son lentas
+  },
+  circuitBreakerOverride: {
+    enabled: false,              // Deshabilitar durante testing de caos
+    forceOpen: false
+  }
+});
+
+// Envolver servicio con caos
+const unstableService = chaos.inject(service);
+
+// Ejecutar pruebas de estrés
+async function stressTest() {
+  const results = {
+    success: 0,
+    failure: 0,
+    fallback: 0,
+    total: 1000
+  };
+
+  for (let i = 0; i &lt; results.total; i++) {
+    try {
+      const result = await unstableService.getData();
+      if (result.isFallback) {
+        results.fallback++;
+      } else {
+        results.success++;
+      }
+    } catch (error) {
+      results.failure++;
+    }
+  }
+
+  console.log('Stress Test Results:', results);
+  console.log('Fallback Rate:', (results.fallback / results.total * 100).toFixed(2) + '%');
+  
+  // Validar que el Circuit Breaker protegió al sistema
+  expect(results.fallback).toBeGreaterThan(0);
+  expect(results.failure).toBeLessThan(results.total * 0.1); // Menos del 10% de fallos directos
+}
+```
+
+### 7.3. Pruebas de Integración con Servicios Reales
+
+```typescript
+describe('Circuit Breaker Integration Tests', () =&gt; {
+  it('should handle real service degradation', async () =&gt; {
+    // Configurar Circuit Breaker con umbrales bajos para testing
+    const cb = new CircuitBreaker({
+      failureThreshold: 2,
+      timeoutDuration: 5000,
+      fallback: () =&gt; ({ data: 'fallback' })
+    });
+
+    // Simular degradación del servicio
+    const mockService = {
+      call: jest.fn()
+        .mockRejectedValueOnce(new Error('Timeout'))
+        .mockRejectedValueOnce(new Error('Timeout'))
+        .mockResolvedValue({ data: 'recovered' })
+    };
+
+    // Primera llamada falla
+    await expect(cb.execute(() =&gt; mockService.call())).rejects.toThrow();
+    
+    // Segunda llamada falla → circuito se abre
+    await expect(cb.execute(() =&gt; mockService.call())).rejects.toThrow();
+    
+    // Tercera llamada usa fallback (circuito abierto)
+    const result = await cb.execute(() =&gt; mockService.call());
+    expect(result).toEqual({ data: 'fallback' });
+    
+    // Esperar timeout
+    await new Promise(resolve =&gt; setTimeout(resolve, 5000));
+    
+    // Cuarta llamada pasa a HALF_OPEN y tiene éxito
+    const recoveredResult = await cb.execute(() =&gt; mockService.call());
+    expect(recoveredResult).toEqual({ data: 'recovered' });
+  });
+});
+```
+
+---
+
+## 8. ⚠️ Errores Comunes y Trampas
+
+### 8.1. Umbrales Mal Configurados
+
+❌ **Threshold demasiado bajo**: Circuito se abre con fallos esporádicos normales.
+```typescript
+// MAL: Muy sensible
+const cb = new CircuitBreaker({
+  failureThreshold: 1,  // Se abre con 1 solo fallo
+  timeoutDuration: 60000
+});
+
+// BIEN: Umbral razonable
+const cb = new CircuitBreaker({
+  failureThreshold: 5,  // Tolerar algunos fallos transitorios
+  timeoutDuration: 30000
+});
+```
+
+❌ **Timeout demasiado largo**: Sistema permanece en estado Open innecesariamente.
+```typescript
+// MAL: Recovery muy lento
+const cb = new CircuitBreaker({
+  failureThreshold: 5,
+  timeoutDuration: 600000  // 10 minutos es excesivo
+});
+
+// BIEN: Timeout proporcional al SLA del servicio
+const cb = new CircuitBreaker({
+  failureThreshold: 5,
+  timeoutDuration: 30000   // 30 segundos es más razonable
+});
+```
+
+### 8.2. No Implementar Fallbacks
+
+❌ **Sin fallback**: Usuario ve error genérico cuando el circuito está abierto.
+```typescript
+// MAL: Sin fallback
+const cb = new CircuitBreaker({
+  failureThreshold: 5,
+  timeoutDuration: 30000
+  // Sin fallback definido
+});
+
+// El usuario ve: "Circuit breaker is open"
+
+// BIEN: Con fallback meaningful
+const cb = new CircuitBreaker({
+  failureThreshold: 5,
+  timeoutDuration: 30000,
+  fallback: () =&gt; getCachedRecommendations()  // Respuesta degradada pero útil
+});
+```
+
+### 8.3. Circuit Breaker Global vs por Servicio
+
+❌ **Un solo Circuit Breaker para todos los servicios**: Un servicio lento afecta a todos.
+```typescript
+// MAL: Circuit Breaker compartido
+const globalCB = new CircuitBreaker({ /* ... */ });
+
+async function callUserService() {
+  return globalCB.execute(() =&gt; api.get('/users'));
+}
+
+async function callPaymentService() {
+  return globalCB.execute(() =&gt; api.get('/payments'));
+}
+
+// Si /users falla, /payments también se ve afectado
+
+// BIEN: Circuit Breaker por servicio
+const userCB = new CircuitBreaker({ /* config específica */ });
+const paymentCB = new CircuitBreaker({ /* config específica */ });
+
+async function callUserService() {
+  return userCB.execute(() =&gt; api.get('/users'));
+}
+
+async function callPaymentService() {
+  return paymentCB.execute(() =&gt; api.get('/payments'));
+}
+```
+
+### 8.4. Ignorar el Monitoreo
+
+❌ **Sin métricas ni alertas**: No sabes cuándo se abre el circuito o por qué.
+```typescript
+// MAL: Sin monitoreo
+const cb = new CircuitBreaker({ /* ... */ });
+await cb.execute(() =&gt; callService());
+// No hay forma de saber si el circuito se abrió
+
+// BIEN: Con métricas y alertas
+const cb = new CircuitBreaker({ /* ... */ });
+
+cb.on('stateChange', ({ from, to }) =&gt; {
+  metrics.recordStateChange(cb.name, to);
+  if (to === 'OPEN') {
+    alertService.send(`Circuit ${cb.name} opened`);
+  }
+});
+
+await cb.execute(() =&gt; callService());
+```
+
+### 8.5. Timeout del Circuit Breaker vs Timeout de la Llamada
+
+❌ **Confundir ambos timeouts**: Timeout de llamada muy largo hace que el Circuit Breaker cuente fallos lentamente.
+```typescript
+// MAL: Timeout de llamada > timeout de recuperación
+const cb = new CircuitBreaker({
+  failureThreshold: 5,
+  timeoutDuration: 10000  // 10 segundos
+});
+
+// Timeout de llamada de 30 segundos
+await cb.execute(() =&gt; api.get('/data', { timeout: 30000 }));
+
+// Si la llamada tarda 25 segundos, el Circuit Breaker no puede reaccionar rápido
+
+// BIEN: Timeout de llamada &lt; timeout de recuperación
+const cb = new CircuitBreaker({
+  failureThreshold: 5,
+  timeoutDuration: 30000  // 30 segundos
+});
+
+// Timeout de llamada de 5 segundos
+await cb.execute(() =&gt; api.get('/data', { timeout: 5000 }));
+
+// Las llamadas lentas se detectan rápido y cuentan como fallos
+```
+
+### 8.6. No Considerar Excepciones Específicas
+
+❌ **Contar todos los errores como fallos**: Errores de validación del cliente no deberían abrir el circuito.
+```typescript
+// MAL: Todos los errores cuentan
+try {
+  await cb.execute(() =&gt; api.post('/users', invalidData));
+} catch (error) {
+  // Error 400 Bad Request cuenta como fallo
+  // El circuito se abre aunque el problema sea del cliente
+}
+
+// BIEN: Filtrar errores relevantes
+async function smartExecute(fn: () =&gt; Promise<any>) {
+  return cb.execute(async () =&gt; {
+    try {
+      return await fn();
+    } catch (error) {
+      if (error.status &gt;= 400 && error.status &lt; 500) {
+        // Errores del cliente (4xx) no deben abrir el circuito
+        throw new ClientError(error);
+      }
+      // Solo errores de servidor (5xx) o timeouts cuentan
+      throw error;
+    }
+  });
+}
+```
+
+### 8.7. Circuit Breaker en Operaciones Idempotentes vs No Idempotentes
+
+❌ **Usar Circuit Breaker sin considerar idempotencia**: En HALF_OPEN, las llamadas de prueba podrían ejecutar acciones no idempotentes.
+```typescript
+// MAL: POST sin considerar idempotencia
+await cb.execute(() =&gt; api.post('/payments', paymentData));
+
+// Si el circuito está HALF_OPEN, se ejecuta un pago de prueba
+// Esto podría crear un pago duplicado
+
+// BIEN: Solo GET o operaciones idempotentes en HALF_OPEN
+// O usar Circuit Breaker solo para operaciones de lectura
+const readCB = new CircuitBreaker({ /* ... */ });
+const writeCB = new CircuitBreaker({ 
+  /* Config más conservadora */,
+  permittedCallsInHalfOpen: 1  // Solo 1 llamada de prueba
+});
+
+// Para escrituras, usar mejor patrón Retry con idempotency key
+await retryWithIdempotency(() =&gt; api.post('/payments', paymentData));
+```
+
+---
+
+## 9. 💡 Mejores Prácticas y Consejos de Experto
+
+### 9.1. Diseño de Fallbacks
+
+✅ **Fallbacks que agregan valor**: No retornar errores genéricos, sino respuestas degradadas pero útiles.
+```typescript
+// BIEN: Fallback con valor de negocio
+const productCB = new CircuitBreaker({
+  fallback: async (productId: string) =&gt; {
+    // 1. Intentar obtener de caché local
+    const cached = await cache.get(`product:${productId}`);
+    if (cached) return { ...cached, isStale: true };
+    
+    // 2. Retornar información básica
+    return {
+      id: productId,
+      name: 'Product temporarily unavailable',
+      price: null,
+      availability: 'unknown'
+    };
+  }
+});
+```
+
+✅ **Fallbacks contextuales**: Diferentes fallbacks según el contexto de la llamada.
+```typescript
+const orderCB = new CircuitBreaker({
+  fallback: async (context: RequestContext) =&gt; {
+    if (context.isAdmin) {
+      // Admin ve mensaje de error detallado
+      return { error: 'Order service unavailable', details: getDiagnostics() };
+    } else {
+      // Usuario normal ve mensaje amigable
+      return { error: 'Please try again later', showRetryButton: true };
+    }
+  }
+});
+```
+
+### 9.2. Configuración Basada en SLA
+
+✅ **Alinear configuración con SLA del servicio**:
+```typescript
+// Servicio con SLA de 99.9% (máximo 8.76 horas de downtime al año)
+const criticalServiceCB = new CircuitBreaker({
+  failureThreshold: 3,           // Muy sensible
+  timeoutDuration: 10000,        // 10 segundos
+  monitoringWindow: 60000,       // 1 minuto
+  fallback: criticalServiceFallback
+});
+
+// Servicio con SLA de 95% (más tolerante)
+const nonCriticalServiceCB = new CircuitBreaker({
+  failureThreshold: 10,          // Más tolerante
+  timeoutDuration: 60000,        // 1 minuto
+  monitoringWindow: 300000,      // 5 minutos
+  fallback: nonCriticalFallback
+});
+```
+
+### 9.3. Circuit Breaker por Capa de Arquitectura
+
+✅ **Diferentes Circuit Breakers para diferentes capas**:
+```typescript
+// Capa de API Gateway: Circuit Breaker general
+const gatewayCB = new CircuitBreaker({
+  failureThreshold: 20,          // Alto threshold (muchos servicios)
+  timeoutDuration: 30000
+});
+
+// Capa de Servicio: Circuit Breaker específico por dependencia
+const userServiceCB = new CircuitBreaker({
+  failureThreshold: 5,
+  timeoutDuration: 15000
+});
+
+// Capa de Repositorio: Circuit Breaker para base de datos
+const dbCB = new CircuitBreaker({
+  failureThreshold: 3,
+  timeoutDuration: 60000         // DB recovery es más lento
+});
+
+// Composición
+async function getUser(userId: string) {
+  return gatewayCB.execute(() =&gt;
+    userServiceCB.execute(() =&gt;
+      dbCB.execute(() =&gt; db.users.findById(userId))
+    )
+  );
+}
+```
+
+### 9.4. Pruebas de Estrés y Capacidad
+
+✅ **Probar Circuit Breaker bajo carga realista**:
+```typescript
+async function loadTestCircuitBreaker() {
+  const results = {
+    totalRequests: 0,
+    successfulCalls: 0,
+    failedCalls: 0,
+    fallbackCalls: 0,
+    circuitOpened: false
+  };
+
+  // Simular 1000 requests concurrentes
+  const requests = Array.from({ length: 1000 }, async () =&gt; {
+    results.totalRequests++;
+    
+    try {
+      const result = await cb.execute(() =&gt; callService());
+      if (result.fromFallback) {
+        results.fallbackCalls++;
+      } else {
+        results.successfulCalls++;
+      }
+    } catch (error) {
+      results.failedCalls++;
+    }
+  });
+
+  await Promise.all(requests);
+
+  // Validar que el Circuit Breaker protegió el sistema
+  console.log('Load Test Results:', results);
+  console.log(`Fallback rate: ${(results.fallbackCalls / results.totalRequests * 100).toFixed(2)}%`);
+  console.log(`Circuit opened: ${results.circuitOpened}`);
+  
+  // Ajustar configuración basado en resultados
+  if (results.fallbackCalls > results.totalRequests * 0.5) {
+    console.warn('Fallback rate too high, consider adjusting thresholds');
+  }
+}
+```
+
+### 9.5. Documentación y Runbooks
+
+✅ **Documentar configuración y procedimientos**:
+```markdown
+# Circuit Breaker Configuration - Payment Service
+
+## Configuration
+- **failureThreshold**: 3
+- **timeoutDuration**: 60000ms (1 minute)
+- **successThreshold**: 2
+- **monitoringWindow**: 120000ms (2 minutes)
+
+## Rationale
+Payment service is critical for revenue. We use aggressive thresholds to:
+- Detect failures quickly (3 failures)
+- Protect users from slow responses (60s timeout)
+- Ensure quick recovery (2 successful calls to close)
+
+## Fallback Behavior
+When circuit is OPEN:
+1. Return cached payment methods if available
+2. Show "Payment temporarily unavailable" message
+3. Log incident to monitoring system
+4. Trigger PagerDuty alert if duration > 5 minutes
+
+## Recovery Procedure
+1. Monitor Grafana dashboard: `payment-service-circuit-breaker`
+2. Check payment provider status page
+3. If provider issue: wait for resolution
+4. If our issue: check logs, restart service if needed
+5. Circuit will auto-recover after timeout
+
+## Contact
+- Team: payments-team@company.com
+- Escalation: @payments-oncall
+```
+
+### 9.6. Gradual Rollout y Feature Flags
+
+✅ **Controlar Circuit Breaker con feature flags**:
+```typescript
+import { FeatureFlag } from './feature-flags';
+
+const paymentCircuitBreaker = new CircuitBreaker({
+  failureThreshold: 5,
+  timeoutDuration: 30000,
+  fallback: () =&gt; ({ error: 'Service unavailable' })
+});
+
+async function callPaymentService(payment: Payment) {
+  // Feature flag para habilitar/deshabilitar Circuit Breaker
+  const isCircuitBreakerEnabled = await FeatureFlag.isEnabled('payment-circuit-breaker');
+  
+  if (isCircuitBreakerEnabled) {
+    return paymentCircuitBreaker.execute(() =&gt; paymentGateway.charge(payment));
+  } else {
+    // Sin protección (útil durante debugging o rollback)
+    return paymentGateway.charge(payment);
+  }
+}
+```
+
+### 9.7. Integración con Service Mesh
+
+✅ **Delegar a Service Mesh en arquitecturas [Kubernetes](/devops/kubernetes "Kubernetes (K8s) es una plataforma portable y extensible de código abierto para gestionar cargas de trabajo y servicios en contenedores.")**:
+```yaml
+# Istio DestinationRule con Circuit Breaker
+apiVersion: networking.istio.io/v1alpha3
+kind: DestinationRule
+metadata:
+  name: payment-service
+spec:
+  host: payment-service
+  trafficPolicy:
+    connectionPool:
+      tcp:
+        maxConnections: 100
+      http:
+        h2UpgradePolicy: DEFAULT
+        http1MaxPendingRequests: 100
+        http2MaxRequests: 1000
+    outlierDetection:
+      consecutiveErrors: 5          # failureThreshold
+      interval: 30s                 # monitoringWindow
+      baseEjectionTime: 30s         # timeoutDuration
+      maxEjectionPercent: 50
+```
+
+### 9.8. Testing en Producción (Canary)
+
+✅ **Desplegar Circuit Breaker gradualmente**:
+```typescript
+// Canary deployment: 10% del tráfico usa Circuit Breaker
+async function handlePaymentRequest(request: PaymentRequest) {
+  const useCircuitBreaker = Math.random() &lt; 0.1; // 10% canary
+  
+  if (useCircuitBreaker) {
+    metrics.increment('payment.circuit_breaker.canary');
+    return paymentCircuitBreaker.execute(() =&gt; processPayment(request));
+  } else {
+    return processPayment(request);
+  }
+}
+
+// Monitorear métricas del canary
+// - Tasa de fallbacks
+// - Tiempo de respuesta
+// - Tasa de errores
+// Si métricas son buenas, incrementar a 50%, luego 100%
+```
+
+---
+
+## 10. 📚 Librerías y Herramientas Recomendadas
+
+### 10.1. JavaScript/TypeScript
+- **opossum**: Librería madura y bien documentada
+  ```bash
+  npm install opossum
+  ```
+  ```typescript
+  import CircuitBreaker from 'opossum';
+  
+  const breaker = new CircuitBreaker(asyncFunction, {
+    timeout: 3000,
+    errorThresholdPercentage: 50,
+    resetTimeout: 30000
+  });
+  ```
+
+- **cockatiel**: Inspirada en Polly (.NET), muy flexible
+  ```bash
+  npm install cockatiel
+  ```
+
+- **resilience4js**: Port de [Resilience4j](/web/backend/framework/spring/resilience4j "Resilience4j es una librería de resiliencia ligera y modular para Java.")
+  ```bash
+  npm install resilience4js
+  ```
+
+### 10.2. Java
+- **Resilience4j**: Estándar de facto en ecosistema [Java](/java/java "Java es un lenguaje de programación de propósito general, concurrente, basado en clases y orientado a objetos.")
+  ```xml
+  <dependency>
+    <groupId>io.github.resilience4j</groupId>
+    <artifactId>resilience4j-circuitbreaker</artifactId>
+    <version>2.1.0</version>
+  </dependency>
+  ```
+
+- **Hystrix**: Obsoleto pero aún usado en sistemas legacy (Netflix)
+
+- **Spring Cloud Circuit Breaker**: Integración con [Spring Boot](/web/backend/framework/spring/spring-boot "¡Absolutamente! Spring Boot es un framework increíble para construir aplicaciones Java robustas y de alto rendimiento de manera rápida y eficiente.")
+  ```xml
+  <dependency>
+    <groupId>org.springframework.cloud</groupId>
+    <artifactId>spring-cloud-starter-circuitbreaker-resilience4j</artifactId>
+  </dependency>
+  ```
+
+### 10.3. Python
+- **pybreaker**: Implementación simple y efectiva
+  ```bash
+  pip install pybreaker
+  ```
+
+- **circuitbreaker**: Alternativa con [API](/conocimiento/api "Una API (Application Programming Interface) es un conjunto de reglas, protocolos y herramientas que permite que diferentes aplicaciones de software se comuniquen entre sí.") más moderna
+  ```bash
+  pip install circuitbreaker
+  ```
+
+### 10.4. Go
+- **sony/gobreaker**: Implementación ligera y performante
+  ```bash
+  go get github.com/sony/gobreaker
+  ```
+
+- **hystrix-[go](/go/go "Go es un lenguaje compilado, concurrente y de tipado estático creado por Google.")**: Port de Hystrix
+  ```bash
+  go get github.com/afex/hystrix-go/hystrix
+  ```
+
+### 10.5. Service Mesh y Kubernetes
+- **[Istio](/web/backend/framework/herramientas/istio "Istio es una malla de servicios (Service Mesh) de código abierto que proporciona una capa de infraestructura transparente para gestionar las comunicaciones de servicio a servicio.")**: Circuit Breaker nativo en DestinationRule
+- **Linkerd**: Soporte integrado de resiliencia
+- **Consul Connect**: Circuit Breaker en service mesh
+
+### 10.6. Monitoreo
+- **[Prometheus](/web/backend/framework/herramientas/prometheus "Prometheus es una solución de monitoreo de código abierto y sistema de alertado.") + [Grafana](/herramientas/visualizacion_datos/grafana "Grafana es una herramienta de código abierto para la visualización y analítica de series de tiempo, diseñada para consultar, visualizar, alertar y comprender tus métricas dondequiera que se almacenen.")**: Métricas y dashboards
+- **[Jaeger](/web/backend/framework/herramientas/jaeger "Jaeger es un sistema de trazabilidad distribuida de código abierto, inspirado en Dapper de Google y OpenZipkin.")/[Zipkin](/web/backend/framework/spring/zipkin "Zipkin es un sistema de trazabilidad distribuida de código abierto.")**: Tracing distribuido para ver Circuit Breaker en acción
+- **Elastic APM**: Monitoreo de aplicaciones con Circuit Breaker
+
+---
+
+Este cheatsheet proporciona una referencia completa para el patrón Circuit Breaker, cubriendo los tres estados del circuito (Closed, Open, Half-Open), configuración de parámetros, implementación en múltiples lenguajes, integración con Retry/Bulkhead/Timeout, monitoreo con Prometheus, testing de caos, errores comunes y mejores prácticas para construir sistemas distribuidos resilientes que se degradan elegantemente bajo fallos y se recuperan automáticamente.

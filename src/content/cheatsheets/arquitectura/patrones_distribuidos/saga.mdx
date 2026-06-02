@@ -1,0 +1,963 @@
+---
+title: "saga"
+description: "El patrón Saga es un enfoque de gestión de transacciones distribuidas que mantiene la consistencia de datos entre múltiples servicios o microservicios sin depender de transacciones ACID tradicionales (2PC)."
+createdAt: 2026-06-02
+updatedAt: 2026-06-02
+tags: [patrones_distribuidos]
+icon: "📄"
+---
+# 🎯 Saga Pattern — Complete Cheatsheet 🎯
+
+El patrón Saga es un enfoque de gestión de transacciones distribuidas que mantiene la consistencia de datos entre múltiples servicios o microservicios sin depender de transacciones ACID tradicionales (2PC). En lugar de bloquear recursos globalmente, una Saga descompone una transacción de negocio en una secuencia de pasos locales, cada uno con su correspondiente operación de compensación (rollback inverso) que se ejecuta cuando ocurre un fallo. Este cheatsheet cubre desde los fundamentos teóricos hasta implementaciones completas en modo Orquestación y Coreografía, patrones de compensación, manejo de idempotencia, integración con Outbox Pattern y Event Sourcing, testing, frameworks de producción y mejores prácticas para arquitecturas de microservicios resilientes.
+
+---
+
+## 1. 🌟 Conceptos Fundamentales
+
+* **Transacción Distribuida sin 2PC**: Las Sagas evitan el protocolo Two-Phase Commit (2PC) que bloquea recursos y acopla servicios. En su lugar, usan consistencia eventual con compensaciones explícitas.
+  * *Por qué importa*: 2PC no escala en microservicios, causa deadlocks y viola la autonomía de servicios.
+* **Secuencia de Pasos Locales**: Una transacción de negocio se descompone en T1, T2, ..., Tn. Cada Ti es una transacción local que actualiza la BD de un servicio y publica eventos.
+  * Cada paso es atómico en su propio contexto (single database commit).
+* **Compensaciones Explícitas (C1, C2, ..., Cn)**: Cada paso Ti tiene una operación compensatoria Ci que revierte sus efectos. Las compensaciones no son "undo" real — son operaciones de negocio equivalentes (ej. "añadir saldo" compensa "retirar saldo").
+* **Consistencia Eventual**: Entre el inicio y el fin de una Saga, el sistema puede estar en estados inconsistentes. Los clientes deben aceptar esta inconsistencia temporal.
+  * La Saga garantiza que al finalizar (éxito o compensación total), el sistema vuelve a un estado consistente.
+* **Fallo Parcial**: Si Tk falla, se ejecutan compensaciones Ck-1, Ck-2, ..., C1 en orden inverso. Las compensaciones pueden fallar también → requiere retry idempotente.
+* **Aislamiento Débil**: Las Sagas no ofrecen aislamiento fuerte (serializable). Dos Sagas concurrentes pueden interferir. Se resuelve con:
+  * **Semantic Lock**: Campos "pending" que bloquean lógicamente operaciones.
+  * **Commutative Updates**: Diseñar operaciones que conmuten (orden no importa).
+  * **Pessimistic View**: Reordenar pasos para que los irreversibles vayan al final.
+* **Idempotencia Obligatoria**: Las compensaciones y los pasos deben ser idempotentes, porque pueden re-ejecutarse ante fallos de red o timeouts.
+* **Dos Estilos de Coordinación**:
+  * **Orchestration**: Un coordinador central dirige la secuencia.
+  * **Choreography**: Los servicios reaccionan a eventos sin coordinador central.
+
+---
+
+## 2. 🔄 Tipos de Saga: Orchestration vs Choreography
+
+### 2.1. Saga Orquestada (Orchestration)
+Un **Orquestador** central conoce la secuencia completa. Envía comandos a cada servicio, espera respuestas y decide el siguiente paso o la compensación.
+
+```
+[Saga Orchestrator] ──command──▶ [Service A]
+                     ◀──event────
+                     ──command──▶ [Service B]
+                     ◀──event────
+                     ──command──▶ [Service C]
+                     ◀──event────
+```
+
+**Ventajas**:
+* Control centralizado: flujo visible, fácil de debuggear.
+* Acoplamiento débil entre servicios (no se conocen entre sí).
+* Manejo de compensaciones más sencillo (el orquestador decide).
+
+**Desventajas**:
+* El orquestador es un punto único de lógica compleja.
+* Riesgo de convertirse en "monolito distribuido" si crece demasiado.
+
+**Ideal para**: Flujos complejos con muchos pasos, equipos pequeños, cuando se necesita trazabilidad clara.
+
+### 2.2. Saga Coreográfica (Choreography)
+Cada servicio emite eventos tras completar su paso. Otros servicios se suscriben y reaccionan. No hay coordinador central.
+
+```
+[Service A] ──event──▶ [Service B] ──event──▶ [Service C]
+                              │
+                              └──compensation──▶ [Service A]
+```
+
+**Ventajas**:
+* Desacoplamiento total entre servicios.
+* Escalabilidad natural (cada servicio es autónomo).
+* Alineado con arquitectura event-driven pura.
+
+**Desventajas**:
+* Flujo difícil de rastrear (eventos dispersos).
+* Riesgo de loops o dependencias circulares.
+* Compensaciones más complejas de coordinar.
+
+**Ideal para**: 2-4 servicios, equipos independientes, arquitecturas event-sourced maduras.
+
+### 2.3. Tabla Comparativa
+| Aspecto | Orchestration | Choreography |
+|---------|---------------|--------------|
+| Coordinador | Central (Orquestador) | Ninguno (eventos) |
+| Complejidad | Concentrada en orquestador | Distribuida en servicios |
+| Acoplamiento | Servicios desconocidos entre sí | Servicios se conocen por eventos |
+| Trazabilidad | Alta (logs centralizados) | Baja (requiere distributed tracing) |
+| Escalabilidad | Limitada por orquestador | Alta |
+| Casos de uso | Flujos complejos (5+ servicios) | Flujos simples (2-4 servicios) |
+
+---
+
+## 3. 📝 Estados y Ciclo de Vida de una Saga
+
+### 3.1. Máquina de Estados
+```
+┌─────────┐   start    ┌──────────┐
+│  START  │ ──────────▶ │ RUNNING  │
+└─────────┘             └──────────┘
+                              │
+              ┌───────────────┼───────────────┐
+              │               │               │
+              ▼               ▼               ▼
+       ┌───────────┐   ┌──────────┐   ┌───────────────┐
+       │ COMPENSAT │   │  SUCCESS │   │    FAILED     │
+       │  ING      │   └──────────┘   └───────────────┘
+       └───────────┘
+              │
+              ▼
+       ┌───────────┐
+       │COMPENSATED│
+       └───────────┘
+```
+
+### 3.2. Estados Detallados
+| Estado | Descripción | Acción siguiente |
+|--------|-------------|------------------|
+| `STARTED` | Saga creada pero no ejecutada | Iniciar primer paso |
+| `RUNNING` | Ejecutando pasos hacia adelante | Siguiente paso o fallo |
+| `COMPENSATING` | Fallo detectado, ejecutando compensaciones | Completar compensaciones |
+| `COMPENSATED` | Todas las compensaciones ejecutadas | Fin (estado inconsistente revertido) |
+| `SUCCEEDED` | Todos los pasos completados con éxito | Fin (estado consistente) |
+| `FAILED` | Fallo irrecuperable en compensación | Requiere intervención manual |
+| `ABORTED` | Cancelada manualmente | Requiere cleanup |
+
+### 3.3. Persistencia del Estado
+```typescript
+interface SagaInstance {
+  sagaId: string;
+  sagaType: 'CreateOrder';
+  status: SagaStatus;
+  currentStep: number;
+  context: Record<string, unknown>;  // Datos compartidos entre pasos
+  compensations: CompensatedStep[];  // Pasos ya compensados
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+type SagaStatus =
+  | 'STARTED'
+  | 'RUNNING'
+  | 'COMPENSATING'
+  | 'COMPENSATED'
+  | 'SUCCEEDED'
+  | 'FAILED'
+  | 'ABORTED';
+```
+
+---
+
+## 4. 💻 Implementación: Saga Orquestada (Node.js/TypeScript)
+
+### 4.1. Definición de Pasos y Compensaciones
+```typescript
+// Definición abstracta de un paso
+interface SagaStep&lt;TContext&gt; {
+  name: string;
+  execute: (ctx: TContext) =&gt; Promise&lt;void&gt;;
+  compensate: (ctx: TContext) =&gt; Promise&lt;void&gt;;
+  timeout?: number;  // ms
+  retries?: number;
+}
+
+// Saga completa
+interface SagaDefinition&lt;TContext&gt; {
+  name: string;
+  steps: SagaStep&lt;TContext&gt;[];
+}
+```
+
+### 4.2. Motor de Saga (Orquestador)
+```typescript
+class SagaOrchestrator&lt;TContext&gt; {
+  constructor(
+    private definition: SagaDefinition&lt;TContext&gt;,
+    private repository: SagaRepository,
+    private eventBus: EventBus
+  ) {}
+
+  async execute(initialContext: TContext): Promise&lt;SagaInstance&gt; {
+    const instance: SagaInstance = {
+      sagaId: generateUuid(),
+      sagaType: this.definition.name,
+      status: 'STARTED',
+      currentStep: 0,
+      context: initialContext,
+      compensations: [],
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+
+    await this.repository.save(instance);
+    await this.eventBus.publish(new SagaStartedEvent(instance.sagaId));
+
+    return this.runForward(instance);
+  }
+
+  private async runForward(instance: SagaInstance): Promise&lt;SagaInstance&gt; {
+    instance.status = 'RUNNING';
+    await this.repository.save(instance);
+
+    try {
+      while (instance.currentStep &lt; this.definition.steps.length) {
+        const step = this.definition.steps[instance.currentStep];
+        
+        await this.executeWithRetry(step, instance);
+        
+        instance.compensations.push({
+          stepIndex: instance.currentStep,
+          stepName: step.name,
+          executedAt: new Date(),
+        });
+        
+        instance.currentStep++;
+        await this.repository.save(instance);
+        
+        await this.eventBus.publish(
+          new StepCompletedEvent(instance.sagaId, step.name)
+        );
+      }
+
+      instance.status = 'SUCCEEDED';
+      await this.repository.save(instance);
+      await this.eventBus.publish(new SagaSucceededEvent(instance.sagaId));
+      
+      return instance;
+    } catch (error) {
+      return this.compensate(instance, error);
+    }
+  }
+
+  private async compensate(
+    instance: SagaInstance,
+    originalError: Error
+  ): Promise&lt;SagaInstance&gt; {
+    instance.status = 'COMPENSATING';
+    await this.repository.save(instance);
+
+    // Compensar en orden inverso
+    for (let i = instance.compensations.length - 1; i &gt;= 0; i--) {
+      const compensated = instance.compensations[i];
+      const step = this.definition.steps[compensated.stepIndex];
+
+      try {
+        await this.executeWithRetry(
+          { name: `compensate:${step.name}`, execute: step.compensate } as any,
+          instance
+        );
+      } catch (compError) {
+        // Compensación falló → estado manual
+        instance.status = 'FAILED';
+        await this.repository.save(instance);
+        await this.eventBus.publish(
+          new SagaFailedEvent(instance.sagaId, compError, originalError)
+        );
+        throw new SagaCompensationFailedError(
+          `Compensation failed at step ${step.name}`,
+          { cause: compError }
+        );
+      }
+    }
+
+    instance.status = 'COMPENSATED';
+    await this.repository.save(instance);
+    await this.eventBus.publish(new SagaCompensatedEvent(instance.sagaId));
+    
+    return instance;
+  }
+
+  private async executeWithRetry(
+    step: SagaStep&lt;TContext&gt;,
+    instance: SagaInstance
+  ): Promise&lt;void&gt; {
+    const maxRetries = step.retries ?? 3;
+    const timeout = step.timeout ?? 30000;
+    let lastError: Error | null = null;
+
+    for (let attempt = 0; attempt &lt;= maxRetries; attempt++) {
+      try {
+        await Promise.race([
+          step.execute(instance.context),
+          new Promise((_, reject) =&gt;
+            setTimeout(() =&gt; reject(new Error('Step timeout')), timeout)
+          ),
+        ]);
+        return; // éxito
+      } catch (error) {
+        lastError = error as Error;
+        if (attempt &lt; maxRetries) {
+          // Backoff exponencial
+          await sleep(Math.pow(2, attempt) * 100);
+        }
+      }
+    }
+
+    throw lastError!;
+  }
+}
+```
+
+### 4.3. Ejemplo: Saga "Crear Orden"
+```typescript
+// Contexto compartido entre pasos
+interface CreateOrderContext {
+  orderId: string;
+  customerId: string;
+  items: Array&lt;{ productId: string; quantity: number }&gt;;
+  paymentId?: string;
+  reservationIds?: string[];
+  invoiceId?: string;
+}
+
+// Definición de la Saga
+const createOrderSaga: SagaDefinition&lt;CreateOrderContext&gt; = {
+  name: 'CreateOrder',
+  steps: [
+    {
+      name: 'ReserveInventory',
+      async execute(ctx) {
+        const ids = await inventoryService.reserve(ctx.items);
+        ctx.reservationIds = ids;
+      },
+      async compensate(ctx) {
+        if (ctx.reservationIds) {
+          await inventoryService.release(ctx.reservationIds);
+        }
+      },
+    },
+    {
+      name: 'ProcessPayment',
+      async execute(ctx) {
+        const payment = await paymentService.charge({
+          customerId: ctx.customerId,
+          amount: calculateTotal(ctx.items),
+          idempotencyKey: ctx.orderId,  // ¡Idempotencia!
+        });
+        ctx.paymentId = payment.id;
+      },
+      async compensate(ctx) {
+        if (ctx.paymentId) {
+          await paymentService.refund(ctx.paymentId);
+        }
+      },
+    },
+    {
+      name: 'CreateOrderRecord',
+      async execute(ctx) {
+        const order = await orderService.create({
+          id: ctx.orderId,
+          customerId: ctx.customerId,
+          items: ctx.items,
+          paymentId: ctx.paymentId!,
+          status: 'CONFIRMED',
+        });
+        ctx.orderId = order.id;
+      },
+      async compensate(ctx) {
+        await orderService.cancel(ctx.orderId);
+      },
+    },
+    {
+      name: 'GenerateInvoice',
+      async execute(ctx) {
+        const invoice = await invoiceService.generate(ctx.orderId);
+        ctx.invoiceId = invoice.id;
+      },
+      async compensate(ctx) {
+        if (ctx.invoiceId) {
+          await invoiceService.void(ctx.invoiceId);
+        }
+      },
+    },
+  ],
+};
+
+// Uso
+const orchestrator = new SagaOrchestrator(
+  createOrderSaga,
+  sagaRepository,
+  eventBus
+);
+
+const result = await orchestrator.execute({
+  orderId: generateUuid(),
+  customerId: 'cust-123',
+  items: [{ productId: 'prod-1', quantity: 2 }],
+});
+```
+
+---
+
+## 5. 🎭 Implementación: Saga Coreográfica
+
+### 5.1. Flujo basado en Eventos
+```typescript
+// Cada servicio escucha eventos y ejecuta su paso local
+
+// === ORDER SERVICE ===
+class OrderService {
+  @Subscribe('OrderRequested')
+  async onOrderRequested(event: OrderRequestedEvent) {
+    // 1. Crear orden en estado PENDING
+    const order = await this.db.orders.create({
+      id: event.orderId,
+      status: 'PENDING',
+      customerId: event.customerId,
+      items: event.items,
+    });
+
+    // 2. Publicar evento para que Inventory reserve
+    await this.eventBus.publish(new InventoryReservationRequested({
+      orderId: event.orderId,
+      items: event.items,
+    }));
+  }
+
+  @Subscribe('PaymentCompleted')
+  async onPaymentCompleted(event: PaymentCompletedEvent) {
+    // Orden confirmada
+    await this.db.orders.update(event.orderId, {
+      status: 'CONFIRMED',
+      paymentId: event.paymentId,
+    });
+    await this.eventBus.publish(new OrderConfirmed({ orderId: event.orderId }));
+  }
+
+  @Subscribe('PaymentFailed')
+  async onPaymentFailed(event: PaymentFailedEvent) {
+    // Compensar: cancelar orden
+    await this.db.orders.update(event.orderId, { status: 'CANCELLED' });
+  }
+}
+
+// === INVENTORY SERVICE ===
+class InventoryService {
+  @Subscribe('InventoryReservationRequested')
+  async onReserveRequested(event: InventoryReservationRequested) {
+    try {
+      const reservations = await this.reserve(event.items);
+      await this.eventBus.publish(new InventoryReserved({
+        orderId: event.orderId,
+        reservationIds: reservations,
+      }));
+    } catch (error) {
+      await this.eventBus.publish(new InventoryReservationFailed({
+        orderId: event.orderId,
+        reason: error.message,
+      }));
+    }
+  }
+
+  @Subscribe('PaymentFailed')
+  async onPaymentFailed(event: PaymentFailedEvent) {
+    // Compensación: liberar reservas
+    await this.releaseReservationsForOrder(event.orderId);
+  }
+}
+
+// === PAYMENT SERVICE ===
+class PaymentService {
+  @Subscribe('InventoryReserved')
+  async onInventoryReserved(event: InventoryReserved) {
+    try {
+      const payment = await this.charge({
+        orderId: event.orderId,
+        idempotencyKey: event.orderId,  // CRÍTICO
+      });
+      await this.eventBus.publish(new PaymentCompleted({
+        orderId: event.orderId,
+        paymentId: payment.id,
+      }));
+    } catch (error) {
+      await this.eventBus.publish(new PaymentFailed({
+        orderId: event.orderId,
+        reason: error.message,
+      }));
+    }
+  }
+}
+```
+
+### 5.2. Diagrama de Eventos
+```
+[Cliente] 
+   │ OrderRequested
+   ▼
+[Order Service] → PENDING
+   │ InventoryReservationRequested
+   ▼
+[Inventory Service] → Reserva stock
+   │ InventoryReserved
+   ▼
+[Payment Service] → Cobra
+   │ PaymentCompleted
+   ▼
+[Order Service] → CONFIRMED
+   │ OrderConfirmed
+   ▼
+[Notification Service] → Envía email
+```
+
+### 5.3. Compensación en Coreografía
+Cuando `Payment Service` falla:
+```
+PaymentFailed event
+   ├──▶ Inventory Service libera reservas
+   └──▶ Order Service cancela la orden
+```
+
+---
+
+## 6. 🔁 Patrones de Compensación
+
+### 6.1. Compensación Simétrica vs Asimétrica
+* **Simétrica**: Misma operación inversa.
+  ```typescript
+  // Execute: debit 100
+  // Compensate: credit 100
+  ```
+* **Asimétrica**: Operación distinta que logra efecto opuesto.
+  ```typescript
+  // Execute: send email
+  // Compensate: send cancellation email (no se puede "desenviar")
+  ```
+
+### 6.2. Compensación de Operaciones No Reversibles
+Algunas acciones no tienen reversa real (enviar email, llamar a proveedor externo).
+
+**Soluciones**:
+* **Semantic Compensation**: Enviar un mensaje correctivo.
+  ```typescript
+  async compensate() {
+    await emailService.send({
+      to: customer.email,
+      template: 'order_cancelled',
+      data: { reason: 'Payment failed' },
+    });
+  }
+  ```
+* **Tombstone Pattern**: Registrar la cancelación para que procesos downstream la respeten.
+* **Manual Resolution**: Marcar la Saga como `FAILED` y requerir intervención humana.
+
+### 6.3. Compensación Parcial
+Cuando un paso depende de un servicio externo que no soporta reversa:
+```typescript
+{
+  name: 'ChargeCreditCard',
+  async execute(ctx) {
+    const charge = await paymentGateway.charge({
+      idempotencyKey: ctx.orderId,
+      amount: ctx.total,
+    });
+    ctx.chargeId = charge.id;
+  },
+  async compensate(ctx) {
+    if (ctx.chargeId) {
+      // Refund completo o parcial
+      await paymentGateway.refund({
+        chargeId: ctx.chargeId,
+        amount: ctx.total,
+        idempotencyKey: `refund-${ctx.orderId}`,
+      });
+    }
+  },
+}
+```
+
+### 6.4. Retry con Idempotencia
+```typescript
+// La compensación DEBE ser idempotente
+async function refundCharge(chargeId: string, idempotencyKey: string) {
+  // 1. Verificar si ya se reembolsó (idempotencia)
+  const existing = await db.refunds.findOne({ idempotencyKey });
+  if (existing) return existing;
+
+  // 2. Ejecutar refund
+  const refund = await paymentGateway.refund(chargeId);
+  
+  // 3. Persistir antes de retornar (outbox pattern)
+  await db.refunds.create({
+    idempotencyKey,
+    chargeId,
+    amount: refund.amount,
+    status: 'COMPLETED',
+  });
+
+  return refund;
+}
+```
+
+---
+
+## 7. 📦 Outbox Pattern y Event Sourcing
+
+### 7.1. Problema del Dual Write
+Actualizar BD local y publicar evento son dos operaciones atómicas distintas. Si una falla y la otra no → inconsistencia.
+
+```
+❌ MAL:
+await db.orders.update(order);       // 1. Actualiza BD
+await eventBus.publish(event);       // 2. Publica evento (puede fallar)
+```
+
+### 7.2. Solución: Transactional Outbox
+Escribir evento en tabla `outbox` dentro de la misma transacción de BD. Un proceso separado (CDC o poller) lee la tabla y publica al broker.
+
+```typescript
+// En la transacción local
+await db.transaction(async (tx) =&gt; {
+  // 1. Actualizar tabla de negocio
+  await tx.orders.update({ id: orderId, status: 'CONFIRMED' });
+  
+  // 2. Insertar evento en outbox (misma transacción)
+  await tx.outbox.create({
+    eventId: generateUuid(),
+    eventType: 'OrderConfirmed',
+    payload: JSON.stringify({ orderId }),
+    createdAt: new Date(),
+    status: 'PENDING',  // Aún no publicado
+  });
+});
+
+// Proceso separado (poller o CDC como Debezium)
+async function processOutbox() {
+  const pending = await db.outbox.findMany({
+    where: { status: 'PENDING' },
+    take: 100,
+  });
+
+  for (const event of pending) {
+    try {
+      await eventBus.publish(event.eventType, JSON.parse(event.payload));
+      await db.outbox.update(event.id, { status: 'PUBLISHED' });
+    } catch (error) {
+      // Reintento en próximo ciclo
+      await db.outbox.update(event.id, {
+        retryCount: { increment: 1 },
+        lastError: error.message,
+      });
+    }
+  }
+}
+```
+
+### 7.3. Integración con Saga
+Cada paso de la Saga usa outbox:
+```typescript
+async execute(ctx) {
+  await db.transaction(async (tx) =&gt; {
+    // Paso de negocio
+    const reservation = await tx.inventory.reserve(ctx.items);
+    ctx.reservationId = reservation.id;
+    
+    // Evento en outbox (publicación garantizada)
+    await tx.outbox.create({
+      eventType: 'InventoryReserved',
+      payload: JSON.stringify({
+        orderId: ctx.orderId,
+        reservationId: reservation.id,
+      }),
+    });
+  });
+}
+```
+
+### 7.4. CDC con Debezium (Alternativa)
+En lugar de poller, usar Change Data Capture:
+```yaml
+# Debezium connector
+connector.class: io.debezium.connector.postgresql.PostgresConnector
+database.hostname: postgres
+database.dbname: orders
+table.include.list: public.outbox
+topic.prefix: outbox
+```
+DebeBin logs → Kafka → Consumidores. Zero overhead en aplicación.
+
+---
+
+## 8. 🔐 Consistencia Eventual y Aislamiento
+
+### 8.1. Problemas de Aislamiento
+Sin aislamiento fuerte, dos Sagas concurrentes pueden:
+* **Lost Update**: Saga A y B leen el mismo saldo, ambas lo actualizan.
+* **Dirty Read**: Saga A lee datos que Saga B aún no confirmó.
+* **Inconsistent Retrieval**: Saga A lee parcialmente datos de Saga B en progreso.
+
+### 8.2. Patrones de Aislamiento para Sagas
+
+#### Semantic Lock (Bloqueo Semántico)
+Marcar registros como "pendientes" durante la Saga:
+```typescript
+// Step 1: Reserve
+await db.accounts.update(id, {
+  balance: currentBalance,
+  pendingDebit: amount,  // Bloqueo semántico
+  status: 'RESERVING',
+});
+
+// Step 2: Confirm (otro servicio ve status='RESERVING' y espera)
+// Step 3: Complete
+await db.accounts.update(id, {
+  balance: currentBalance - amount,
+  pendingDebit: 0,
+  status: 'ACTIVE',
+});
+```
+
+#### Commutative Updates
+Diseñar operaciones que conmuten:
+```typescript
+// En vez de:
+balance = balance - amount;  // Orden importa
+
+// Usar lista de transacciones:
+await db.transactions.append({
+  accountId,
+  amount: -amount,
+  sagaId,
+  timestamp: new Date(),
+});
+// El saldo se calcula sumando. Orden no afecta resultado final.
+```
+
+#### Pessimistic View on Failure
+Reordenar pasos para que los irreversibles vayan al final:
+```typescript
+// ❌ MAL: Cobro irreversible primero
+steps: [chargeCard, reserveInventory, createOrder]
+
+// ✅ BIEN: Reserva primero, cobro al final
+steps: [reserveInventory, createOrder, chargeCard]
+```
+
+### 8.3. Versionado Optimista
+```typescript
+// Usar version field para detectar conflictos
+const order = await db.orders.findById(id);
+await db.orders.update({
+  where: { id, version: order.version },
+  data: { status: 'CONFIRMED', version: { increment: 1 } },
+});
+// Si otro proceso actualizó, affected rows = 0 → retry
+```
+
+---
+
+## 9. 🧪 Testing de Sagas
+
+### 9.1. Unit Testing de Pasos
+```typescript
+describe('ReserveInventory step', () =&gt; {
+  it('should reserve items and update context', async () =&gt; {
+    const mockInventoryService = {
+      reserve: jest.fn().mockResolvedValue(['res-1', 'res-2']),
+    };
+    
+    const ctx: CreateOrderContext = {
+      orderId: 'order-1',
+      items: [{ productId: 'prod-1', quantity: 2 }],
+    };
+
+    await reserveInventoryStep.execute(ctx);
+
+    expect(ctx.reservationIds).toEqual(['res-1', 'res-2']);
+    expect(mockInventoryService.reserve).toHaveBeenCalledWith(ctx.items);
+  });
+
+  it('compensation should release reservations', async () =&gt; {
+    const mockInventoryService = {
+      release: jest.fn().mockResolvedValue(undefined),
+    };
+
+    const ctx = {
+      orderId: 'order-1',
+      reservationIds: ['res-1', 'res-2'],
+    } as CreateOrderContext;
+
+    await reserveInventoryStep.compensate(ctx);
+
+    expect(mockInventoryService.release).toHaveBeenCalledWith(['res-1', 'res-2']);
+  });
+});
+```
+
+### 9.2. Integration Testing del Orquestador
+```typescript
+describe('CreateOrder Saga', () =&gt; {
+  it('should complete all steps on success', async () =&gt; {
+    const result = await orchestrator.execute(validContext);
+    
+    expect(result.status).toBe('SUCCEEDED');
+    expect(result.currentStep).toBe(4);
+    expect(result.context.paymentId).toBeDefined();
+  });
+
+  it('should compensate all steps when payment fails', async () =&gt; {
+    // Mock: payment service throws
+    mockPaymentService.charge.mockRejectedValue(new Error('Card declined'));
+
+    const result = await orchestrator.execute(validContext);
+    
+    expect(result.status).toBe('COMPENSATED');
+    expect(mockInventoryService.release).toHaveBeenCalled();
+    expect(mockOrderService.cancel).toHaveBeenCalled();
+  });
+
+  it('should retry on transient failures', async () =&gt; {
+    mockInventoryService.reserve
+      .mockRejectedValueOnce(new Error('Timeout'))
+      .mockResolvedValueOnce(['res-1']);
+
+    const result = await orchestrator.execute(validContext);
+    expect(result.status).toBe('SUCCEEDED');
+  });
+
+  it('should mark as FAILED if compensation fails', async () =&gt; {
+    mockPaymentService.charge.mockRejectedValue(new Error('Declined'));
+    mockInventoryService.release.mockRejectedValue(new Error('DB down'));
+
+    await expect(orchestrator.execute(validContext)).rejects.toThrow(
+      SagaCompensationFailedError
+    );
+  });
+});
+```
+
+### 9.3. Chaos Testing
+```typescript
+describe('Chaos scenarios', () =&gt; {
+  it('should handle service restart mid-saga', async () =&gt; {
+    // 1. Iniciar Saga
+    const promise = orchestrator.execute(validContext);
+    
+    // 2. Simular caída tras 2 pasos
+    await waitForSteps(2);
+    await orchestrator.simulateCrash();
+    
+    // 3. Reiniciar orquestador
+    const recovered = new SagaOrchestrator(definition, repository, eventBus);
+    await recovered.resumeFromDatabase();
+    
+    // 4. Saga debe completar desde paso 3
+    const result = await promise;
+    expect(result.status).toBe('SUCCEEDED');
+  });
+
+  it('should handle duplicate events idempotently', async () =&gt; {
+    // Publicar mismo evento 3 veces
+    await eventBus.publish('OrderConfirmed', payload);
+    await eventBus.publish('OrderConfirmed', payload);
+    await eventBus.publish('OrderConfirmed', payload);
+
+    // Orden solo debe confirmarse 1 vez
+    const orders = await db.orders.find({ id: orderId });
+    expect(orders).toHaveLength(1);
+    expect(orders[0].status).toBe('CONFIRMED');
+  });
+});
+```
+
+---
+
+## 10. 🛠️ Herramientas y Frameworks
+
+### 10.1. JavaScript/TypeScript
+* **@[nestjs](/web/backend/framework/nestjs/nestjs "NestJS es un framework progresivo para Node.js diseñado para construir aplicaciones backend escalables, mantenibles y altamente testeables.")/[cqrs](/arquitectura/patrones_distribuidos/cqrs "CQRS es un patrón de arquitectura que segrega las operaciones de lectura (queries) de las de escritura (commands) en modelos independientes, permitiendo optimizar cada lado por separado.")**: Módulo oficial de NestJS con soporte para Sagas en CQRS.
+  ```bash
+  npm install @nestjs/cqrs
+  ```
+* **ts-saga**: Librería ligera para definición declarativa de Sagas.
+* **xstate**: Máquinas de estado que pueden modelar Sagas complejas.
+
+### 10.2. Java
+* **Axon Framework**: Líder en CQRS/Event Sourcing con Sagas first-class.
+* **Spring [State](/arquitectura/design_patterns/comportamiento/state "El patrón State es un patrón de comportamiento que permite a un objeto alterar su comportamiento cuando su estado interno cambia, haciendo que parezca que el objeto cambia de clase.") Machine**: Para orquestación de flujos.
+* **Seata**: Framework de transacciones distribuidas con soporte Saga.
+
+### 10.3. Go
+* **[go](/go/go "Go es un lenguaje compilado, concurrente y de tipado estático creado por Google.")-saga**: Implementación minimalista.
+* **Temporal.io**: Orchestrador durable para Sagas de larga duración.
+
+### 10.4. .NET
+* **MassTransit Saga**: Soporte nativo en el bus de mensajes.
+* **NServiceBus Sagas**: Parte del framework de mensajería.
+
+### 10.5. Orchestrators Durables
+* **Temporal.io**: Workflows durables, reintentos automáticos, excelente para Sagas largas.
+* **AWS Step Functions**: Orchestrador serverless con soporte para compensaciones.
+* **Azure Durable Functions**: Orchestración serverless en .NET.
+* **Inngest**: Orchestrador moderno basado en funciones [TypeScript](/web/general/typescript "TypeScript es una herramienta fundamental en el desarrollo web moderno, especialmente para proyectos a gran escala, ya que añade seguridad de tipo y mejoras en la productividad.").
+* **Restate**: Orchestrador ligero para microservicios.
+
+### 10.6. Event Brokers
+* **Kafka**: Para coreografía con ordenamiento por partición.
+* **RabbitMQ**: Para orquestación con colas de comandos.
+* **NATS JetStream**: Ligero, con persistencia.
+* **Pulsar**: Multi-tenant, con replicación geográfica.
+
+---
+
+## 11. ⚠️ Errores Comunes y Trampas
+
+* **Sagas sincrónicas**: Ejecutar pasos uno tras otro en la misma llamada HTTP.
+  * *Fix*: Usar mensajería asíncrona. Cada paso debe ser atómico y publicarse vía eventos/outbox.
+* **Compensaciones no idempotentes**: `await payment.refund(chargeId)` ejecutado 2 veces reembolsa doble.
+  * Fix: Usar `idempotencyKey` único por Saga + paso. Persistir antes de ejecutar.
+* **Olvidar el Outbox Pattern**: Publicar evento después de commit → inconsistencia.
+  * Fix: Escribir evento en tabla outbox dentro de la transacción local. Poller o CDC publica.
+* **Contexto de Saga compartido mutable**: Dos pasos modifican el mismo campo → race conditions.
+  * Fix: Contexto inmutable por paso, o fields con nombres únicos (`paymentId_v2`).
+* **Pasos irreversibles al inicio**: Cobrar tarjeta antes de reservar inventario.
+  * Fix: Reordenar pasos siguiendo "Pessimistic View": reservas primero, cobros al final.
+* **No manejar fallos de compensación**: Asumir que las compensaciones nunca fallan.
+  * Fix: Status `FAILED` cuando la compensación falla. Alertar a equipo. Dead Letter Queue para retry manual.
+* **Timeouts demasiado largos**: Llamadas bloqueadas 60s agotan hilos.
+  * Fix: Timeouts cortos (5-10s) por paso. Circuit Breaker en servicios dependientes.
+* **Saga sin persistencia**: Perder estado en reinicio → pasos duplicados o perdidos.
+  * Fix: Persistir cada estado en BD antes de avanzar. Resume desde BD al reiniciar.
+* **Coreografía con 5+ servicios**: Flujo inmanejable, loops, dependencias circulares.
+  * Fix: Usar Orchestration cuando haya más de 3-4 servicios.
+* **No considerar concurrencia de Sagas**: Dos Sagas creando órdenes para el mismo cliente.
+  * Fix: Semantic Lock (campo `pending`), o versionado optimista, o llaves distribuidas.
+* **Falta de observabilidad**: No saber en qué paso está una Saga tras 10 minutos.
+  * Fix: Distributed Tracing (OpenTelemetry) con `sagaId` como trace ID. Métricas por estado.
+* **Acoplar servicios vía eventos específicos**: `OrderConfirmedEvent` con estructura de Order.
+  * Fix: Eventos con contrato estable, versionado (`OrderConfirmedV2`), schema registry.
+* **Ignorar SLA de compensación**: Proveedor externo tarda 72h en reembolsar.
+  * Fix: Modelar compensaciones largas como pasos adicionales con status `REFUND_PENDING`.
+
+---
+
+## 12. 💡 Mejores Prácticas y Consejos de Experto
+
+* **Diseña compensaciones como first-class citizens**: Cada paso se escribe como un par `(execute, compensate)`. Si no puedes escribir la compensación, el paso no debería existir o requiere intervención manual.
+* **Idempotencia en todos los servicios**: Cada endpoint expuesto a Sagas debe aceptar idempotency keys y retornar el mismo resultado ante llamadas duplicadas.
+* **Outbox + CDC en producción**: Poller es más simple, Debezium + Kafka es más escalable. Elige según el volumen.
+* **Usa Temporal para Sagas complejas**: Si tu Saga dura más de 5 minutos, o tiene más de 5 pasos, o requiere sleeps esperas → Temporal.io resuelve reintentos, timeouts, y durable execution de forma nativa.
+* **Persiste el contexto de la Saga**: Todo dato compartido entre pasos va en la BD de la Saga, no en memoria. Permite resume tras crash.
+* **Semantic Lock por defecto**: Añade un campo `status` o `sagaLock` en registros modificables. Otros procesos respetan el bloqueo lógico.
+* **Métricas clave a monitorear**:
+  * `saga_execution_duration_seconds` (histograma)
+  * `saga_status_total` por status (counter)
+  * `saga_compensation_failures_total` (alerta crítica)
+  * `saga_step_duration_seconds` por step (identifica cuellos)
+* **Testing en producción con feature flags**: Despliega Saga nueva con toggle. 5% del tráfico usa la Saga, 95% el flujo legacy. Monitorea métricas antes de rollout completo.
+* **Dead Letter Queue para compensaciones fallidas**: Cuando una compensación falla tras N reintentos, envía a DLQ. Equipo humano revisa y ejecuta manualmente o con scripts.
+* **Documenta el contrato de eventos**: Schema Registry (Avro, Protobuf) para eventos publicados. Romper el contrato = romper Sagas downstream.
+* **Versiona definiciones de Saga**: `CreateOrderSagaV1`, `CreateOrderSagaV2`. Sagas en curso usan la versión con la que iniciaron. Nuevas usan la última.
+* **Evita Sagas síncronas HTTP**: Si un paso llama a otro servicio por REST, conviértelo en comando asíncrono + evento de respuesta.
+* **Logs estructurados con sagaId**: Cada log debe incluir `sagaId`, `stepName`, `attempt`. Facilita debugging de Sagas de 30 minutos en producción.
+* **Pruebas de integración con Testcontainers**: Levanta Postgres, Kafka, servicios dependientes en [Docker](/devops/docker "Docker es una plataforma de código abierto que utiliza la contenerización para empaquetar una aplicación y todas sus dependencias en una unidad estándar para el desarrollo de software."). Test realista sin mocks engañosos.
+* **Timeouts adaptativos**: Pasos críticos (pagos) → timeout largo + retry corto. Pasos rápidos (reservas) → timeout corto + retry largo.
+* **No uses Saga para todo**: Si 2 servicios comparten BD, usa transacción local. Saga es para servicios con BD separadas.
+* **Runbooks para fallos de compensación**: Documento paso a paso para cuando la Saga termina en `FAILED`. Qué tablas revisar, qué scripts ejecutar, a quién escalar.
+* **Auditoría completa**: Tabla `saga_events` con cada transición. Permite replay, debugging forense y cumplimiento regulatorio.
+* **Backpressure en orquestador**: Limita Sagas concurrentes por tipo. Evita saturar servicios dependientes durante picos.
+* **Circuit Breaker en cada paso**: Si un servicio downstream está caído, el Circuit Breaker falla rápido y la Saga compensa antes de saturar.
+
+---
+
+Este cheatsheet proporciona una referencia completa para el patrón Saga, cubriendo los fundamentos de transacciones distribuidas sin 2PC, los dos estilos de coordinación (Orchestration y Choreography), la implementación práctica con motor orquestador en TypeScript, patrones de compensación simétrica y asimétrica, integración con Outbox Pattern y Event Sourcing, manejo de aislamiento y consistencia eventual, testing unitario e integración, herramientas y frameworks del ecosistema, junto con los errores comunes y mejores prácticas para construir arquitecturas de microservicios resilientes que mantienen la consistencia del negocio a través de múltiples servicios de forma confiable y observable.
