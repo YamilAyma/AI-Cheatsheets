@@ -1,0 +1,238 @@
+---
+title: "ddd"
+description: "Domain-Driven Design (DDD) es un enfoque de desarrollo de software que prioriza el dominio del negocio y su lógica sobre la tecnología subyacente."
+createdAt: 2026-06-02
+updatedAt: 2026-06-02
+tags: [arquitectura]
+icon: "📄"
+---
+# 🎯 Domain-Driven Design (DDD) — Complete Cheatsheet 🎯
+
+Domain-Driven Design (DDD) es un enfoque de desarrollo de software que prioriza el dominio del negocio y su lógica sobre la tecnología subyacente. Propuesto por Eric Evans, DDD conecta la implementación con un modelo evolutivo del negocio, fomentando la colaboración entre expertos técnicos y expertos en el dominio. Este cheatsheet cubre desde los patrones estratégicos y tácticos hasta la arquitectura, Event Storming, integración de contextos y patrones de producción. Ideal para arquitectos, desarrolladores backend y equipos de producto que buscan construir sistemas complejos, mantenibles y alineados con las necesidades reales del negocio.
+
+---
+
+## 1. 🌟 Conceptos Fundamentales
+
+* **Lenguaje Ubicuo (Ubiquitous Language)**: Vocabulario compartido y estricto utilizado tanto por expertos del negocio como por desarrolladores. El código debe reflejar literalmente este lenguaje (clases, métodos, variables).
+  * *Por qué importa*: Elimina la traducción costosa y propensa a errores entre "lo que dice el negocio" y "lo que hace el código".
+* **Dominio (Domain)**: La esfera de conocimiento, influencia o actividad sobre la que se construye la aplicación. Es el "problema" que el software intenta resolver.
+* **Subdominios**: Divisiones del dominio en áreas más manejables:
+  * **Core (Núcleo)**: La ventaja competitiva única del negocio. Aquí se invierte el mayor esfuerzo de ingeniería.
+  * **Supporting (De Soporte)**: Necesario para el negocio, pero no es la ventaja competitiva (ej. gestión de inventario interno).
+  * **Generic (Genérico)**: Problemas resueltos de forma estándar (ej. autenticación, envío de emails). Se suelen comprar o usar librerías.
+* **Modelo de Dominio**: Una abstracción seleccionada del dominio que resuelve un problema específico de negocio. No es un diagrama de base de datos.
+* **Contexto Delimitado (Bounded Context)**: Límite explícito dentro del cual un modelo de dominio particular se define y aplica. Un mismo concepto (ej. "Producto") puede tener modelos diferentes en distintos contextos (ej. Contexto de Ventas vs. Contexto de Logística).
+
+---
+
+## 2. 🧱 Patrones Tácticos (Building Blocks)
+
+Son los componentes concretos para implementar el modelo de dominio.
+
+### 2.1. Entidad (Entity)
+Objeto definido por su **identidad**, no por sus atributos. Su identidad persiste a lo largo del tiempo, incluso si sus atributos cambian.
+```typescript
+class User extends Entity {
+  constructor(
+    public readonly id: UserId, // Identidad inmutable
+    private name: string,
+    private email: Email
+  ) {}
+
+  // Comportamiento rico, no solo getters/setters
+  public changeName(newName: string): void {
+    if (newName.length &lt; 2) throw new Error("Nombre inválido");
+    this.name = newName;
+    // Podría emitir un DomainEvent aquí
+  }
+}
+```
+
+### 2.2. Objeto de Valor (Value Object)
+Objeto inmutable definido únicamente por sus **atributos**. No tiene identidad conceptual. Si dos VOs tienen los mismos valores, son intercambiables.
+```typescript
+class Money {
+  public readonly amount: number;
+  public readonly currency: string;
+
+  constructor(amount: number, currency: string) {
+    if (amount &lt; 0) throw new Error("El monto no puede ser negativo");
+    this.amount = amount;
+    this.currency = currency;
+  }
+
+  public add(other: Money): Money {
+    if (this.currency !== other.currency) throw new Error("Monedas distintas");
+    return new Money(this.amount + other.amount, this.currency);
+  }
+}
+// new Money(10, 'USD') === new Money(10, 'USD') en valor, son el mismo concepto.
+```
+
+### 2.3. Agregado (Aggregate) y Raíz de Agregado (Aggregate Root)
+Un clúster de objetos de dominio (Entidades y VOs) que se tratan como una **unidad única** para cambios de datos.
+* **Reglas**:
+  1. La **Raíz de Agregado (AR)** es una Entidad.
+  2. Solo se puede acceder a los objetos internos a través de la AR.
+  3. Las referencias desde fuera del agregado solo pueden apuntar a la AR.
+  4. Los objetos dentro del agregado pueden tener referencias entre sí.
+  5. La eliminación en cascada debe aplicarse a todo el agregado.
+```typescript
+class Order extends Entity { // Aggregate Root
+  private items: OrderItem[]; // OrderItem es una Entidad local o VO
+  private status: OrderStatus;
+
+  public addItem(product: Product, quantity: number): void {
+    if (this.status !== 'DRAFT') throw new Error("Solo se puede editar en borrador");
+    this.items.push(new OrderItem(product.id, quantity, product.price));
+  }
+}
+// ❌ MAL: order.items[0].changeQuantity() (Bypassea la lógica de la raíz)
+// ✅ BIEN: order.addItem(...)
+```
+
+### 2.4. Evento de Dominio (Domain Event)
+Representa algo que **ya sucedió** en el dominio y es de interés para otras partes del sistema. Son inmutables y se nombran en pasado.
+```typescript
+class OrderPlacedEvent implements DomainEvent {
+  public readonly occurredOn: Date = new Date();
+  constructor(
+    public readonly orderId: string,
+    public readonly customerId: string,
+    public readonly total: number
+  ) {}
+}
+```
+
+### 2.5. Servicio de Dominio (Domain Service)
+Operación de negocio que no pertenece naturalmente a una Entidad o VO. No tiene estado. Debe usarse con moderación; si tiene estado, probablemente debería ser una Entidad.
+```typescript
+class MoneyTransferService {
+  public transfer(from: Account, to: Account, amount: Money): void {
+    from.debit(amount);
+    to.credit(amount);
+  }
+}
+```
+
+### 2.6. Repositorio (Repository)
+Abstrae el mecanismo de persistencia. Proporciona una interfaz de **colección** para acceder a las Raíces de Agregado. El dominio no debe saber si se usa [SQL](/base_datos/sql "SQL es el lenguaje estándar utilizado para comunicarse con y gestionar bases de datos relacionales (RDBMS) como MySQL, PostgreSQL, Oracle, SQL Server, SQLite, entre otros."), Mongo o un archivo.
+```typescript
+interface OrderRepository {
+  save(order: Order): Promise<void>;
+  findById(id: OrderId): Promise<Order | null>;
+  // Nota: No devuelve listas infinitas, usa criterios específicos o paginación
+}
+```
+
+### 2.7. Fábrica (Factory)
+Encapsula la lógica compleja de creación de objetos o agregados, garantizando que se inicien en un estado válido.
+```typescript
+class OrderFactory {
+  public createDraftOrder(customerId: CustomerId, items: OrderItem[]): Order {
+    const orderId = new OrderId(generateUuid());
+    return new Order(orderId, customerId, 'DRAFT', items);
+  }
+}
+```
+
+---
+
+## 3. 🗺️ Patrones Estratégicos (Context Mapping)
+
+Define cómo interactúan diferentes Contextos Delimitados entre sí.
+
+| Patrón | Descripción | Cuándo usarlo |
+|--------|-------------|---------------|
+| **Partnership** | Dos equipos dependen mutuamente del éxito del otro. Sincronizan sus lanzamientos. | Proyectos pequeños o equipos altamente alineados con objetivos compartidos. |
+| **Shared Kernel** | Se comparte una parte del modelo y del código. Requiere comunicación constante. | Cuando la duplicación es más costosa que la coordinación (ej. modelo de dinero compartido). |
+| **Customer-Supplier** | El equipo "downstream" (cliente) depende del "upstream" (proveedor). El upstream tiene prioridad. | El equipo proveedor controla el roadmap y el cliente se adapta. |
+| **Conformist** | El equipo downstream se adapta completamente al modelo del upstream, sin intentar cambiarlo. | El upstream es un sistema legado o un proveedor externo inamovible. |
+| **Anti-Corruption Layer (ACL)** | El equipo downstream crea una capa de traducción para que el modelo del upstream no "corrompa" su propio modelo. | Integración con sistemas legacy o APIs externas con modelos incompatibles. |
+| **Open Host Service (OHS)** | El equipo upstream define un protocolo/contrato público para que cualquiera pueda usarlo. | Cuando un servicio es consumido por muchos equipos downstream diferentes. |
+| **Published Language (PL)** | Un lenguaje de intercambio de datos común y bien documentado (ej. JSON Schema, Avro, XML). | Se usa junto con OHS para estandarizar la comunicación entre contextos. |
+| **Separate Ways** | Se decide no integrar los sistemas. Cada uno vive su propia vida. | La integración es demasiado costosa y no aporta valor real. |
+
+---
+
+## 4. 🏗️ Arquitectura y Capas
+
+DDD se beneficia enormemente de arquitecturas que invierten la dependencia, poniendo el dominio en el centro.
+
+### 4.1. Capas Típicas (Clean / Hexagonal / Onion)
+1. **Domain Layer (Núcleo)**: Entidades, VOs, Agregados, Eventos de Dominio, Interfaces de Repositorio. **Cero dependencias** externas.
+2. **Application Layer**: Casos de uso (Use Cases / Interactors). Orquesta el flujo: obtiene del repositorio, ejecuta lógica de dominio, guarda. No contiene reglas de negocio.
+3. **Infrastructure Layer**: Implementaciones concretas de repositorios (TypeORM, [Prisma](/base_datos/orm/prisma "Prisma ORM es un toolkit de base de datos de próxima generación para Node.js y TypeScript que adopta un enfoque schema-first: un único archivo schema.prisma define el modelo de datos, las relaciones, las validaciones y la fuente de datos, y a partir de él se genera automáticamente un cliente tipado (PrismaClient)."), [Mongoose](/base_datos/nosql/mongoose "Mongoose es una biblioteca ODM (Object-Document Mapping) para MongoDB, permitiendo esquemas flexibles y escalabilidad horizontal nativa.') y Node.js que proporciona un esquema basado en validación, modelado de relaciones, middleware pre/post, transformación de consultas y herramientas de tipado estricto con TypeScript.")), clientes de correo, adaptadores de BD.
+4. **Presentation/Interface Layer**: Controladores HTTP, [GraphQL](/conocimiento/graphql "GraphQL es un lenguaje de consulta y runtime para APIs que permite a los clientes solicitar exactamente los datos que necesitan, evitando sobre-fetching y under-fetching.") resolvers, CLI, escuchadores de mensajes (Kafka/RabbitMQ).
+
+### 4.2. Ejemplo de Caso de Uso (Application Service)
+```typescript
+class PlaceOrderUseCase {
+  constructor(
+    private orderRepo: OrderRepository,
+    private customerRepo: CustomerRepository,
+    private eventBus: EventBus
+  ) {}
+
+  async execute(command: PlaceOrderCommand): Promise<void> {
+    const customer = await this.customerRepo.findById(command.customerId);
+    if (!customer) throw new Error("Cliente no encontrado");
+
+    const order = OrderFactory.createDraftOrder(customer.id, command.items);
+    order.confirm(); // Lógica de dominio
+
+    await this.orderRepo.save(order);
+    
+    // Publicar evento para otros contextos (ej. Inventario, Facturación)
+    await this.eventBus.publish(new OrderPlacedEvent(order.id, customer.id, order.total));
+  }
+}
+```
+
+---
+
+## 5. 🔄 Herramientas de Diseño: Event Storming
+
+Taller colaborativo para descubrir el dominio usando post-its de colores:
+1. **Eventos de Dominio (Naranja)**: "Pedido Confirmado", "Pago Rechazado" (verbo en pasado).
+2. **Comandos (Azul)**: La acción que desencadena el evento ("Confirmar Pedido").
+3. **Actores (Amarillo)**: Quién o qué sistema ejecuta el comando (Usuario, Cron Job).
+4. **Sistemas Externos (Rosa)**: Pasarelas de pago, APIs de terceros.
+5. **Read Models / Policies (Verde/Morado)**: Lo que se lee o las reglas automáticas que reaccionan a eventos.
+6. **Agrupación**: Identificar límites naturales para dibujar los **Contextos Delimitados**.
+
+---
+
+## 6. ⚠️ Errores Comunes y Trampas
+
+* **Modelo de Dominio Anémico**: Clases que son solo "bolsas de getters y setters" sin comportamiento. La lógica de negocio termina en servicios o controladores.
+  * *Fix*: Mover la lógica a las Entidades y VOs. Hacer los atributos privados y exponer métodos que representen intenciones de negocio (`activate()`, no `setStatus('ACTIVE')`).
+* **Agregados Gigantes (God Aggregates)**: Incluir demasiadas entidades en un solo agregado, causando problemas de concurrencia y rendimiento.
+  * *Fix*: Dividir en agregados más pequeños. Usar **Referencias por Identidad** (guardar solo el ID de otra entidad, no la entidad completa) y sincronizar vía Eventos de Dominio (consistencia eventual).
+* **Filtración de Abstracciones (Leaky Abstractions)**: Exponer tipos de la infraestructura (ej. `Entity` de TypeORM, `Document` de Mongoose) en la capa de dominio.
+  * *Fix*: Mapear siempre a objetos de dominio puros en los límites de la infraestructura.
+* **Ignorar el Diseño Estratégico**: Empezar directamente a codificar Entidades sin definir los Contextos Delimitados y el Lenguaje Ubicuo.
+  * *Fix*: Invertir tiempo en Event Storming y definir límites antes de escribir código.
+* **Transacciones distribuidas (2PC) entre Agregados**: Intentar mantener consistencia fuerte entre agregados distintos en la misma transacción de BD.
+  * *Fix*: Aceptar **consistencia eventual**. Un agregado emite un evento, otro lo consume y actualiza su estado.
+* **Repositorios con métodos de consulta complejos**: `findActiveUsersWithOrdersInLastMonth`.
+  * *Fix*: Los repositorios solo deben devolver Agregados por su identidad o criterios simples. Para consultas complejas de lectura, usar el patrón **[CQRS](/arquitectura/patrones_distribuidos/cqrs "CQRS es un patrón de arquitectura que segrega las operaciones de lectura (queries) de las de escritura (commands) en modelos independientes, permitiendo optimizar cada lado por separado.")** ([Command](/arquitectura/design_patterns/comportamiento/command "El patrón Command es un patrón de comportamiento que encapsula una petición o acción como un objeto independiente, desacoplando el emisor de la petición del receptor que la ejecuta.") Query Responsibility Segregation) con Read Models optimizados.
+
+---
+
+## 7. 💡 Mejores Prácticas y Consejos de Experto
+
+* **Inmutabilidad por defecto en Value Objects**: Siempre que sea posible, los VOs deben ser inmutables. Si necesitan "cambiar", devuelven una nueva instancia.
+* **Validación en la construcción**: Un VO o Entidad nunca debe poder existir en un estado inválido. Validar en el constructor o métodos de fábrica.
+* **Nombres que hablen**: Usar el Lenguaje Ubicuo. `Order.confirm()` es mejor que `Order.setStatus('CONFIRMED')`. `Money` es mejor que `amount: number`.
+* **No todo necesita DDD**: Aplicar DDD a un CRUD simple o a un subdominio Genérico es over-engineering. Reserva DDD para el **Subdominio Core** complejo.
+* **CQRS como complemento natural**: Separa los comandos (escritura, guiados por el modelo de dominio rico) de las consultas (lectura, optimizadas para la UI con vistas planas).
+* **Pruebas de Dominio puras**: Las unidades de dominio (Entidades, VOs) deben ser fáciles de probar sin mocks de BD, servidores web o frameworks. Solo lógica pura.
+* **Idempotencia en Eventos de Dominio**: Los consumidores de eventos deben poder manejar el mismo evento recibido múltiples veces sin corromper el estado.
+* **Documentar el Context Map**: Mantener un mapa visual actualizado de cómo se comunican los equipos y sistemas. Es una herramienta viva de comunicación organizacional.
+* **Evitar ORMs pesados en el Dominio**: Si el ORM fuerza a que tus entidades hereden de sus clases base, considera usar un patrón de mapeo en la capa de infraestructura o un micro-ORM / query [builder](/arquitectura/design_patterns/creacionales/builder "El patrón Builder es un patrón creacional que separa la construcción de un objeto complejo de su representación final, permitiendo que el mismo proceso de ensamblaje genere diferentes variantes.") que no contamine el dominio.
+
+---
+
+Este cheatsheet proporciona una referencia completa para Domain-Driven Design, cubriendo la distinción entre patrones estratégicos y tácticos, la implementación de building blocks ricos en comportamiento, la integración de contextos, la alineación con arquitecturas hexagonales y las mejores prácticas para evitar el modelo anémico y construir software que refleje fielmente la complejidad del negocio.
