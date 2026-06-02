@@ -1,0 +1,804 @@
+---
+title: "nginx"
+description: "Nginx (pronunciado \"engine-x\") es un servidor web de alto rendimiento, servidor de correo reverso y balanceador de carga HTTP, diseñado para máxima concurrencia, eficiencia de recursos y bajo consumo de memoria."
+createdAt: 2026-06-02
+updatedAt: 2026-06-02
+tags: [devops]
+icon: "📄"
+---
+# 🎯 Nginx — Complete Cheatsheet 🎯
+
+Nginx (pronunciado "engine-x") es un servidor web de alto rendimiento, servidor de correo reverso y balanceador de carga HTTP, diseñado para máxima concurrencia, eficiencia de recursos y bajo consumo de memoria. Su arquitectura asíncrona basada en eventos le permite manejar decenas de miles de conexiones simultáneas con huella mínima, convirtiéndolo en el estándar para infraestructuras modernas, microservicios y CDNs. Este cheatsheet cubre desde la instalación y configuración básica hasta reverse [proxy](/arquitectura/design_patterns/estructurales/proxy "El patrón Proxy es un patrón estructural que proporciona un sustituto o intermediario para controlar el acceso a un objeto real, añadiendo comportamiento transversal sin modificar su implementación original.") avanzado, balanceo de carga, SSL/TLS, caching, rate limiting, hardening de seguridad, optimización de rendimiento y patrones de producción. Ideal para desarrolladores, DevOps y administradores de sistemas que buscan configurar servidores web escalables, seguros y altamente performantes.
+
+---
+
+## 1. 🌟 Conceptos Fundamentales
+
+* **Arquitectura Event-Driven Asincrónica**: Un solo *master process* gestiona múltiples *worker processes* que manejan miles de conexiones de forma no bloqueante usando `epoll` (Linux), `kqueue` (BSD/macOS) o `select`.
+  * Por qué importa: A diferencia del modelo por procesos/hilos de Apache, Nginx escala horizontalmente sin overhead de memoria por conexión.
+* **Multi-Role Server**: Un único binario puede actuar como servidor web estático, reverse proxy, load balancer, HTTP cache, SSL terminator y [API](/conocimiento/api "Una API (Application Programming Interface) es un conjunto de reglas, protocolos y herramientas que permite que diferentes aplicaciones de software se comuniquen entre sí.") gateway.
+* **Configuración Declarativa**: Archivos `.conf` con directivas organizadas en bloques (`http`, `server`, `location`) que definen el comportamiento deseado.
+* **Procesamiento por Fases (Phases)**: Cada request pasa por fases ordenadas (rewrite, access, content, filter, log) donde se aplican directivas específicas.
+* **Hot Reload sin Downtime**: `nginx -s reload` reemplaza workers viejos manteniendo conexiones existentes. Zero-downtime deployments.
+* **Upstream Groups**: Agrupación de servidores backend para load balancing, health checking y failover automático.
+* **Variables en Runtime**: Nginx expone variables (`$request_uri`, `$remote_addr`, `$host`) reutilizables en directivas y logs.
+* **Location Matching Hierarchy**: Las rutas se resuelven con precedencia estricta: exacta (`=`) > preferente (`^~`) > regex (`~`, `~*`) > prefix.
+
+---
+
+## 2. 🛠️ Instalación y Estructura
+
+### 2.1. Instalación
+```bash
+# Ubuntu/Debian
+sudo apt update
+sudo apt install nginx
+sudo systemctl enable nginx
+sudo systemctl start nginx
+
+# CentOS/RHEL (usando repo oficial para versiones nuevas)
+sudo tee /etc/yum.repos.d/nginx.repo &lt;<EOF
+[nginx-stable]
+name=nginx stable repo
+baseurl=http://nginx.org/packages/centos/\$releasever/\$basearch/
+gpgcheck=1
+enabled=1
+EOF
+sudo yum install nginx
+
+# Alpine (ideal para Docker)
+apk add nginx
+
+# macOS
+brew install nginx
+```
+
+### 2.2. Estructura de Archivos Estándar
+```text
+/etc/nginx/
+├── nginx.conf              # Configuración raíz (main context)
+├── conf.d/                 # Archivos incluidos automáticamente (*.conf)
+│   ├── default.conf
+│   └── api.example.com.conf
+├── sites-available/        # Configuraciones completas (Debian/Ubuntu)
+├── sites-enabled/          # Symlinks activos (ln -s)
+├── mime.types              # Mapeo extensiones → MIME types
+├── fastcgi_params          # Parámetros para PHP-FPM
+├── uwsgi_params            # Parámetros para uWSGI (Python)
+├── proxy_params            # Headers comunes para proxy
+├── ssl/                    # Certificados y claves
+│   ├── cert.pem
+│   └── privkey.pem
+└── snippets/               # Fragmentos reutilizables
+    ├── ssl-params.conf
+    └── security-headers.conf
+```
+
+### 2.3. Comandos Esenciales
+| Comando | Función |
+|---------|---------|
+| `nginx` | Inicia Nginx |
+| `nginx -t` | Valida sintaxis de configuración |
+| `nginx -T` | Muestra toda la configuración efectiva |
+| `nginx -s reload` | Recarga sin downtime |
+| `nginx -s stop` | Apagado rápido |
+| `nginx -s quit` | Apagado graceful |
+| `nginx -s reopen` | Reabre logs (tras rotación) |
+| `systemctl reload nginx` | Reload vía systemd (recomendado) |
+| `nginx -V` | Muestra versión y flags de compilación |
+
+---
+
+## 3. 📝 Sintaxis Básica y Bloques
+
+```nginx
+# nginx.conf (contexto global)
+user nginx;                         # Usuario de workers
+worker_processes auto;              # auto = núcleos CPU
+worker_rlimit_nofile 65535;         # Límite de FDs por worker
+pid /run/nginx.pid;
+error_log /var/log/nginx/error.log warn;
+
+events {
+    worker_connections 4096;        # Conexiones máx por worker
+    multi_accept on;                # Acepta múltiples conexiones
+    use epoll;                      # Recomendado en Linux
+}
+
+http {
+    include /etc/nginx/mime.types;
+    default_type application/octet-stream;
+
+    # Logs
+    log_format main '$remote_addr - $remote_user [$time_local] '
+                    '"$request" $status $body_bytes_sent '
+                    '"$http_referer" "$http_user_agent"';
+    access_log /var/log/nginx/access.log main;
+
+    # Performance
+    sendfile on;
+    tcp_nopush on;
+    tcp_nodelay on;
+    keepalive_timeout 65;
+    types_hash_max_size 2048;
+
+    # Incluir configs adicionales
+    include /etc/nginx/conf.d/*.conf;
+}
+```
+
+### Bloque Server (virtual host)
+```nginx
+server {
+    listen 80;
+    listen [::]:80;
+    server_name example.com www.example.com;
+    root /var/www/example.com/html;
+    index index.html index.htm;
+
+    location / {
+        try_files $uri $uri/ =404;
+    }
+
+    location /api/ {
+        proxy_pass http://backend:3000/;
+    }
+}
+```
+
+---
+
+## 4. 📂 Servidor de Archivos Estáticos
+
+```nginx
+server {
+    listen 80;
+    server_name static.example.com;
+    root /var/www/static;
+
+    # SPA (React/Vue/Angular): redirige todo a index.html
+    location / {
+        try_files $uri $uri/ /index.html;
+        expires 1h;
+    }
+
+    # Assets con cache largo (hash en filename)
+    location ~* \.(js|css|png|jpg|jpeg|gif|ico|svg|woff2?)$ {
+        expires 1y;
+        add_header Cache-Control "public, immutable";
+        access_log off;
+    }
+
+    # Bloquear dotfiles (.git, .env)
+    location ~ /\. {
+        deny all;
+        access_log off;
+        log_not_found off;
+    }
+
+    # Compresión gzip
+    gzip on;
+    gzip_vary on;
+    gzip_min_length 1024;
+    gzip_proxied any;
+    gzip_comp_level 6;
+    gzip_types text/plain text/css application/json application/javascript text/xml application/xml image/svg+xml;
+
+    # Error pages custom
+    error_page 404 /404.html;
+    error_page 500 502 503 504 /50x.html;
+    location = /50x.html {
+        root /usr/share/nginx/html;
+    }
+}
+```
+
+---
+
+## 5. 🔁 Reverse Proxy y WebSocket
+
+### 5.1. Reverse Proxy Básico
+```nginx
+server {
+    listen 80;
+    server_name api.example.com;
+
+    location / {
+        proxy_pass http://backend:3000;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        
+        # Timeouts
+        proxy_connect_timeout 60s;
+        proxy_send_timeout 60s;
+        proxy_read_timeout 60s;
+        
+        # Buffering
+        proxy_buffering on;
+        proxy_buffer_size 4k;
+        proxy_buffers 8 4k;
+    }
+}
+```
+
+### 5.2. WebSocket Support
+```nginx
+map $http_upgrade $connection_upgrade {
+    default upgrade;
+    ''      close;
+}
+
+server {
+    listen 80;
+    server_name ws.example.com;
+
+    location /ws {
+        proxy_pass http://backend:3000;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection $connection_upgrade;
+        proxy_set_header Host $host;
+        proxy_read_timeout 86400;  # 24h para conexiones largas
+    }
+}
+```
+
+### 5.3. Proxy a Múltiples Backends (Path-based)
+```nginx
+server {
+    listen 80;
+    server_name app.example.com;
+
+    location /api/ {
+        proxy_pass http://api-backend/;
+    }
+
+    location /admin/ {
+        proxy_pass http://admin-backend/;
+        allow 10.0.0.0/8;      # Solo red interna
+        deny all;
+    }
+
+    location / {
+        proxy_pass http://frontend:3000;
+    }
+}
+```
+
+---
+
+## 6. ⚖️ Load Balancing
+
+### 6.1. Configuración de Upstream
+```nginx
+upstream backend_pool {
+    # Algoritmos: round-robin (default), least_conn, ip_hash, hash, random
+    
+    # least_conn: envía a servidor con menos conexiones activas
+    least_conn;
+    
+    server app1:3000 weight=5 max_fails=3 fail_timeout=30s;
+    server app2:3000 weight=3;
+    server app3:3000 backup;          # Solo si los otros fallan
+    server app4:3000 down;            # Marcado como inactivo
+    
+    # Keepalive para reutilizar conexiones (HTTP/1.1)
+    keepalive 32;
+}
+
+server {
+    listen 80;
+    server_name api.example.com;
+
+    location / {
+        proxy_pass http://backend_pool;
+        proxy_http_version 1.1;
+        proxy_set_header Connection "";  # Requerido para keepalive
+    }
+}
+```
+
+### 6.2. Algoritmos de Balanceo
+| Algoritmo | Uso | Directiva |
+|-----------|-----|-----------|
+| **Round-Robin** | Default, distribución equitativa | (sin directiva) |
+| **Least Connections** | Servidores con distinta capacidad | `least_conn;` |
+| **IP Hash** | Sesiones persistentes por IP cliente | `ip_hash;` |
+| **Generic Hash** | Sticky sessions por cookie/header | `hash $cookie_session consistent;` |
+| **Random** | Con dos o más opciones | `random two least_conn;` |
+
+### 6.3. Health Checks (OpenSource básico)
+```nginx
+upstream backend {
+    server app1:3000 max_fails=3 fail_timeout=30s;
+    server app2:3000 max_fails=3 fail_timeout=30s;
+    # Tras 3 fallos en 30s, marca como down por 30s
+}
+```
+* **Health checks activos (Nginx Plus)**: `health_check uri=/health interval=5s;`
+
+---
+
+## 7. 🔐 SSL/TLS (HTTPS)
+
+### 7.1. Configuración HTTPS con Certbot
+```bash
+# Generar certificados gratis con Let's Encrypt
+sudo apt install certbot python3-certbot-nginx
+sudo certbot --nginx -d example.com -d www.example.com
+# Renueva automáticamente
+sudo certbot renew --dry-run
+```
+
+### 7.2. Configuración SSL Moderna
+```nginx
+server {
+    listen 443 ssl http2;
+    listen [::]:443 ssl http2;
+    server_name example.com;
+
+    ssl_certificate /etc/letsencrypt/live/example.com/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/example.com/privkey.pem;
+    ssl_trusted_certificate /etc/letsencrypt/live/example.com/chain.pem;
+
+    # Protocolos y cifrados seguros (Mozilla Intermediate)
+    ssl_protocols TLSv1.2 TLSv1.3;
+    ssl_ciphers ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384;
+    ssl_prefer_server_ciphers off;
+
+    # Session cache (compartido entre workers)
+    ssl_session_cache shared:SSL:10m;
+    ssl_session_timeout 1d;
+    ssl_session_tickets off;
+
+    # OCSP Stapling
+    ssl_stapling on;
+    ssl_stapling_verify on;
+    resolver 8.8.8.8 8.8.4.4 valid=300s;
+    resolver_timeout 5s;
+
+    # DH params (generar con: openssl dhparam -out dhparam.pem 2048)
+    ssl_dhparam /etc/nginx/ssl/dhparam.pem;
+
+    root /var/www/example.com;
+    index index.html;
+
+    location / {
+        try_files $uri $uri/ =404;
+    }
+}
+
+# Redirect HTTP → HTTPS
+server {
+    listen 80;
+    listen [::]:80;
+    server_name example.com www.example.com;
+    return 301 https://$host$request_uri;
+}
+```
+
+### 7.3. HSTS y Security Headers
+```nginx
+add_header Strict-Transport-Security "max-age=63072000; includeSubDomains; preload" always;
+add_header X-Frame-Options "SAMEORIGIN" always;
+add_header X-Content-Type-Options "nosniff" always;
+add_header X-XSS-Protection "1; mode=block" always;
+add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+add_header Permissions-Policy "camera=(), microphone=(), geolocation=()" always;
+add_header Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline'" always;
+```
+
+---
+
+## 8. 💾 Caching
+
+### 8.1. Proxy Cache (respuestas de backend)
+```nginx
+http {
+    # Zona de cache compartida (10MB en RAM, disco en /var/cache/nginx)
+    proxy_cache_path /var/cache/nginx levels=1:2 keys_zone=api_cache:10m 
+                     max_size=1g inactive=60m use_temp_path=off;
+
+    server {
+        listen 443 ssl;
+        server_name api.example.com;
+
+        location /api/ {
+            proxy_pass http://backend:3000;
+            
+            proxy_cache api_cache;
+            proxy_cache_valid 200 10m;      # Cachea 200 OK por 10 min
+            proxy_cache_valid 404 1m;
+            proxy_cache_use_stale error timeout updating http_500 http_502 http_503 http_504;
+            proxy_cache_background_update on;
+            proxy_cache_revalidate on;
+            proxy_cache_min_uses 2;         # Cachea solo tras 2 requests iguales
+            proxy_cache_lock on;            # Evita thundering herd
+            proxy_cache_lock_timeout 5s;
+            
+            # Headers informativos
+            add_header X-Cache-Status $upstream_cache_status;
+            proxy_set_header Cache-Control "public, max-age=300";
+            
+            # Ignorar cookies en cache
+            proxy_cache_bypass $http_cache_control $cookie_nocache $arg_nocache;
+            proxy_no_cache $request_method != GET;
+        }
+    }
+}
+```
+
+### 8.2. FastCGI Cache (PHP)
+```nginx
+fastcgi_cache_path /var/cache/nginx levels=1:2 keys_zone=php_cache:10m max_size=1g;
+
+location ~ \.php$ {
+    fastcgi_pass unix:/run/php/php-fpm.sock;
+    fastcgi_cache php_cache;
+    fastcgi_cache_valid 200 60m;
+    fastcgi_cache_bypass $cookie_nocache $arg_nocache;
+    fastcgi_no_cache $cookie_nocache $arg_nocache;
+    add_header X-FastCGI-Cache $upstream_cache_status;
+}
+```
+
+### 8.3. Open File Cache (archivos estáticos)
+```nginx
+http {
+    open_file_cache max=10000 inactive=20s;
+    open_file_cache_valid 30s;
+    open_file_cache_min_uses 2;
+    open_file_cache_errors on;
+}
+```
+
+---
+
+## 9. 🚦 Rate Limiting y Control de Acceso
+
+### 9.1. Rate Limiting por IP
+```nginx
+http {
+    # Zona de limitación: 10MB para ~160,000 IPs, 10 req/s por IP
+    limit_req_zone $binary_remote_addr zone=api_limit:10m rate=10r/s;
+    limit_req_zone $binary_remote_addr zone=login_limit:10m rate=1r/s;
+    
+    # Conexiones concurrentes por IP
+    limit_conn_zone $binary_remote_addr zone=addr:10m;
+
+    server {
+        location /api/ {
+            limit_req zone=api_limit burst=20 nodelay;
+            limit_conn addr 10;
+            limit_req_status 429;
+            proxy_pass http://backend;
+        }
+        
+        location /login {
+            limit_req zone=login_limit burst=5 nodelay;
+            proxy_pass http://backend;
+        }
+    }
+}
+```
+
+### 9.2. Control por País (GeoIP)
+```nginx
+http {
+    load_module modules/ngx_http_geoip2_module.so;
+    geoip2 /etc/nginx/geoip/GeoLite2-Country.mmdb {
+        $geoip2_data_country_code country iso_code;
+    }
+    map $geoip2_data_country_code $blocked_country {
+        default 0;
+        CN 1;
+        RU 1;
+    }
+    server {
+        if ($blocked_country) { return 403; }
+    }
+}
+```
+
+### 9.3. IP Allowlist/Blocklist
+```nginx
+location /admin {
+    allow 10.0.0.0/8;
+    allow 192.168.1.0/24;
+    deny all;
+    proxy_pass http://admin-backend;
+}
+```
+
+---
+
+## 10. 📊 Logs y Observabilidad
+
+### 10.1. Log Formats Personalizados
+```nginx
+http {
+    # JSON logging (ideal para ELK/Loki)
+    log_format json_combined escape=json
+        '{'
+            '"time_local":"$time_iso8601",'
+            '"remote_addr":"$remote_addr",'
+            '"remote_user":"$remote_user",'
+            '"request":"$request",'
+            '"status": "$status",'
+            '"body_bytes_sent":"$body_bytes_sent",'
+            '"request_time":"$request_time",'
+            '"http_referrer":"$http_referer",'
+            '"http_user_agent":"$http_user_agent",'
+            '"upstream_response_time":"$upstream_response_time"'
+        '}';
+
+    # Formato detallado con upstream
+    log_format upstreamlog '$remote_addr - $server_name to: $upstream_addr: '
+                          '$request upstream_response_time $upstream_response_time msec $msec '
+                          'request_time $request_time';
+    
+    access_log /var/log/nginx/access.json json_combined;
+    access_log /var/log/nginx/upstream.log upstreamlog;
+}
+```
+
+### 10.2. Conditional Logging
+```nginx
+# Excluir health checks del log
+map $request_uri $loggable {
+    ~*^/(health|ready|live)$ 0;
+    default 1;
+}
+access_log /var/log/nginx/access.log combined if=$loggable;
+
+# Log solo errores
+error_log /var/log/nginx/error.log error;
+```
+
+### 10.3. Rotación de Logs (logrotate)
+```text
+# /etc/logrotate.d/nginx
+/var/log/nginx/*.log {
+    daily
+    missingok
+    rotate 14
+    compress
+    delaycompress
+    notifempty
+    create 0640 www-data adm
+    sharedscripts
+    postrotate
+        [ -f /var/run/nginx.pid ] && kill -USR1 `cat /var/run/nginx.pid`
+    endscript
+}
+```
+
+---
+
+## 11. 🔒 Seguridad y Hardening
+
+### 11.1. Bloquear User-Agents Maliciosos
+```nginx
+map $http_user_agent $bad_bot {
+    default 0;
+    ~*(bot|crawl|spider|slurp) 1;
+    ~*(nikto|sqlmap|nmap|masscan) 1;
+    "" 1;
+}
+
+server {
+    if ($bad_bot) { return 403; }
+}
+```
+
+### 11.2. Ocultar Versión y Headers
+```nginx
+server_tokens off;                    # Oculta versión en errores
+more_clear_headers Server;            # Requiere headers-more module
+proxy_hide_header X-Powered-By;
+proxy_hide_header Server;
+```
+
+### 11.3. Limitar Tamaño de Request
+```nginx
+client_max_body_size 10M;             # Máximo tamaño de upload
+client_body_buffer_size 128k;
+client_header_buffer_size 1k;
+large_client_header_buffers 4 8k;
+```
+
+### 11.4. Protección contra Slowloris
+```nginx
+client_body_timeout 12;
+client_header_timeout 12;
+send_timeout 10;
+keepalive_timeout 15;
+```
+
+### 11.5. Prevenir Clickjacking y MIME Sniffing
+```nginx
+add_header X-Frame-Options "SAMEORIGIN" always;
+add_header X-Content-Type-Options "nosniff" always;
+```
+
+---
+
+## 12. 🎛️ Módulos Útiles y Configuración Avanzada
+
+### 12.1. Compresión Brotli (requiere módulo externo)
+```nginx
+brotli on;
+brotli_comp_level 6;
+brotli_types text/plain text/css application/json application/javascript text/xml application/xml image/svg+xml;
+brotli_min_length 256;
+```
+
+### 12.2. URL Rewrites
+```nginx
+# Redirect permanente (301)
+rewrite ^/old-page$ https://$host/new-page permanent;
+
+# Redirect temporal (302)
+rewrite ^/promo$ https://promo.example.com redirect;
+
+# Reescribir internamente
+rewrite ^/users/(\d+)$ /api/users?id=$1 last;
+
+# Normalizar trailing slash
+rewrite ^/(.*)/$ /$1 permanent;
+```
+
+### 12.3. Map para Decisiones Dinámicas
+```nginx
+# Redirección por dispositivo
+map $http_user_agent $is_mobile {
+    default 0;
+    ~*(mobile|android|iphone|ipad) 1;
+}
+
+# Upstream routing por header
+map $http_x_api_version $backend {
+    default "v1";
+    "v2" "v2";
+}
+
+upstream api_v1 { server app1:3000; }
+upstream api_v2 { server app2:3000; }
+
+server {
+    location /api/ {
+        proxy_pass http://api_$backend;
+    }
+}
+```
+
+### 12.4. Subrequests con `include` y `addition`
+```nginx
+location / {
+    add_before_body /header.html;
+    add_after_body /footer.html;
+    proxy_pass http://backend;
+}
+```
+
+---
+
+## 13. ⚠️ Errores Comunes y Trampas
+
+* **Barra final en `proxy_pass` cambia comportamiento**:
+  * `proxy_pass http://backend;` → pasa la URI completa (`/api/users`).
+  * `proxy_pass http://backend/;` → reemplaza el path matched (`/users`).
+  * Fix: Decidir explícitamente. Usar `location /api/ { proxy_pass http://backend/; }` para strip prefix.
+
+* **`try_files` con `=404` mal posicionado**: `try_files $uri $uri/ /index.html =404;` nunca llega al `=404`.
+  * Fix: `try_files $uri $uri/ /index.html;` para SPAs. El `=404` debe ser último fallback intencional.
+
+* **Olvidar `proxy_set_header Host`**: El backend recibe `Host: backend:3000` y redirige mal.
+  * Fix: Siempre incluir `proxy_set_header Host $host;` en reverse proxies.
+
+* **WebSocket sin `Upgrade` headers**: El handshake falla con 400.
+  * Fix: `proxy_set_header Upgrade $http_upgrade; proxy_set_header Connection "upgrade";`
+
+* **`root` vs `alias`**:
+  * `root /var/www;` + `location /img/` → busca `/var/www/img/file.png`.
+  * `alias /var/www/images/;` + `location /img/` → busca `/var/www/images/file.png`.
+  * Fix: Usar `root` por defecto; `alias` solo cuando el path no coincide.
+
+* **SSL handshake falla con múltiples dominios**: Certificado equivocado servido por SNI.
+  * Fix: `listen 443 ssl;` en cada server block, y definir `server_name` correctamente.
+
+* **`worker_connections` muy bajo**: Con 4 workers × 1024 = 4096 conexiones máx. Insuficiente en producción.
+  * Fix: Aumentar `worker_connections` a 4096+ y `worker_rlimit_nofile` acorde.
+
+* **Upstream sin health checks**: Backend caído sigue recibiendo tráfico por `fail_timeout`.
+  * Fix: `max_fails=3 fail_timeout=30s` en cada servidor upstream.
+
+* **No comprimir respuestas pequeñas**: gzip overhead > beneficio en payloads &lt; 1KB.
+  * Fix: `gzip_min_length 1024;` como mínimo.
+
+* **Logs creciendo sin rotación**: Disco lleno en producción.
+  * Fix: Configurar `logrotate` y verificar `postrotate` con `kill -USR1`.
+
+* **`if is evil`**: Usar `if` en location context tiene comportamientos impredecibles.
+  * Fix: Preferir `try_files`, `map`, `return`, `rewrite`. Si es inevitable, solo `return` o `rewrite ... last`.
+
+* **Headers `add_header` no heredados en `location`**: Cualquier `add_header` dentro de location sobrescribe los del server.
+  * Fix: Repetir headers en cada location, o usar `more_set_headers` del módulo headers-more.
+
+* **Keepalive mal configurado con upstream**: Conexiones se cierran tras cada request.
+  * Fix: `proxy_http_version 1.1; proxy_set_header Connection "";` junto a `keepalive 32;` en upstream.
+
+---
+
+## 14. 💡 Mejores Prácticas y Consejos de Experto
+
+* **Valida siempre antes de reload**: `nginx -t` antes de `systemctl reload`. Un error de sintaxis puede tirar toda la configuración.
+* **Usa snippets para configuración reutilizable**:
+  ```nginx
+  # /etc/nginx/snippets/ssl-params.conf
+  include snippets/ssl-params.conf;
+  ```
+  Centraliza SSL, security headers y configuraciones comunes.
+
+* **Separa configuración por dominio**: `conf.d/example.com.conf`, `conf.d/api.example.com.conf`. Facilita mantenimiento y permisos.
+
+* **Nombra workers para observabilidad**: `worker_process CPU$worker` (requiere patch). En su defecto, monitorea PIDs con `worker_processes` específico.
+
+* **Ajusta `worker_processes auto` en contenedores**: En [Docker](/devops/docker "Docker es una plataforma de código abierto que utiliza la contenerización para empaquetar una aplicación y todas sus dependencias en una unidad estándar para el desarrollo de software."), `auto` puede detectar CPUs del host. Fija manualmente según límites del container: `worker_processes 2;`.
+
+* **Perfila con `nginx -T` y `strace`**: Identifica qué configuración se carga realmente y dónde bloquea Nginx.
+
+* **Monitorea con stub_status**:
+  ```nginx
+  location /nginx_status {
+      stub_status on;
+      allow 10.0.0.0/8;
+      deny all;
+  }
+  ```
+  Expone: `Active connections`, `accepts/handled/requests`, `reading/writing/waiting`.
+
+* **Integra con [Prometheus](/web/backend/framework/herramientas/prometheus "Prometheus es una solución de monitoreo de código abierto y sistema de alertado.")**: `nginx-prometheus-exporter` convierte stub_status a métricas. [Grafana](/herramientas/visualizacion_datos/grafana "Grafana es una herramienta de código abierto para la visualización y analítica de series de tiempo, diseñada para consultar, visualizar, alertar y comprender tus métricas dondequiera que se almacenen.") para dashboards.
+
+* **Prueba con `curl -I` y `curl -v`**: Verifica headers, redirecciones y comportamiento SSL antes de desplegar.
+
+* **Usa `nginx -s reload` en CI/CD**: No restart, siempre reload. Zero-downtime y mantiene conexiones.
+
+* **Certificados auto-renovables**: `certbot renew` con cron o systemd timer. Alerta si falla.
+
+* **Versiona configs en [git](/herramientas/git/git "Git es un sistema de control de versiones distribuido (DVCS) diseñado para manejar proyectos pequeños o muy grandes con velocidad y eficiencia.")**: Usa `nginx -T > full-config.txt` para backup completo antes de cambios.
+
+* **Test configs en staging con `nginx -t`**: Replica producción en contenedor Docker antes de aplicar cambios críticos.
+
+* **Perfila performance con `wrk` o `ab`**:
+  ```bash
+  wrk -t12 -c400 -d30s https://example.com/
+  ```
+  Mide QPS, latencia y identifica cuellos antes de carga real.
+
+* **Habilita HTTP/2 y HTTP/3**: `listen 443 ssl http2;` y considera QUIC con `quic` (Nginx 1.25+).
+
+* **Limita accesos a `/nginx_status` y `/health`**: Nunca expongas endpoints de control a internet pública.
+
+* **Configura DNS resolver explícito**:
+  ```nginx
+  resolver 8.8.8.8 8.8.4.4 valid=300s;
+  resolver_timeout 5s;
+  ```
+  Para upstreams dinámicos que resuelven DNS en runtime.
+
+* **Documenta decisiones en `nginx.conf`**: Comentarios explicando por qué ciertas configuraciones (rate limits, timeouts, ciphers). Facilita onboarding y auditoría.
+
+* **Usa `map` en vez de múltiples `if`**: Más eficiente y predecible. Ideal para redirecciones, blocklists y routing dinámico.
+
+* **Centraliza seguridad en snippets**: `snippets/security-headers.conf`, `snippets/ssl-params.conf`. Aplica en todos los server blocks.
+
+* **Despliega con contenedores**: Nginx oficial en Docker (`nginx:1.27-alpine`) con configs montadas como volúmenes. Facilita reproducibilidad y rollbacks.
+
+* **Automatiza con Ansible/[Terraform](/devops/terraform "Terraform es una herramienta de Infrastructure as Code (IaC) desarrollada por HashiCorp que permite definir, aprovisionar y gestionar infraestructura de forma declarativa, segura y reproducible en múltiples proveedores cloud (AWS, Azure, GCP, Kubernetes es una plataforma portable y extensible de código abierto para gestionar cargas de trabajo y servicios en contenedores.'), etc.).")**: Nunca configures Nginx manualmente en producción. IaC garantiza consistencia y versionado.
+
+---
+
+Este cheatsheet proporciona una referencia completa para Nginx, cubriendo arquitectura event-driven, configuración declarativa, serving de estáticos, reverse proxy, load balancing con upstreams, SSL/TLS moderno con HTTP/2, caching proxy, rate limiting, logs estructurados, hardening de seguridad, módulos avanzados y patrones de producción, junto con las mejores prácticas para operar servidores web escalables, seguros y altamente performantes en entornos reales.
