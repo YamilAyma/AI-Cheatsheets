@@ -342,7 +342,7 @@ jobs:
 * **Usa Versiones Específicas de Actions (`@vX`)**: Siempre especifica la versión de una Action (ej. `actions/checkout@v4`) en lugar de `latest` para garantizar la reproducibilidad.
 * **`npm ci` vs `npm install`**: Usa `npm ci` en tus workflows de CI/CD para instalaciones limpias y reproducibles, y `npm install` en desarrollo.
 * **Cachea Dependencias (`actions/cache`)**: Reduce los tiempos de construcción al almacenar en caché `node_modules`, dependencias de Maven, etc.
-* **Protege Secretos**: No los "hardcodees". Almacénalos en GitHub Secrets y accede a ellos a través de `secrets.<nombre>`.
+* **Protege Secretos**: No los "hardcodees". Almacénalos en [GitHub](/herramientas/github "GitHub es una plataforma web para el alojamiento de repositorios de control de versiones Git diseñado para manejar proyectos pequeños o muy grandes con velocidad y eficiencia.').") Secrets y accede a ellos a través de `secrets.<nombre>`.
 * **Reglas de Protección de Ramas**: Configura reglas para la rama `main` (ej. requerir checks de CI/CD y revisiones de PR antes de fusionar).
 * **Registro y Depuración**: Usa nombres de pasos descriptivos. Para depurar, añade `run: echo "..."` o `run: npm run test -- --debug` o habilita el log de depuración en el runner.
 * **Valida tus Workflows**: Usa el editor de GitHub o herramientas como `act` para validar la sintaxis YAML.

@@ -63,7 +63,7 @@ Terraform es una herramienta de Infrastructure as Code (IaC) desarrollada por Ha
   | `terraform state list` | Lista recursos en el state |
   | `terraform state show <resource>` | Detalle de un recurso específico |
   | `terraform taint <resource>` | Marca un recurso para recrearlo en el próximo apply |
-  | `terraform refresh` | Actualiza state con cambios externos (obsoleto en v1.5+) |
+  | `terraform refresh` | Actualiza [state](/arquitectura/design_patterns/comportamiento/state "El patrón State es un patrón de comportamiento que permite a un objeto alterar su comportamiento cuando su estado interno cambia, haciendo que parezca que el objeto cambia de clase.") con cambios externos (obsoleto en v1.5+) |
   | `terraform console` | REPL interactivo para probar expresiones HCL |
 
 * **Flags útiles**:

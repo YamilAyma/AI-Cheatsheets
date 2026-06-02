@@ -240,7 +240,7 @@ Cuándo migrar: Si el singleton crece &gt; 300 líneas, tiene &gt; 5 responsabil
 * **Evita Lógica de Negocio**: Un singleton debe ser un **coordinador de acceso**, no un procesador de reglas. Delega complejidad a servicios con responsabilidad única.
 * **Implementa `reset()` para Entornos de Prueba**: Facilita el aislamiento de tests sin recurrir a reflexión agresiva o recarga de módulos.
 * **Monitorea el Ciclo de Vida**: En aplicaciones de larga ejecución, registra métricas de creación, uso y disposición. Un singleton que nunca se libera es una fuga de memoria garantizada.
-* **Considera el Patrón `Lazy` del Lenguaje**: C#, [Rust](/rust/rust "Rust es un lenguaje de programación de sistemas enfocado en seguridad, concurrencia y rendimiento sin recolector de basura (GC)."), Go y Kotlin ofrecen primitivas seguras para inicialización diferida thread-safe. Úsalas en lugar de reinventar locking manual.
+* **Considera el Patrón `Lazy` del Lenguaje**: C#, [Rust](/rust/rust "Rust es un lenguaje de programación de sistemas enfocado en seguridad, concurrencia y rendimiento sin recolector de basura (GC)."), [Go](/go/go "Go es un lenguaje compilado, concurrente y de tipado estático creado por Google.") y Kotlin ofrecen primitivas seguras para inicialización diferida thread-safe. Úsalas en lugar de reinventar locking manual.
 * **Valida en Tiempo de Compilación**: Usa analizadores estáticos o linters para detectar accesos directos a `getInstance()` en capas de dominio. Fuerza la inyección en la capa de aplicación.
 * **No lo uses "por si acaso"**: La tentación de centralizar "por facilidad" es el origen de arquitecturas rígidas. Aplica el patrón solo cuando la unicidad sea una **restricción inmutable del sistema**, no una conveniencia de implementación.
 

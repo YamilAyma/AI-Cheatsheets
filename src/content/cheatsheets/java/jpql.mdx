@@ -246,7 +246,7 @@ JPQL tiene un conjunto limitado de funciones incorporadas, a menudo mapeadas a f
 *   **Usa `FETCH JOIN` con Cuidado**: `FETCH JOIN` es potente para resolver el problema N+1, pero puede crear un producto cartesiano si hay múltiples colecciones `EAGER` o si no se maneja correctamente. No usar `DISTINCT` en `SELECT` si usas `JOIN FETCH` en el mismo JPQL para colecciones `ToMany` cargadas `EAGERLY` si la idea es obtener la entidad principal sin duplicados. Para eso, es mejor cargar la entidad principal y luego inicializar la colección en un método aparte (`Hibernate.initialize()`).
 *   **Evita Consultas JPQL Demasiado Largas o Complejas**: Si una consulta se vuelve muy compleja, considera:
     *   Dividirla en varias consultas más pequeñas.
-    *   Realizar parte de la lógica en Java (después de obtener datos).
+    *   Realizar parte de la lógica en [Java](/java/java "Java es un lenguaje de programación de propósito general, concurrente, basado en clases y orientado a objetos.") (después de obtener datos).
     *   Crear una Vista en la base de datos.
     *   Usar Criteria [API](/conocimiento/api "Una API (Application Programming Interface) es un conjunto de reglas, protocolos y herramientas que permite que diferentes aplicaciones de software se comuniquen entre sí.") (más programático, para consultas dinámicas).
     *   Usar [SQL](/base_datos/sql "SQL es el lenguaje estándar utilizado para comunicarse con y gestionar bases de datos relacionales (RDBMS) como MySQL, PostgreSQL, Oracle, SQL Server, SQLite, entre otros.") nativo (`@NamedNativeQuery` o `createNativeQuery`) si es una consulta muy específica de la base de datos o si no se puede expresar en JPQL.

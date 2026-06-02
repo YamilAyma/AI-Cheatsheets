@@ -37,7 +37,7 @@ Redux se adhiere a tres principios básicos:
 *   **Reducer (Reductor)**: Una función *pura* que toma el `estado actual` de la aplicación y una `acción`, y devuelve el `nuevo estado`.
     *   ` (state, action) =&gt; newState `
     *   ¡Nunca muta el estado directamente! Siempre devuelve un *nuevo* objeto de estado.
-*   **Middleware**: Proporciona un punto de extensión entre el `dispatch` de una `Action` y el momento en que llega al `Reducer`. Útil para lógica asíncrona, logging, etc. (ej. Redux Thunk, Redux Saga).
+*   **Middleware**: Proporciona un punto de extensión entre el `dispatch` de una `Action` y el momento en que llega al `Reducer`. Útil para lógica asíncrona, logging, etc. (ej. Redux Thunk, Redux [Saga](/arquitectura/patrones_distribuidos/saga "El patrón Saga es un enfoque de gestión de transacciones distribuidas que mantiene la consistencia de datos entre múltiples servicios o microservicios sin depender de transacciones ACID tradicionales (2PC).")).
 
 ---
 
@@ -241,7 +241,7 @@ const usersSlice = createSlice({
         [state](/arquitectura/design_patterns/comportamiento/state "El patrón State es un patrón de comportamiento que permite a un objeto alterar su comportamiento cuando su estado interno cambia, haciendo que parezca que el objeto cambia de clase.").list = Array.isArray(action.payload) ? action.payload : [action.payload]; // Asegura que sea un array
       })
       .addCase(fetchUsers.rejected, ([state](/arquitectura/design_patterns/comportamiento/state "El patrón State es un patrón de comportamiento que permite a un objeto alterar su comportamiento cuando su estado interno cambia, haciendo que parezca que el objeto cambia de clase."), action) =&gt; {
-        state.status = 'failed';
+        [state](/arquitectura/design_patterns/comportamiento/state "El patrón State es un patrón de comportamiento que permite a un objeto alterar su comportamiento cuando su estado interno cambia, haciendo que parezca que el objeto cambia de clase.").status = 'failed';
         state.error = action.payload || action.error.message; // Usa el payload de rejectWithValue o el mensaje de error estándar
       });
   },

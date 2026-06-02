@@ -238,7 +238,7 @@ Flask usa [Jinja2](/template_engine/jinja2 "Jinja2 es un motor de plantillas (te
   def show_messages():
       return render_template('messages.html') # Para mostrar mensajes flash
   ```
-* **Sintaxis [Jinja2](/template_engine/jinja2 "Jinja2 es un motor de plantillas (template engine) para Python.") (`templates/index.html`)**:
+* **Sintaxis [Jinja2](/template_engine/jinja2 "Jinja2 es un motor de plantillas (template engine) para [Python](/python/python "Python es un lenguaje de programación de alto nivel, interpretado, interactivo y orientado a objetos.").") (`templates/index.html`)**:
 
   ```html
   &lt;!DOCTYPE html>
@@ -479,7 +479,7 @@ if __name__ == '__main__':
 * **Manejo de Errores**: Implementa manejadores de errores para los códigos HTTP comunes.
 * **Logging**: Configura el logging para monitorear tu aplicación en producción.
 * **ORM**: Para aplicaciones con bases de datos relacionales, usa un ORM como SQLAlchemy con Flask-SQLAlchemy.
-* **Despliegue**: No uses `app.run(debug=True)` en producción. Usa un servidor WSGI como Gunicorn o uWSGI, y un servidor web como Nginx o Apache como [proxy](/arquitectura/design_patterns/estructurales/proxy "El patrón Proxy es un patrón estructural que proporciona un sustituto o intermediario para controlar el acceso a un objeto real, añadiendo comportamiento transversal sin modificar su implementación original.") inverso.
+* **Despliegue**: No uses `app.run(debug=True)` en producción. Usa un servidor WSGI como Gunicorn o uWSGI, y un servidor web como [Nginx](/devops/nginx "Nginx (pronunciado 'engine-x') es un servidor web de alto rendimiento, servidor de correo reverso y balanceador de carga HTTP, diseñado para máxima concurrencia, eficiencia de recursos y bajo consumo de memoria.") o Apache como [proxy](/arquitectura/design_patterns/estructurales/proxy "El patrón Proxy es un patrón estructural que proporciona un sustituto o intermediario para controlar el acceso a un objeto real, añadiendo comportamiento transversal sin modificar su implementación original.") inverso.
 
 ---
 

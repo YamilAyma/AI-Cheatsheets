@@ -170,7 +170,7 @@ def create_move_command(receiver: object, dx: int, dy: int) -&gt; Command:
 Ventaja: Inmutabilidad, cero clases, fácil serialización. Desventaja: Pérdida de validación estática si no se usa tipado estricto o contratos explícitos.
 
 ### 3.3. Event/Message Bus Distribuido (Kafka / RabbitMQ / Redis)
-Comandos se publican como mensajes, se consumen asíncronamente y se procesan en workers separados. Patrón base de CQRS y Event Sourcing.
+Comandos se publican como mensajes, se consumen asíncronamente y se procesan en workers separados. Patrón base de [CQRS](/arquitectura/patrones_distribuidos/cqrs "CQRS es un patrón de arquitectura que segrega las operaciones de lectura (queries) de las de escritura (commands) en modelos independientes, permitiendo optimizar cada lado por separado.") y Event Sourcing.
 
 ```rust
 #[derive(Serialize, Deserialize, Clone)]

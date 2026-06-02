@@ -228,7 +228,7 @@ public class V3__UpdateUserEmails extends BaseJavaMigration {
 * **Prueba tus migraciones**: Ejecuta tus migraciones en un entorno de desarrollo o staging antes de ir a producción.
 * **Scripts [SQL](/base_datos/sql "SQL es el lenguaje estándar utilizado para comunicarse con y gestionar bases de datos relacionales (RDBMS) como MySQL, PostgreSQL, Oracle, SQL Server, SQLite, entre otros.") vs. Migraciones [Java](/java/java "Java es un lenguaje de programación de propósito general, concurrente, basado en clases y orientado a objetos.")**:
   * Usa [SQL](/base_datos/sql "SQL es el lenguaje estándar utilizado para comunicarse con y gestionar bases de datos relacionales (RDBMS) como MySQL, PostgreSQL, Oracle, SQL Server, SQLite, entre otros.") para la mayoría de los cambios de esquema y datos. Son más legibles y fáciles de versionar.
-  * Usa migraciones [Java](/java/java "Java es un lenguaje de programación de propósito general, concurrente, basado en clases y orientado a objetos.") solo para transformaciones de datos complejas o lógica que no se puede expresar fácilmente en SQL.
+  * Usa migraciones [Java](/java/java "Java es un lenguaje de programación de propósito general, concurrente, basado en clases y orientado a objetos.") solo para transformaciones de datos complejas o lógica que no se puede expresar fácilmente en [SQL](/base_datos/sql "SQL es el lenguaje estándar utilizado para comunicarse con y gestionar bases de datos relacionales (RDBMS) como MySQL, PostgreSQL, Oracle, SQL Server, SQLite, entre otros.").
 * **Datos de Referencia**: Usa migraciones repetibles (`R__`) para datos que cambian con frecuencia (ej. listas de categorías) o para funciones y vistas.
 * **Mantén un backup**: Antes de ejecutar migraciones en producción, ¡siempre ten un backup de tu base de datos!
 * **Colaboración**: Si varios desarrolladores trabajan en la base de datos, deben coordinar los números de versión para evitar conflictos.
@@ -236,4 +236,4 @@ public class V3__UpdateUserEmails extends BaseJavaMigration {
 
 ---
 
-Este cheatsheet te proporciona una base sólida para trabajar con Flyway, cubriendo sus conceptos esenciales, su uso con Spring Boot y las mejores prácticas para gestionar de forma eficiente la evolución del esquema de tu base de datos.
+Este cheatsheet te proporciona una base sólida para trabajar con Flyway, cubriendo sus conceptos esenciales, su uso con [Spring Boot](/web/backend/framework/spring/spring-boot "¡Absolutamente! Spring Boot es un framework increíble para construir aplicaciones Java robustas y de alto rendimiento de manera rápida y eficiente.") y las mejores prácticas para gestionar de forma eficiente la evolución del esquema de tu base de datos.

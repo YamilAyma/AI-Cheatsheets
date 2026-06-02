@@ -376,7 +376,7 @@ export default defineConfig({
 ## 11. 💡 Mejores Prácticas y Consejos de Experto
 
 * **Aísla mocks por test**: Usa `vi.fn()` dentro de `it` o restaura en `afterEach`. Evita `vi.mock()` a nivel global salvo para módulos infraestructurales (router, store).
-* **Prefiere `happy-dom` sobre `jsdom`**: Más rápido, API moderna, mejor soporte para `fetch` y `MutationObserver`. Reduce tiempo de CI en ~30-40%.
+* **Prefiere `happy-dom` sobre `jsdom`**: Más rápido, [API](/conocimiento/api "Una API (Application Programming Interface) es un conjunto de reglas, protocolos y herramientas que permite que diferentes aplicaciones de software se comuniquen entre sí.") moderna, mejor soporte para `fetch` y `MutationObserver`. Reduce tiempo de CI en ~30-40%.
 * **Usa `@testing-library` con Vitest**: Combina `screen`, `userEvent` y `render` para tests centrados en usuario, no en implementación.
   ```ts
   import { render, screen } from '@testing-library/react'
@@ -384,7 +384,7 @@ export default defineConfig({
   // Vitest maneja el bundling, @testing-library maneja la interacción
   ```
 * **Configura `coverage.thresholds` en CI**: Falla el pipeline si la cobertura cae debajo del umbral. Mantén `lines &gt;= 80%`, `functions &gt;= 85%`.
-* **Evita `globals: true` en librerías públicas**: Importa explícitamente `import { describe, it, expect } from 'vitest'` para evitar conflictos con Jest u otros runners.
+* **Evita `globals: true` en librerías públicas**: Importa explícitamente `import { describe, it, expect } from 'vitest'` para evitar conflictos con [Jest](/web/frontend/testing/jest "Jest es un framework de testing para JavaScript y TypeScript mantenido por Meta, diseñado para ofrecer un ciclo de desarrollo rápido, configuración mínima y herramientas integradas para aserciones, mocking, cobertura y snapshots.") u otros runners.
 * **Perfila tests lentos**: `vitest --reporter=verbose --bail=1` identifica cuellos. Usa `vi.setConfig({ testTimeout: 5000 })` localmente, pero mantén `5000` en CI.
 * **Snapshots inline para lógica pequeña**: `toMatchInlineSnapshot()` mantiene snapshots junto al código, facilita review en PRs y reduce drift.
 * **Workspaces para monorepos**: Define `vitest.workspace.ts` en raíz. Permite ejecutar `vitest` una vez y obtener reporte consolidado sin configurar cada paquete.
@@ -393,4 +393,4 @@ export default defineConfig({
 
 ---
 
-Este cheatsheet proporciona una referencia completa para Vitest, cubriendo arquitectura Vite-native, API de assertions, mocking avanzado, manipulación de tiempo, entornos aislados, cobertura V8, workspaces para monorepos, modo navegador y patrones de producción, junto con las mejores prácticas para mantener suites rápidas, deterministas y escalables en entornos reales.
+Este cheatsheet proporciona una referencia completa para Vitest, cubriendo arquitectura [Vite](/web/frontend/general/vite "Vite es una herramienta de construcción frontend de última generación que combina un servidor de desarrollo ultrarrápido basado en módulos nativos del navegador con un empaquetador de producción optimizado mediante Rollup.")-native, API de assertions, mocking avanzado, manipulación de tiempo, entornos aislados, cobertura V8, workspaces para monorepos, modo navegador y patrones de producción, junto con las mejores prácticas para mantener suites rápidas, deterministas y escalables en entornos reales.

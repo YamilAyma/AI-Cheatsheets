@@ -330,7 +330,7 @@ results = pipe.execute()  # [True, 2, b'2']
   * Fix: Configurar `maxmemory-policy` y aplicar `EXPIRE` o `SET ... EX` en creación.
 * **Pipelining con dependencias secuenciales**: `pipe.set('x', 1); pipe.get('x')` retorna valor viejo porque se ejecutan en batch sin esperar.
   * Fix: Dividir en múltiples ejecuciones o usar `EVAL`/`WATCH` si se requiere coherencia.
-* **Lua scripts bloqueantes**: Buclos infinitos o comandos pesados (`KEYS`, `SORT` grande) congelan Redis.
+* **[Lua](/devops/lua "Lua (del portugués, 'Luna') es un lenguaje de programación ligero, de alto rendimiento y fácilmente embebible, diseñado en la PUC-Río (Brasil) en 1993.") scripts bloqueantes**: Buclos infinitos o comandos pesados (`KEYS`, `SORT` grande) congelan Redis.
   * Fix: Validar complejidad antes de desplegar. Usar `lua-time-limit` (default 5s) para abortar automáticamente.
 * **Replicación síncrona mal configurada**: Redis no soporta sync nativo. Forzar `WAIT` para ack de réplicas añade latencia y no garantiza durabilidad ante fallos de red.
   * Fix: Usar `WAIT 2 1000` solo para casos estrictos, o migrar a Redis Cluster con quorum.

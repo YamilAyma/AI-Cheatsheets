@@ -159,7 +159,7 @@ Define la configuración por defecto para **todos** los Contexts (aplicaciones w
 *   **Optimizar la JVM**: Ajustar los parámetros de la JVM (memoria, recolector de basura) en `bin/setenv.sh` (o `.bat`).
     *   `CATALINA_OPTS="-Xms512m -Xmx1024m"`: Tamaño inicial y máximo del heap de la JVM.
 *   **Usar el Conector AJP**: Si Tomcat está detrás de un servidor web frontal (ej. Apache HTTP Server con `mod_jk` o `mod_proxy_ajp`), usa el conector AJP para una comunicación más eficiente.
-*   **Servir Estáticos con un Servidor Web Frontal**: Para alto rendimiento con archivos estáticos (imágenes, CSS, JS), es mejor usar un servidor web dedicado (Apache HTTP Server, Nginx) como [proxy](/arquitectura/design_patterns/estructurales/proxy "El patrón Proxy es un patrón estructural que proporciona un sustituto o intermediario para controlar el acceso a un objeto real, añadiendo comportamiento transversal sin modificar su implementación original.") frontal que redirija solo las solicitudes dinámicas a Tomcat.
+*   **Servir Estáticos con un Servidor Web Frontal**: Para alto rendimiento con archivos estáticos (imágenes, CSS, JS), es mejor usar un servidor web dedicado (Apache HTTP Server, [Nginx](/devops/nginx "Nginx (pronunciado 'engine-x') es un servidor web de alto rendimiento, servidor de correo reverso y balanceador de carga HTTP, diseñado para máxima concurrencia, eficiencia de recursos y bajo consumo de memoria.")) como [proxy](/arquitectura/design_patterns/estructurales/proxy "El patrón Proxy es un patrón estructural que proporciona un sustituto o intermediario para controlar el acceso a un objeto real, añadiendo comportamiento transversal sin modificar su implementación original.") frontal que redirija solo las solicitudes dinámicas a Tomcat.
 
 ---
 
@@ -176,4 +176,4 @@ Define la configuración por defecto para **todos** los Contexts (aplicaciones w
 
 ---
 
-Este cheatsheet te proporciona una referencia completa de Apache Tomcat, cubriendo sus conceptos esenciales, cómo instalarlo, configurarlo, desplegar aplicaciones, gestionar la seguridad y aplicar optimizaciones básicas, lo que te permitirá gestionar eficazmente tus aplicaciones web Java.
+Este cheatsheet te proporciona una referencia completa de Apache Tomcat, cubriendo sus conceptos esenciales, cómo instalarlo, configurarlo, desplegar aplicaciones, gestionar la seguridad y aplicar optimizaciones básicas, lo que te permitirá gestionar eficazmente tus aplicaciones web [Java](/java/java "Java es un lenguaje de programación de propósito general, concurrente, basado en clases y orientado a objetos.").

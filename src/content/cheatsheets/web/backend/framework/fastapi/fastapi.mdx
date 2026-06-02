@@ -14,9 +14,9 @@ FastAPI es un framework web moderno y de alto rendimiento para construir APIs co
 
 ## 1. 🌟 Conceptos Fundamentales
 
-* **Starlette Base**: Routing, middleware, WebSockets y eventos de ciclo de vida. FastAPI añade validación, serialización y [OpenAPI](/herramientas/openapi "OpenAPI Specification (OAS) es un formato de descripción de API es un conjunto de reglas, protocolos y herramientas que permite que diferentes aplicaciones de software se comuniquen entre sí.') estándar, independiente del lenguaje, legible tanto por humanos como por máquinas.") sobre este núcleo async-first.
+* **Starlette Base**: Routing, middleware, WebSockets y eventos de ciclo de vida. FastAPI añade validación, serialización y [OpenAPI](/herramientas/openapi "OpenAPI Specification (OAS) es un formato de descripción de [API](/conocimiento/api "Una API (Application Programming Interface) es un conjunto de reglas, protocolos y herramientas que permite que diferentes aplicaciones de software se comuniquen entre sí.") es un conjunto de reglas, protocolos y herramientas que permite que diferentes aplicaciones de software se comuniquen entre sí.') estándar, independiente del lenguaje, legible tanto por humanos como por máquinas.") sobre este núcleo async-first.
 * **Pydantic v2**: Validación y serialización basada en type hints. Compilada en [Rust](/rust/rust "Rust es un lenguaje de programación de sistemas enfocado en seguridad, concurrencia y rendimiento sin recolector de basura (GC).") (`pydantic-core`), es ~5-50x más rápida que v1 y soporta modelos estrictos, discriminados y conversión automática.
-* **OpenAPI Nativo**: Documentación automática en `/docs` (Swagger) y `/redoc`. Esquema JSON en `/openapi.json`. Totalmente extensible con decoradores y `response_model`.
+* **[OpenAPI](/herramientas/openapi "OpenAPI Specification (OAS) es un formato de descripción de API es un conjunto de reglas, protocolos y herramientas que permite que diferentes aplicaciones de software se comuniquen entre sí.') estándar, independiente del lenguaje, legible tanto por humanos como por máquinas.") Nativo**: Documentación automática en `/docs` (Swagger) y `/redoc`. Esquema JSON en `/openapi.json`. Totalmente extensible con decoradores y `response_model`.
 * **Inyección de Dependencias**: `Depends()` permite inyectar sesiones de DB, usuarios autenticados, cachés o validadores. Soporta scopes, caché automático y sub-dependencias.
 * **Type Hints Obligatorios**: FastAPI usa anotaciones para validar, serializar y generar docs. Sin type hints, no hay validación automática.
 * **Async por Defecto, Sync Compatible**: `async def` se ejecuta en el event loop principal. `def` se ejecuta en un threadpool aislado. El framework gestiona la concurrencia según la firma.
@@ -223,7 +223,7 @@ async def log_requests(request: Request, call_next):
 ```
 
 * **Orden de middleware**: Se ejecutan en orden de registro en request, inverso en response.
-* **Seguridad base**: HTTPS obligatorio, CORS restrictivo, rate limiting externo ([Redis](/base_datos/nosql/redis "Redis es un almacén de datos en memoria, de código abierto y alto rendimiento, que actúa como base de datos, caché, broker de mensajes y motor de streaming.")/Nginx), validación estricta en Pydantic.
+* **Seguridad base**: HTTPS obligatorio, CORS restrictivo, rate limiting externo ([Redis](/base_datos/nosql/redis "Redis es un almacén de datos en memoria, de código abierto y alto rendimiento, que actúa como base de datos, caché, broker de mensajes y motor de streaming.")/[Nginx](/devops/nginx "Nginx (pronunciado 'engine-x') es un servidor web de alto rendimiento, servidor de correo reverso y balanceador de carga HTTP, diseñado para máxima concurrencia, eficiencia de recursos y bajo consumo de memoria.")), validación estricta en Pydantic.
 
 ---
 

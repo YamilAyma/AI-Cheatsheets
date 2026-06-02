@@ -271,7 +271,7 @@ await page.context().setOffline(true)
   ```
 * **Valida traces automáticamente**: Usa `trace: 'retain-on-failure'` + [GitHub](/herramientas/github "GitHub es una plataforma web para el alojamiento de repositorios de control de versiones Git diseñado para manejar proyectos pequeños o muy grandes con velocidad y eficiencia.').") Action `playwright-report` para revisar flakiness sin SSH.
 * **Estructura con Page Objects (opcional)**: Encapsula lógica de UI en clases. Útil para apps complejas, pero evita sobre-ingeniería en proyectos pequeños.
-* **Integra con API testing**: `test.request` permite validar endpoints, autenticar usuarios y preparar estado antes de UI tests.
+* **Integra con [API](/conocimiento/api "Una API (Application Programming Interface) es un conjunto de reglas, protocolos y herramientas que permite que diferentes aplicaciones de software se comuniquen entre sí.") testing**: `test.request` permite validar endpoints, autenticar usuarios y preparar estado antes de UI tests.
 * **Mantén `baseURL` y `testDir` en config**: Centraliza rutas. Usa `page.goto('/path')` relativo. Facilita cambio de entornos (dev/staging/prod).
 
 ---

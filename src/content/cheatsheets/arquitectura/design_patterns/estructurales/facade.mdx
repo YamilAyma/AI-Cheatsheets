@@ -216,7 +216,7 @@ function createSchemaFacade(subsystems: Record<string, any>) {
 | Necesitas estandarizar flujos recurrentes (checkout, onboarding, sync, export) | Requieres flexibilidad máxima y el cliente debe orquestar pasos manualmente. |
 | Quieres aislar la evolución interna del subsistema sin romper contratos de consumo | La Facade se convierte en cuello de botella de rendimiento o punto único de fallo. |
 | Necesitas centralizar logging, métricas, validación cruzada o manejo de errores | Ya usas un contenedor DI avanzado que gestiona composición y proxies automáticamente. |
-| Trabajas con bounded contexts, API boundaries o módulos de alta cohesión interna | La abstracción oculta capacidades críticas y fuerza al cliente a hacer workarounds complejos. |
+| Trabajas con bounded contexts, [API](/conocimiento/api "Una API (Application Programming Interface) es un conjunto de reglas, protocolos y herramientas que permite que diferentes aplicaciones de software se comuniquen entre sí.") boundaries o módulos de alta cohesión interna | La abstracción oculta capacidades críticas y fuerza al cliente a hacer workarounds complejos. |
 
 Comparación rápida con patrones estructurales y de comportamiento:
 * **Facade**: Simplifica y unifica subsistemas complejos. Enfocado en reducción de acoplamiento y superficie de integración.

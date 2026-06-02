@@ -189,7 +189,7 @@ cy.wait('@getUsers').its('response.body').should('have.length.greaterThan', 0)
   }, { cacheAcrossSpecs: true })
   // Caché de cookies, storage y tokens entre spec files
   ```
-* **API Testing directo**: `cy.request('POST', '/api/login', { email, password })` para preparar estado sin UI.
+* **[API](/conocimiento/api "Una API (Application Programming Interface) es un conjunto de reglas, protocolos y herramientas que permite que diferentes aplicaciones de software se comuniquen entre sí.") Testing directo**: `cy.request('POST', '/api/login', { email, password })` para preparar estado sin UI.
 
 ---
 

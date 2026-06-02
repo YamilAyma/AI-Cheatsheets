@@ -17,7 +17,7 @@ Mongoose es una biblioteca ODM (Object-Document Mapping) para [MongoDB](/base_da
 * **Schema-first design**: Todo comienza con un `Schema`, que define estructura, tipos, validación, índices y comportamiento de un documento. [MongoDB](/base_datos/nosql/mongodb "MongoDB es una base de datos NoSQL orientada a documentos que almacena datos en formato BSON (Binary JSON), permitiendo esquemas flexibles y escalabilidad horizontal nativa.") es schemaless, pero Mongoose impone estructura en el lado del cliente.
 * **Modelos como constructores**: Un `Model` se compila desde un Schema y actúa como clase para instanciar documentos y ejecutar operaciones contra la colección.
 * **Documentos con comportamiento**: Los documentos no son objetos planos; tienen métodos, hooks, validación y estado interno (`isNew`, `isModified`, `$locals`).
-* **Validación antes de persistir**: Mongoose valida tipos, requeridos, enums, regex y validadores custom antes de enviar a MongoDB. Falla rápido y local.
+* **Validación antes de persistir**: Mongoose valida tipos, requeridos, enums, regex y validadores custom antes de enviar a [MongoDB](/base_datos/nosql/mongodb "MongoDB es una base de datos NoSQL orientada a documentos que almacena datos en formato BSON (Binary JSON), permitiendo esquemas flexibles y escalabilidad horizontal nativa."). Falla rápido y local.
 * **Middleware (pre/post hooks)**: Intercepta operaciones como `save`, `find`, `update`, `remove` para añadir lógica transversal (auditoría, encriptación, soft delete).
 * **Population nativa**: Referencias entre documentos se resuelven con `populate()`, similar a un JOIN en [SQL](/base_datos/sql "SQL es el lenguaje estándar utilizado para comunicarse con y gestionar bases de datos relacionales (RDBMS) como MySQL, PostgreSQL, Oracle, SQL Server, SQLite, entre otros.") pero lazy y explícito.
 * **Query [API](/conocimiento/api "Una API (Application Programming Interface) es un conjunto de reglas, protocolos y herramientas que permite que diferentes aplicaciones de software se comuniquen entre sí.") chainable**: Las consultas son *thenables* y construyen un pipeline ejecutable. Permiten composición dinámica de filtros, proyecciones y opciones.
@@ -795,7 +795,7 @@ mongoose.plugin(softDeletePlugin)
   * Fix: `{ runValidators: true, context: 'query' }` en updates.
 * **Memory leak con muchos modelos**: Crear modelos en cada request o función.
   * Fix: Definir modelos una vez (`model()`) y reutilizar. Validar con `mongoose.models['Name']`.
-* **TypeScript genéricos sin `InferSchemaType`**: Duplicar interfaces y schema causa drift.
+* **[TypeScript](/web/general/typescript "TypeScript es una herramienta fundamental en el desarrollo web moderno, especialmente para proyectos a gran escala, ya que añade seguridad de tipo y mejoras en la productividad.") genéricos sin `InferSchemaType`**: Duplicar interfaces y schema causa drift.
   * Fix: Usar `InferSchemaType&lt;typeof schema&gt;` como fuente única de verdad.
 
 ---
@@ -817,7 +817,7 @@ mongoose.plugin(softDeletePlugin)
 * **Tests con `mongodb-memory-server`**: Base de datos en memoria para tests aislados y rápidos sin tocar dev/prod.
 * **Documenta schemas con JSDoc**: `/** User entity with email-based auth */` ayuda al IDE y genera docs automáticas.
 * **Perfila con `debug: true`**: `mongoose.set('debug', true)` loguea todas las queries a MongoDB. Útil en desarrollo, desactiva en prod.
-* **Versionado semántico en cambios de schema**: Cambios breaking (renombrar campos, cambiar tipos) requieren migración + nueva versión de API.
+* **Versionado semántico en cambios de schema**: Cambios breaking (renombrar campos, cambiar tipos) requieren migración + nueva versión de [API](/conocimiento/api "Una API (Application Programming Interface) es un conjunto de reglas, protocolos y herramientas que permite que diferentes aplicaciones de software se comuniquen entre sí.").
 * **Paginación por cursor sobre offset**: Para datasets grandes, usa paginación basada en `_id` o `createdAt` en lugar de `skip/limit`.
 * **Transactions solo cuando sea necesario**: Operaciones multi-documento son costosas. Si puedes usar atomicidad nativa (`updateOne` con operadores), prefierela.
 * **Plugins sobre herencia**: Mongoose no soporta herencia real. Plugins + composición es el patrón idiomático.
